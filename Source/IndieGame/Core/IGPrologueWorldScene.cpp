@@ -3041,6 +3041,63 @@ void AIGPrologueWorldScene::BuildCorridor()
 	ActiveParent = nullptr;
 }
 
+float AIGPrologueWorldScene::GetStoreyFloorZ(const int32 FloorIndex)
+{
+	return IGPrologueWorld::StairStoreyHeight * FMath::Clamp(FloorIndex, 0, 3);
+}
+
+FVector AIGPrologueWorldScene::GetStairDoorwayFeet(const int32 FloorIndex)
+{
+	// 1층은 주차장 쪽 출입구(Y -350..-235) 밖, 위층은 복도 목 기둥 안쪽이다.
+	return FloorIndex <= 0
+		? FVector(IGPrologueWorld::StairCoreEastX + 20.0f, -292.0f, 0.0f)
+		: FVector(IGPrologueWorld::StairCoreEastX + 35.0f, -305.0f, GetStoreyFloorZ(FloorIndex));
+}
+
+bool AIGPrologueWorldScene::IsInsideStairCore(const FVector& Location)
+{
+	return Location.X > IGPrologueWorld::StairInnerWestX
+		&& Location.X < IGPrologueWorld::StairInnerEastX
+		&& Location.Y > IGPrologueWorld::StairInnerSouthY
+		&& Location.Y < IGPrologueWorld::StairInnerNorthY;
+}
+
+bool AIGPrologueWorldScene::IsOnStairFlight(const FVector& Location)
+{
+	return Location.X > IGPrologueWorld::StairInnerWestX
+		&& Location.X < IGPrologueWorld::StairInnerEastX
+		&& Location.Y > IGPrologueWorld::StairFlightSouthY
+		&& Location.Y < IGPrologueWorld::StairFlightNorthY;
+}
+
+void AIGPrologueWorldScene::GetStairClimbFeet(const int32 FromFloor, TArray<FVector>& OutFeet)
+{
+	OutFeet.Reset();
+	const int32 Floor = FMath::Clamp(FromFloor, 0, 2);
+	const float FloorZ = GetStoreyFloorZ(Floor);
+	const float HalfZ = FloorZ + IGPrologueWorld::StairStoreyHeight * 0.5f;
+	const float UpperZ = FloorZ + IGPrologueWorld::StairStoreyHeight;
+	const float HalfRise = IGPrologueWorld::StairRise * 0.5f;
+	const float WestX =
+		(IGPrologueWorld::StairInnerWestX + IGPrologueWorld::StairWestBandEastX) * 0.5f;
+	const float EastX =
+		(IGPrologueWorld::StairEastBandWestX + IGPrologueWorld::StairInnerEastX) * 0.5f;
+	const float SouthY = IGPrologueWorld::StairFlightSouthY;
+	const float NorthY = IGPrologueWorld::StairFlightNorthY;
+	// 반 층 참에서는 띠 폭의 반쯤 들어가서 꺾는다.
+	const float TurnY = NorthY + 55.0f;
+	OutFeet.Add(GetStairDoorwayFeet(Floor));
+	OutFeet.Add(FVector(WestX, SouthY - 30.0f, FloorZ));
+	OutFeet.Add(FVector(WestX, SouthY, FloorZ + HalfRise));
+	OutFeet.Add(FVector(WestX, NorthY, HalfZ - HalfRise));
+	OutFeet.Add(FVector(WestX, TurnY, HalfZ));
+	OutFeet.Add(FVector(EastX, TurnY, HalfZ));
+	OutFeet.Add(FVector(EastX, NorthY, HalfZ + HalfRise));
+	OutFeet.Add(FVector(EastX, SouthY, UpperZ - HalfRise));
+	OutFeet.Add(FVector(EastX, SouthY - 30.0f, UpperZ));
+	OutFeet.Add(GetStairDoorwayFeet(Floor + 1));
+}
+
 void AIGPrologueWorldScene::BuildStairCore()
 {
 	// 서쪽 계단탑. 1층 필로티 옆에서 4층 복도 끝까지 실제로 걸어 오르내린다.

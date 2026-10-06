@@ -1029,5 +1029,16 @@
  "IGMissingFloor,YudamGuestPeephole": "廊下には誰もいない。……声はドアのすぐ前からしたのに。",
  "IGMissingFloor,CaptionGuestWrongCode": "［番号違いの警告音］",
  "IGMissingFloor,CaptionGuestKeypadAgain": "［もう一度ドアロックの番号を押す］",
- "IGMissingFloor,CaptionGuestPaper": "［ドアの下から紙を差し込む音］"
+ "IGMissingFloor,CaptionGuestPaper": "［ドアの下から紙を差し込む音］",
+ "IGMissingFloor,CaptionMokDoor": "［管理人室のドアが開く音］",
+ "IGMissingFloor,CaptionMokSlippers": "［スリッパを引きずる足音］",
+ "IGMissingFloor,CaptionMokKeys": "［鍵束がじゃらじゃら鳴る音］",
+ "IGMissingFloor,CaptionMokStopped": "［鍵束の音がぴたりと止む］",
+ "IGMissingFloor,CaptionMokQuicken": "［足音が速くなる］",
+ "IGMissingFloor,CaptionMokHurries": "［スリッパの音が急いで遠ざかる］",
+ "IGMissingFloor,CaptionMokGrab": "［手首をつかまれる音］",
+ "IGMissingFloor,YudamMokFirstHeard": "管理人のおじさんだ。こんな時間に懐中電灯を持って。",
+ "IGMissingFloor,YudamMokTorchWarning": "あの光に入ったら見つかる。",
+ "IGMissingFloor,YudamMokHeardKnock": "あの人にも聞こえたんだ。今の音が。",
+ "IGMissingFloor,YudamMokAvoidsFourth": "4階の廊下には入ってこない。"
 }

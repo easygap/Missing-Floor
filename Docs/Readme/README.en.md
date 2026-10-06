@@ -52,7 +52,7 @@ Getting caught doesn't end the game. You wake up back in your room. Whatever you
 
 ## Download
 
-The current build is playtest 0.2.4. Hiding, the latch and fire door, flashlight batteries and the other things that come at night will be in the next playtest.
+The current build is playtest 0.2.4. Hiding, the latch and fire door, flashlight batteries and the other things that come at night will be in the next playtest. The second and third floors open up then too.
 
 1. Download the [Windows ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip).
 2. Extract the whole thing and run `MissingFloor.exe`. It won't start without the `Engine` and `IndieGame` folders next to it.

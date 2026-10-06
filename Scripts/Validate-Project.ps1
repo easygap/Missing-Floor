@@ -682,7 +682,10 @@ $reviewedTickingFiles = @(
 	# 숨는 자리. 사람이 드나들거나 안에 있는 동안에만 켜고, 다 나오면 끈다.
 	'IGHidingSpot.cpp',
 	# 어둠의 몸(어둑시니·손님). 나타나 있는 동안에만 켜고, 사라지면 끈다.
-	'IGShadowFigure.cpp'
+	'IGShadowFigure.cpp',
+	# 밤3의 관리인. 그 시간이 밤3이고 벽의 대답을 아직 못 들었을 때만 켠다.
+	# 걸음과 손전등, 원뿔 시야가 매 프레임 일이고, 당번이 끝나면 스스로 끈다.
+	'IGManagerPatrol.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)

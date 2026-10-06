@@ -1029,5 +1029,16 @@
  "IGMissingFloor,YudamGuestPeephole": "走廊里没有人。……可声音明明就在门口。",
  "IGMissingFloor,CaptionGuestWrongCode": "［密码错误的提示音］",
  "IGMissingFloor,CaptionGuestKeypadAgain": "［又按了一遍门锁密码］",
- "IGMissingFloor,CaptionGuestPaper": "［有纸从门底下塞进来的声音］"
+ "IGMissingFloor,CaptionGuestPaper": "［有纸从门底下塞进来的声音］",
+ "IGMissingFloor,CaptionMokDoor": "［管理室的门打开的声音］",
+ "IGMissingFloor,CaptionMokSlippers": "［拖着拖鞋走路的声音］",
+ "IGMissingFloor,CaptionMokKeys": "［一串钥匙叮当作响］",
+ "IGMissingFloor,CaptionMokStopped": "［钥匙声戛然而止］",
+ "IGMissingFloor,CaptionMokQuicken": "［脚步声变快了］",
+ "IGMissingFloor,CaptionMokHurries": "［拖鞋声匆匆远去］",
+ "IGMissingFloor,CaptionMokGrab": "［一把抓住手腕的声音］",
+ "IGMissingFloor,YudamMokFirstHeard": "是管理员大叔。这个时间还拿着手电筒。",
+ "IGMissingFloor,YudamMokTorchWarning": "走进那道光里就会被发现。",
+ "IGMissingFloor,YudamMokHeardKnock": "他也听见了。刚才那个声音。",
+ "IGMissingFloor,YudamMokAvoidsFourth": "他不进四楼的走廊。"
 }

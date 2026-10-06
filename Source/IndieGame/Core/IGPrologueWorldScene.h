@@ -133,6 +133,24 @@ public:
 	static FVector GetPlayerStartLocation();
 
 	/**
+	 * 서쪽 계단탑을 걷는 발자리(cm). 층 번호는 1층이 0이다. 순찰하는 관리인과
+	 * 밤 연출이 같은 계단을 쓴다. 계단 치수는 씬이 한 곳에서 든다.
+	 */
+	static float GetStoreyFloorZ(int32 FloorIndex);
+	/** 층 FloorIndex의 계단탑 출입구 바로 밖, 발 높이. 1층은 주차장 쪽이다. */
+	static FVector GetStairDoorwayFeet(int32 FloorIndex);
+	/**
+	 * FromFloor 출입구에서 한 층 위 출입구까지 걷는 점들. 계단 위 두 점 사이는
+	 * 디딤판 윗면 가운데를 잇는 경사라 곧게 걸으면 단을 탄다. 내려갈 때는
+	 * 거꾸로 걷는다.
+	 */
+	static void GetStairClimbFeet(int32 FromFloor, TArray<FVector>& OutFeet);
+	/** 계단탑 안쪽(벽 안)인가. 높이는 보지 않는다. */
+	static bool IsInsideStairCore(const FVector& Location);
+	/** 계단 띠 위인가(층 참과 반 층 참은 아니다). 높이는 보지 않는다. */
+	static bool IsOnStairFlight(const FVector& Location);
+
+	/**
 	 * 로비 CCTV 모니터 화면의 실치수(cm).
 	 *
 	 * 케이스와 4분할 발광면은 씬이 세우고, 채널 5의 렌더 면은
