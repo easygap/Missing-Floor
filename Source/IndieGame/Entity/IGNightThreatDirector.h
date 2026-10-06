@@ -110,7 +110,10 @@ private:
 	/** 두드리는 동안 문 밑으로 종이 한 장을 밀어 넣는다. 세 번에 나눠 민다. */
 	void BeginPaperUnderDoor();
 	void UpdatePaperUnderDoor(float DeltaSeconds);
-	void HidePaperUnderDoor();
+	/** 들어와 돌아다니는 동안 몸에서 종이가 한 장씩 떨어진다. */
+	void DropGuestPaper(const FVector& BodyLocation);
+	/** 문 밑 전단과 떨어진 종이를 거둔다. 새벽과 새 방문 때 부른다. */
+	void HideGuestPapers();
 	bool IsPlayerInHome() const;
 	FVector GetDoorOutside() const;
 	void HandleNoise(const FIGNoiseEvent& Event);
@@ -127,6 +130,10 @@ private:
 	/** 문 밑으로 밀려 들어온 임대 안내문. 손님이 가도 새벽까지 바닥에 남는다. */
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> PaperUnderDoor;
+
+	/** 손님이 지나간 자리에 떨어진 종이. 밤마다 다시 쓴다. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> FallenPapers;
 
 	TWeakObjectPtr<AIGPrologueWorldScene> Scene;
 	TWeakObjectPtr<AIGPlayerCharacter> PlayerPawn;
@@ -170,6 +177,8 @@ private:
 	int32 PaperUnderDoorShoves = 0;
 	float PaperUnderDoorFloorZ = 0.0f;
 	bool bPaperUnderDoorPlayed = false;
+	int32 FallenPaperCount = 0;
+	int32 GuestRustleCount = 0;
 	/** 전단 메시를 못 읽어 큐브로 대신했다. 눕히는 방향과 두께가 다르다. */
 	bool bPaperUnderDoorIsCube = false;
 };

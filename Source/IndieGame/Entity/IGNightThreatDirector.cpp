@@ -115,6 +115,10 @@ namespace IGNightThreat
 	constexpr float PaperYawDegrees = 5.0f;
 	// 문짝 두께의 절반. 문짝 안쪽 면이 HomeDoorY에서 이만큼 안쪽(+Y)이다.
 	constexpr float DoorHalfThickness = 2.5f;
+	// 들어와 돌아다니는 동안 떨어지는 종이. 스치는 소리 세 번에 한 장, 한 번 오면 넷까지.
+	constexpr int32 RustlesPerFallenPaper = 3;
+	constexpr int32 MaxFallenPapers = 4;
+	constexpr float FallenPaperSpread = 28.0f;
 }
 
 AIGNightThreatDirector::AIGNightThreatDirector()
@@ -307,7 +311,7 @@ void AIGNightThreatDirector::Update()
 		}
 		DarknessSeconds = 0.0f;
 		HomeDwellSeconds = 0.0f;
-		HidePaperUnderDoor();
+		HideGuestPapers();
 		return;
 	}
 
@@ -864,7 +868,8 @@ void AIGNightThreatDirector::StartGuest()
 	GuestStep = 0;
 	GuestRustleSeconds = 0.0f;
 	bPaperUnderDoorPlayed = false;
-	HidePaperUnderDoor();
+	GuestRustleCount = 0;
+	HideGuestPapers();
 	SetPeepholeOffered(true);
 	PlayerDoorKnockTimes.Reset();
 	bGuestAnswered = false;
@@ -1110,12 +1115,84 @@ void AIGNightThreatDirector::UpdatePaperUnderDoor(const float DeltaSeconds)
 	}
 }
 
-void AIGNightThreatDirector::HidePaperUnderDoor()
+void AIGNightThreatDirector::DropGuestPaper(const FVector& BodyLocation)
+{
+	UWorld* World = GetWorld();
+	if (!World || !PaperUnderDoor || FallenPaperCount >= IGNightThreat::MaxFallenPapers)
+	{
+		return;
+	}
+	UStaticMeshComponent* Sheet = FallenPapers.IsValidIndex(FallenPaperCount)
+		? FallenPapers[FallenPaperCount].Get()
+		: nullptr;
+	if (!Sheet)
+	{
+		// 문 밑으로 밀어 넣은 것과 같은 종이를 쓴다.
+		Sheet = NewObject<UStaticMeshComponent>(
+			this, *FString::Printf(TEXT("GuestFallenPaper_%d"), FallenPaperCount));
+		Sheet->SetMobility(EComponentMobility::Movable);
+		Sheet->SetStaticMesh(PaperUnderDoor->GetStaticMesh());
+		if (bPaperUnderDoorIsCube)
+		{
+			Sheet->SetMaterial(0, PaperUnderDoor->GetMaterial(0));
+			Sheet->SetRelativeScale3D(PaperUnderDoor->GetRelativeScale3D());
+		}
+		Sheet->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+		Sheet->SetGenerateOverlapEvents(false);
+		Sheet->SetCanEverAffectNavigation(false);
+		Sheet->SetCastShadow(false);
+		Sheet->RegisterComponent();
+		if (FallenPapers.IsValidIndex(FallenPaperCount))
+		{
+			FallenPapers[FallenPaperCount] = Sheet;
+		}
+		else
+		{
+			FallenPapers.Add(Sheet);
+		}
+	}
+	++FallenPaperCount;
+	// 몸 언저리에 아무렇게나 떨어진다. 침대나 상 위에 걸리면 거기 얹힌다.
+	const FVector Around = BodyLocation + FVector(
+		FMath::FRandRange(-IGNightThreat::FallenPaperSpread, IGNightThreat::FallenPaperSpread),
+		FMath::FRandRange(-IGNightThreat::FallenPaperSpread, IGNightThreat::FallenPaperSpread),
+		0.0f);
+	float RestZ = BodyLocation.Z;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGGuestFallenPaper), false, PlayerPawn.Get());
+	if (Guest)
+	{
+		Params.AddIgnoredActor(Guest);
+	}
+	FHitResult Rest;
+	const FVector Top = Around + FVector(0.0f, 0.0f, 90.0f);
+	if (World->LineTraceSingleByChannel(Rest, Top, Top - FVector(0.0f, 0.0f, 140.0f), ECC_Visibility, Params))
+	{
+		RestZ = Rest.ImpactPoint.Z;
+	}
+	const float Yaw = FMath::FRandRange(0.0f, 360.0f);
+	Sheet->SetWorldLocationAndRotation(
+		FVector(Around.X, Around.Y, RestZ + (bPaperUnderDoorIsCube ? 0.12f : 0.06f)),
+		bPaperUnderDoorIsCube ? FRotator(0.0f, Yaw, 0.0f) : FRotator(0.0f, Yaw, 90.0f));
+	Sheet->SetVisibility(true);
+}
+
+void AIGNightThreatDirector::HideGuestPapers()
 {
 	PaperUnderDoorElapsed = -1.0f;
 	if (PaperUnderDoor && PaperUnderDoor->IsVisible())
 	{
 		PaperUnderDoor->SetVisibility(false);
+	}
+	if (FallenPaperCount > 0)
+	{
+		for (UStaticMeshComponent* Sheet : FallenPapers)
+		{
+			if (Sheet)
+			{
+				Sheet->SetVisibility(false);
+			}
+		}
+		FallenPaperCount = 0;
 	}
 }
 
@@ -1492,6 +1569,11 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 				120.0f,
 				900.0f,
 				EIGAudioBus::World);
+			// 세 번 스칠 때마다 한 장이 떨어진다. 지나간 길에 종이가 남는다.
+			if (++GuestRustleCount % IGNightThreat::RustlesPerFallenPaper == 0)
+			{
+				DropGuestPaper(BodyLocation);
+			}
 		}
 		LastGuestLocation = BodyLocation;
 		const FVector PlayerFloor(Player->GetActorLocation().X, Player->GetActorLocation().Y, BodyLocation.Z);
