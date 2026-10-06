@@ -14,11 +14,11 @@ class UIGNoiseSubsystem;
 /**
  * 밤1의 두 스크립트 비트 (STORY_BIBLE_MISSING_FLOOR.md §8 밤1).
  *
- * 1-4 첫 목격 — the stair-throat zone stages the one upstairs on the new
- * 3.5F half-landing, past the moved teleport line, ear to the far wall. The
- * player descending to the lobby walks the landing and passes within arm's
- * reach of it; because capture only exists in its pursuit states, standing
- * still beside a listening thing is survivable — which is the lesson.
+ * 1-4 첫 목격 — 계단 입구 존이 그를 3.5층 참 북서쪽 구석에 올린다. 북쪽 벽에
+ * 귀를 대고 등을 보인다. 4층에서 내려오는 사람은 두 띠 사이 벽 때문에 참에
+ * 내려서야 그를 보고, 계속 내려가려면 팔 길이 안을 지나야 한다. 그동안 그는
+ * 쫓기 전에는 닿기만으로 잡지 않는다 — 소리 없이 지나가면 모른다는 것이 이
+ * 비트가 가르치는 규칙이다.
  *
  * 1-5 강제 조우 — the fire-cabinet zone knocks the extinguisher off its
  * bracket. The clatter is a 0.6 sound the whole corridor hears, INVESTIGATE
@@ -38,6 +38,8 @@ public:
 	static FVector GetSightingZoneCenter();
 	static FVector GetSightingStagePoint();
 	static FVector GetSightingShufflePoint();
+	/** 그를 지나 서쪽 띠로 두 단 내려선 자리. 프로브가 「지나갔다」를 만들 때 쓴다. */
+	static FVector GetSightingPassPoint();
 	AIGNightOneBeatDirector();
 
 	/** Arms both beat zones against an already-built corridor. */
@@ -71,8 +73,9 @@ private:
 	void HandleUnit402KnockZone(AIGZoneTrigger* Zone);
 	void PlayUnit402SecondKnock();
 
-	UFUNCTION()
-	void HandleStairTransitionCompleted(bool bGoingDown);
+	/** 그녀가 반 층 참을 지나 내려갔는지 0.2초마다 본다. 존이 울린 뒤부터 끝날 때까지다. */
+	void PollSightingDescent();
+	bool HasPlayerDescendedPastLanding() const;
 
 	/**
 	 * 존은 한 번만 울리므로, 그를 화면 밖에서 옮길 수 있을 때까지 여기서 다시
@@ -129,6 +132,7 @@ private:
 	FTimerHandle SightingFallbackTimer;
 	FTimerHandle SightingRetryTimer;
 	FTimerHandle SightingStepTimer;
+	FTimerHandle SightingDescentTimer;
 	/** 계단 입구 위의 등. 그가 계단참에 있는 동안 죽어 있고, 끝나면 돌아온다. */
 	int32 SightingThroatFixture = INDEX_NONE;
 	FTimerHandle ImpactTimer;

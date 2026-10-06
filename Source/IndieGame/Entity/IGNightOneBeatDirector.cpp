@@ -6,11 +6,9 @@
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
-#include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "GameFramework/Controller.h"
-#include "Interaction/IGStairTransition.h"
 #include "Interaction/IGZoneTrigger.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
@@ -43,12 +41,22 @@ namespace IGNightOne
 	const FVector SightingZoneExtent(45.0f, 62.0f, 110.0f);
 
 	/**
-	 * Where the figure stands: on the half-landing, past the night portal
-	 * line, ear against the far shaft wall. Unreachable on foot — the portal
-	 * teleports the player first — so it can never body-block the descent.
+	 * 그가 서는 자리. 4층과 3층 사이 반 층 참(Z 750)의 북서쪽 구석, 북쪽 벽에
+	 * 귀를 대고 내려오는 사람에게 등을 보인다. 4층에서 내려오는 동쪽 띠에서는
+	 * 두 띠 사이 벽에 가려 보이지 않다가, 참에 내려서서 서쪽으로 돌아야 보인다.
+	 * 계속 내려가려면 그 곁 1 m를 지나야 한다. 참은 깊이 140 cm라 몸이 닿지는
+	 * 않는다 — 그의 몸은 북쪽 벽에서 10 cm 떨어진 데까지, 지나가는 사람은 남쪽
+	 * 가장자리를 밟는다. 높이는 참 윗면에 그의 몸 반높이를 더한 것이다.
 	 */
-	const FVector SightingStagePoint(-445.0f, -305.0f, 888.0f);
-	const FVector SightingShufflePoint(-445.0f, -255.0f, 888.0f);
+	const FVector SightingStagePoint(-528.0f, 52.0f, 808.0f);
+	const FVector SightingShufflePoint(-496.0f, 52.0f, 808.0f);
+	/**
+	 * 그를 지나 내려갔다고 보는 선. 반 층 참에서 서쪽 띠로 두 단쯤 내려선
+	 * 높이(몸 중심 Z 790)이고, 계단탑 안이어야 한다. 프로브는 이 아래 단에 세운다.
+	 */
+	constexpr float SightingDescentZ = 790.0f;
+	const FVector SightingPassPoint(-522.0f, -147.5f, 765.0f);
+	constexpr float SightingDescentPollSeconds = 0.2f;
 
 	/** Give up on the cameo if the player retreats and never descends. */
 	constexpr float SightingFallbackSeconds = 45.0f;
@@ -104,6 +112,11 @@ FVector AIGNightOneBeatDirector::GetSightingStagePoint()
 FVector AIGNightOneBeatDirector::GetSightingShufflePoint()
 {
 	return IGNightOne::SightingShufflePoint;
+}
+
+FVector AIGNightOneBeatDirector::GetSightingPassPoint()
+{
+	return IGNightOne::SightingPassPoint;
 }
 
 bool AIGNightOneBeatDirector::Configure(
@@ -192,14 +205,6 @@ bool AIGNightOneBeatDirector::Configure(
 			this, &AIGNightOneBeatDirector::HandleUnit402KnockZone);
 	}
 
-	// The cameo ends the moment the player actually descends: the stair
-	// teleport completing is the one reliable "they walked past it" signal.
-	for (TActorIterator<AIGStairTransition> It(World); It; ++It)
-	{
-		It->OnTransitionCompleted.AddDynamic(
-			this, &AIGNightOneBeatDirector::HandleStairTransitionCompleted);
-		break;
-	}
 	return true;
 }
 
@@ -210,6 +215,7 @@ void AIGNightOneBeatDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	GetWorldTimerManager().ClearTimer(ImpactTimer);
 	GetWorldTimerManager().ClearTimer(Unit402KnockTimer);
 	GetWorldTimerManager().ClearTimer(SightingStepTimer);
+	GetWorldTimerManager().ClearTimer(SightingDescentTimer);
 	GetWorldTimerManager().ClearTimer(FixtureDeathTimer);
 	if (BreakerPanelHumHandle != 0)
 	{
@@ -244,6 +250,14 @@ void AIGNightOneBeatDirector::HandleSightingZone(AIGZoneTrigger* Zone)
 	{
 		return;
 	}
+	// 카메오는 그녀가 실제로 그를 지나 내려가는 순간 끝난다. 계단이 이어진 뒤로는
+	// 그 순간을 알려 줄 순간이동이 없으니 자리로 본다.
+	GetWorldTimerManager().SetTimer(
+		SightingDescentTimer,
+		this,
+		&AIGNightOneBeatDirector::PollSightingDescent,
+		IGNightOne::SightingDescentPollSeconds,
+		true);
 	TryStageSighting();
 }
 
@@ -375,14 +389,17 @@ void AIGNightOneBeatDirector::StageSighting()
 	// reveal must not fight it.
 	WorldScene->SuspendCorridorFlicker(true);
 
-	// Face the far wall — ear pressed against it, back to the descending
-	// player. The two patrol points keep it shuffling along the same wall on
-	// the landing plane, which its crawl can actually traverse.
+	// 북쪽 벽을 보고 귀를 댄다 — 내려오는 사람에게 등을 보인다. 순찰 두 점은
+	// 같은 벽을 따라 참 위에서만 움직이게 하고, 참 가장자리 밖은 그의 기는
+	// 걸음이 넘지 못한다(CrawlTowards).
+	// 지나가는 사람이 팔 길이 안을 스친다. 소리를 내지 않으면 그는 모른다는 것이
+	// 이 비트가 가르치는 규칙이라, 쫓기 전에는 닿기만으로 잡지 않게 한다.
 	Listener->TeleportTo(
 		IGNightOne::SightingStagePoint,
-		FRotator(0.0f, 180.0f, 0.0f),
+		FRotator(0.0f, 90.0f, 0.0f),
 		false,
 		true);
+	Listener->SetTouchCaptureSuppressed(true);
 	Listener->SetPatrolPoints({
 		IGNightOne::SightingStagePoint,
 		IGNightOne::SightingShufflePoint,
@@ -451,63 +468,81 @@ void AIGNightOneBeatDirector::StageSighting()
 		false);
 }
 
-void AIGNightOneBeatDirector::HandleStairTransitionCompleted(const bool bGoingDown)
+bool AIGNightOneBeatDirector::HasPlayerDescendedPastLanding() const
 {
+	const AIGPlayerCharacter* PlayerCharacter = Player.Get();
+	if (!PlayerCharacter)
+	{
+		return false;
+	}
+	// 계단탑 안(X -575..-355, Y -375..105)에서 반 층 참보다 두 단 아래.
+	const FVector Where = PlayerCharacter->GetActorLocation();
+	return Where.X > -575.0f && Where.X < -355.0f
+		&& Where.Y > -375.0f && Where.Y < 105.0f
+		&& Where.Z < IGNightOne::SightingDescentZ;
+}
+
+void AIGNightOneBeatDirector::PollSightingDescent()
+{
+	if (bSightingCompleted)
+	{
+		GetWorldTimerManager().ClearTimer(SightingDescentTimer);
+		return;
+	}
+	if (!HasPlayerDescendedPastLanding())
+	{
+		return;
+	}
+	GetWorldTimerManager().ClearTimer(SightingDescentTimer);
 	// 그를 옮기지 못한 채 계단을 내려갔다. 이 밤의 첫 목격은 없던 일이다.
-	if (bGoingDown && !bSightingStaged && !bSightingCompleted
-		&& GetWorldTimerManager().IsTimerActive(SightingRetryTimer))
+	if (!bSightingStaged)
 	{
 		GetWorldTimerManager().ClearTimer(SightingRetryTimer);
 		bSightingCompleted = true;
 		return;
 	}
-	// Only the descent past the figure ends the cameo; riding back up from
-	// the lobby later must not resurrect it.
-	if (bSightingStaged && !bSightingCompleted && bGoingDown)
+	// 내려가며 그를 지나치는 순간, 벽에 귀를 댄 그의 껍질이 한 번 갈라진다.
+	// 감각 규칙 1(§4.3 「눈앞을 지나가도 소리가 없으면 모른다」)을 가르치는
+	// 자리라 「들었다」의 들숨은 내지 않는다. 조용히 지나간 사람에게 그 숨을
+	// 들려주면 조용해도 들킨다고 거꾸로 배운다. 정말 소리를 냈다면 그의 청각이
+	// 이미 조사로 넘어가며 제 들숨을 냈다.
+	if (AIGListenerEntity* Listener = Entity.Get())
 	{
-		// 내려가며 그를 지나치는 순간, 벽에 귀를 댄 그의 껍질이 한 번 갈라진다.
-		// 감각 규칙 1(§4.3 「눈앞을 지나가도 소리가 없으면 모른다」)을 가르치는
-		// 자리라 「들었다」의 들숨은 내지 않는다. 조용히 지나간 사람에게 그 숨을
-		// 들려주면 조용해도 들킨다고 거꾸로 배운다. 정말 소리를 냈다면 그의 청각이
-		// 이미 조사로 넘어가며 제 들숨을 냈다.
-		if (AIGListenerEntity* Listener = Entity.Get())
+		const EIGListenerState State = Listener->GetListenerState();
+		const bool bAlreadyHeard = State == EIGListenerState::Investigating
+			|| State == EIGListenerState::Holding
+			|| State == EIGListenerState::Chasing
+			|| State == EIGListenerState::Searching;
+		if (!bAlreadyHeard)
 		{
-			const EIGListenerState State = Listener->GetListenerState();
-			const bool bAlreadyHeard = State == EIGListenerState::Investigating
-				|| State == EIGListenerState::Holding
-				|| State == EIGListenerState::Chasing
-				|| State == EIGListenerState::Searching;
-			if (!bAlreadyHeard)
-			{
-				IGAudio::SpawnOneShotAt(
-					this,
-					UIGToneSequenceSoundWave::CreatePlasterSettle(this),
-					Listener->GetActorLocation() + FVector(0.0f, 0.0f, 30.0f),
-					0.8f,
-					0.96f,
-					200.0f,
-					1600.0f,
-					EIGAudioBus::Entity);
-				AIGHorrorHUD::PushAudioCaptionAt(
-					this,
-					NSLOCTEXT("IGMissingFloor", "SightingSettleCaption", "벽에 금 가는 소리"),
-					2.0f,
-					Listener->GetActorLocation());
-			}
-			AIGHorrorHUD::PushFearDirection(this, Listener->GetActorLocation());
+			IGAudio::SpawnOneShotAt(
+				this,
+				UIGToneSequenceSoundWave::CreatePlasterSettle(this),
+				Listener->GetActorLocation() + FVector(0.0f, 0.0f, 30.0f),
+				0.8f,
+				0.96f,
+				200.0f,
+				1600.0f,
+				EIGAudioBus::Entity);
+			AIGHorrorHUD::PushAudioCaptionAt(
+				this,
+				NSLOCTEXT("IGMissingFloor", "SightingSettleCaption", "벽에 금 가는 소리"),
+				2.0f,
+				Listener->GetActorLocation());
 		}
-		// 놀람은 그녀의 몫이다(§8 1-4 【S】0.55). 들숨 대신 가는 균열음이라 몸의
-		// 움찔도 그만큼 작다.
-		if (AIGPlayerCharacter* PlayerCharacter = Player.Get())
-		{
-			if (UIGStressComponent* Stress = PlayerCharacter->GetStress())
-			{
-				Stress->ApplyScare(0.5f);
-			}
-			PlayerCharacter->PlayScareKick(1.0f);
-		}
-		RestoreSightingEntity();
+		AIGHorrorHUD::PushFearDirection(this, Listener->GetActorLocation());
 	}
+	// 놀람은 그녀의 몫이다(§8 1-4 【S】0.55). 들숨 대신 가는 균열음이라 몸의
+	// 움찔도 그만큼 작다.
+	if (AIGPlayerCharacter* PlayerCharacter = Player.Get())
+	{
+		if (UIGStressComponent* Stress = PlayerCharacter->GetStress())
+		{
+			Stress->ApplyScare(0.5f);
+		}
+		PlayerCharacter->PlayScareKick(1.0f);
+	}
+	RestoreSightingEntity();
 }
 
 void AIGNightOneBeatDirector::TryFallbackRestore()
@@ -571,9 +606,11 @@ void AIGNightOneBeatDirector::RestoreSightingEntity()
 	}
 	bSightingCompleted = true;
 	GetWorldTimerManager().ClearTimer(SightingFallbackTimer);
+	GetWorldTimerManager().ClearTimer(SightingDescentTimer);
 
 	if (AIGListenerEntity* Listener = Entity.Get())
 	{
+		Listener->SetTouchCaptureSuppressed(false);
 		Listener->SetPatrolPoints(CorridorPatrolPoints);
 		// 공격 티어는 건드리지 않는다. 카메오는 연출이지 실패가 아니다. 순찰
 		// 처음으로 되감지도 않는다 — 밤 한가운데 먼지 흔적과 발자국이 지워지면

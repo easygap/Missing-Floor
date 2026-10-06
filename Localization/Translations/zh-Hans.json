@@ -992,6 +992,7 @@
  "IGMissingFloor,HideUnderBedPrompt": "躲到床底下",
  "IGMissingFloor,HideExitPrompt": "出来",
  "IGMissingFloor,HideUnderDeskPrompt": "躲到桌子底下",
+ "IGMissingFloor,HideBehindSheetPrompt": "躲到塑料布后面",
  "IGMissingFloor,BatteryBuyPrompt": "买一板电池",
  "IGMissingFloor,FireDoorWedgePrompt": "抽掉门挡（长按扶住门慢慢关上）",
  "IGMissingFloor,CaptionFireDoorSlam": "［防火门砰地关上］",

@@ -992,6 +992,7 @@
  "IGMissingFloor,HideUnderBedPrompt": "Hide under the bed",
  "IGMissingFloor,HideExitPrompt": "Get out",
  "IGMissingFloor,HideUnderDeskPrompt": "Hide under the desk",
+ "IGMissingFloor,HideBehindSheetPrompt": "Hide behind the plastic sheet",
  "IGMissingFloor,BatteryBuyPrompt": "Buy a pack of batteries",
  "IGMissingFloor,FireDoorWedgePrompt": "Kick out the doorstop (hold to ease the door shut)",
  "IGMissingFloor,CaptionFireDoorSlam": "[fire door slams shut]",
