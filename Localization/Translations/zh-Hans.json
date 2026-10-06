@@ -1019,7 +1019,7 @@
  "IGMissingFloor,GuestN4Line4": "侑潭，你在哪儿？",
  "IGMissingFloor,YudamGuestAnswered": "只回敲了两下……就没声了。",
  "IGMissingFloor,YudamGuestTellBrother": "……哥哥敲门总是两下，一下。",
- "IGMissingFloor,YudamGuestTellSensor": "门缝里一片漆黑。走廊的感应灯没亮。",
+ "IGMissingFloor,YudamGuestTellFeet": "门底下透着走廊的光，没有脚的影子。",
  "IGMissingFloor,CaptionGuestKeypad": "［门外有人在按门锁密码］",
  "IGMissingFloor,CaptionGuestUnlocked": "［门锁开了］",
  "IGMissingFloor,CaptionGuestLatch": "［门被门闩卡住，咣当作响］",

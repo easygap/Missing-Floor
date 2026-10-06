@@ -1019,7 +1019,7 @@
  "IGMissingFloor,GuestN4Line4": "Yudam, where are you?",
  "IGMissingFloor,YudamGuestAnswered": "Just two knocks back… then nothing.",
  "IGMissingFloor,YudamGuestTellBrother": "…My brother always knocked two, then one.",
- "IGMissingFloor,YudamGuestTellSensor": "No light under the door. The hallway sensor light never came on.",
+ "IGMissingFloor,YudamGuestTellFeet": "There's light under the door. No feet breaking it.",
  "IGMissingFloor,CaptionGuestKeypad": "[someone outside punching in the door lock code]",
  "IGMissingFloor,CaptionGuestUnlocked": "[the door lock unlocks]",
  "IGMissingFloor,CaptionGuestLatch": "[the door catches on the latch and rattles]",

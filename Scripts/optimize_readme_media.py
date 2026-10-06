@@ -81,6 +81,24 @@ STILLS = (
     # 계약이 Docs/Media에 증거로 잡고 있고, 표시용 파생본만 여기서 빠진다.
 )
 
+# 번역 README에 거는 플레이 화면. Run-ReadmeCapture.ps1 -Culture ja처럼 그 언어로
+# 켜고 찍은 것만 있다. 아직 찍지 않은 언어는 건너뛴다. 그 전까지 번역 README는
+# 자막과 조작 안내가 없는 화면만 건다.
+LOCALIZED_CULTURES = ("en", "ja", "zh-Hans", "zh-Hant")
+LOCALIZED_SHOTS = (
+    "game-bedroom", "game-corridor-day", "game-alley", "game-store",
+    "game-corridor-night", "game-booth", "game-bedroom-dawn", "game-alley-dawn",
+)
+
+
+def localized_stills():
+    for culture in LOCALIZED_CULTURES:
+        for shot in LOCALIZED_SHOTS:
+            name = "%s-%s.png" % (shot, culture)
+            if os.path.exists(os.path.join(MEDIA, name)):
+                yield name
+
+
 # GIF는 현재 빌드의 화면을 사용한다. 원본의 화면 비율을 유지한다.
 # 애니메이션 WebP는 브라우저마다 첫 프레임만 보이는 경우가 있어 GIF로 남긴다.
 ANIMATIONS = (
@@ -134,7 +152,7 @@ def main():
         print("ffmpeg를 찾을 수 없습니다. GIF 축소를 건너뜁니다.", file=sys.stderr)
     os.makedirs(OUT, exist_ok=True)
     before = after = 0
-    for name in STILLS:
+    for name in STILLS + tuple(localized_stills()):
         source, target = optimize_still(name)
         source_size, target_size = os.path.getsize(source), os.path.getsize(target)
         before += source_size

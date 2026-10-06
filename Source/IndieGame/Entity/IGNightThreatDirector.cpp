@@ -1097,7 +1097,9 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		{
 			++GuestStep;
 			GuestSpeak(0);
-			// 진짜 사람은 아니라는 표시. 밤4에는 오빠의 노크로, 그 밖에는 문틈의 빛으로 안다.
+			// 진짜 사람은 아니라는 표시. 밤4에는 오빠의 노크로, 그 밖에는 문 밑의 빛으로 안다.
+			// 밤에는 계단 쪽 등 하나만 살아 있고 그 빛이 403호 문 앞까지 닿는다. 사람이 서
+			// 있으면 그 빛이 발에 끊긴다.
 			if (GuestNight == 4)
 			{
 				ThinkOnce(
@@ -1109,7 +1111,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 			{
 				AIGHorrorHUD::PushThought(
 					this,
-					NSLOCTEXT("IGMissingFloor", "YudamGuestTellSensor", "문틈이 깜깜해. 복도 센서등이 안 켜졌어."),
+					NSLOCTEXT("IGMissingFloor", "YudamGuestTellFeet", "문 밑으로 새는 불빛에 발 그림자가 없어."),
 					3.2f);
 			}
 		}

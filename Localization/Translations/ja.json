@@ -1019,7 +1019,7 @@
  "IGMissingFloor,GuestN4Line4": "ユダム、どこにいるんだ。",
  "IGMissingFloor,YudamGuestAnswered": "二回だけ叩き返して……静かになった。",
  "IGMissingFloor,YudamGuestTellBrother": "……お兄ちゃんはいつも、二回、一回って叩いてたのに。",
- "IGMissingFloor,YudamGuestTellSensor": "ドアの隙間が真っ暗。廊下のセンサーライトが点いてない。",
+ "IGMissingFloor,YudamGuestTellFeet": "ドアの下から明かりが漏れてる。足の影がない。",
  "IGMissingFloor,CaptionGuestKeypad": "［外でドアロックの暗証番号を押す音］",
  "IGMissingFloor,CaptionGuestUnlocked": "［ドアロックが開く］",
  "IGMissingFloor,CaptionGuestLatch": "［ドアが掛け金に引っかかってガタつく］",
