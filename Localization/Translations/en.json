@@ -1024,5 +1024,8 @@
  "IGMissingFloor,CaptionGuestUnlocked": "[the door lock unlocks]",
  "IGMissingFloor,CaptionGuestLatch": "[the door catches on the latch and rattles]",
  "IGMissingFloor,YudamGuestNoSteps": "…I didn't hear any footsteps leave.",
- "IGMissingFloor,YudamGuestGone": "It left. The door… shut on its own."
+ "IGMissingFloor,YudamGuestGone": "It left. The door… shut on its own.",
+ "IGMissingFloor,YudamGuestPeephole": "There's no one in the hallway. …But the voice came from right outside the door.",
+ "IGMissingFloor,CaptionGuestWrongCode": "[the door lock beeps: wrong code]",
+ "IGMissingFloor,CaptionGuestKeypadAgain": "[the code is punched in again]"
 }

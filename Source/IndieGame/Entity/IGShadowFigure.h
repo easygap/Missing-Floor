@@ -39,6 +39,14 @@ public:
 	/** 보는 사람이 있는 동안 몸이 미세하게 떤다. */
 	void SetTrembling(bool bInTrembling) { bTrembling = bInTrembling; }
 
+	/**
+	 * 손님의 몸으로 갈아입힌다. 현관문마다 붙어 있던 전단지, 택배 송장, 가스 점검
+	 * 스티커, 임대 안내문이 겹겹이 붙어 사람 꼴을 이룬다. 얼굴 자리에는 배달
+	 * 자석이 붙어 있다. 한 번만 입힌다.
+	 */
+	void DressAsPaper();
+	bool IsPaper() const { return bPaper; }
+
 	float GetGrowth() const { return CurrentGrowth; }
 	/** 가슴 높이. 시선과 손전등이 닿는지 볼 때 쓴다. */
 	FVector GetChestLocation() const;
@@ -66,6 +74,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> ShadowMaterial;
 
+	/** 종이 몸이 입은 낱장들. 런타임에 붙인다. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> Sheets;
+
 	FVector TargetLocation = FVector::ZeroVector;
 	float MoveSpeed = 0.0f;
 	float TargetGrowth = 0.0f;
@@ -74,4 +86,5 @@ private:
 	float TremblePhase = 0.0f;
 	bool bTrembling = false;
 	bool bManifested = false;
+	bool bPaper = false;
 };

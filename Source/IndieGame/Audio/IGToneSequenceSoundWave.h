@@ -157,7 +157,13 @@ public:
 	 * 밖에서 누르는 디지털 도어락. 사람 손 박자로 넷, 확인 하나, 그리고 풀리는
 	 * 「띠리리릭」과 모터·걸림쇠. 우리나라 현관에서 가장 익숙한 소리다.
 	 */
-	static UIGToneSequenceSoundWave* CreateDoorlockCode(UObject* Outer);
+	static UIGToneSequenceSoundWave* CreateDoorlockCode(UObject* Outer, bool bAccepted = true);
+
+	/**
+	 * 철문 너머로 들리는 말소리. 단어는 들리지 않고 높낮이와 박자만 온다.
+	 * 남녀와 나이는 부르는 쪽이 피치로 정한다. 자막이 말을 맡는다.
+	 */
+	static UIGToneSequenceSoundWave* CreateDoorMurmur(UObject* Outer);
 
 	/** Register confirmation beeps with a cash-drawer clunk. */
 	static UIGToneSequenceSoundWave* CreateRegisterSound(UObject* Outer);

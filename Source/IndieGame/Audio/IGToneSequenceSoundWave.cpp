@@ -585,7 +585,7 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateScannerBeep(UObject* O
 	return Wave;
 }
 
-UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDoorlockCode(UObject* Outer)
+UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDoorlockCode(UObject* Outer, const bool bAccepted)
 {
 	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGDoorlockCode"));
 	TArray<FIGToneNote> Notes;
@@ -595,6 +595,15 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDoorlockCode(UObject* 
 	Notes.Add({0.58f, 0.065f, 2349.0f, 0.130f, 0.03f, 0.8f, EIGToneWaveform::SoftSquare});
 	Notes.Add({0.92f, 0.065f, 2349.0f, 0.130f, 0.03f, 0.8f, EIGToneWaveform::SoftSquare});
 	Notes.Add({1.30f, 0.085f, 1976.0f, 0.130f, 0.03f, 0.8f, EIGToneWaveform::SoftSquare});
+	if (!bAccepted)
+	{
+		// 틀린 번호. 낮은 경고음 셋이 빠르게 끊긴다.
+		Notes.Add({1.62f, 0.09f, 880.0f, 0.140f, 0.02f, 0.7f, EIGToneWaveform::SoftSquare});
+		Notes.Add({1.78f, 0.09f, 880.0f, 0.140f, 0.02f, 0.7f, EIGToneWaveform::SoftSquare});
+		Notes.Add({1.94f, 0.09f, 880.0f, 0.140f, 0.02f, 0.7f, EIGToneWaveform::SoftSquare});
+		Wave->ConfigureNotes(MoveTemp(Notes), false);
+		return Wave;
+	}
 	// 풀리는 음. 도·미·솔·도로 오른다.
 	Notes.Add({1.62f, 0.075f, 1047.0f, 0.110f, 0.05f, 1.2f, EIGToneWaveform::Triangle});
 	Notes.Add({1.70f, 0.075f, 1319.0f, 0.110f, 0.05f, 1.2f, EIGToneWaveform::Triangle});
@@ -604,6 +613,32 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDoorlockCode(UObject* 
 	Notes.Add({2.02f, 0.32f, 380.0f, 0.070f, 0.15f, 1.0f, EIGToneWaveform::BandNoise, 0.45f});
 	Notes.Add({2.34f, 0.03f, 1400.0f, 0.090f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
 	Notes.Add({2.34f, 0.08f, 92.0f, 0.110f, 0.01f, 2.4f, EIGToneWaveform::Sine});
+	Wave->ConfigureNotes(MoveTemp(Notes), false);
+	return Wave;
+}
+
+UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDoorMurmur(UObject* Outer)
+{
+	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGDoorMurmur"));
+	TArray<FIGToneNote> Notes;
+	// 철문이 고역을 먹어 1 kHz 아래만 남는다. 음절마다 입 모양(대역 잡음)과 목울림이
+	// 한 쌍이다. 끝에서 올라가는 억양 — 부탁하는 말투다.
+	Notes.Add({0.00f, 0.16f, 520.0f, 0.070f, 0.25f, 1.4f, EIGToneWaveform::BandNoise, 0.55f});
+	Notes.Add({0.00f, 0.16f, 150.0f, 0.050f, 0.20f, 1.4f, EIGToneWaveform::Triangle});
+	Notes.Add({0.22f, 0.14f, 680.0f, 0.065f, 0.25f, 1.4f, EIGToneWaveform::BandNoise, 0.55f});
+	Notes.Add({0.22f, 0.14f, 162.0f, 0.048f, 0.20f, 1.4f, EIGToneWaveform::Triangle});
+	Notes.Add({0.41f, 0.20f, 450.0f, 0.070f, 0.25f, 1.4f, EIGToneWaveform::BandNoise, 0.55f});
+	Notes.Add({0.41f, 0.20f, 141.0f, 0.050f, 0.20f, 1.4f, EIGToneWaveform::Triangle});
+	Notes.Add({0.68f, 0.15f, 610.0f, 0.062f, 0.25f, 1.4f, EIGToneWaveform::BandNoise, 0.55f});
+	Notes.Add({0.68f, 0.15f, 155.0f, 0.046f, 0.20f, 1.4f, EIGToneWaveform::Triangle});
+	Notes.Add({0.90f, 0.22f, 540.0f, 0.068f, 0.25f, 1.4f, EIGToneWaveform::BandNoise, 0.55f});
+	Notes.Add({0.90f, 0.22f, 146.0f, 0.050f, 0.20f, 1.4f, EIGToneWaveform::Triangle});
+	Notes.Add({1.40f, 0.14f, 700.0f, 0.064f, 0.25f, 1.4f, EIGToneWaveform::BandNoise, 0.55f});
+	Notes.Add({1.40f, 0.14f, 158.0f, 0.047f, 0.20f, 1.4f, EIGToneWaveform::Triangle});
+	Notes.Add({1.60f, 0.18f, 480.0f, 0.070f, 0.25f, 1.4f, EIGToneWaveform::BandNoise, 0.55f});
+	Notes.Add({1.60f, 0.18f, 143.0f, 0.050f, 0.20f, 1.4f, EIGToneWaveform::Triangle});
+	Notes.Add({1.84f, 0.28f, 590.0f, 0.066f, 0.30f, 1.2f, EIGToneWaveform::BandNoise, 0.55f});
+	Notes.Add({1.84f, 0.28f, 176.0f, 0.050f, 0.25f, 1.2f, EIGToneWaveform::Triangle});
 	Wave->ConfigureNotes(MoveTemp(Notes), false);
 	return Wave;
 }

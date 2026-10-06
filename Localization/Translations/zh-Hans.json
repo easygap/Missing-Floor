@@ -1024,5 +1024,8 @@
  "IGMissingFloor,CaptionGuestUnlocked": "［门锁开了］",
  "IGMissingFloor,CaptionGuestLatch": "［门被门闩卡住，咣当作响］",
  "IGMissingFloor,YudamGuestNoSteps": "……没听到离开的脚步声。",
- "IGMissingFloor,YudamGuestGone": "它走了。门……自己关上了。"
+ "IGMissingFloor,YudamGuestGone": "它走了。门……自己关上了。",
+ "IGMissingFloor,YudamGuestPeephole": "走廊里没有人。……可声音明明就在门口。",
+ "IGMissingFloor,CaptionGuestWrongCode": "［密码错误的提示音］",
+ "IGMissingFloor,CaptionGuestKeypadAgain": "［又按了一遍门锁密码］"
 }

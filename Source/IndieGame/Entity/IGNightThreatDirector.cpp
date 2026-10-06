@@ -9,6 +9,7 @@
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGMissingFloorEpilogueDirector.h"
+#include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
 #include "Entity/IGNightLoopDirector.h"
@@ -70,9 +71,12 @@ namespace IGNightThreat
 	constexpr float LineOneAt = 2.4f;
 	constexpr float KnockTwoAt = 6.0f;
 	constexpr float LineTwoAt = 8.2f;
+	// 처음 누른 번호는 틀린다. 경고음 뒤 다시 누를 때까지가 걸쇠를 걸 마지막 틈이다.
 	constexpr float KeypadAt = 12.0f;
-	constexpr float UnlockedAt = 13.9f;
-	constexpr float DoorAt = 14.4f;
+	constexpr float WrongCodeAt = 13.7f;
+	constexpr float KeypadAgainAt = 16.0f;
+	constexpr float UnlockedAt = 17.9f;
+	constexpr float DoorAt = 18.4f;
 	// 걸쇠에 걸린 뒤.
 	constexpr float LatchLineDelay = 1.2f;
 	constexpr float LatchLeaveDelay = 4.6f;
@@ -86,8 +90,12 @@ namespace IGNightThreat
 	constexpr float SearchHoldSeconds = 5.0f;
 	// 보이는 사람을 쫓다 이보다 멀어지면 포기한다.
 	constexpr float GiveUpDistance = 900.0f;
-	// 손님의 몸 크기(0~1). 1.75 m 남짓, 사람만 하다.
-	constexpr float GuestGrowth = 0.37f;
+	// 손님의 몸 크기(0~1). 2.1 m, 문틀만 하다. 고개를 숙이고 들어온다.
+	constexpr float GuestGrowth = 0.55f;
+	// 철문 너머 말소리의 높낮이. 밤2 나린(젊은 여자), 밤3 배달 기사, 밤4 오빠.
+	constexpr float MurmurPitchByNight[] = {1.0f, 1.0f, 1.32f, 0.92f, 0.86f};
+	// 들어와 움직이는 동안 종이가 스치는 간격.
+	constexpr float RustleSeconds = 0.6f;
 }
 
 AIGNightThreatDirector::AIGNightThreatDirector()
@@ -126,6 +134,10 @@ void AIGNightThreatDirector::Configure(
 	{
 		Guest = World->SpawnActor<AIGShadowFigure>(
 			AIGShadowFigure::StaticClass(), FTransform::Identity, FigureParameters);
+		if (Guest)
+		{
+			Guest->DressAsPaper();
+		}
 	}
 	if (Eoduksini && !EoduksiniBreath)
 	{
@@ -762,6 +774,8 @@ void AIGNightThreatDirector::StartGuest()
 	GuestStage = EIGGuestStage::Knocking;
 	GuestElapsed = 0.0f;
 	GuestStep = 0;
+	GuestRustleSeconds = 0.0f;
+	SetPeepholeOffered(true);
 	PlayerDoorKnockTimes.Reset();
 	bGuestAnswered = false;
 	bGuestHeardPlayer = false;
@@ -839,6 +853,68 @@ void AIGNightThreatDirector::GuestSpeak(const int32 LineIndex)
 		break;
 	}
 	AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, 3.2f, EIGDialoguePriority::Story);
+	// 말은 자막이 맡고, 귀에는 철문 너머의 웅얼거림만 온다. 들어온 뒤에는 방 안에서.
+	const bool bInside = GuestStage == EIGGuestStage::Inside && Guest;
+	IGAudio::SpawnOneShotAt(
+		this,
+		UIGToneSequenceSoundWave::CreateDoorMurmur(this),
+		bInside ? Guest->GetChestLocation() + FVector(0.0f, 0.0f, 40.0f) : GetDoorOutside() + FVector(0.0f, 0.0f, 20.0f),
+		bInside ? 0.45f : 0.6f,
+		IGNightThreat::MurmurPitchByNight[FMath::Clamp(GuestNight, 0, 4)],
+		140.0f,
+		1100.0f,
+		EIGAudioBus::World);
+}
+
+void AIGNightThreatDirector::SetPeepholeOffered(const bool bOffered)
+{
+	// 밤2 첫 대면의 문구멍을 빌려 쓴다. 그 비트의 문구멍 장면이 이미 지났을 때만이다.
+	// 아니면 그쪽 처리기가 밤2 장면을 다시 튼다.
+	if (!bOffered)
+	{
+		if (AIGMissingFloorEvidence* Hole = Peephole.Get())
+		{
+			Hole->OnExamined.Remove(PeepholeHandle);
+			Hole->SetInteractionEnabled(false);
+		}
+		Peephole.Reset();
+		PeepholeHandle.Reset();
+		return;
+	}
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative || !Narrative->HasBeatPlayed(FName(TEXT("Night2.Peephole"))))
+	{
+		return;
+	}
+	for (TActorIterator<AIGMissingFloorNightTwoBeatDirector> It(GetWorld()); It; ++It)
+	{
+		if (AIGMissingFloorEvidence* Hole = It->GetPeephole())
+		{
+			Peephole = Hole;
+			PeepholeHandle = Hole->OnExamined.AddUObject(this, &AIGNightThreatDirector::HandlePeepholeExamined);
+			Hole->SetInteractionEnabled(true);
+		}
+		break;
+	}
+}
+
+void AIGNightThreatDirector::HandlePeepholeExamined(AIGMissingFloorEvidence* Evidence)
+{
+	if (GuestStage != EIGGuestStage::Knocking && GuestStage != EIGGuestStage::Keypad)
+	{
+		return;
+	}
+	AIGHorrorHUD::PushThought(
+		this,
+		NSLOCTEXT("IGMissingFloor", "YudamGuestPeephole", "복도에 아무도 없어. …목소리는 문 바로 앞에서 났는데."),
+		3.4f);
+	if (AIGPlayerCharacter* Player = PlayerPawn.Get())
+	{
+		if (UIGStressComponent* Stress = Player->GetStress())
+		{
+			Stress->ApplyScare(0.3f);
+		}
+	}
 }
 
 void AIGNightThreatDirector::RegisterPlayerDoorKnock(const AActor* KnockedActor)
@@ -925,6 +1001,7 @@ void AIGNightThreatDirector::EndGuest(const bool bCloseDoor)
 	GuestStage = EIGGuestStage::Spent;
 	bGuestCapturing = false;
 	GuestCaptureSeconds = -1.0;
+	SetPeepholeOffered(false);
 }
 
 void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
@@ -1052,7 +1129,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 			GuestStage = EIGGuestStage::Keypad;
 			IGAudio::SpawnOneShotAt(
 				this,
-				UIGToneSequenceSoundWave::CreateDoorlockCode(this),
+				UIGToneSequenceSoundWave::CreateDoorlockCode(this, false),
 				GetDoorOutside() + FVector(0.0f, 0.0f, -20.0f),
 				0.75f,
 				1.0f,
@@ -1069,7 +1146,34 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 				Stress->ApplyScare(0.4f);
 			}
 		}
-		else if (GuestStep == 5 && GuestElapsed >= UnlockedAt)
+		else if (GuestStep == 5 && GuestElapsed >= WrongCodeAt)
+		{
+			++GuestStep;
+			AIGHorrorHUD::PushAudioCaptionAt(
+				this,
+				NSLOCTEXT("IGMissingFloor", "CaptionGuestWrongCode", "[번호가 틀렸다는 경고음]"),
+				1.8f,
+				GetDoorOutside());
+		}
+		else if (GuestStep == 6 && GuestElapsed >= KeypadAgainAt)
+		{
+			++GuestStep;
+			IGAudio::SpawnOneShotAt(
+				this,
+				UIGToneSequenceSoundWave::CreateDoorlockCode(this, true),
+				GetDoorOutside() + FVector(0.0f, 0.0f, -20.0f),
+				0.75f,
+				1.0f,
+				140.0f,
+				1300.0f,
+				EIGAudioBus::World);
+			AIGHorrorHUD::PushAudioCaptionAt(
+				this,
+				NSLOCTEXT("IGMissingFloor", "CaptionGuestKeypadAgain", "[도어락 번호를 다시 누른다]"),
+				1.8f,
+				GetDoorOutside());
+		}
+		else if (GuestStep == 7 && GuestElapsed >= UnlockedAt)
 		{
 			++GuestStep;
 			AIGHorrorHUD::PushAudioCaptionAt(
@@ -1078,7 +1182,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 				1.6f,
 				GetDoorOutside());
 		}
-		else if (GuestStep == 6 && GuestElapsed >= DoorAt)
+		else if (GuestStep == 8 && GuestElapsed >= DoorAt)
 		{
 			++GuestStep;
 			if (Door->IsLatched())
@@ -1127,12 +1231,12 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 	}
 
 	case EIGGuestStage::CaughtOnLatch:
-		if (GuestStep == 7 && GuestElapsed >= LatchLineDelay)
+		if (GuestStep == 9 && GuestElapsed >= LatchLineDelay)
 		{
 			++GuestStep;
 			GuestSpeak(2);
 		}
-		else if (GuestStep == 8 && GuestElapsed >= LatchLeaveDelay)
+		else if (GuestStep == 10 && GuestElapsed >= LatchLeaveDelay)
 		{
 			ThinkOnce(
 				*FString::Printf(TEXT("Threat.Guest.Left.N%d"), GuestNight),
@@ -1151,6 +1255,25 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 			return;
 		}
 		const FVector BodyLocation = Body->GetActorLocation();
+		// 움직이는 동안 몸의 종이가 스친다. 발소리는 없다.
+		GuestRustleSeconds += DeltaSeconds;
+		if (GuestRustleSeconds >= RustleSeconds
+			&& FVector::DistSquared2D(BodyLocation, LastGuestLocation) > FMath::Square(4.0f))
+		{
+			GuestRustleSeconds = 0.0f;
+			IGAudio::SpawnOneShotAt(
+				this,
+				IGAudio::SampleVariantOr(
+					TEXT("Paper_Turn"), 2, static_cast<uint32>(GuestElapsed * 977.0f),
+					[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreatePickupRustle(this); }),
+				BodyLocation + FVector(0.0f, 0.0f, 110.0f),
+				0.35f,
+				FMath::FRandRange(0.82f, 0.96f),
+				120.0f,
+				900.0f,
+				EIGAudioBus::World);
+		}
+		LastGuestLocation = BodyLocation;
 		const FVector PlayerFloor(Player->GetActorLocation().X, Player->GetActorLocation().Y, BodyLocation.Z);
 		const float Distance = FVector::Dist2D(PlayerFloor, BodyLocation);
 		Body->SetTargetYaw((PlayerFloor - BodyLocation).Rotation().Yaw);
@@ -1184,7 +1307,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		}
 		else if (GuestElapsed < WalkIn + SearchHoldSeconds)
 		{
-			if (GuestStep == 7)
+			if (GuestStep == 9)
 			{
 				++GuestStep;
 				GuestSpeak(3);

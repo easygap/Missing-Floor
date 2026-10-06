@@ -5,6 +5,7 @@
 #include "IGNightThreatDirector.generated.h"
 
 class AIGListenerEntity;
+class AIGMissingFloorEvidence;
 class AIGNightLoopDirector;
 class AIGNightPhaseDirector;
 class AIGPlayerCharacter;
@@ -100,6 +101,9 @@ private:
 	void OpenDoorForGuest();
 	void BeginGuestCapture();
 	void EndGuest(bool bCloseDoor);
+	/** 문구멍을 손님에게 빌려 쓴다(밤2 비트가 끝난 뒤에만). */
+	void SetPeepholeOffered(bool bOffered);
+	void HandlePeepholeExamined(AIGMissingFloorEvidence* Evidence);
 	bool IsPlayerInHome() const;
 	FVector GetDoorOutside() const;
 	void HandleNoise(const FIGNoiseEvent& Event);
@@ -119,6 +123,8 @@ private:
 	TWeakObjectPtr<AIGNightLoopDirector> NightLoop;
 	TWeakObjectPtr<AIGNightPhaseDirector> NightPhase;
 	TWeakObjectPtr<AIGSwingDoor> HomeDoor;
+	TWeakObjectPtr<AIGMissingFloorEvidence> Peephole;
+	FDelegateHandle PeepholeHandle;
 
 	FTimerHandle UpdateTimer;
 	FDelegateHandle NoiseHandle;
@@ -144,4 +150,6 @@ private:
 	bool bGuestHeardPlayer = false;
 	bool bGuestCapturing = false;
 	double GuestCaptureSeconds = -1.0;
+	float GuestRustleSeconds = 0.0f;
+	FVector LastGuestLocation = FVector::ZeroVector;
 };

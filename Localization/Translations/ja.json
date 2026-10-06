@@ -1024,5 +1024,8 @@
  "IGMissingFloor,CaptionGuestUnlocked": "［ドアロックが開く］",
  "IGMissingFloor,CaptionGuestLatch": "［ドアが掛け金に引っかかってガタつく］",
  "IGMissingFloor,YudamGuestNoSteps": "……立ち去る足音がしなかった。",
- "IGMissingFloor,YudamGuestGone": "出ていった。ドアが……勝手に閉まった。"
+ "IGMissingFloor,YudamGuestGone": "出ていった。ドアが……勝手に閉まった。",
+ "IGMissingFloor,YudamGuestPeephole": "廊下には誰もいない。……声はドアのすぐ前からしたのに。",
+ "IGMissingFloor,CaptionGuestWrongCode": "［番号違いの警告音］",
+ "IGMissingFloor,CaptionGuestKeypadAgain": "［もう一度ドアロックの番号を押す］"
 }
