@@ -80,6 +80,12 @@ public:
 	float GetCaptureImpactAlpha() const { return CaptureImpactAlpha; }
 	/** 0~1. 끊기기 직전까지 조여 오는 시야. */
 	float GetCaptureTunnelAlpha() const { return CaptureTunnelAlpha; }
+	/**
+	 * 0~1. 어둠 속에 선 것이 커지는 동안 화면 가장자리가 먹히는 정도. 괴이 감독이
+	 * 목표를 주고, 틱에서 천천히 따라간다. 사라지면 0을 준다.
+	 */
+	void SetThreatVignetteTarget(const float Alpha) { ThreatVignetteTarget = FMath::Clamp(Alpha, 0.0f, 1.0f); }
+	float GetThreatVignetteAlpha() const { return ThreatVignetteAlpha; }
 	/** 이번 포획에서 화면이 끊기는 시각(초). 괴물은 이 순간에 얼굴이 닿도록 달려든다. 음수면 아직 모른다. */
 	float GetCaptureCutSeconds() const { return CaptureCutSeconds; }
 	void SetCaptureThreat(class AIGListenerEntity* Threat);
@@ -326,6 +332,8 @@ private:
 	float CaptureFovScale = 1.0f;
 	float CaptureImpactAlpha = 0.0f;
 	float CaptureTunnelAlpha = 0.0f;
+	float ThreatVignetteTarget = 0.0f;
+	float ThreatVignetteAlpha = 0.0f;
 	double LastKnockInputSeconds = -1.0;
 	double KnockInputLockedUntil = -1.0;
 	int32 LastStepIndex = 0;

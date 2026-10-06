@@ -367,6 +367,8 @@ void AIGPlayerCharacter::Tick(const float DeltaSeconds)
 		StressComponent->SetExertion(BreathLoad);
 	}
 	UpdateCaptureFeedback(DeltaSeconds);
+	// 2초쯤 걸려 조여 오고, 사라진 뒤에도 그만큼 걸려 풀린다. 한 번에 꺼지면 깜박임으로 읽힌다.
+	ThreatVignetteAlpha = FMath::FInterpTo(ThreatVignetteAlpha, ThreatVignetteTarget, DeltaSeconds, 1.6f);
 	UpdateChaseHaptic(DeltaSeconds);
 	UpdateCameraMotion(DeltaSeconds);
 	UpdateCarriedItem(DeltaSeconds);

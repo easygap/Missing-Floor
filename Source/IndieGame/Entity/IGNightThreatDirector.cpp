@@ -169,6 +169,12 @@ void AIGNightThreatDirector::Configure(
 void AIGNightThreatDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(UpdateTimer);
+	// 빌려 쓴 문구멍과 화면 가장자리는 돌려놓고 간다.
+	SetPeepholeOffered(false);
+	if (AIGPlayerCharacter* Player = PlayerPawn.Get())
+	{
+		Player->SetThreatVignetteTarget(0.0f);
+	}
 	// 두 몸은 이 디렉터가 세웠다. 스테이지를 다시 세울 때 남아 있으면 안 된다.
 	for (AIGShadowFigure* Figure : {Eoduksini.Get(), Guest.Get()})
 	{
@@ -500,6 +506,8 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 		}
 	}
 	Figure->SetTargetGrowth(EoduksiniGrowth);
+	// 커지는 만큼 화면 가장자리가 먹힌다. 눈을 돌리면 절반으로 풀린다.
+	Player->SetThreatVignetteTarget(EoduksiniGrowth * (bLooked ? 1.0f : 0.5f));
 	const FVector ToPlayer = Player->GetActorLocation() - Figure->GetActorLocation();
 	Figure->SetTargetYaw(ToPlayer.Rotation().Yaw);
 	if (EoduksiniBreath)
@@ -681,6 +689,10 @@ void AIGNightThreatDirector::DismissEoduksini(const bool bSilently)
 	if (EoduksiniBreath)
 	{
 		EoduksiniBreath->Stop();
+	}
+	if (AIGPlayerCharacter* Player = PlayerPawn.Get())
+	{
+		Player->SetThreatVignetteTarget(0.0f);
 	}
 	EoduksiniGrowth = 0.0f;
 	EoduksiniUnseenSeconds = 0.0f;
