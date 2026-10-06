@@ -1029,5 +1029,16 @@
  "IGMissingFloor,YudamGuestPeephole": "There's no one in the hallway. …But the voice came from right outside the door.",
  "IGMissingFloor,CaptionGuestWrongCode": "[the door lock beeps: wrong code]",
  "IGMissingFloor,CaptionGuestKeypadAgain": "[the code is punched in again]",
- "IGMissingFloor,CaptionGuestPaper": "[paper being pushed in under the door]"
+ "IGMissingFloor,CaptionGuestPaper": "[paper being pushed in under the door]",
+ "IGMissingFloor,CaptionMokDoor": "[the management office door opens]",
+ "IGMissingFloor,CaptionMokSlippers": "[slippers shuffling]",
+ "IGMissingFloor,CaptionMokKeys": "[a ring of keys jingling]",
+ "IGMissingFloor,CaptionMokStopped": "[the jingling keys stop]",
+ "IGMissingFloor,CaptionMokQuicken": "[the footsteps speed up]",
+ "IGMissingFloor,CaptionMokHurries": "[slippers hurrying away]",
+ "IGMissingFloor,CaptionMokGrab": "[a hand snatches a wrist]",
+ "IGMissingFloor,YudamMokFirstHeard": "That's the building manager. Out with a flashlight at this hour.",
+ "IGMissingFloor,YudamMokTorchWarning": "If I step into that light, he'll see me.",
+ "IGMissingFloor,YudamMokHeardKnock": "He heard it too. That sound just now.",
+ "IGMissingFloor,YudamMokAvoidsFourth": "He won't set foot in the fourth-floor hallway."
 }

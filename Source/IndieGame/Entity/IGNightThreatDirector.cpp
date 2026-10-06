@@ -13,6 +13,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
+#include "Entity/IGManagerPatrol.h"
 #include "Entity/IGMissingFloorEpilogueDirector.h"
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
@@ -358,6 +359,11 @@ bool AIGNightThreatDirector::IsQuietWindow() const
 		{
 			return false;
 		}
+	}
+	// 밤3의 관리인이 쫓거나 찾는 동안에도 끼어들지 않는다. 한 번에 하나다.
+	if (AIGManagerPatrol::IsAnyPursuing(World))
+	{
+		return false;
 	}
 	// 밤4 마지막 대치(가면)는 결말 C가 혼자 맡는다. 거기에 다른 괴이의 침대 리셋이
 	// 끼어들면 타임라인 둘이 부딪친다.

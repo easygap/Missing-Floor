@@ -814,8 +814,10 @@ bool AIGMissingFloorNightTwoBeatDirector::IsPlayerOutsideBooth() const
 		return false;
 	}
 	const FVector Where = PlayerCharacter->GetActorLocation();
-	// 1층에서 관리실 남쪽 선을 넘었을 때만. 4층에서의 Y는 아무 의미가 없다.
-	return Where.Z < IGNightTwo::FourthFloorZ * 0.5f
+	// 1층에서 관리실 남쪽 선을 넘었을 때만. 다른 층에서의 Y는 아무 의미가 없다.
+	// 2층 바닥(4층의 3분의 1)부터는 1층이 아니다 — 계단이 이어진 뒤로 2층 복도의
+	// Y도 이 선 남쪽이다.
+	return Where.Z < IGNightTwo::FourthFloorZ / 3.0f
 		&& Where.Y < IGNightTwo::BoothExitY;
 }
 
@@ -827,7 +829,7 @@ bool AIGMissingFloorNightTwoBeatDirector::IsPlayerInsideBooth() const
 		return false;
 	}
 	const FVector Where = PlayerCharacter->GetActorLocation();
-	return Where.Z < IGNightTwo::FourthFloorZ * 0.5f
+	return Where.Z < IGNightTwo::FourthFloorZ / 3.0f
 		&& Where.Y >= IGNightTwo::BoothExitY
 		&& Where.Y <= IGNightTwo::BoothNorthY
 		&& FVector::Dist2D(Where, IGNightTwo::BoothDeskLocation) <= IGNightTwo::BoothDeskReach;

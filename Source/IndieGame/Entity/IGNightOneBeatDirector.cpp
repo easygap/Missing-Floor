@@ -475,10 +475,9 @@ bool AIGNightOneBeatDirector::HasPlayerDescendedPastLanding() const
 	{
 		return false;
 	}
-	// 계단탑 안(X -575..-355, Y -375..105)에서 반 층 참보다 두 단 아래.
+	// 계단탑 안에서 반 층 참보다 두 단 아래.
 	const FVector Where = PlayerCharacter->GetActorLocation();
-	return Where.X > -575.0f && Where.X < -355.0f
-		&& Where.Y > -375.0f && Where.Y < 105.0f
+	return AIGPrologueWorldScene::IsInsideStairCore(Where)
 		&& Where.Z < IGNightOne::SightingDescentZ;
 }
 

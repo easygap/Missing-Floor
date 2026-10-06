@@ -42,6 +42,7 @@
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
 #include "Entity/IGMissingFloorNightFourDirector.h"
+#include "Entity/IGManagerPatrol.h"
 #include "Entity/IGNightThreatDirector.h"
 #include "Entity/IGMissingFloorMercyDirector.h"
 #include "Entity/IGMissingFloorNightThreeDirector.h"
@@ -699,7 +700,7 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 		Entity.Get(), NightLoop.Get(), NightPhase.Get(), PuzzleOne.Get(),
 		NightOneBeats.Get(), NightTwoBeats.Get(), PuzzleTwo.Get(),
 		NightThree.Get(), Mercy.Get(), FifthDawn.Get(), Epilogue.Get(),
-		NightFour.Get(), NightThreats.Get(), SleepTarget.Get(), Unit401Door.Get(),
+		NightFour.Get(), NightThreats.Get(), ManagerPatrol.Get(), SleepTarget.Get(), Unit401Door.Get(),
 		UsedListingNote.Get(), NeighborhoodDeliveryNote.Get(),
 		// SpawnOptionalWitnesses가 세우는 다섯. 지금은 마지막 실패 경로보다
 		// 뒤에 있어 새어 나갈 수 없지만, 그 사이에 실패가 하나 생기면 이름이
@@ -731,6 +732,7 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 	Epilogue = nullptr;
 	NightFour = nullptr;
 	NightThreats = nullptr;
+	ManagerPatrol = nullptr;
 	SleepTarget = nullptr;
 	Unit401Door = nullptr;
 	UsedListingNote = nullptr;
@@ -1169,6 +1171,24 @@ bool AIGListenerGreyboxDirector::SetupStage()
 			Entity,
 			NightLoop,
 			NightPhase);
+	}
+
+	// 밤3에 계단을 도는 관리인. 진행을 잠그지 않으므로 실패해도 스테이지는 유효하다.
+	FActorSpawnParameters ManagerParameters;
+	ManagerParameters.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ManagerParameters.Name = TEXT("MissingFloorManagerPatrol");
+	ManagerPatrol = World->SpawnActor<AIGManagerPatrol>(
+		AIGManagerPatrol::StaticClass(),
+		FTransform::Identity,
+		ManagerParameters);
+	if (ManagerPatrol)
+	{
+		ManagerPatrol->Configure(
+			const_cast<AIGPrologueWorldScene*>(Scene),
+			PlayerCharacter,
+			Entity,
+			NightLoop);
 	}
 
 	// Night goals: each puzzle announces itself once; the hour decides

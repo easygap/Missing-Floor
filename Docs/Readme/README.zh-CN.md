@@ -52,7 +52,7 @@
 
 ## 下载
 
-目前提供的是试玩版 0.2.4。躲藏、门闩和防火门、手电筒电池，以及除了楼上的人以外、夜里会来的其他东西，会在下一个试玩版加入。
+目前提供的是试玩版 0.2.4。躲藏、门闩和防火门、手电筒电池，以及除了楼上的人以外、夜里会来的其他东西，会在下一个试玩版加入。二楼和三楼也会在那时开放。
 
 1. 下载 [Windows 版 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip)。
 2. 完整解压后运行`MissingFloor.exe`。同一文件夹里的`Engine`和`IndieGame`缺一不可。
