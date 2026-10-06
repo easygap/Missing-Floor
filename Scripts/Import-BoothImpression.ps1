@@ -12,7 +12,7 @@ Copy-Item -LiteralPath (Join-Path $boothRoot 'Content/SourceArt/UtilityPrints/Co
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'import_booth_impression.py') -Destination (Join-Path $boothStage 'Scripts') -Force
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath $boothProject -Commandlet
 $log = Join-Path $boothRoot 'Saved/Logs/BoothImpressionImport.log'
-& $editor $boothProject -unattended -nop4 -nosplash -nullrhi -nosound "-abslog=$log" "-ExecutePythonScript=$boothStage/Scripts/import_booth_impression.py" | Out-Null
+& $editor $boothProject -unattended -nop4 -nosplash -nullrhi -nosound -RenderOffscreen "-abslog=$log" "-ExecutePythonScript=$boothStage/Scripts/import_booth_impression.py" | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'BOOTH_IMPRESSION PASS') -or
     (Select-String -LiteralPath $log -Pattern 'LogPython: Error|Failed to compile Material')) { throw "접수철 재질 반입 실패: $log" }
 foreach ($file in @('Materials/M_ComplaintImpression.uasset','Textures/T_ComplaintRubbing_D.uasset','Textures/T_ComplaintImpression_M.uasset')) {

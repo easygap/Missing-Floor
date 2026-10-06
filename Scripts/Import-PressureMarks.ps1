@@ -16,7 +16,7 @@ foreach ($name in @('import_pressure_marks.py', 'create_textured_materials.py', 
 }
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath $pressureProject -Commandlet
 $log = Join-Path $pressureRoot 'Saved/Logs/PressureMarks.log'
-& $editor $pressureProject -unattended -nop4 -nosplash -nullrhi -nosound "-abslog=$log" "-ExecutePythonScript=$pressureStage/Scripts/import_pressure_marks.py" | Out-Null
+& $editor $pressureProject -unattended -nop4 -nosplash -nullrhi -nosound -RenderOffscreen "-abslog=$log" "-ExecutePythonScript=$pressureStage/Scripts/import_pressure_marks.py" | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'PRESSURE_MARKS PASS') -or
     (Select-String -LiteralPath $log -Pattern 'LogPython: Error|Failed to compile Material')) { throw "압흔 반입 실패: $log" }
 foreach ($file in @('Materials/M_AnnexPressure.uasset', 'Textures/T_AnnexPressure_M.uasset')) {

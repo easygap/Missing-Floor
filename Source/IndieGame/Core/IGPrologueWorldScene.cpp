@@ -34,9 +34,13 @@
 #include "GameFramework/PlayerController.h"
 #include "IndieGame.h"
 #include "Kismet/GameplayStatics.h"
+#include "Interaction/IGBatteryPickup.h"
 #include "Interaction/IGCheckoutCounter.h"
+#include "Interaction/IGDoorLatch.h"
 #include "Interaction/IGElevator.h"
+#include "Interaction/IGFireDoorWedge.h"
 #include "Interaction/IGFridge.h"
+#include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGInspectable.h"
 #include "Interaction/IGInteractable.h"
 #include "Interaction/IGInteractableActor.h"
@@ -1548,7 +1552,7 @@ void AIGPrologueWorldScene::InitializePrologue()
 	RefreshPurchaseProfilePresentation();
 	CreateAmbience();
 
-	// 평범한 골목 생활은 이야기가 기대는 기준선이다. 승용차와 배달 오토바이,
+	// 평범한 골목 생활은 이야기가 기대는 기준선이다. 샛길로 드나드는 배달 오토바이,
 	// 바람에 날리는 잎, 시야 끝을 스치는 길고양이가 그 몫을 한다.
 	FActorSpawnParameters NeighborhoodParameters;
 	NeighborhoodParameters.Owner = this;
@@ -6336,6 +6340,140 @@ void AIGPrologueWorldScene::SpawnInteractables()
 		FVector(2450, -457, 116), FVector(35, 95, 110),
 		TEXT("State.CH01.Morning.EnteredStore"),
 		FText::GetEmpty());
+
+	SpawnShelterProps(SpawnParameters);
+}
+
+void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& SpawnParameters)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// 숨는 자리 셋. 좌표는 각 가구의 앞면 가운데 바닥이고, 자리의 +X가 밖을 본다.
+	auto SpawnHidingSpot = [&](const FVector& FrontCenter, const float Yaw) -> AIGHidingSpot*
+	{
+		return World->SpawnActor<AIGHidingSpot>(
+			AIGHidingSpot::StaticClass(),
+			FTransform(FRotator(0.0f, Yaw, 0.0f), FrontCenter),
+			SpawnParameters);
+	};
+	// 403호 장롱(SM_Wardrobe, 앞면 X -146.4). 눈은 문짝 14 cm 뒤, 서서 보는 높이.
+	// 앞은 의자와 협탁 사이가 좁아서 나오는 자리를 의자 동쪽으로 뺀다.
+	if (AIGHidingSpot* Wardrobe = SpawnHidingSpot(FVector(-146.4f, -104.0f, 900.0f), 0.0f))
+	{
+		Wardrobe->Configure(
+			EIGHidingView::DoorGap,
+			FVector(-14.0f, 0.0f, 158.0f),
+			FVector(106.4f, 24.0f, 0.0f),
+			FVector(2.5f, 0.0f, 90.0f),
+			FVector(1.5f, 38.0f, 86.0f),
+			35.0f,
+			15.0f,
+			false);
+	}
+	// 403호 침대 밑. 침대 틀과 이불은 시선 추적을 통과시키므로 상자는 침대 동쪽 옆면
+	// 아래쪽 30 cm에만 둔다. 위쪽을 보면 「침대에 눕기」가 잡힌다.
+	if (AIGHidingSpot* UnderBed = SpawnHidingSpot(FVector(-93.2f, 98.0f, 900.0f), 0.0f))
+	{
+		UnderBed->Configure(
+			EIGHidingView::UnderBed,
+			FVector(-40.0f, 0.0f, 16.0f),
+			FVector(48.0f, 30.0f, 0.0f),
+			FVector(2.5f, 0.0f, 17.0f),
+			FVector(1.5f, 88.0f, 16.0f),
+			50.0f,
+			12.0f,
+			true);
+	}
+	// 1층 관리실 책상 밑. 상판 아래 73 cm가 비어 있다. 책상 앞면은 남쪽(-Y)을 본다.
+	if (AIGHidingSpot* BoothDesk = SpawnHidingSpot(FVector(160.0f, -137.5f, 0.0f), -90.0f))
+	{
+		BoothDesk->Configure(
+			EIGHidingView::UnderBed,
+			FVector(-24.0f, 0.0f, 50.0f),
+			FVector(62.0f, 0.0f, 0.0f),
+			FVector(2.5f, 0.0f, 36.0f),
+			FVector(1.5f, 50.0f, 34.0f),
+			45.0f,
+			15.0f,
+			true);
+		BoothDesk->SetInteractionPrompt(
+			NSLOCTEXT("IGMissingFloor", "HideUnderDeskPrompt", "책상 밑에 숨기"));
+	}
+
+	// 손전등 건전지 셋. 9×6×1.6 cm 낱개 포장이고, 손전등 빛에 잘 보이게 노란 카드다.
+	// 403호는 현관 신발장 위 손전등 옆(신발장 윗면 Z 1013).
+	AIGBatteryPickup* HomeBattery = World->SpawnActor<AIGBatteryPickup>(
+		AIGBatteryPickup::StaticClass(),
+		FTransform(FRotator(0.0f, 12.0f, 0.0f), FVector(2.0f, -197.0f, 1013.8f)),
+		SpawnParameters);
+	if (HomeBattery)
+	{
+		HomeBattery->ConfigurePrototypeVisuals(
+			CubeMesh, SnackYellowMaterial, FVector(0.09f, 0.06f, 0.016f), false);
+	}
+	// 관리실 책상 상판(Z 76)의 빈 자리.
+	AIGBatteryPickup* BoothBattery = World->SpawnActor<AIGBatteryPickup>(
+		AIGBatteryPickup::StaticClass(),
+		FTransform(FRotator(0.0f, -21.0f, 0.0f), FVector(145.0f, -127.0f, 76.8f)),
+		SpawnParameters);
+	if (BoothBattery)
+	{
+		BoothBattery->ConfigurePrototypeVisuals(
+			CubeMesh, SnackYellowMaterial, FVector(0.09f, 0.06f, 0.016f), false);
+	}
+	// 편의점 계산대(윗면 Z 99), 온장고와 포스 사이. 낮에 산다.
+	AIGBatteryPickup* StoreBattery = World->SpawnActor<AIGBatteryPickup>(
+		AIGBatteryPickup::StaticClass(),
+		FTransform(FRotator(0.0f, 4.0f, 0.0f), FVector(2556.0f, -200.0f, 99.8f)),
+		SpawnParameters);
+	if (StoreBattery)
+	{
+		StoreBattery->ConfigurePrototypeVisuals(
+			CubeMesh, SnackYellowMaterial, FVector(0.09f, 0.06f, 0.016f), false);
+		StoreBattery->SetInteractionPrompt(
+			NSLOCTEXT("IGMissingFloor", "BatteryBuyPrompt", "건전지 한 팩 사기"));
+	}
+
+	// 4층 서쪽 계단실 입구의 방화문. 늘 고임목으로 괴어 열려 있다. 경첩은 남쪽
+	// 문설주 모서리, 문짝은 북쪽(+Y)으로 120 cm. 열면 복도 쪽으로 돌아 남쪽 벽에 붙는다.
+	AIGSwingDoor* FireDoor = World->SpawnActor<AIGSwingDoor>(
+		AIGSwingDoor::StaticClass(),
+		FTransform(FRotator::ZeroRotator, FVector(-320.0f, -365.0f, 900.0f)),
+		SpawnParameters);
+	if (FireDoor)
+	{
+		FireDoor->ConfigurePrototypeVisuals(
+			CubeMesh,
+			TexMat(TEXT("M_UnitDoorPaintedSteel"), DoorMaterial),
+			TexMat(TEXT("M_MetalUV"), MetalFrameMaterial),
+			FVector(6.0f, 120.0f, 210.0f));
+		FireDoor->SetOpenYaw(-92.0f);
+		if (AIGFireDoorWedge* Wedge = World->SpawnActor<AIGFireDoorWedge>(
+				AIGFireDoorWedge::StaticClass(),
+				FTransform(FRotator(0.0f, -2.0f, 0.0f), FVector(-212.0f, -366.0f, 900.0f)),
+				SpawnParameters))
+		{
+			Wedge->Configure(FireDoor, CubeMesh, WoodMaterial);
+			// 계단실 반층 참. 닫힌 문 너머 걷는 소리는 여기서 삼킨다. 복도까지는 닿지 않는다.
+			Wedge->SetStairwellCenter(FVector(-420.0f, -305.0f, 870.0f));
+		}
+	}
+
+	// 403호 현관문 안쪽 걸쇠. 손잡이 위, 문틀 쪽 끝에서 8 cm.
+	if (HomeDoor)
+	{
+		if (AIGDoorLatch* Latch = World->SpawnActor<AIGDoorLatch>(
+				AIGDoorLatch::StaticClass(),
+				FTransform(FRotator::ZeroRotator, FVector(176.0f, -221.5f, 1045.0f)),
+				SpawnParameters))
+		{
+			Latch->Configure(HomeDoor, CubeMesh, TexMat(TEXT("M_MetalUV"), MetalFrameMaterial));
+		}
+	}
 }
 
 void AIGPrologueWorldScene::HandlePurchaseSelectionChanged(AIGPickupItem* Item)

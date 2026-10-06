@@ -88,6 +88,8 @@ private:
 	TWeakObjectPtr<AIGPlayerCharacter> Player;
 	FTimerHandle CueTimerHandle;
 	FTimerHandle PrayerReturnTimer;
+	/** 처음 보는 사람에게도 건너뛰기를 여는 타이머(§6). */
+	FTimerHandle FirstViewSkipTimer;
 	TArray<FTimerHandle> InterludeSoundTimers;
 	/** 눈을 감은 자리와 그때 보던 방향. 역사층의 소리를 이 축에 놓는다. */
 	FVector InterludeOrigin = FVector::ZeroVector;

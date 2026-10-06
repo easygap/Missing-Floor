@@ -31,6 +31,9 @@ namespace IGNightLoop
 	const FVector MercyNoteRestLocation(-150.0f, -269.5f, 900.12f);
 	constexpr float MercyNoteStartYaw = -0.5f;
 	constexpr float MercyNoteRestYaw = -3.5f;
+	// §6. 침대에서 눈을 뜬 뒤 조작이 돌아오기까지. 화면은 그 뒤로도 천천히 밝아지지만
+	// 그동안 둘러보고 걸을 수 있다. 암전 1.25초와 합쳐 1.6초다.
+	constexpr float MaxWakeLockSeconds = 0.35f;
 }
 
 AIGNightLoopDirector::AIGNightLoopDirector()
@@ -131,15 +134,48 @@ void AIGNightLoopDirector::HandlePlayerCaptured(APawn* Player)
 		// 하나의 멀티캐스트에서 서로 충돌하는 두 타임라인이 진행된다.
 		return;
 	}
+	BeginCaptureReset(Character, false);
+}
 
+void AIGNightLoopDirector::RequestExternalCapture(APawn* Player)
+{
+	AIGPlayerCharacter* Character = Cast<AIGPlayerCharacter>(Player);
+	if (bResetInFlight || !Character)
+	{
+		return;
+	}
+	// 밤4 가면 대치 중에는 결말 C가 포획을 혼자 맡는다. 다른 괴이가 침대 리셋을
+	// 걸면 타임라인 둘이 부딪친다. 괴이 감독도 그동안은 나오지 않는다.
+	if (const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+		Narrative && Narrative->GetNightIndex() == 4 && Narrative->IsNightFourMaskRunning())
+	{
+		return;
+	}
+	BeginCaptureReset(Character, true);
+}
+
+void AIGNightLoopDirector::BeginCaptureReset(AIGPlayerCharacter* Character, const bool bExternal)
+{
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 	bResetInFlight = true;
+	bExternalCaptureInFlight = bExternal;
+	LastCaptureSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 	const int32 PersistedCaptureCount = Narrative
 		? Narrative->GetCaptureCount()
 		: 0;
 	CaptureCount = FMath::Max(CaptureCount + 1, PersistedCaptureCount + 1);
 	CapturedPlayer = Character;
 	Character->GetCharacterMovement()->StopMovementImmediately();
-	SpawnCaptureHandprint(Character);
+	if (bExternal)
+	{
+		// 석고 손자국은 위층 사람의 것이다. 지난번 포획의 몸이 남아 있으면 그 몸이
+		// 다시 덮치는 화면이 나오므로 함께 비운다.
+		Character->SetCaptureThreat(nullptr);
+	}
+	else
+	{
+		SpawnCaptureHandprint(Character);
+	}
 
 	// Without an authored wake point the first capture teaches us one: the
 	// spot the player stood when the night began is better than nothing,
@@ -251,7 +287,12 @@ void AIGNightLoopDirector::FinishReset()
 	{
 		// The tier lives in the narrative snapshot, not on the pawn, so a
 		// quit-and-resume cannot hand the player back a patient pursuer.
-		if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
+		// 다른 괴이에게 잡힌 것은 그의 성과가 아니다. 단계는 그대로 두고 자리만 되돌린다.
+		if (bExternalCaptureInFlight)
+		{
+			Entity->ResetToPatrolStart(/*bRaiseAggression=*/false);
+		}
+		else if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
 		{
 			Entity->SetAggressionTier(Narrative->RecordCapture());
 			Entity->ResetToPatrolStart(/*bRaiseAggression=*/false);
@@ -261,6 +302,7 @@ void AIGNightLoopDirector::FinishReset()
 			Entity->ResetToPatrolStart(/*bRaiseAggression=*/true);
 		}
 	}
+	bExternalCaptureInFlight = false;
 
 	QueueMercyNoteReveal();
 
@@ -728,9 +770,12 @@ float AIGNightLoopDirector::GetWakeEchoSeconds() const
 
 float AIGNightLoopDirector::GetWakeRecoverySeconds() const
 {
-	// Keep input and normal HUD locked until the per-capture camera fade ends;
-	// the short echo animation is allowed to disappear first.
-	return FMath::Max(GetWakeFadeInSeconds(), GetWakeEchoSeconds());
+	// 예전에는 화면이 다 밝아질 때까지 조작을 잠갔다. 첫 포획은 암전까지 합쳐 5초
+	// 넘게 손을 놓아야 했고, 잡힐 때마다 그 시간을 다시 기다렸다. 이제 눈을 뜨는
+	// 순간부터 둘러보고 걸을 수 있다. 밝아지는 페이드는 그대로 흐른다.
+	return FMath::Min(
+		FMath::Max(GetWakeFadeInSeconds(), GetWakeEchoSeconds()),
+		IGNightLoop::MaxWakeLockSeconds);
 }
 
 UIGMissingFloorNarrativeSubsystem* AIGNightLoopDirector::GetNarrative() const

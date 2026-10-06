@@ -303,6 +303,8 @@ def spec(packs: str):
     add("Hammer_Hit_1", [one(WM, "hammer_03.ogg")], lambda x: normalize(room(trim_silence(x), 0.018, 0.4, 0.4), 0.95))
     add("Settle_Creak_0", [one(WM, "wood_cracking_01.ogg")], lambda x: normalize(lowpass(pitch(trim_silence(x), 0.8), 3000.0), 0.55), note="건물이 뒤틀린다")
     add("Settle_Creak_1", [one(WM, "wood_cracking_03.ogg")], lambda x: normalize(lowpass(pitch(trim_silence(x), 0.75), 3000.0), 0.55))
+    # 둘 다 남자 녹음이다. main()이 끝에서 feminize_player_voice로 유담의 음역에 옮기고,
+    # 덮칠 때 숨(Entity_Grab)도 옮긴 숨으로 다시 짠다.
     add("Player_Breath_Scared", [one(OW, "scared-breathing.wav")],
         lambda x: normalize(loop_seamless(x, 5.0, 0.8), 0.55), loop=True, note="숨 참기 직전, 심장 위에")
     add("Player_Gasp", [one(OW, "gasp1.wav")], lambda x: normalize(trim_silence(x), 0.7))
@@ -343,6 +345,10 @@ def main():
         json.dump(manifest, handle, indent=2, ensure_ascii=False)
         handle.write("\n")
     print(f"[audio] {len(manifest['sounds'])} sounds -> {out_dir}")
+    # 유담의 숨과 헐떡임은 남자 녹음이라 마지막에 여성 음역으로 옮긴다.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import feminize_player_voice
+    feminize_player_voice.apply(out_dir)
 
 
 if __name__ == "__main__":

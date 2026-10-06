@@ -71,6 +71,7 @@ $builders = [ordered]@{
 	'apartment_fixtures' = @('SM_ApartmentWindow', 'SM_VenetianBlind', 'SM_WallSwitch', 'SM_ShoeCabinet')
 	'villa_window' = @('SM_VillaWindow')
 	'store_products' = @('SM_TobaccoCabinet', 'SM_WindowBar', 'SM_HotWaterDispenser', 'SM_TrashBin')
+	'delivery_scooter' = @('SM_DeliveryScooter', 'SM_DeliveryScooterWheel', 'SM_DeliveryRider')
 }
 
 $selected = @()

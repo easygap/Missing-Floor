@@ -21,7 +21,7 @@ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'build_camera_sensor_material.py
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath $project -Commandlet
 $log = Join-Path $root 'Saved/Logs/CameraSensorMaterial.log'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
-& $editor $project -unattended -nop4 -nosplash -nullrhi -nosound -stdout -FullStdOutLogOutput "-abslog=$log" "-ExecutePythonScript=$script" | Out-Null
+& $editor $project -unattended -nop4 -nosplash -nullrhi -nosound -RenderOffscreen -stdout -FullStdOutLogOutput "-abslog=$log" "-ExecutePythonScript=$script" | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'CAMERA_SENSOR_MATERIAL PASS')) {
 	throw "화면 질감 재질 생성 실패: $log"
 }

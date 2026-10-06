@@ -275,6 +275,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<class AIGMissingFloorEpilogueDirector> Epilogue;
 
+	/** 위층 사람 말고 밤에 오는 것 둘. 어둑시니와 문 밖의 손님. */
+	UPROPERTY(Transient)
+	TObjectPtr<class AIGNightThreatDirector> NightThreats;
+
 	/**
 	 * §22.3의 선택적 목격 프롭. 어느 것도 진행을 잠그지 않으므로 생성에
 	 * 실패해도 스테이지는 유효하다 — ValidateFixtures가 이것들을 묻지 않는

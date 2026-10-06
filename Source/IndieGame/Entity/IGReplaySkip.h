@@ -15,4 +15,10 @@ namespace IGReplaySkip
 	constexpr float HoldSeconds = 2.0f;
 	/** 손을 떼면 이 배로 되감긴다. 잘못 눌린 것이 빨리 풀린다. */
 	constexpr float RewindMultiplier = 2.4f;
+	/**
+	 * 처음 볼 때 건너뛰기가 열리기까지(§6). 다섯째 새벽은 이 값, 에필로그는
+	 * 10초다. 재관람은 처음부터 열려 있다.
+	 */
+	constexpr float FirstViewDelaySeconds = 15.0f;
+	constexpr float FirstViewEpilogueDelaySeconds = 10.0f;
 }

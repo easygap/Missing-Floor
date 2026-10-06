@@ -232,6 +232,7 @@ pwsh -NoProfile -File Scripts\Import-BlenderAssets.ps1 -Only SM_MokHansooFigure
 | SM_GasMeterBox / SM_AcOutdoorUnit / SM_ConvexMirror | 절차 | 골목 샛길 둘의 벽 소품. 거울면은 금속이라 루멘이 비춘다 |
 | SM_TriangleKimbapA~D | 절차 | 편의점 삼각김밥. 김 필름은 `AI/KimbapFilmAlbedo_20260916.png`, 앞뒤 인쇄와 개봉 번호는 `UtilityPrints/Kimbap*.png`를 붙여 굽는다(`build_detail_props.py`) |
 | SM_TobaccoCabinet, SM_WindowBar, SM_HotWaterDispenser, SM_TrashBin | 절차 | 계산대 뒤 담배 진열장(담뱃갑 192), 창가 취식대, 온수기, 2구 쓰레기통 |
+| SM_DeliveryScooter / SM_DeliveryScooterWheel / SM_DeliveryRider | 절차 | 골목 배달 스쿠터와 기사(`build_delivery_scooter.py`). 바퀴는 따로 돌리려고 뗐다. 충돌은 없고 막힘 상자를 `AIGNeighborhoodLifeDirector`가 둔다. 기사는 1초 남짓 스쳐 가는 대역이라 생성 인물로 바꿀 자리다 |
 | SK_ListenerCrawler | 생성+리깅 | 위층 사람의 기는 몸. 위 「리깅된 인물」. Crawl·Listen·Bang·Lunge |
 | SM_ListenerEntityCrawl | 생성 | 위층 사람(정적 폴백). 해부 시트의 옆모습 칸에서 뽑았다(앞모습 3/4 칸은 네 발 짐승처럼 읽혔다). 폰의 앞이 +X라 머리가 +X에 와야 한다. 프로브에서 높은 끝이 이미 +X면 `--yaw 0`, 길이는 `--length 190`. 정점 AO, 석고 재질은 그대로 |
 | SM_AlleyCatRun | 생성 | 골목 고양이. 구운 털 색을 MI로 쓴다 |

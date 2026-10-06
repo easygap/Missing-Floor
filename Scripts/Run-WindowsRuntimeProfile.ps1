@@ -10,6 +10,8 @@ param(
     [ValidateSet(30, 60)][int]$TargetFps = 60,
     [ValidateSet('720p', '1080p', '1440p')][string]$Resolution = '1080p',
     [ValidateSet('Offscreen', 'Windowed')][string]$PresentationMode = 'Offscreen',
+    # Windowed는 실제 게임 창을 화면에 띄운다. 사람이 자리에 있을 때만 켠다.
+    [switch]$AllowVisibleWindow,
     [string]$PresentMonPath,
     [string]$ExpectedWindowTitle,
     [ValidateRange(0, 600)][int]$WarmupSeconds = 120,
@@ -28,6 +30,9 @@ if ($evidenceRoot.TrimEnd('\', '/') -eq $archiveRoot.TrimEnd('\', '/') -or
 $dimensions = @{ '720p' = @(1280, 720); '1080p' = @(1920, 1080); '1440p' = @(2560, 1440) }[$Resolution]
 $width, $height = $dimensions
 if ($PresentationMode -eq 'Windowed') {
+    if (-not $AllowVisibleWindow) {
+        throw 'Windowed 측정은 게임 창을 화면 앞에 띄웁니다. 창이 떠도 괜찮을 때 -AllowVisibleWindow를 함께 주세요.'
+    }
     if (-not $PresentMonPath -or -not (Test-Path -LiteralPath $PresentMonPath -PathType Leaf)) {
         throw '화면 출력 검사는 PresentMon 콘솔 실행 파일 경로가 필요합니다.'
     }

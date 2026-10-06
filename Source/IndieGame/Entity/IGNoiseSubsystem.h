@@ -93,6 +93,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Noise")
 	float GetMaskingAt(const FVector& Location) const;
 
+	/**
+	 * 장롱이나 침대 밑처럼 소리가 덜 새는 자리에 들어간 사람. 그가 낸 소리는
+	 * Scale배로 줄어 나간다(숨는 자리 0.55, §4). 1 이상이거나 nullptr이면 푼다.
+	 * 한 번에 한 사람만 숨으므로 한 자리만 기억한다.
+	 */
+	void SetInstigatorMuffle(const AActor* Instigator, float Scale);
+	float GetInstigatorMuffle(const AActor* Instigator) const;
+
 	/** Code listeners (the entity, telemetry, the ripple HUD). */
 	FIGNoiseReportedSignature OnNoiseReported;
 
@@ -173,4 +181,6 @@ private:
 	int32 NextHumHandle = 1;
 	int32 NextHeatSerial = 1;
 	float GlobalMasking = 0.0f;
+	TWeakObjectPtr<const AActor> MuffledInstigator;
+	float InstigatorMuffleScale = 1.0f;
 };

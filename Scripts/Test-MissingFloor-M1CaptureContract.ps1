@@ -68,7 +68,7 @@ $flashlight = Read-ProjectText 'Source/IndieGame/Player/IGFlashlightComponent.cp
 $audioDirector = Read-ProjectText 'Source/IndieGame/Audio/IGMissingFloorAudioSubsystem.cpp'
 
 Assert-ContainsAll $nightHeader @(
-	'float FadeOutSeconds = 2.15f;',
+	'float FadeOutSeconds = 1.25f;',
 	'int32 GetCaptureHandprintCount() const',
 	'TArray<TObjectPtr<UStaticMeshComponent>> CaptureHandprints;',
 	'float GetWakeFadeInSeconds() const;'
@@ -97,7 +97,7 @@ Assert-True (
 	$captureBlock.IndexOf('Character->DisableInput(Controller);')) `
 	'capture feedback must start before input is disabled'
 Assert-True (-not $captureBlock.Contains('+ 0.4f')) `
-	'blackout reset must finish at the authored 2.15-second boundary'
+	'blackout reset must finish at the authored 1.25-second boundary'
 # 되풀이될수록 짧게 끊는다. 첫 포획도 1초 안에 끊는다.
 Assert-True $captureBlock.Contains(
 	'CaptureCount <= 1 ? 0.95f : (CaptureCount == 2 ? 0.75f : 0.55f)') `

@@ -339,7 +339,7 @@ void AIGPlayerController::SetupInputComponent()
 	{
 		auto BindPausedAction = [this](
 			const FName ActionName,
-			void (ThisClass::*Handler)())
+			void (ThisClass::*Handler)()) -> FInputActionBinding&
 		{
 			FInputActionBinding& Binding = InputComponent->BindAction(
 				ActionName,
@@ -347,27 +347,38 @@ void AIGPlayerController::SetupInputComponent()
 				this,
 				Handler);
 			Binding.bExecuteWhenPaused = true;
+			return Binding;
+		};
+		// 메뉴 이동 키는 WASD·Space·패드 A·패드 B와 겹친다. 컨트롤러가 폰보다 먼저
+		// 입력을 받으므로, 여기서 키를 삼키면 메뉴가 닫혀 있어도 점프·조사·두드리기가
+		// 폰까지 가지 않는다. 메뉴는 열리는 순간 게임을 멈추고 폰의 바인딩은 멈춘 동안
+		// 돌지 않으니, 키를 흘려보내도 메뉴 조작이 몸을 움직이지는 않는다.
+		auto BindMenuNavigation = [&BindPausedAction](
+			const FName ActionName,
+			void (ThisClass::*Handler)())
+		{
+			BindPausedAction(ActionName, Handler).bConsumeInput = false;
 		};
 		BindPausedAction(TEXT("PauseMenu"), &ThisClass::ToggleSystemMenu);
 		BindPausedAction(
 			TEXT("AccessibilityMenu"),
 			&ThisClass::ToggleAccessibilityMenu);
-		BindPausedAction(
+		BindMenuNavigation(
 			TEXT("AccessibilityUp"),
 			&ThisClass::MoveAccessibilitySelectionUp);
-		BindPausedAction(
+		BindMenuNavigation(
 			TEXT("AccessibilityDown"),
 			&ThisClass::MoveAccessibilitySelectionDown);
-		BindPausedAction(
+		BindMenuNavigation(
 			TEXT("AccessibilityLeft"),
 			&ThisClass::AdjustAccessibilityLeft);
-		BindPausedAction(
+		BindMenuNavigation(
 			TEXT("AccessibilityRight"),
 			&ThisClass::AdjustAccessibilityRight);
-		BindPausedAction(
+		BindMenuNavigation(
 			TEXT("AccessibilityConfirm"),
 			&ThisClass::ConfirmAccessibilitySelection);
-		BindPausedAction(
+		BindMenuNavigation(
 			TEXT("AccessibilityClose"),
 			&ThisClass::CloseAccessibilityMenu);
 		FInputActionBinding& JournalPressed = InputComponent->BindAction(

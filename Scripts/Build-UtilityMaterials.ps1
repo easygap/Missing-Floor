@@ -59,7 +59,7 @@ $utilityScript = Join-Path $utilityStage 'Scripts/build_utility_materials.py'
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'build_utility_materials.py') -Destination $utilityScript -Force
 $utilityEditor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath $utilityProject -Commandlet
 $utilityLog = Join-Path $utilityRoot 'Saved/Logs/UtilityMaterials.log'
-& $utilityEditor $utilityProject -unattended -nop4 -nosplash -nullrhi -nosound -stdout -FullStdOutLogOutput "-abslog=$utilityLog" "-ExecutePythonScript=$utilityScript" | Out-Null
+& $utilityEditor $utilityProject -unattended -nop4 -nosplash -nullrhi -nosound -RenderOffscreen -stdout -FullStdOutLogOutput "-abslog=$utilityLog" "-ExecutePythonScript=$utilityScript" | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $utilityLog -Pattern 'UTILITY_MATERIALS PASS')) {
     throw "설비 재질 생성 실패: $utilityLog"
 }

@@ -37,6 +37,7 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
+#include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGReadableNote.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Player/IGInteractionComponent.h"
@@ -2575,6 +2576,8 @@ void AIGHorrorHUD::DrawHUD()
 		return;
 	}
 	ResumeDialoguePresentation(CurrentTime);
+	// 가림막은 자막과 안내보다 먼저 깐다. 숨은 채로도 글은 읽혀야 한다.
+	DrawHidingMask();
 
 	const FText Objective = GetObjectiveText();
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetGameInstance()
@@ -4761,6 +4764,67 @@ void AIGHorrorHUD::DrawFearDirection(const double CurrentTime)
 		Canvas->DrawItem(Line);
 		Previous = Next;
 	}
+}
+
+void AIGHorrorHUD::DrawHidingMask()
+{
+	const AIGPlayerCharacter* Player = Cast<AIGPlayerCharacter>(GetOwningPawn());
+	const AIGHidingSpot* Spot = Player ? Player->GetHidingSpot() : nullptr;
+	if (!Spot || !Canvas)
+	{
+		return;
+	}
+	const float MaskAlpha = Spot->GetMaskAlpha();
+	if (MaskAlpha <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+	const float Width = Canvas->ClipX;
+	const float Height = Canvas->ClipY;
+	// 가장자리를 여덟 겹으로 흐린다. 칼같이 자른 틈은 화면 효과로 읽힌다.
+	constexpr int32 FeatherSteps = 8;
+	auto Band = [this, MaskAlpha](const float X, const float Y, const float BandWidth, const float BandHeight, const float Opacity)
+	{
+		if (BandWidth > 0.5f && BandHeight > 0.5f && Opacity > 0.0f)
+		{
+			DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, Opacity * MaskAlpha), X, Y, BandWidth, BandHeight);
+		}
+	};
+	if (Spot->GetView() == EIGHidingView::DoorGap)
+	{
+		// 장롱 문틈. 고개를 돌리면 틈이 반대쪽으로 밀린다.
+		const float GapCenter = Width * (0.5f - 0.16f * Spot->GetPeekYawAlpha());
+		const float GapHalf = Width * 0.055f;
+		const float Feather = Width * 0.035f;
+		const float LeftEdge = GapCenter - GapHalf - Feather;
+		const float RightEdge = GapCenter + GapHalf + Feather;
+		const float StepWidth = Feather / FeatherSteps;
+		Band(0.0f, 0.0f, LeftEdge, Height, 1.0f);
+		Band(RightEdge, 0.0f, Width - RightEdge, Height, 1.0f);
+		for (int32 Step = 0; Step < FeatherSteps; ++Step)
+		{
+			const float Opacity = 1.0f - (Step + 0.5f) / FeatherSteps;
+			Band(LeftEdge + Step * StepWidth, 0.0f, StepWidth, Height, Opacity);
+			Band(RightEdge - (Step + 1) * StepWidth, 0.0f, StepWidth, Height, Opacity);
+		}
+		// 문짝 위아래는 경첩과 선반에 가려 더 어둡다.
+		Band(LeftEdge, 0.0f, RightEdge - LeftEdge, Height * 0.08f, 0.55f);
+		Band(LeftEdge, Height * 0.92f, RightEdge - LeftEdge, Height * 0.08f, 0.55f);
+		return;
+	}
+	// 침대 밑. 위는 침대 바닥이 덮고, 아래 끝은 방바닥이 코앞이다.
+	const float TopEdge = Height * 0.36f;
+	const float Feather = Height * 0.07f;
+	const float StepHeight = Feather / FeatherSteps;
+	Band(0.0f, 0.0f, Width, TopEdge, 1.0f);
+	for (int32 Step = 0; Step < FeatherSteps; ++Step)
+	{
+		Band(0.0f, TopEdge + Step * StepHeight, Width, StepHeight, 1.0f - (Step + 0.5f) / FeatherSteps);
+	}
+	Band(0.0f, Height * 0.9f, Width, Height * 0.1f, 0.45f);
+	// 양 끝은 침대 다리와 이불 자락.
+	Band(0.0f, TopEdge, Width * 0.06f, Height - TopEdge, 0.6f);
+	Band(Width * 0.94f, TopEdge, Width * 0.06f, Height - TopEdge, 0.6f);
 }
 
 void AIGHorrorHUD::DrawNoiseRipple(const double CurrentTime)

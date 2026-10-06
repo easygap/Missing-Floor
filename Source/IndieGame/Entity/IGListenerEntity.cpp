@@ -31,6 +31,14 @@
 
 namespace IGListener
 {
+	// §4. 숨은 자리 안의 소리는 이 거리 안에서 들었을 때만 그 자리를 연다. 그 밖에서
+	// 들은 소리는 평소처럼 그 자리로 찾아오게 할 뿐이다.
+	constexpr float HiddenDetectRadius = 220.0f;
+	// 숨은 소리를 들은 뒤 이만큼 안에 손이 닿으면 끌어낸다. 그 뒤로 숨죽이고 있으면
+	// 그는 자리 앞에서 듣다가 떠난다.
+	constexpr double HiddenDetectMemorySeconds = 2.0;
+	// 숨은 자리 앞에서 손이 닿는 거리. 가구에 막혀 몸이 더 들어오지 못하므로 수평으로 잰다.
+	constexpr float HiddenReachRadius = 180.0f;
 	// Timing of the idle cycle. The triple knock is the player's masked
 	// window to move; keep these in step with CreateWallKnockTriple.
 	constexpr float BangSeconds = 2.1f;
@@ -862,6 +870,24 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 					ReachHit, GetActorLocation(), Player->GetActorLocation(),
 					ECC_Visibility, ReachParams);
 			}
+			// §4. 숨은 사람은 손이 닿는 것만으로는 잡히지 않는다. 장롱 문짝은 손을 막고
+			// 침대는 막지 못하지만, 어느 쪽이든 그는 소리로만 안다. 코앞에서 소리를 냈을
+			// 때만 그 자리를 열어 끌어낸다.
+			const AIGPlayerCharacter* HidingPlayer = Cast<AIGPlayerCharacter>(Player);
+			if (HidingPlayer && HidingPlayer->IsConcealedInHidingSpot())
+			{
+				bLungeArmed = false;
+				const bool bHeardInside = GetWorld()->GetTimeSeconds() - LastHeardHiddenPlayerSeconds
+					<= IGListener::HiddenDetectMemorySeconds;
+				if (bHeardInside
+					&& FVector::Dist2D(Player->GetActorLocation(), GetActorLocation())
+						<= IGListener::HiddenReachRadius
+					&& Tuning.bCaptureEnabled)
+				{
+					BeginCapture(Player);
+				}
+				return;
+			}
 			// 듣기만 하는 밤: he reaches the sound and holds there, and that is
 			// where it ends. Touching costs nothing, so the night can never be
 			// taken away — the story, the puzzles and all three endings stay
@@ -913,6 +939,14 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 	if (!CanHear(Event))
 	{
 		return;
+	}
+	if (const AIGPlayerCharacter* HiddenPlayer = Cast<AIGPlayerCharacter>(Event.Instigator.Get());
+		HiddenPlayer
+		&& HiddenPlayer->IsConcealedInHidingSpot()
+		&& FVector::DistSquared(Event.Location, GetActorLocation())
+			<= FMath::Square(IGListener::HiddenDetectRadius))
+	{
+		LastHeardHiddenPlayerSeconds = Event.TimeSeconds;
 	}
 	// 귀를 세우게 한 그 탭의 소리다. 대답 인식이 소음 보고보다 먼저 불리므로
 	// 같은 프레임에 같은 자리에서 한 번 더 들어온다. 이미 듣고 있는 소리다.
@@ -1487,6 +1521,7 @@ void AIGListenerEntity::NotifyAnswerKnock(const FVector& KnockLocation)
 		EIGAudioBus::Entity);
 	// §19.8. 소리로 못 듣는 손에게도 대답이 통했다는 것이 닿아야 한다.
 	EmitPresentationCue(GetActorLocation(), 0.6f, 2840.0f);
+	OnKnocked.Broadcast(GetActorLocation());
 	if (IsNearForCaption(GetActorLocation()))
 	{
 		AIGHorrorHUD::PushAudioCaptionAt(
@@ -2654,6 +2689,7 @@ void AIGListenerEntity::PlayKnockTriple()
 	// §19.8. 「그가 두드리는 동안 움직여라」는 이 소리로 배우는 규칙이다. 듣기
 	// 어려운 손에게도 두드리는 창이 닿아야 한다. 자막은 12초에 한 번만.
 	EmitPresentationCue(KnockAt, 1.0f, 3900.0f);
+	OnKnocked.Broadcast(KnockAt);
 	const double Now = World ? World->GetTimeSeconds() : 0.0;
 	if (Now - LastKnockCaptionSeconds >= IGListener::KnockCaptionIntervalSeconds
 		&& IsNearForCaption(KnockAt))
@@ -2696,6 +2732,7 @@ void AIGListenerEntity::PlayCeilingKnock()
 	// §19.8. 위층의 그녀에게 방위 딱지가 「아래」를 붙인다. 천장 노크는 이미
 	// 12초에 한 번이라 자막 간격을 따로 두지 않는다.
 	EmitPresentationCue(KnockPoint, 0.8f, 3900.0f);
+	OnKnocked.Broadcast(KnockPoint);
 	if (IsNearForCaption(KnockPoint))
 	{
 		AIGHorrorHUD::PushAudioCaptionAt(
@@ -2769,6 +2806,7 @@ void AIGListenerEntity::PlayHomeDoorKnock(const bool bSingle)
 		KnockPoint,
 		bSingle ? 0.7f : 1.0f,
 		IGListener::DoorKnockInnerRadius + IGListener::DoorKnockFalloff);
+	OnKnocked.Broadcast(KnockPoint);
 	if (UWorld* World = GetWorld())
 	{
 		if (UIGRecordingSubsystem* Recording =
@@ -3263,6 +3301,12 @@ void AIGListenerEntity::BeginCapture(APawn* Player)
 	{
 		return;
 	}
+	// 숨어 있던 사람은 먼저 자리 밖으로 끌려 나온다. 넘어지는 눈높이와 얼굴이 덮치는
+	// 자리는 그다음에 잰다. 순서가 바뀌면 가구 속 눈을 기준으로 덮친다.
+	if (AIGPlayerCharacter* HiddenPlayer = Cast<AIGPlayerCharacter>(Player))
+	{
+		HiddenPlayer->LeaveHidingSpotImmediately();
+	}
 	EnterState(EIGListenerState::CaptureHold);
 	if (Player)
 	{
@@ -3272,7 +3316,18 @@ void AIGListenerEntity::BeginCapture(APawn* Player)
 		// 포획 시점). 기는 자세의 얼굴은 위를 보고 있어서 이 각도에서 가장 잘 읽힌다. 얼굴은
 		// 이 시선 위에서 70cm까지 물러났다가 눈앞 20cm로 달려든다. 주먹 쥔 두 팔을 가슴
 		// 앞으로 드는 덮치기 동작은 쓰지 않는다. 권투 자세로 읽혔다.
-		CaptureFallenEye = Player->GetPawnViewLocation()
+		// 넘어지는 눈높이는 선 사람 기준으로 잰다. 침대 밑에서 끌려 나와 아직 앉은
+		// 몸을 엔진의 앉은 눈높이로 재면 덮치는 얼굴이 바닥 밑으로 들어간다.
+		FVector StandingEye = Player->GetPawnViewLocation();
+		if (const AIGPlayerCharacter* Victim = Cast<AIGPlayerCharacter>(Player))
+		{
+			if (const UCapsuleComponent* Capsule = Victim->GetCapsuleComponent())
+			{
+				const float FeetZ = Victim->GetActorLocation().Z - Capsule->GetScaledCapsuleHalfHeight();
+				StandingEye.Z = FeetZ + Victim->GetDefaultHalfHeight() + Victim->GetCameraBaseLocation().Z;
+			}
+		}
+		CaptureFallenEye = StandingEye
 			+ Direction * AIGPlayerCharacter::CaptureFallBackCentimeters
 			- FVector(0, 0, AIGPlayerCharacter::CaptureFallDropCentimeters);
 		CaptureStrikeLine = (-Direction * 34.0f + FVector(0, 0, 10)).GetSafeNormal();

@@ -8,6 +8,23 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Player/IGBeamDustComponent.h"
+#include "Player/IGHorrorHUD.h"
+
+namespace IGFlashlight
+{
+	// §9. 새 건전지 두 알로 켜 둘 수 있는 시간. 밤 하나를 내내 켜 두면 모자라고,
+	// 필요할 때만 켜면 남는다.
+	constexpr float FullChargeSeconds = 720.0f;
+	// LED 손전등은 거의 끝까지 밝다가 마지막에 꺾인다. 이 아래부터 어두워진다.
+	constexpr float DimmingStartsAt = 0.35f;
+	// 다 닳아도 꺼지지 않는다. 발밑과 문손잡이는 보일 만큼 남겨 진행이 막히지 않는다.
+	constexpr float EmptyCellFloor = 0.16f;
+	// 이 아래부터 깜박인다. 속말도 여기서 한 번.
+	constexpr float StutterStartsAt = 0.20f;
+	// 꺼 두면 알칼리 전지가 조금 살아난다. 초당 0.2%, 한 번 끌 때마다 최대 5%.
+	constexpr float RestRecoveryPerSecond = 0.002f;
+	constexpr float RestRecoveryCap = 0.05f;
+}
 
 UIGFlashlightComponent::UIGFlashlightComponent()
 {
@@ -88,14 +105,37 @@ void UIGFlashlightComponent::SetOn(const bool bNewOn)
 	}
 
 	bOn = bShouldBeOn;
-	UE_LOG(LogIndieGame, Display, TEXT("Flashlight %s (available=%d)"), bOn ? TEXT("on") : TEXT("off"), bAvailable ? 1 : 0);
+	UE_LOG(LogIndieGame, Display, TEXT("Flashlight %s (available=%d battery=%.2f)"), bOn ? TEXT("on") : TEXT("off"), bAvailable ? 1 : 0, BatteryFraction);
 	Beam->SetVisibility(bOn);
 	Spill->SetVisibility(bOn);
+	const UWorld* World = GetWorld();
 	if (bOn)
 	{
+		// 꺼 둔 동안 살아난 만큼. 꺼진 동안은 틱이 없어서 켤 때 한 번에 셈한다.
+		if (World && SwitchedOffSeconds >= 0.0)
+		{
+			const float RestedSeconds = static_cast<float>(World->GetTimeSeconds() - SwitchedOffSeconds);
+			BatteryFraction = FMath::Min(
+				1.0f,
+				BatteryFraction + FMath::Min(
+					RestedSeconds * IGFlashlight::RestRecoveryPerSecond,
+					IGFlashlight::RestRecoveryCap));
+		}
+		SwitchedOffSeconds = -1.0;
+		// 약해진 손전등을 껐다 켜면 주머니의 건전지와 갈아 끼운다.
+		if (BatteryFraction < IGFlashlight::StutterStartsAt && SpareBatteries > 0)
+		{
+			--SpareBatteries;
+			BatteryFraction = 1.0f;
+			bLowBatteryNoticed = false;
+			AIGHorrorHUD::PushThought(
+				this,
+				NSLOCTEXT("IGMissingFloor", "YudamBatteryChanged", "건전지를 새것으로 갈아 끼웠다."),
+				2.6f);
+		}
 		PreviousWorldRotation = GetComponentRotation();
-		Beam->SetIntensity(BeamIntensity);
-		Spill->SetIntensity(520.0f);
+		Beam->SetIntensity(BeamIntensity * GetCellOutput());
+		Spill->SetIntensity(520.0f * GetCellOutput());
 		SetComponentTickEnabled(true);
 		// Kick the beam so switching on reads as a hand movement.
 		if (!AccessibilitySubsystem
@@ -108,6 +148,7 @@ void UIGFlashlightComponent::SetOn(const bool bNewOn)
 
 	// Do not carry a stale scare impulse into the next switch-on. Keeping the
 	// component asleep here removes a permanent per-frame update in CH01.
+	SwitchedOffSeconds = World ? World->GetTimeSeconds() : -1.0;
 	BrownOutTimer = 0.0f;
 	KnockLooseAge = -1.0f;
 	SwayOffset = FRotator::ZeroRotator;
@@ -134,6 +175,22 @@ void UIGFlashlightComponent::SetAvailable(const bool bNewAvailable)
 void UIGFlashlightComponent::RefillBattery(const float Fraction)
 {
 	BatteryFraction = FMath::Clamp(BatteryFraction + Fraction, 0.0f, 1.0f);
+	if (BatteryFraction > IGFlashlight::StutterStartsAt)
+	{
+		bLowBatteryNoticed = false;
+	}
+	if (bOn)
+	{
+		Beam->SetIntensity(BeamIntensity * GetCellOutput());
+		Spill->SetIntensity(520.0f * GetCellOutput());
+	}
+}
+
+float UIGFlashlightComponent::GetCellOutput() const
+{
+	const float Charge = FMath::Clamp(BatteryFraction / IGFlashlight::DimmingStartsAt, 0.0f, 1.0f);
+	const float Knee = Charge * Charge * (3.0f - 2.0f * Charge);
+	return FMath::Lerp(IGFlashlight::EmptyCellFloor, 1.0f, Knee);
 }
 
 void UIGFlashlightComponent::AddImpulse(const FRotator& Impulse)
@@ -205,7 +262,19 @@ void UIGFlashlightComponent::TickComponent(
 	}
 
 	UpdateSway(DeltaSeconds);
-	float Flicker = SampleFlicker(DeltaSeconds);
+	// 켜 둔 만큼 닳는다. 바닥값은 GetCellOutput이 지키므로 0까지 내려가도 된다.
+	BatteryFraction = FMath::Max(0.0f, BatteryFraction - DeltaSeconds / IGFlashlight::FullChargeSeconds);
+	if (!bLowBatteryNoticed && BatteryFraction < IGFlashlight::StutterStartsAt)
+	{
+		bLowBatteryNoticed = true;
+		AIGHorrorHUD::PushThought(
+			this,
+			SpareBatteries > 0
+				? NSLOCTEXT("IGMissingFloor", "YudamFlashlightLowSpare", "불빛이 약해졌어. 잠깐 끄고 건전지를 갈자.")
+				: NSLOCTEXT("IGMissingFloor", "YudamFlashlightLow", "불빛이 약해졌어. 건전지가 다 돼 가나 봐."),
+			3.0f);
+	}
+	float Flicker = SampleFlicker(DeltaSeconds) * GetCellOutput();
 	if (KnockLooseAge >= 0.52f)
 	{
 		// 바닥에 떨어진 손전등은 빛의 절반쯤을 바닥에 빼앗긴다. 닿는 순간에만 한 번
@@ -336,19 +405,21 @@ float UIGFlashlightComponent::SampleFlicker(const float DeltaSeconds)
 		Hash01(FMath::FloorToInt(SlowStep) + 7920),
 		FMath::Frac(SlowStep));
 
-	// A fixed cheap-torch ripple preserves unease without consuming a resource.
-	constexpr float Weakness = 0.18f;
+	// 싸구려 손전등의 잔떨림. 건전지가 20% 아래로 내려가면 떨림이 커지고 끊김이 잦아진다.
+	const float Dying = 1.0f - FMath::Clamp(BatteryFraction / IGFlashlight::StutterStartsAt, 0.0f, 1.0f);
+	const float Weakness = 0.18f + 0.45f * Dying;
 	const float Ripple = 1.0f - (0.03f + 0.30f * Weakness) * (0.6f * Fast + 0.4f * Slow);
 
 	// Very rare, short brown-outs are presentation-only and always recover.
+	// 다 닳아 가는 건전지는 2초에 한 번꼴로 끊긴다. 끊겨도 늘 돌아온다.
 	if (BrownOutTimer > 0.0f)
 	{
 		BrownOutTimer -= DeltaSeconds;
 		return Ripple * 0.12f;
 	}
-	if (Fast > 0.997f && Slow < 0.22f)
+	if (Fast > 0.997f - 0.03f * Dying && Slow < 0.22f + 0.5f * Dying)
 	{
-		BrownOutTimer = 0.05f + 0.10f * Slow;
+		BrownOutTimer = 0.05f + (0.10f + 0.12f * Dying) * Slow;
 	}
 	FlickerValue = Ripple;
 	return FlickerValue;

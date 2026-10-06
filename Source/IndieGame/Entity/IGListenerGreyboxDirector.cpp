@@ -42,6 +42,7 @@
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
 #include "Entity/IGMissingFloorNightFourDirector.h"
+#include "Entity/IGNightThreatDirector.h"
 #include "Entity/IGMissingFloorMercyDirector.h"
 #include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
@@ -698,7 +699,7 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 		Entity.Get(), NightLoop.Get(), NightPhase.Get(), PuzzleOne.Get(),
 		NightOneBeats.Get(), NightTwoBeats.Get(), PuzzleTwo.Get(),
 		NightThree.Get(), Mercy.Get(), FifthDawn.Get(), Epilogue.Get(),
-		NightFour.Get(), SleepTarget.Get(), Unit401Door.Get(),
+		NightFour.Get(), NightThreats.Get(), SleepTarget.Get(), Unit401Door.Get(),
 		UsedListingNote.Get(), NeighborhoodDeliveryNote.Get(),
 		// SpawnOptionalWitnesses가 세우는 다섯. 지금은 마지막 실패 경로보다
 		// 뒤에 있어 새어 나갈 수 없지만, 그 사이에 실패가 하나 생기면 이름이
@@ -729,6 +730,7 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 	FifthDawn = nullptr;
 	Epilogue = nullptr;
 	NightFour = nullptr;
+	NightThreats = nullptr;
 	SleepTarget = nullptr;
 	Unit401Door = nullptr;
 	UsedListingNote = nullptr;
@@ -1147,6 +1149,26 @@ bool AIGListenerGreyboxDirector::SetupStage()
 		|| !NightFour->Configure(const_cast<AIGPrologueWorldScene*>(Scene)))
 	{
 		return false;
+	}
+
+	// 어둑시니와 문 밖의 손님. 어느 것도 진행을 잠그지 않으므로 생성에 실패해도
+	// 스테이지는 유효하다. 시간이 흐르지 않는 둘러보기(캡처 투어)에서는 깨지 않는다.
+	FActorSpawnParameters ThreatParameters;
+	ThreatParameters.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ThreatParameters.Name = TEXT("MissingFloorNightThreatDirector");
+	NightThreats = World->SpawnActor<AIGNightThreatDirector>(
+		AIGNightThreatDirector::StaticClass(),
+		FTransform::Identity,
+		ThreatParameters);
+	if (NightThreats)
+	{
+		NightThreats->Configure(
+			const_cast<AIGPrologueWorldScene*>(Scene),
+			PlayerCharacter,
+			Entity,
+			NightLoop,
+			NightPhase);
 	}
 
 	// Night goals: each puzzle announces itself once; the hour decides

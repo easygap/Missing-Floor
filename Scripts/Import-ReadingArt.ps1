@@ -11,7 +11,7 @@ Copy-Item -LiteralPath "$readingRoot/Content/SourceArt/AI/ShippingLabel_20260917
 Copy-Item -LiteralPath "$PSScriptRoot/import_reading_art.py" -Destination "$readingImport/Scripts" -Force
 $readingEditor = & "$PSScriptRoot/Resolve-UnrealEditor.ps1" -Commandlet
 $readingLog = "$readingImport/Saved/Logs/ReadingImport.log"
-& $readingEditor "$readingImport/ReadingImport.uproject" -unattended -nop4 -nosplash -nullrhi -nosound `
+& $readingEditor "$readingImport/ReadingImport.uproject" -unattended -nop4 -nosplash -nullrhi -nosound -RenderOffscreen `
     "-abslog=$readingLog" "-ExecutePythonScript=$readingImport/Scripts/import_reading_art.py" | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $readingLog -Pattern 'READING_ART PASS')) {
     throw "문서 원본 반입 실패: $readingLog"

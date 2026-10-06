@@ -364,6 +364,26 @@ foreach ($headlessScript in $headlessScripts) {
 		}
 	}
 }
+# 자동 검사나 반입이 게임·에디터 창을 사용자 화면 앞에 띄우면 안 된다.
+# -RenderOffscreen이 있으면 엔진이 창을 아예 만들지 않는다. 숨김 실행(-WindowStyle Hidden)은
+# 런처만 숨기고 실제 게임 프로세스의 창은 그대로 뜨므로 대신이 되지 못한다.
+# 일부러 창을 보여 줘야 하는 스크립트만 'visible-window: intentional' 표식을 단다.
+$launchScripts = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Scripts') -Recurse -File |
+	Where-Object { $_.Extension -in @('.ps1', '.bat') -and $_.Name -ne 'Validate-Project.ps1' })
+foreach ($launchScript in $launchScripts) {
+	$launchText = Get-Content -Raw -Encoding UTF8 -LiteralPath $launchScript.FullName
+	$launchesUnreal = $launchText -match 'Resolve-UnrealEditor\.ps1' -or
+		$launchText -match '(?i)Start-Process\s+-FilePath\s+\$(launcher|game\w*|exe\w*)\b'
+	if (-not $launchesUnreal) { continue }
+	if ($launchText.Contains('visible-window: intentional')) { continue }
+	# 커맨드릿(-run=)과 UAT 쿠크는 처음부터 창을 만들지 않는다.
+	$runsOnlyCommandlets = ($launchText -match '(?i)-run=|RunUAT') -and
+		($launchText -notmatch '(?i)-game\b|-ExecutePythonScript')
+	if ($runsOnlyCommandlets) { continue }
+	if ($launchText -notmatch '(?i)-RenderOffscreen') {
+		throw "게임이나 에디터 창이 화면에 뜰 수 있습니다. -RenderOffscreen을 넣거나 의도를 표시하세요: $($launchScript.FullName)"
+	}
+}
 foreach ($launcherScript in @(
 	'Scripts/RunGame.bat',
 	'Scripts/RunEditor.bat'
@@ -658,7 +678,11 @@ $reviewedTickingFiles = @(
 	'IGMissingFloorFifthDawnDirector.cpp',
 	'IGMissingFloorEpilogueDirector.cpp',
 	'IGMissingFloorMercyDirector.cpp',
-	'IGCctvChannelFive.cpp'
+	'IGCctvChannelFive.cpp',
+	# 숨는 자리. 사람이 드나들거나 안에 있는 동안에만 켜고, 다 나오면 끈다.
+	'IGHidingSpot.cpp',
+	# 어둠의 몸(어둑시니·손님). 나타나 있는 동안에만 켜고, 사라지면 끈다.
+	'IGShadowFigure.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)
@@ -931,11 +955,14 @@ foreach ($selectionInvariant in @(
 		throw "Store water selection/static-proxy invariant is missing: $selectionInvariant"
 	}
 }
-if ($flashlightHeader.Contains('BatterySeconds') -or
-	$flashlightSource -match
-		'BatteryFraction\s*=\s*FMath::Max\([^;]*DeltaSeconds' -or
+# 건전지는 닳지만 빛이 꺼지지는 않는다. 바닥값이 없어지거나 너무 낮아지면 다 닳은
+# 손전등이 진행을 막는다.
+$emptyCellFloor = [regex]::Match($flashlightSource, 'constexpr float EmptyCellFloor = ([0-9.]+)f;')
+if (-not $emptyCellFloor.Success -or
+	[double]::Parse($emptyCellFloor.Groups[1].Value, [Globalization.CultureInfo]::InvariantCulture) -lt 0.12 -or
+	-not $flashlightSource.Contains('FMath::Lerp(IGFlashlight::EmptyCellFloor, 1.0f, Knee)') -or
 	-not $flashlightSource.Contains('presentation-only and always recover')) {
-	throw 'Flashlight brown-outs must remain presentation-only without battery depletion.'
+	throw 'A drained flashlight must keep EmptyCellFloor (>= 0.12) of its beam, and brown-outs must always recover.'
 }
 foreach ($requiredIdleTickInvariant in @(
 	'PrimaryComponentTick.bStartWithTickEnabled = false',
@@ -1183,15 +1210,25 @@ foreach ($doorSafetySource in @($swingDoorSource, $slidingDoorSource)) {
 	}
 }
 
+# 골목에는 배달 오토바이만 다닌다. 몸을 통과하지 않고(ResolvePlayerClearance), 비킬 폭이
+# 없으면 서며, 첫 외출의 루이턴 버스(LaunchAlleyNearMiss)는 한 판에 한 번이다.
 foreach ($requiredNeighborhoodFeature in @(
 	'PrimeOutdoorSequence',
 	'bOutdoorSequencePrimed',
-	'EIGPooledVehicleKind::DeliveryMotorcycle',
+	'LaunchAlleyNearMiss',
+	'ResolvePlayerClearance',
+	'ComputeLaneLimits',
+	'Neighborhood.ScooterNearMiss',
 	'ActivateLeaves',
 	'CatTraceRoot'
 )) {
 	if (-not $neighborhoodSource.Contains($requiredNeighborhoodFeature)) {
 		throw "Required neighborhood-life feature is missing: $requiredNeighborhoodFeature"
+	}
+}
+foreach ($forbiddenNeighborhoodFeature in @('PassengerCar', 'VehicleCabin')) {
+	if ($neighborhoodSource.Contains($forbiddenNeighborhoodFeature)) {
+		throw "폭 2.6 m 골목에 승용차를 다시 넣지 마세요: $forbiddenNeighborhoodFeature"
 	}
 }
 
@@ -1211,9 +1248,19 @@ $frontendContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-FrontendContract.ps1'
 & $frontendContractScript
 
+# System.Drawing.Common은 .NET 6부터 Windows에서만 돈다. 이 검사들은 맑은 고딕 글자 폭과
+# 그림 크기를 재는 것이라 다른 운영체제에서는 잴 대상 자체가 없다. 건너뛴 사실은 남긴다.
+function Invoke-WindowsOnlyContract([string]$ContractScript) {
+	if ($IsLinux -or $IsMacOS) {
+		Write-Host "SKIP $(Split-Path -Leaf $ContractScript) — System.Drawing은 Windows 전용"
+		return
+	}
+	& $ContractScript
+}
+
 $artAssetContractScript = Join-Path $projectRoot `
 	'Scripts/Test-ArtAssetContract.ps1'
-& $artAssetContractScript
+Invoke-WindowsOnlyContract $artAssetContractScript
 
 $missingFloorM0InputContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-M0InputContract.ps1'
@@ -1269,7 +1316,7 @@ $missingFloorM6AudioVisualContractScript = Join-Path $projectRoot `
 
 $missingFloorM65MercyNoteContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-M65MercyNoteContract.ps1'
-& $missingFloorM65MercyNoteContractScript
+Invoke-WindowsOnlyContract $missingFloorM65MercyNoteContractScript
 
 # §20 난이도 네 모드와 자비 안전망. 파일은 있었는데 아무도 부르지
 # 않아서 108개 단언이 그냥 안 돌고 있었다.
@@ -1279,7 +1326,7 @@ $missingFloorM8DifficultyContractScript = Join-Path $projectRoot `
 
 $missingFloorM65AudioCalibrationContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-M65AudioCalibrationContract.ps1'
-& $missingFloorM65AudioCalibrationContractScript
+Invoke-WindowsOnlyContract $missingFloorM65AudioCalibrationContractScript
 
 $missingFloorM3CctvChannelContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-M3CctvChannelContract.ps1'

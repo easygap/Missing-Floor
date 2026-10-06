@@ -22,7 +22,7 @@ $logPath = Join-Path $importRoot 'Saved/Logs/EndingStillsImport.log'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $env:IG_FRONTEND_UI_ONLY = '1'
 try {
-	& $editor $projectPath -unattended -nullrhi -nosound -nosplash "-abslog=$logPath" "-ExecutePythonScript=$scriptPath" | Out-Null
+	& $editor $projectPath -unattended -nullrhi -nosound -nosplash -RenderOffscreen "-abslog=$logPath" "-ExecutePythonScript=$scriptPath" | Out-Null
 	if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'Imported 4 textures')) {
 		throw "엔딩 이미지 반입에 실패했습니다: $logPath"
 	}

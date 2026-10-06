@@ -128,6 +128,25 @@ public:
 		bool bPlayCreak = true,
 		bool bSuppressCloseThud = false);
 
+	/**
+	 * 연출이 문을 움직이되 소리 크기와 빠르기를 정한다. 고임목을 뺀 방화문처럼
+	 * 쾅 닫히기도(0.42, 빠르게) 손으로 잡아 천천히 닫히기도(0.08) 한다.
+	 */
+	bool BeginScriptedSwingWithLoudness(
+		bool bInOpen,
+		float Loudness,
+		float DurationScale,
+		bool bPlayCreak = true);
+
+	/**
+	 * 안쪽 걸쇠(§4). 걸려 있으면 밖에서 도어락을 풀어도 문이 한 뼘에서 걸린다.
+	 * 안에서 여는 사람에게는 걸리지 않는다. 문을 여는 순간 같이 풀린다.
+	 */
+	void SetLatched(bool bInLatched, bool bPlaySound = true);
+	bool IsLatched() const { return bLatched; }
+	/** 걸쇠가 걸리거나 풀렸다. 걸쇠 모양을 그리는 쪽이 듣는다. */
+	FSimpleMulticastDelegate OnLatchChanged;
+
 	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
 	virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;
 	virtual float GetInteractionHoldDuration_Implementation(AActor* Interactor) const override;
@@ -187,6 +206,9 @@ protected:
 	float QuietSwingDurationScale = 1.8f;
 
 private:
+	/** 걸쇠를 풀어 두고 연다. 안에서 여는 플레이어의 두 길(눌러 열기·길게 열기)이 부른다. */
+	void ReleaseLatchForOpening();
+	bool bLatched = false;
 	void UpdateLeafCollision();
 	/** 경첩 쪽 위. 삐걱은 문짝이 매달린 자리에서 운다. */
 	FVector GetHingeSoundLocation() const;

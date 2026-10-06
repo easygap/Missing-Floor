@@ -80,6 +80,12 @@ public:
 	float GetCaptureImpactAlpha() const { return CaptureImpactAlpha; }
 	/** 0~1. 끊기기 직전까지 조여 오는 시야. */
 	float GetCaptureTunnelAlpha() const { return CaptureTunnelAlpha; }
+	/**
+	 * 0~1. 어둠 속에 선 것이 커지는 동안 화면 가장자리가 먹히는 정도. 괴이 감독이
+	 * 목표를 주고, 틱에서 천천히 따라간다. 사라지면 0을 준다.
+	 */
+	void SetThreatVignetteTarget(const float Alpha) { ThreatVignetteTarget = FMath::Clamp(Alpha, 0.0f, 1.0f); }
+	float GetThreatVignetteAlpha() const { return ThreatVignetteAlpha; }
 	/** 이번 포획에서 화면이 끊기는 시각(초). 괴물은 이 순간에 얼굴이 닿도록 달려든다. 음수면 아직 모른다. */
 	float GetCaptureCutSeconds() const { return CaptureCutSeconds; }
 	void SetCaptureThreat(class AIGListenerEntity* Threat);
@@ -135,6 +141,31 @@ public:
 	/** HUD의 상황 안내가 알려 준 동작을 실제로 해 봤는지 본다. */
 	bool IsHoldingBreath() const { return bHoldingBreath; }
 	bool IsSprinting() const { return bSprinting; }
+
+	/** 숨어 있는 자리. 드나드는 중에도 그 자리를 돌려준다. */
+	class AIGHidingSpot* GetHidingSpot() const;
+	bool IsInHidingSpot() const;
+	/** 숨는 자리가 부른다. 들어갈 때 자리를, 다 나왔을 때 nullptr를 준다. */
+	void SetHidingSpot(class AIGHidingSpot* Spot);
+	/** 숨어 있으면 그 자리에서 바로 꺼낸다. 잡힘과 장면 전환이 부른다. */
+	void LeaveHidingSpotImmediately();
+	/** 몸의 원점에서 눈(카메라)까지. 숨어서 내린 카메라도 들어 있다. */
+	FVector GetEyeOffsetFromActor() const;
+	/** 숨는 자리 안에 있다(드나드는 0.45초 포함). 앉기를 기다리는 동안은 아니다. */
+	bool IsConcealedInHidingSpot() const;
+	/**
+	 * 숨어 있는 동안 카메라만 내린다(cm, 아래가 음수). 몸은 가구 바닥 높이에 그대로
+	 * 서 있어서, 위치로 재는 판정(집 안인지, 어느 층인지)이 흔들리지 않는다.
+	 */
+	void SetHidingCameraLift(float Centimeters);
+	float GetHidingCameraLift() const { return HidingCameraLift; }
+	/** 서 있을 때 몸의 원점에서 카메라까지. 앉아도 같다(앉는 보정은 잠깐만 얹힌다). */
+	const FVector& GetCameraBaseLocation() const { return CameraBaseLocation; }
+
+	/** 지금 서 있는 자리의 어둠(0~1). 켜진 손전등은 어둠을 0으로 만든다. */
+	float GetDarkness() const { return CachedDarkness; }
+	/** 손전등을 뺀 어둠. 방이나 복도에 불이 켜져 있으면 낮다. */
+	float GetRoomDarkness() const { return CachedRoomDarkness; }
 
 	UFUNCTION(BlueprintPure, Category = "Player|Audio")
 	EIGFootstepSurface GetLastFootstepSurface() const { return LastFootstepSurface; }
@@ -201,6 +232,12 @@ private:
 	void RefreshSprintState();
 	void UpdateCrouchTransition(float DeltaSeconds);
 	void UpdateContextualActions(float DeltaSeconds);
+	/** 발을 뗀 직후의 점프와 착지 직전에 미리 누른 점프를 받아 준다(§9). */
+	void UpdateJumpAssist();
+	/** 일어서려는데 머리 위가 막혔으면 한 번 알려 준다. */
+	void UpdateStandBlock(float DeltaSeconds);
+	/** 옆·뒤로 움직이는 동안은 달리지 않는다. */
+	void UpdateSprintDirection();
 	void FinishHoldBreath(bool bForcedRelease);
 	void ApplyPlayerKnockFeedback();
 	void RegisterKnockSequenceTap();
@@ -211,8 +248,11 @@ private:
 	void StopChaseHaptic();
 	void UpdateChaseHaptic(float DeltaSeconds);
 	void PlayHapticFeedback(float Intensity, float DurationSeconds) const;
-	/** Samples how dark it is where the player stands, for the stress model. */
-	float SampleAmbientDarkness() const;
+	/**
+	 * Samples how dark it is where the player stands, for the stress model.
+	 * bCountFlashlight가 false면 손전등을 빼고 방의 불빛만 잰다(어둑시니가 쓴다).
+	 */
+	float SampleAmbientDarkness(bool bCountFlashlight = true) const;
 	/** Footstep cadence and its noise report; runs whether or not the camera bobs. */
 	void UpdateFootsteps(float DeltaSeconds);
 	void UpdateCaptureFeedback(float DeltaSeconds);
@@ -283,6 +323,8 @@ private:
 	float CrouchCameraCompensation = 0.0f;
 	float CrouchCameraCompensationStart = 0.0f;
 	float AppliedCrouchCameraCompensation = 0.0f;
+	float HidingCameraLift = 0.0f;
+	float AppliedHidingCameraLift = 0.0f;
 	float KnockCameraKick = 0.0f;
 	/** 착지 직후 시점이 내려앉는 깊이(cm). 무릎이 접히는 만큼이고 곧 되돌아온다. */
 	float LandingDip = 0.0f;
@@ -302,6 +344,8 @@ private:
 	float CaptureFovScale = 1.0f;
 	float CaptureImpactAlpha = 0.0f;
 	float CaptureTunnelAlpha = 0.0f;
+	float ThreatVignetteTarget = 0.0f;
+	float ThreatVignetteAlpha = 0.0f;
 	double LastKnockInputSeconds = -1.0;
 	double KnockInputLockedUntil = -1.0;
 	int32 LastStepIndex = 0;
@@ -313,6 +357,18 @@ private:
 	bool bListening = false;
 	bool bListenTriggered = false;
 	bool bHoldingBreath = false;
+	/** 숨 참기 키를 쥐고 있다. 내쉰 직후의 쉬는 틈이 끝나면 다시 참는다. */
+	bool bHoldBreathInputHeld = false;
+	double BreathReleasedSeconds = -10.0;
+	/** 마지막으로 땅을 디딘 시각과, 공중에서 미리 누른 점프가 유효한 시각. */
+	double LastGroundedSeconds = -10.0;
+	double JumpBufferedUntilSeconds = -1.0;
+	bool bCoyoteJumpReady = false;
+	/** 일어서라고 한 뒤에도 앉아 있던 시간. 속말은 앉을 때마다 한 번이다. */
+	float BlockedStandSeconds = 0.0f;
+	bool bBlockedStandThoughtShown = false;
+	bool bSprintDirectionAllowed = true;
+	TWeakObjectPtr<class AIGHidingSpot> HidingSpot;
 	bool bInteractionRedirectedToListen = false;
 	bool bInteractionRedirectedToInterludeListen = false;
 	/** 패드 엿듣기 키를 밤3 벽이 아닌 엿듣기 판정에서 눌러 상호작용 홀드로 넘긴 중. */
@@ -337,6 +393,8 @@ private:
 	/** Throttles the darkness probe: it traces, so it does not run per frame. */
 	float DarknessSampleTimer = 0.0f;
 	float CachedDarkness = 0.0f;
+	/** 손전등을 뺀 어둠. 방에 불이 켜져 있는지만 본다. */
+	float CachedRoomDarkness = 0.0f;
 	/** Held-item inertia: lag offset and the previous view rotation driving it. */
 	FRotator CarrySwayOffset = FRotator::ZeroRotator;
 	FRotator PreviousControlRotation = FRotator::ZeroRotator;

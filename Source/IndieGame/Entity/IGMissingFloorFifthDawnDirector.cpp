@@ -110,6 +110,9 @@ bool AIGMissingFloorFifthDawnDirector::StartInterlude(
 	}
 
 	Player = InPlayer;
+	// 숨어 있었으면 먼저 꺼낸다. 막간이 이동을 끈 뒤에 숨는 자리가 이동을 되살리거나
+	// 시야 제한을 남기면 막간의 화면과 부딪친다.
+	InPlayer->LeaveHidingSpotImmediately();
 	ElapsedSeconds = 0.0f;
 	FiredCueMask = 0;
 	PlayerKnockCount = 0;
@@ -125,6 +128,24 @@ bool AIGMissingFloorFifthDawnDirector::StartInterlude(
 		|| bReplayAvailabilityForcedForSession;
 	bActive = true;
 	StartWorldSeconds = GetWorld()->GetTimeSeconds();
+	if (!bReplaySkipAvailable)
+	{
+		// §6. 처음 보는 사람도 붙잡아 두지 않는다. 15초면 이 막간이 무엇인지는
+		// 알게 된다. 그 뒤로는 E를 길게 눌러 넘어간다.
+		GetWorldTimerManager().SetTimer(
+			FirstViewSkipTimer,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				if (!bActive)
+				{
+					return;
+				}
+				bReplaySkipAvailable = true;
+				UpdateSensoryHudSkip();
+			}),
+			IGReplaySkip::FirstViewDelaySeconds,
+			false);
+	}
 	// 역사층의 소리는 눈을 감은 자리와 그때 보던 방향에 놓는다. 화면은 검어도
 	// 그 자리의 공간이라 고개를 돌리면 소리도 돈다.
 	InterludeOrigin = InPlayer->GetActorLocation();
@@ -730,6 +751,7 @@ void AIGMissingFloorFifthDawnDirector::FinishInterlude(
 	bReplaySkipRewinding = false;
 	SetActorTickEnabled(false);
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	ReleaseInterludeAudio();
 	SetSensoryHud(false);
 	if (!Player.Get())
@@ -914,6 +936,7 @@ void AIGMissingFloorFifthDawnDirector::EndPlay(
 	}
 	bActive = false;
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	ReleaseInterludeAudio();
 	SetSensoryHud(false);
 	SetActorTickEnabled(false);

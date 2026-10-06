@@ -1,23 +1,35 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "IGNeighborhoodLifeDirector.generated.h"
 
 class UAudioComponent;
+class UBoxComponent;
 class UMaterialInterface;
+class UPointLightComponent;
 class USceneComponent;
+class USpotLightComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
+class APawn;
 
 /**
  * Allocation-bounded life for a small Korean residential alley.
  *
- * The actor intentionally needs no imported vehicle, animal, VFX or audio
- * assets. It builds a tiny pool from Engine basic shapes and renders all
- * sounds with UIGToneSequenceSoundWave. Runtime work is event driven: the
- * actor ticks only for an active pass, gust, leaf or cat trace, and scheduled
- * callbacks skip when the player is too far away.
+ * 골목은 폭이 2.6 m이고 양 끝이 막혀 있다(서쪽 막다른 벽, 동쪽 편의점 정면).
+ * 그래서 여기 들어오는 탈것은 뒤편 배송 골목에서 샛길로 빠져나오는 배달
+ * 오토바이뿐이다. 오토바이는 사람을 통과하지 않는다. 비켜 갈 폭이 있으면
+ * 비켜 가고, 없으면 급정거해 경적을 울리고 기다리며, 마지막 순간에 뛰어든
+ * 몸은 어깨로 스쳐 밀어낸다.
+ *
+ * 첫 외출에는 동쪽 샛길에서 오토바이가 튀어나와 코앞을 스친 뒤 공동현관 옆
+ * 연석에 선다(루이턴 버스). 202호 라이더 정우의 오토바이다. 그 뒤로는 낮과
+ * 저녁 동안 거기 서 있고, 밤의 그 시간에는 없다.
+ *
+ * Runtime work is event driven: the actor ticks only for an active pass,
+ * gust, leaf or cat trace, and scheduled callbacks skip when the player is
+ * too far away.
  */
 UCLASS(BlueprintType, NotBlueprintable, Transient)
 class INDIEGAME_API AIGNeighborhoodLifeDirector final : public AActor
@@ -38,9 +50,8 @@ public:
 		int32 InDeterministicSeed = 4040444);
 
 	/**
-	 * Starts the authored alley sequence when the player reaches street level.
-	 * CH01 then guarantees a car followed by a delivery motorcycle instead of
-	 * spending those deterministic events unheard while the player is on 4F.
+	 * 첫 외출. 공동현관을 나선 그녀가 골목 동쪽으로 걸어가면 동쪽 샛길에서
+	 * 오토바이가 튀어나온다. 한 판에 한 번이다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Indie Game|Neighborhood")
 	void PrimeOutdoorSequence();
@@ -51,23 +62,50 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-	enum class EIGPooledVehicleKind : uint8
+	/** 길 위의 한 점. 차체 중심이 이 점에서 옆으로 갈 수 있는 범위를 함께 든다. */
+	struct FScooterPathPoint
 	{
-		PassengerCar,
-		DeliveryMotorcycle
+		FVector Location = FVector::ZeroVector;
+		/** 진행 방향 오른쪽이 +. 차체 중심이 갈 수 있는 최소·최대 옆 거리(cm). */
+		float MinOffset = -30.0f;
+		float MaxOffset = 30.0f;
+		/** 이 점까지 길을 따라 잰 거리(cm). */
+		float Distance = 0.0f;
 	};
 
-	struct FVehicleRuntime
+	struct FScooterRuntime
 	{
 		bool bActive = false;
-		EIGPooledVehicleKind Kind = EIGPooledVehicleKind::PassengerCar;
-		FVector Start = FVector::ZeroVector;
-		FVector End = FVector::ZeroVector;
-		FVector Velocity = FVector::ZeroVector;
-		float Elapsed = 0.0f;
-		float Duration = 1.0f;
+		/** 첫 외출의 루이턴 버스. 동쪽 샛길에서 나와 공동현관 옆 연석에 선다. */
+		bool bNearMissPass = false;
+		bool bParkAtEnd = false;
+		bool bParked = false;
+		TArray<FScooterPathPoint> Path;
+		float Distance = 0.0f;
+		float Speed = 0.0f;
+		float CruiseSpeed = 900.0f;
+		float LateralOffset = 0.0f;
+		float LateralVelocity = 0.0f;
+		float Lean = 0.0f;
+		float PreviousYaw = 0.0f;
+		float BlockedSeconds = 0.0f;
+		float ParkedSeconds = 0.0f;
+		float WheelSpinDegrees = 0.0f;
+		float LastBrushTime = -100.0f;
+		bool bScreechPlayed = false;
+		bool bBlockHornPlayed = false;
+		bool bBlockLinePlayed = false;
+		bool bWarningHornPlayed = false;
+		bool bPassedPlayer = false;
+		bool bWasAheadOfPlayer = false;
+		bool bBrushed = false;
+		bool bEngineCut = false;
+		/** 오래 막혀 있다가 여유 없이 비집고 지나가는 중. 그녀를 지나칠 때까지 유지한다. */
+		bool bSqueezePass = false;
 		float BasePitch = 1.0f;
 		float BaseVolume = 1.0f;
+		FVector Location = FVector::ZeroVector;
+		FVector Forward = FVector::ForwardVector;
 	};
 
 	struct FLeafRuntime
@@ -95,21 +133,77 @@ private:
 	void UpdateRuntime(float DeltaSeconds);
 	void RefreshRuntimeUpdates();
 
-	void ScheduleNextVehicle();
+	void ScheduleNextScooter();
 	void ScheduleNextGust();
 	void ScheduleNextCatTrace();
 
-	void LaunchVehicleEvent();
+	/** 샛길 하나로 들어와 골목을 지나 다른 샛길로 빠지는 평범한 배달. */
+	void LaunchScooterThroughPass();
+	/** 첫 외출의 루이턴 버스를 걸어 두고, 그녀가 골목 동쪽으로 들어서면 띄운다. */
+	void PollNearMissTrigger();
+	bool LaunchAlleyNearMiss();
+	/** 첫 외출의 오토바이가 이미 지나갔는가. 이번 실행의 기억과 서사 기록을 함께 본다. */
+	bool HasNearMissPlayed() const;
 	void LaunchWindGust();
 	void LaunchCatTrace();
 
-	void UpdateVehicles(float DeltaSeconds, const FVector& ListenerLocation);
+	/**
+	 * 꺾이는 점에 반지름을 주면 그 모서리를 원호로 깎아 길을 만든다. 모든 점에는
+	 * 그 자리의 골목 폭과 장애물로 잰 옆 범위가 붙는다.
+	 */
+	void BuildScooterPath(
+		const TArray<FVector>& Corners,
+		const TArray<float>& CornerRadii,
+		TArray<FScooterPathPoint>& OutPath) const;
+	/** 이 자리에서 차체 중심이 들어갈 수 있는 세계 좌표 범위를 옆 거리로 바꾼다. */
+	void ComputeLaneLimits(
+		const FVector& Location,
+		const FVector& Forward,
+		float& OutMinOffset,
+		float& OutMaxOffset) const;
+	void SamplePath(
+		const FScooterRuntime& Runtime,
+		float Distance,
+		FVector& OutLocation,
+		FVector& OutForward,
+		float& OutMinOffset,
+		float& OutMaxOffset) const;
+	/** 점을 길 좌표로 접는다. 앞뒤 거리와 진행 방향 오른쪽 옆 거리. */
+	bool ProjectOntoPath(
+		const FScooterRuntime& Runtime,
+		const FVector& Point,
+		float SearchFrom,
+		float SearchTo,
+		float& OutAlong,
+		float& OutSide) const;
+	int32 ActivateScooter(
+		TArray<FScooterPathPoint>&& Path,
+		float CruiseSpeed,
+		bool bNearMissPass,
+		bool bParkAtEnd);
+
+	void UpdateScooters(float DeltaSeconds, const FVector& ListenerLocation);
+	void AdvanceScooter(int32 SlotIndex, float DeltaSeconds, const FVector& ListenerLocation);
+	/** 몸이 차체에 닿았으면 밀어낸다. 차체가 몸을 통과하는 프레임은 없다. */
+	void ResolvePlayerClearance(int32 SlotIndex, APawn* Player);
+	void ApplyScooterTransform(int32 SlotIndex, float DeltaSeconds);
+	void ParkScooter(int32 SlotIndex);
+	void RefreshParkedScooterPresence();
+	void SetScooterVisible(int32 SlotIndex, bool bVisible, bool bWithRider);
+	void SetScooterBlocking(int32 SlotIndex, bool bBlocking);
+
+	void PlayScooterHorn(int32 SlotIndex, bool bDouble);
+	void PlayScooterScreech(int32 SlotIndex);
+	void PlayScooterWhoosh(int32 SlotIndex, const FVector& At);
+	void PlayScooterEngineOff(int32 SlotIndex);
+	void PlayRiderLine(const FText& Line);
+
 	void UpdateGust(float DeltaSeconds);
 	void UpdateLeaves(float DeltaSeconds, const FVector& ListenerLocation);
 	void UpdateCatTrace(float DeltaSeconds);
 
 	void ActivateLeaves(const FVector& Origin, int32 Count, float ImpulseScale);
-	void DeactivateVehicle(int32 SlotIndex);
+	void DeactivateScooter(int32 SlotIndex);
 	void DeactivateLeaf(int32 LeafIndex);
 	void DeactivateCatTrace();
 
@@ -118,14 +212,20 @@ private:
 		FName ComponentName,
 		float InnerRadius,
 		float FalloffDistance);
-	class UIGToneSequenceSoundWave* CreateVehicleLoop(
-		UObject* Outer,
-		EIGPooledVehicleKind Kind) const;
+	UAudioComponent* SpawnTransientOneShot(
+		class UIGToneSequenceSoundWave* Sound,
+		const FVector& Location,
+		float Volume,
+		float InnerRadius,
+		float FalloffDistance);
+	class UIGToneSequenceSoundWave* CreateScooterLoop(UObject* Outer) const;
 	class UIGToneSequenceSoundWave* CreateGustSound(UObject* Outer, float Duration) const;
 	class UIGToneSequenceSoundWave* CreateCatCall(UObject* Outer) const;
 
 	bool TryGetListenerLocation(FVector& OutLocation) const;
+	APawn* GetPlayerPawn() const;
 	bool IsPlayerNearRoad(float MaxDistance) const;
+	class UIGMissingFloorNarrativeSubsystem* GetNarrative() const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Indie Game|Neighborhood")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -139,25 +239,42 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Indie Game|Neighborhood|Performance", meta = (ClampMin = "500.0"))
 	float LeafSimulationDistance = 1900.0f;
 
+	/** 슬롯마다 차체 뿌리. 이 컴포넌트가 길을 따라 움직이고 기울어진다. */
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> VehicleBodies;
+	TArray<TObjectPtr<USceneComponent>> ScooterRoots;
+
+	/** 저작 메시(SM_DeliveryScooter)가 있으면 그 한 장, 없으면 상자 차체. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> ScooterBodies;
+
+	/** 저작 메시가 없을 때만 쓰는 배달통. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> ScooterCargoBoxes;
+
+	/** 라이더 몸통(저작 메시가 있으면 SM_DeliveryRider 한 장). */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> ScooterRiderBodies;
+
+	/** 저작 라이더가 없을 때만 쓰는 헬멧. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> ScooterRiderHelmets;
+
+	/** 슬롯마다 바퀴 둘(앞, 뒤). */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> ScooterWheels;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> VehicleCabins;
+	TArray<TObjectPtr<USpotLightComponent>> ScooterHeadlights;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> VehicleCargoBoxes;
+	TArray<TObjectPtr<UPointLightComponent>> ScooterTailLights;
 
-	/** Rider helmet per slot; visible only on delivery motorcycles. */
+	/** 서 있거나 기어갈 때만 몸을 막는 상자. 달리는 동안에는 회피 로직이 막는다. */
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> VehicleRiderHeads;
-
-	/** Four wheel components per slot; motorcycles use indices 0 and 1. */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> VehicleWheels;
+	TArray<TObjectPtr<UBoxComponent>> ScooterBlockers;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UAudioComponent>> VehicleAudio;
+	TArray<TObjectPtr<UAudioComponent>> ScooterAudio;
 
 	/** Bounded one-shots that must be stopped when chapters change. */
 	UPROPERTY(Transient)
@@ -175,6 +292,15 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> AlleyCatMesh;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> ScooterMesh;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> ScooterWheelMesh;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> RiderMesh;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> CubeMesh;
@@ -195,27 +321,35 @@ private:
 	TObjectPtr<UMaterialInterface> LeafMaterial;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> DeliveryBoxMaterial;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> AlleyCatMaterial;
 
-	TArray<FVehicleRuntime> VehicleRuntime;
+	TArray<FScooterRuntime> ScooterRuntime;
 	TArray<FLeafRuntime> LeafRuntime;
 	FCatTraceRuntime CatRuntime;
 	FRandomStream Random;
 
-	// The procedural vehicles are authored with their wheel bottoms 5 cm
-	// above the path origin, so -5 seats them on the alley's Z=0 asphalt.
-	FVector RoadStart = FVector(-360.0f, -555.0f, -5.0f);
-	FVector RoadEnd = FVector(2390.0f, -555.0f, -5.0f);
+	FVector RoadStart = FVector(-540.0f, -555.0f, -5.0f);
+	FVector RoadEnd = FVector(2190.0f, -555.0f, -5.0f);
 	FVector CurrentWindSignal = FVector::ZeroVector;
 	FVector GustDirection = FVector::ForwardVector;
 	float GustElapsed = -1.0f;
 	float GustDuration = 0.0f;
 	float GustPeakStrength = 0.0f;
-	int32 ActiveVehicleOrdinal = 0;
 	bool bPoolsInitialized = false;
 	bool bOutdoorSequencePrimed = false;
+	bool bNearMissArmed = false;
+	/** 이번 실행에서 첫 외출의 오토바이가 지나갔다. 밤 전에는 서사에 남기지 않는다. */
+	bool bNearMissPlayed = false;
+	double NearMissArmedSeconds = 0.0;
+	bool bNearMissThoughtPending = false;
 
-	FTimerHandle VehicleScheduleHandle;
+	FTimerHandle ScooterScheduleHandle;
+	FTimerHandle NearMissPollHandle;
+	FTimerHandle ParkedPresenceHandle;
+	FTimerHandle NearMissThoughtHandle;
 	FTimerHandle GustScheduleHandle;
 	FTimerHandle CatScheduleHandle;
 };

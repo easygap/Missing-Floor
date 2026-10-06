@@ -466,6 +466,8 @@ private:
 	/** 옥상과 골목 하늘 끝에 보이는 먼 동네. 새벽 네 시 반의 빌라촌 불빛이다. */
 	void BuildDistantSkyline();
 	void SpawnInteractables();
+	/** §4 숨는 자리, 건전지, 계단실 방화문과 고임목, 403호 걸쇠. */
+	void SpawnShelterProps(const FActorSpawnParameters& SpawnParameters);
 	void SpawnStairTransition();
 	void AddStaticPurchaseBagProxy(
 		AIGPickupItem* WaterBottle,

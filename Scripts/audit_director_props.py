@@ -284,6 +284,48 @@ def parse_call_sites(sources: dict) -> list:
     return sites
 
 
+# class INDIEGAME_API AIGBatteryPickup : public AIGPickupItem
+PARENT_PATTERN = re.compile(
+    r"\bclass\s+(?:\w+_API\s+)?(?P<child>A\w+)\s*(?:final\s*)?:\s*public\s+(?P<parent>A\w+)")
+
+
+def parse_parents(project_root: str) -> dict:
+    """자식 클래스 -> 부모 클래스. 헤더의 UCLASS 선언에서 읽는다(감사 본문은 .cpp만 읽는다)."""
+    parents = {}
+    root = os.path.join(project_root, SOURCE_ROOT)
+    for directory, _, files in os.walk(root):
+        for filename in files:
+            if not filename.endswith(".h"):
+                continue
+            with open(os.path.join(directory, filename), "r", encoding="utf-8", errors="replace") as handle:
+                for match in PARENT_PATTERN.finditer(strip_comments(handle.read())):
+                    parents.setdefault(match.group("child"), match.group("parent"))
+    return parents
+
+
+def adopt_inherited(sites: list, signatures: dict, non_visual, parents: dict) -> list:
+    """자식 클래스로 띄운 소품의 호출부를 Configure를 정의한 조상에 붙인다.
+
+    건전지 줍기(AIGBatteryPickup)는 AIGPickupItem의 ConfigurePrototypeVisuals를
+    물려받는다. 띄운 클래스 이름만 보면 서명을 못 찾아 「대조하지 못함」으로
+    남는다 — 실제로는 부모의 계약 그대로 검사해야 하는 자리다.
+    """
+    adopted = []
+    for site, owner, name, arguments in sites:
+        resolved_owner = owner
+        seen = set()
+        while ((resolved_owner, name) not in signatures
+               and (resolved_owner, name) not in non_visual
+               and resolved_owner in parents
+               and resolved_owner not in seen):
+            seen.add(resolved_owner)
+            resolved_owner = parents[resolved_owner]
+        if (resolved_owner, name) in signatures or (resolved_owner, name) in non_visual:
+            owner = resolved_owner
+        adopted.append((site, owner, name, arguments))
+    return adopted
+
+
 def audit(signatures: dict, sites: list, non_visual=frozenset()) -> tuple:
     """(findings, resolved, unresolved)."""
     findings = []
@@ -669,7 +711,8 @@ def scene_prop_boxes():
 def run(project_root: str) -> tuple:
     sources = read_sources(project_root)
     signatures, non_visual = parse_signatures(sources)
-    sites = parse_call_sites(sources)
+    sites = adopt_inherited(
+        parse_call_sites(sources), signatures, non_visual, parse_parents(project_root))
     findings, resolved, unresolved = audit(signatures, sites, non_visual)
 
     mesh_bounds = load_mesh_bounds(project_root)

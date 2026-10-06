@@ -59,7 +59,8 @@ foreach ($path in @($launcher, $shipping)) {
 $receipt = Join-Path $evidenceRoot 'receipt.txt'
 $userRoot = Join-Path $root 'User'
 # 진행 검사에는 한국어 대사와 직접 대조하는 항목이 있어 호스트 언어를 따르지 않는다.
-$arguments = @('-unattended', '-nosplash', '-NoLoadingScreen', '-nullrhi', '-nosound',
+# -RenderOffScreen이 있으면 창 자체를 만들지 않는다. 숨김 실행만으로는 실제 게임 프로세스가 창을 띄운다.
+$arguments = @('-unattended', '-nosplash', '-NoLoadingScreen', '-nullrhi', '-nosound', '-RenderOffScreen',
     '-IGSkipFrontend', '-IGCulture=ko', '-IGListenerGreybox', '-IGListenerGreyboxProbe',
     "-UserDir=$userRoot", "-IGMissingFloorResultPath=$receipt")
 $quoted = @($arguments | ForEach-Object {
