@@ -643,6 +643,57 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDoorMurmur(UObject* Ou
 	return Wave;
 }
 
+UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateKeyRingJingle(UObject* Outer, const bool bSecondVariant)
+{
+	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGKeyRingJingle"));
+	TArray<FIGToneNote> Notes;
+	// 열쇠끼리 닿는 순간의 짧은 틱과, 얇은 쇠막대의 비배음(1 : 2.76) 울림이 한 쌍이다.
+	// 울림은 금방 죽는다. 꾸러미를 손으로 누르고 걷는 사람의 소리다.
+	if (!bSecondVariant)
+	{
+		Notes.Add({0.000f, 0.004f, 5200.0f, 0.090f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
+		Notes.Add({0.002f, 0.140f, 3180.0f, 0.055f, 0.01f, 3.2f, EIGToneWaveform::Sine});
+		Notes.Add({0.002f, 0.080f, 7020.0f, 0.018f, 0.01f, 3.6f, EIGToneWaveform::Sine});
+		Notes.Add({0.058f, 0.004f, 4700.0f, 0.075f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
+		Notes.Add({0.060f, 0.120f, 3720.0f, 0.048f, 0.01f, 3.2f, EIGToneWaveform::Sine});
+		Notes.Add({0.060f, 0.070f, 6100.0f, 0.020f, 0.01f, 3.6f, EIGToneWaveform::Sine});
+		Notes.Add({0.112f, 0.004f, 5600.0f, 0.065f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
+		Notes.Add({0.114f, 0.160f, 2890.0f, 0.050f, 0.01f, 3.0f, EIGToneWaveform::Sine});
+		Notes.Add({0.114f, 0.090f, 5460.0f, 0.018f, 0.01f, 3.6f, EIGToneWaveform::Sine});
+		Notes.Add({0.176f, 0.004f, 4300.0f, 0.050f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
+		Notes.Add({0.178f, 0.110f, 4130.0f, 0.040f, 0.01f, 3.2f, EIGToneWaveform::Sine});
+		Notes.Add({0.246f, 0.140f, 3350.0f, 0.030f, 0.01f, 3.4f, EIGToneWaveform::Sine});
+	}
+	else
+	{
+		Notes.Add({0.000f, 0.004f, 4900.0f, 0.080f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
+		Notes.Add({0.002f, 0.130f, 3460.0f, 0.052f, 0.01f, 3.2f, EIGToneWaveform::Sine});
+		Notes.Add({0.002f, 0.075f, 6380.0f, 0.020f, 0.01f, 3.6f, EIGToneWaveform::Sine});
+		Notes.Add({0.044f, 0.004f, 5900.0f, 0.070f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
+		Notes.Add({0.046f, 0.150f, 2760.0f, 0.050f, 0.01f, 3.0f, EIGToneWaveform::Sine});
+		Notes.Add({0.046f, 0.085f, 7240.0f, 0.016f, 0.01f, 3.6f, EIGToneWaveform::Sine});
+		Notes.Add({0.128f, 0.004f, 5100.0f, 0.060f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
+		Notes.Add({0.130f, 0.120f, 3940.0f, 0.045f, 0.01f, 3.2f, EIGToneWaveform::Sine});
+		Notes.Add({0.130f, 0.070f, 5820.0f, 0.018f, 0.01f, 3.6f, EIGToneWaveform::Sine});
+		Notes.Add({0.212f, 0.150f, 3040.0f, 0.032f, 0.01f, 3.4f, EIGToneWaveform::Sine});
+	}
+	Wave->ConfigureNotes(MoveTemp(Notes), false);
+	return Wave;
+}
+
+UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateSlipperScuff(UObject* Outer)
+{
+	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGSlipperScuff"));
+	TArray<FIGToneNote> Notes;
+	// 뒤꿈치의 둔한 톡, 고무 밑창이 닿는 짧은 잡음, 그리고 바닥을 쓸며 끌리는 소리.
+	Notes.Add({0.000f, 0.060f, 95.0f, 0.090f, 0.02f, 3.0f, EIGToneWaveform::Sub});
+	Notes.Add({0.000f, 0.030f, 2400.0f, 0.085f, 0.05f, 1.2f, EIGToneWaveform::BandNoise, 0.30f});
+	Notes.Add({0.012f, 0.190f, 880.0f, 0.060f, 0.30f, 1.6f, EIGToneWaveform::BandNoise, 0.25f});
+	Notes.Add({0.040f, 0.150f, 1900.0f, 0.030f, 0.35f, 1.8f, EIGToneWaveform::BandNoise, 0.20f});
+	Wave->ConfigureNotes(MoveTemp(Notes), false);
+	return Wave;
+}
+
 UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateRegisterSound(UObject* Outer)
 {
 	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGRegisterSound"));

@@ -165,6 +165,15 @@ public:
 	 */
 	static UIGToneSequenceSoundWave* CreateDoorMurmur(UObject* Outer);
 
+	/**
+	 * 허리춤 열쇠 꾸러미가 걸음마다 부딪는 소리. 짧고 높은 쇳소리 몇 개가 0.3초 안에
+	 * 흩어진다. 두 벌을 번갈아 써서 같은 소리가 되풀이되지 않게 한다.
+	 */
+	static UIGToneSequenceSoundWave* CreateKeyRingJingle(UObject* Outer, bool bSecondVariant);
+
+	/** 관리실 슬리퍼를 끄는 걸음. 발뒤꿈치가 닿고 밑창이 바닥을 쓸며 끌린다. */
+	static UIGToneSequenceSoundWave* CreateSlipperScuff(UObject* Outer);
+
 	/** Register confirmation beeps with a cash-drawer clunk. */
 	static UIGToneSequenceSoundWave* CreateRegisterSound(UObject* Outer);
 
