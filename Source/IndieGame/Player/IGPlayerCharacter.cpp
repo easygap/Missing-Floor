@@ -598,6 +598,9 @@ void AIGPlayerCharacter::PlayCaptureFeedback(const float DurationSeconds, const 
 	// 깨어난 뒤 4초를 저절로 참다가 터지는 소리를 내지 않는다.
 	bHoldBreathInputHeld = false;
 	FinishHoldBreath(false);
+	// 침대 밑에서 끌려 나온 몸은 앉은 채다. 세워 두지 않으면 선 높이의 기상 자리로
+	// 옮겨진 짧은 캡슐이 떨어지며 착지 소리를 낸다.
+	UnCrouch();
 	CaptureFeedbackDurationSeconds = FMath::Max(DurationSeconds, 0.05f);
 	CaptureFeedbackRemainingSeconds = CaptureFeedbackDurationSeconds;
 	CaptureStartRotation = GetControlRotation();

@@ -1521,6 +1521,7 @@ void AIGListenerEntity::NotifyAnswerKnock(const FVector& KnockLocation)
 		EIGAudioBus::Entity);
 	// §19.8. 소리로 못 듣는 손에게도 대답이 통했다는 것이 닿아야 한다.
 	EmitPresentationCue(GetActorLocation(), 0.6f, 2840.0f);
+	OnKnocked.Broadcast(GetActorLocation());
 	if (IsNearForCaption(GetActorLocation()))
 	{
 		AIGHorrorHUD::PushAudioCaptionAt(
@@ -2688,6 +2689,7 @@ void AIGListenerEntity::PlayKnockTriple()
 	// §19.8. 「그가 두드리는 동안 움직여라」는 이 소리로 배우는 규칙이다. 듣기
 	// 어려운 손에게도 두드리는 창이 닿아야 한다. 자막은 12초에 한 번만.
 	EmitPresentationCue(KnockAt, 1.0f, 3900.0f);
+	OnKnocked.Broadcast(KnockAt);
 	const double Now = World ? World->GetTimeSeconds() : 0.0;
 	if (Now - LastKnockCaptionSeconds >= IGListener::KnockCaptionIntervalSeconds
 		&& IsNearForCaption(KnockAt))
@@ -2730,6 +2732,7 @@ void AIGListenerEntity::PlayCeilingKnock()
 	// §19.8. 위층의 그녀에게 방위 딱지가 「아래」를 붙인다. 천장 노크는 이미
 	// 12초에 한 번이라 자막 간격을 따로 두지 않는다.
 	EmitPresentationCue(KnockPoint, 0.8f, 3900.0f);
+	OnKnocked.Broadcast(KnockPoint);
 	if (IsNearForCaption(KnockPoint))
 	{
 		AIGHorrorHUD::PushAudioCaptionAt(
@@ -2803,6 +2806,7 @@ void AIGListenerEntity::PlayHomeDoorKnock(const bool bSingle)
 		KnockPoint,
 		bSingle ? 0.7f : 1.0f,
 		IGListener::DoorKnockInnerRadius + IGListener::DoorKnockFalloff);
+	OnKnocked.Broadcast(KnockPoint);
 	if (UWorld* World = GetWorld())
 	{
 		if (UIGRecordingSubsystem* Recording =
@@ -3312,7 +3316,18 @@ void AIGListenerEntity::BeginCapture(APawn* Player)
 		// 포획 시점). 기는 자세의 얼굴은 위를 보고 있어서 이 각도에서 가장 잘 읽힌다. 얼굴은
 		// 이 시선 위에서 70cm까지 물러났다가 눈앞 20cm로 달려든다. 주먹 쥔 두 팔을 가슴
 		// 앞으로 드는 덮치기 동작은 쓰지 않는다. 권투 자세로 읽혔다.
-		CaptureFallenEye = Player->GetPawnViewLocation()
+		// 넘어지는 눈높이는 선 사람 기준으로 잰다. 침대 밑에서 끌려 나와 아직 앉은
+		// 몸을 엔진의 앉은 눈높이로 재면 덮치는 얼굴이 바닥 밑으로 들어간다.
+		FVector StandingEye = Player->GetPawnViewLocation();
+		if (const AIGPlayerCharacter* Victim = Cast<AIGPlayerCharacter>(Player))
+		{
+			if (const UCapsuleComponent* Capsule = Victim->GetCapsuleComponent())
+			{
+				const float FeetZ = Victim->GetActorLocation().Z - Capsule->GetScaledCapsuleHalfHeight();
+				StandingEye.Z = FeetZ + Victim->GetDefaultHalfHeight() + Victim->GetCameraBaseLocation().Z;
+			}
+		}
+		CaptureFallenEye = StandingEye
 			+ Direction * AIGPlayerCharacter::CaptureFallBackCentimeters
 			- FVector(0, 0, AIGPlayerCharacter::CaptureFallDropCentimeters);
 		CaptureStrikeLine = (-Direction * 34.0f + FVector(0, 0, 10)).GetSafeNormal();

@@ -44,6 +44,11 @@ enum class EIGListenerState : uint8
 };
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FIGPlayerCapturedSignature, APawn* /*Player*/);
+/**
+ * 그가 무엇이든 두드렸다(순찰 3연, 천장, 403호 문, 대답). 두드린 자리를 준다.
+ * 이 소리는 소음 버스에 실리지 않으므로, 듣고 반응해야 하는 다른 존재는 이것을 구독한다.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(FIGListenerKnockSignature, const FVector& /*KnockLocation*/);
 
 /** 스켈레탈 몸이 재생하는 동작. rig_crawler.py의 액션 넷과 같은 이름이다. */
 enum class EIGListenerBodyAnim : uint8
@@ -266,6 +271,9 @@ public:
 
 	/** Fired once per catch; the night-loop director listens. */
 	FIGPlayerCapturedSignature OnPlayerCaptured;
+
+	/** 두드릴 때마다 한 번. 관리인 순찰이 듣고 굳는다. */
+	FIGListenerKnockSignature OnKnocked;
 
 protected:
 	virtual void BeginPlay() override;
