@@ -441,7 +441,7 @@ void AIGManagerPatrol::GoOnDuty()
 	RoundCount = 0;
 	Exposure = 0.0f;
 	bSawPlayerHide = false;
-	SetActorLocation(Nodes.IsValidIndex(RestNode) ? Nodes[RestNode].Feet : GetActorLocation());
+	SnapToRestNode();
 	State = EIGManagerPatrolState::Resting;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
 	RestUntilSeconds = StateStartSeconds + IGManagerPatrol::FirstRestSeconds;
@@ -455,10 +455,7 @@ void AIGManagerPatrol::GoOffDuty()
 	State = EIGManagerPatrolState::Resting;
 	ShowBody(false);
 	SetActorTickEnabled(false);
-	if (Nodes.IsValidIndex(RestNode))
-	{
-		SetActorLocation(Nodes[RestNode].Feet);
-	}
+	SnapToRestNode();
 }
 
 void AIGManagerPatrol::ShowBody(const bool bShow)
@@ -467,6 +464,20 @@ void AIGManagerPatrol::ShowBody(const bool bShow)
 	Workwear->SetVisibility(bShow);
 	HeadHands->SetVisibility(bShow);
 	Torch->SetVisibility(bShow);
+}
+
+void AIGManagerPatrol::SnapToRestNode()
+{
+	// 걷던 길이 남아 있으면 다음 순찰이 그 길에서 향하던 점부터 이어 잡는다.
+	// 그 점이 3층 계단참이면 관리실에서 벽을 뚫고 곧장 올라간다.
+	Path.Reset();
+	PathCursor = 0;
+	bHasFinalTarget = false;
+	DwellRemaining = 0.0f;
+	if (Nodes.IsValidIndex(RestNode))
+	{
+		SetActorLocation(Nodes[RestNode].Feet);
+	}
 }
 
 bool AIGManagerPatrol::IsPursuing() const
@@ -543,10 +554,7 @@ void AIGManagerPatrol::EnterRestingAtDoor(const float RestSeconds)
 	{
 		ShowBody(false);
 	}
-	if (Nodes.IsValidIndex(RestNode))
-	{
-		SetActorLocation(Nodes[RestNode].Feet);
-	}
+	SnapToRestNode();
 }
 
 void AIGManagerPatrol::BeginInvestigation(const FVector& Where, const bool bAlarmed)
