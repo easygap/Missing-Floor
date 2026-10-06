@@ -992,6 +992,7 @@
  "IGMissingFloor,HideUnderBedPrompt": "躲到床底下",
  "IGMissingFloor,HideExitPrompt": "出來",
  "IGMissingFloor,HideUnderDeskPrompt": "躲到桌子底下",
+ "IGMissingFloor,HideBehindSheetPrompt": "躲到塑膠布後面",
  "IGMissingFloor,BatteryBuyPrompt": "買一排電池",
  "IGMissingFloor,FireDoorWedgePrompt": "抽掉門擋（長按扶住門慢慢關上）",
  "IGMissingFloor,CaptionFireDoorSlam": "［防火門砰地關上］",
@@ -1028,5 +1029,16 @@
  "IGMissingFloor,YudamGuestPeephole": "走廊上沒有人。……可是聲音明明就在門口。",
  "IGMissingFloor,CaptionGuestWrongCode": "［密碼錯誤的提示音］",
  "IGMissingFloor,CaptionGuestKeypadAgain": "［又按了一遍門鎖密碼］",
- "IGMissingFloor,CaptionGuestPaper": "［有紙從門底下塞進來的聲音］"
+ "IGMissingFloor,CaptionGuestPaper": "［有紙從門底下塞進來的聲音］",
+ "IGMissingFloor,CaptionMokDoor": "［管理室的門打開的聲音］",
+ "IGMissingFloor,CaptionMokSlippers": "［拖著拖鞋走路的聲音］",
+ "IGMissingFloor,CaptionMokKeys": "［一串鑰匙叮噹作響］",
+ "IGMissingFloor,CaptionMokStopped": "［鑰匙聲戛然而止］",
+ "IGMissingFloor,CaptionMokQuicken": "［腳步聲變快了］",
+ "IGMissingFloor,CaptionMokHurries": "［拖鞋聲匆匆遠去］",
+ "IGMissingFloor,CaptionMokGrab": "［一把抓住手腕的聲音］",
+ "IGMissingFloor,YudamMokFirstHeard": "是管理員大叔。這種時間還拿著手電筒。",
+ "IGMissingFloor,YudamMokTorchWarning": "走進那道光裡就會被發現。",
+ "IGMissingFloor,YudamMokHeardKnock": "他也聽到了。剛才那個聲音。",
+ "IGMissingFloor,YudamMokAvoidsFourth": "他不進四樓的走廊。"
 }

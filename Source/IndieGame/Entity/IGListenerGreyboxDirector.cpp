@@ -42,6 +42,7 @@
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
 #include "Entity/IGMissingFloorNightFourDirector.h"
+#include "Entity/IGManagerPatrol.h"
 #include "Entity/IGNightThreatDirector.h"
 #include "Entity/IGMissingFloorMercyDirector.h"
 #include "Entity/IGMissingFloorNightThreeDirector.h"
@@ -463,7 +464,7 @@ void AIGListenerGreyboxDirector::SpawnNightAmbienceBeds()
 			FVector(CorridorCenter.X, CorridorCenter.Y, IGListenerGreybox::FourthFloorZ + 140.0f),
 			0.55f, 700.0f, 1900.0f, 0x7A11C0DEu, TEXT("Bed_Corridor"), 0.12f},
 		{TEXT("NightBedStairwell"), EIGAmbienceMode::Stairwell,
-			FVector(-445.0f, -305.0f, IGListenerGreybox::FourthFloorZ - 30.0f),
+			FVector(-465.0f, 35.0f, IGListenerGreybox::FourthFloorZ - 30.0f),
 			0.60f, 260.0f, 1100.0f, 0x51A1B2C3u, TEXT("Wind_Gap"), 0.055f},
 		// 5층과 옥상은 녹음을 쓰지 않는다. 가진 녹음이 복도 공기와 문틈 바람뿐이라
 		// 그걸 깔면 어느 층에 올라가도 공기가 같다. 5층은 덜 지은 증축층의 먼지
@@ -699,7 +700,7 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 		Entity.Get(), NightLoop.Get(), NightPhase.Get(), PuzzleOne.Get(),
 		NightOneBeats.Get(), NightTwoBeats.Get(), PuzzleTwo.Get(),
 		NightThree.Get(), Mercy.Get(), FifthDawn.Get(), Epilogue.Get(),
-		NightFour.Get(), NightThreats.Get(), SleepTarget.Get(), Unit401Door.Get(),
+		NightFour.Get(), NightThreats.Get(), ManagerPatrol.Get(), SleepTarget.Get(), Unit401Door.Get(),
 		UsedListingNote.Get(), NeighborhoodDeliveryNote.Get(),
 		// SpawnOptionalWitnesses가 세우는 다섯. 지금은 마지막 실패 경로보다
 		// 뒤에 있어 새어 나갈 수 없지만, 그 사이에 실패가 하나 생기면 이름이
@@ -731,6 +732,7 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 	Epilogue = nullptr;
 	NightFour = nullptr;
 	NightThreats = nullptr;
+	ManagerPatrol = nullptr;
 	SleepTarget = nullptr;
 	Unit401Door = nullptr;
 	UsedListingNote = nullptr;
@@ -1169,6 +1171,24 @@ bool AIGListenerGreyboxDirector::SetupStage()
 			Entity,
 			NightLoop,
 			NightPhase);
+	}
+
+	// 밤3에 계단을 도는 관리인. 진행을 잠그지 않으므로 실패해도 스테이지는 유효하다.
+	FActorSpawnParameters ManagerParameters;
+	ManagerParameters.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ManagerParameters.Name = TEXT("MissingFloorManagerPatrol");
+	ManagerPatrol = World->SpawnActor<AIGManagerPatrol>(
+		AIGManagerPatrol::StaticClass(),
+		FTransform::Identity,
+		ManagerParameters);
+	if (ManagerPatrol)
+	{
+		ManagerPatrol->Configure(
+			const_cast<AIGPrologueWorldScene*>(Scene),
+			PlayerCharacter,
+			Entity,
+			NightLoop);
 	}
 
 	// Night goals: each puzzle announces itself once; the hour decides
@@ -2848,7 +2868,7 @@ void AIGListenerGreyboxDirector::PlayArrivalBaselineEvent()
 		ScheduleArrivalBaseline(10.0f, 15.0f);
 		return;
 	}
-	const FVector Stairwell(-445.0f, -305.0f, IGListenerGreybox::FourthFloorZ);
+	const FVector Stairwell(-465.0f, -150.0f, IGListenerGreybox::FourthFloorZ);
 	const bool bNearStairwell = FVector::Dist2D(PlayerAt, Stairwell) < 400.0f;
 	// 같은 소리가 두 번 잇따르면 시계가 된다. 계단참 곁에서는 발소리를 고르지 않는다.
 	int32 Kind = FMath::RandRange(0, 2);
@@ -2866,10 +2886,11 @@ void AIGListenerGreyboxDirector::PlayArrivalBaselineEvent()
 	case 0:
 	{
 		// 누가 3층에서 계단을 내려간다. 다섯 걸음, 한참 뒤 1층 공동현관.
+		// 3층 참에서 동쪽 띠를 따라 북쪽으로 내려가는 디딤판 위다.
 		auto StepAt = [](const int32 Step)
 		{
-			return FVector(-445.0f, -305.0f,
-				IGListenerGreybox::FourthFloorZ - 230.0f - 60.0f * static_cast<float>(Step));
+			return FVector(-407.5f, -215.0f + 40.0f * static_cast<float>(Step),
+				IGListenerGreybox::FourthFloorZ - 300.0f - 30.0f * static_cast<float>(Step));
 		};
 		auto AdvanceStairs = [this, StepAt]()
 		{
@@ -6435,11 +6456,11 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 				AIGNightOneBeatDirector::GetSightingStagePoint()) <= 250.0f;
 		if (bStaged && bOnLanding)
 		{
-			// Descend past the figure: step into the moved portal line.
+			// 그를 지나 서쪽 띠로 내려선다.
 			if (AIGPlayerCharacter* PlayerCharacter = Player.Get())
 			{
 				PlayerCharacter->TeleportTo(
-					FVector(-435.0f, -305.0f, 890.0f),
+					AIGNightOneBeatDirector::GetSightingPassPoint(),
 					PlayerCharacter->GetActorRotation(),
 					false,
 					true);
@@ -8659,7 +8680,8 @@ bool AIGListenerGreyboxDirector::AdvanceTrailerCapture()
 		// 순찰 끝이 플레이어에 닿아 실제로 잡힌다. 다가오는 몸과 포획, 끊기는 순간까지 한 번에 찍힌다.
 		// 순찰이 짧아야 기다림 없이 닿는다. 순찰 끝(400)이 플레이어(430) 바로 앞이다.
 		{TEXT("capture-front"), 2, false, {430,-305,998}, {436,-305,998}, {-9,180,0}, {-12,180,0}, 90, 7.0f, true, 2, {150,-305,960}, {400,-305,960}, 0},
-		{TEXT("stair-landing"), 2, false, {-300,-305,1005}, {-300,-305,1005}, {-52,180,0}, {-47,178,0}, 90, 4.0f, true, 3, {}, {}, 180},
+		// 4층 참 난간에서 3.5층 참을 내려다본다. 그는 북쪽 벽에 귀를 대고 있다.
+		{TEXT("stair-landing"), 2, false, {-522,-272,997}, {-522,-268,997}, {-38,90,0}, {-34,92,0}, 90, 4.0f, true, 3, {}, {}, 90},
 		{TEXT("meter-cabinet"), 2, false, {505,-300,92}, {515,-296,92}, {-10,-62,0}, {-8,-58,0}, 90, 3.5f, true, 0, {}, {}, 0},
 		{TEXT("booth-cctv"), 2, false, {165,-190,98}, {165,-178,96}, {-35,90,0}, {-31,90,0}, 90, 4.0f, true, 0, {}, {}, 0},
 	};
@@ -10216,9 +10238,9 @@ void AIGListenerGreyboxDirector::EnterCaptureStep(const int32 StepIndex)
 				AIGNightOneBeatDirector::GetSightingShufflePoint(),
 			});
 		}
-		// The landing sits 1.8 m below the throat eye line at 1.5 m out, so
-		// the look-down is steep: shallower pitches photograph the far wall.
-		CaptureTeleportPlayer(FVector(-300.0f, -305.0f, 1005.0f), 180.0f, -52.0f);
+		// 4층 참 서쪽 난간에서 내려다본 3.5층 참. 그는 북쪽 벽에 귀를 댄 채
+		// 1.5 m 아래, 3 m 앞에 있다.
+		CaptureTeleportPlayer(FVector(-522.0f, -272.0f, 997.0f), 90.0f, -38.0f);
 		break;
 	case 3:
 		// The noise ripple, moments after a deliberate sound.

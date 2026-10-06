@@ -253,6 +253,13 @@ public:
 	void SetStairFoot(const FVector& Location);
 
 	/**
+	 * 밤1 계단참 카메오 동안만 켠다. 켜 두면 듣고 쫓기 전(순찰·청취·두드림)에는
+	 * 몸이 닿는 것만으로 잡지 않는다. 그 비트는 「소리 없이 곁을 지나면 모른다」를
+	 * 가르치는 자리라, 좁은 참에서 스치기만 해도 잡히면 거꾸로 배운다.
+	 */
+	void SetTouchCaptureSuppressed(bool bSuppressed) { bTouchCaptureSuppressed = bSuppressed; }
+
+	/**
 	 * Runs the finale-only blind pass from StartLocation through RoutePoints.
 	 * This is presentation locomotion, not a stealth failure: player collision,
 	 * capture and ordinary noise retargeting stay disabled until the pawn exits.
@@ -372,6 +379,8 @@ private:
 	// -- locomotion ---------------------------------------------------------
 	/** Sweeps toward Target; returns true on arrival (or when wedged). */
 	bool CrawlTowards(const FVector& Target, float Speed, float DeltaSeconds);
+	/** 몸 밑 한 뼘 안에 바닥이 있는가. 계단 가장자리를 넘지 않게 걸음마다 본다. */
+	bool HasFloorBeneath(const FVector& Location) const;
 	/**
 	 * 순찰·수색 걸음의 빠르기 배율. 한 걸음마다 다시 고르고 가끔 0으로 멈춰 듣는다.
 	 * 같은 주기가 매끈하게 돌면 몇 번 보고 나서 익숙해진다. 추격에는 쓰지 않는다.
@@ -603,6 +612,7 @@ private:
 	// -- 위층 소리. 조사 하나 동안만 산다 ---------------------------------------
 	bool bHasStairFoot = false;
 	FVector StairFoot = FVector::ZeroVector;
+	bool bTouchCaptureSuppressed = false;
 	/** 지금 조사가 위에서 난 소리 때문이다. */
 	bool bCallFromAbove = false;
 	/** 위에서 두 번 들렸다. 도착하면 두드린다. */

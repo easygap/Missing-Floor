@@ -897,7 +897,13 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 			{
 				bLungeArmed = bReachable;
 			}
-			if (Distance <= CaptureRadius && bReachable && Tuning.bCaptureEnabled)
+			// 계단참 카메오 동안은 들은 뒤(조사·멈춤·추격·수색)에만 손이 닿는다.
+			const bool bPursuing = State == EIGListenerState::Investigating
+				|| State == EIGListenerState::Holding
+				|| State == EIGListenerState::Chasing
+				|| State == EIGListenerState::Searching;
+			if (Distance <= CaptureRadius && bReachable && Tuning.bCaptureEnabled
+				&& (!bTouchCaptureSuppressed || bPursuing))
 			{
 				BeginCapture(Player);
 			}
@@ -1965,6 +1971,21 @@ bool AIGListenerEntity::CrawlTowards(
 	FaceDirection(Direction, DeltaSeconds);
 
 	const FVector Before = GetActorLocation();
+	// 계단이 층을 잇게 된 뒤로 그가 기는 바닥 끝에 내려가는 단이 있다. 기는
+	// 몸은 높이를 버리고 미끄러지므로, 그대로 두면 계단 위 허공을 기어 간다.
+	// 걸음 끝에 바닥이 없으면 벽에 막힌 것과 같이 서게 한다. 지금 선 자리에
+	// 바닥이 없을 때(순간이동 직후 따위)는 막지 않는다 — 그 자리를 벗어나야 한다.
+	if (!HasFloorBeneath(Before + Step) && HasFloorBeneath(Before))
+	{
+		LastMoveSpeed = 0.0f;
+		StuckSeconds += DeltaSeconds;
+		if (StuckSeconds >= 1.5f)
+		{
+			StuckSeconds = 0.0f;
+			return true;
+		}
+		return false;
+	}
 	FHitResult SweepHit;
 	AddActorWorldOffset(Step, true, &SweepHit);
 	// 닫힌 403호 문짝에 막혔는지. 벽에 걸린 것과 문 앞에 닿은 것은 다르다.
@@ -1991,6 +2012,34 @@ bool AIGListenerEntity::CrawlTowards(
 		StuckSeconds = 0.0f;
 	}
 	return false;
+}
+
+bool AIGListenerEntity::HasFloorBeneath(const FVector& Location) const
+{
+	const UWorld* World = GetWorld();
+	if (!World || !Body)
+	{
+		return true;
+	}
+	// 몸 바닥에서 12 cm 아래까지만 본다. 문턱은 바닥이고, 한 단(16.7 cm) 아래는
+	// 허공이다. 구의 아랫면이 그 깊이에서 멈추도록 반지름만큼 덜 내린다. 구로
+	// 훑는 것은 슬래브 이음매의 실금으로 빠지지 않게 하려는 것이다.
+	constexpr float ProbeRadius = 8.0f;
+	const float Reach = Body->GetScaledCapsuleHalfHeight() + 12.0f - ProbeRadius;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGListenerFloor), false, this);
+	if (const APawn* Player = CachedPlayer.Get())
+	{
+		Params.AddIgnoredActor(Player);
+	}
+	FHitResult Hit;
+	return World->SweepSingleByChannel(
+		Hit,
+		Location,
+		Location - FVector(0.0f, 0.0f, Reach),
+		FQuat::Identity,
+		ECC_Visibility,
+		FCollisionShape::MakeSphere(ProbeRadius),
+		Params);
 }
 
 void AIGListenerEntity::AdvancePatrolIndex()

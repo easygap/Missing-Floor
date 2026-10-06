@@ -23,6 +23,7 @@
 #include "Engine/Texture2D.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/TextRenderComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
@@ -47,7 +48,6 @@
 #include "Interaction/IGPickupItem.h"
 #include "Interaction/IGReadableNote.h"
 #include "Interaction/IGSlidingDoor.h"
-#include "Interaction/IGStairTransition.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Interaction/IGZoneTrigger.h"
 #include "Materials/MaterialInterface.h"
@@ -82,6 +82,32 @@ namespace IGPrologueWorld
 	const FVector MissingFloorRouteStart(-277.5f, 220.0f, MissingFloorRoofZ);
 	const FVector MissingFloorRouteCorner(130.0f, 220.0f, MissingFloorRoofZ);
 	const FVector MissingFloorRouteEnd(130.0f, 452.5f, MissingFloorRoofZ);
+
+	/**
+	 * 서쪽 계단탑. 1층 필로티 옆에서 4층 복도 끝까지 한 줄로 이어진 꺾인
+	 * 계단이고, 층마다 남쪽 참이 층 바닥 높이에서 동쪽 복도로 열린다. 북쪽 참은
+	 * 반 층이다. 서쪽 띠는 층에서 북쪽으로 반 층 참까지 오르고, 동쪽 띠는 그
+	 * 참에서 남쪽으로 올라 다음 층에 닿는다. 순찰하는 관리인도 이 숫자로 걷는다.
+	 */
+	constexpr float StairCoreWestX = -590.0f;
+	constexpr float StairCoreEastX = -340.0f;
+	constexpr float StairCoreSouthY = -395.0f;
+	constexpr float StairCoreNorthY = 120.0f;
+	constexpr float StairInnerWestX = -575.0f;
+	constexpr float StairInnerEastX = -355.0f;
+	constexpr float StairInnerSouthY = -375.0f;
+	constexpr float StairInnerNorthY = 105.0f;
+	// 두 띠 사이는 10 cm 벽이다. 서쪽 띠는 -575..-470, 동쪽 띠는 -460..-355.
+	constexpr float StairWestBandEastX = -470.0f;
+	constexpr float StairEastBandWestX = -460.0f;
+	// 남쪽 참은 Y -375..-235, 계단은 -235..-35, 북쪽 참은 -35..105.
+	constexpr float StairFlightSouthY = -235.0f;
+	constexpr float StairFlightNorthY = -35.0f;
+	constexpr float StairStoreyHeight = 300.0f;
+	// 한 층에 열여덟 단. 단높이 16.7 cm, 단너비 25 cm다.
+	constexpr float StairRise = StairStoreyHeight / 18.0f;
+	constexpr float StairGoing = (StairFlightNorthY - StairFlightSouthY) / 8.0f;
+	constexpr float StairTreadThickness = 25.0f;
 
 	/**
 	 * §14 CCTV 채널 5's vantage — corner-mounted high in the annex, looking
@@ -755,15 +781,48 @@ void AIGPrologueWorldScene::SetCommonInspectionLightsEnabled(const bool bEnabled
 	bCommonInspectionLightsEnabled = bEnabled;
 	for (int32 Index = 0; Index < LobbyLights.Num(); ++Index) SetFixtureLive(Index, true, false);
 	for (int32 Index = 0; Index < CorridorLights.Num(); ++Index) SetFixtureLive(Index, true, true);
+	ApplyServiceLights();
 }
 
 bool AIGPrologueWorldScene::AreCommonInspectionLightsOff() const
 {
 	for (const UPointLightComponent* Light : LobbyLights) if (Light && Light->Intensity > 0.f) return false;
 	for (const UPointLightComponent* Light : CorridorLights) if (Light && Light->Intensity > 0.f) return false;
+	for (const UPointLightComponent* Light : StairCoreLights) if (Light && Light->Intensity > 0.f) return false;
+	for (const UPointLightComponent* Light : LowerFloorLights) if (Light && Light->Intensity > 0.f) return false;
 	for (const UStaticMeshComponent* Disc : LobbyLightDiscs) if (Disc && Disc->GetMaterial(0) == LightPanelMaterial) return false;
 	for (const UStaticMeshComponent* Disc : CorridorLightDiscs) if (Disc && Disc->GetMaterial(0) == LightPanelMaterial) return false;
 	return !LobbyLights.IsEmpty() && !CorridorLights.IsEmpty();
+}
+
+void AIGPrologueWorldScene::ApplyServiceLights()
+{
+	// 계단탑과 2·3층의 등. 낮에는 켜져 있고 그 시간에는 비상구 등만 남는다.
+	// 1층 공용 차단기가 내려가면 복도 등과 함께 꺼진다.
+	const bool bLit = bCommonInspectionLightsEnabled && !bTheHourSealed;
+	const auto Apply = [this, bLit](
+		const TArray<TObjectPtr<UPointLightComponent>>& Lights,
+		const TArray<float>& Intensities,
+		const TArray<TObjectPtr<UStaticMeshComponent>>& Discs)
+	{
+		for (int32 Index = 0; Index < Lights.Num(); ++Index)
+		{
+			if (UPointLightComponent* Light = Lights[Index])
+			{
+				Light->SetIntensity(
+					bLit && Intensities.IsValidIndex(Index) ? Intensities[Index] : 0.0f);
+			}
+		}
+		for (UStaticMeshComponent* Disc : Discs)
+		{
+			if (Disc)
+			{
+				Disc->SetMaterial(0, bLit ? LightPanelMaterial : PlasticDarkMaterial);
+			}
+		}
+	};
+	Apply(StairCoreLights, StairCoreLightIntensities, StairCoreLightDiscs);
+	Apply(LowerFloorLights, LowerFloorLightIntensities, LowerFloorLightDiscs);
 }
 
 UStaticMeshComponent* AIGPrologueWorldScene::CreateDecoOnComponent(
@@ -1529,6 +1588,9 @@ void AIGPrologueWorldScene::InitializePrologue()
 	BuildApartment();
 	BuildingLightZone = EIGLightZone::FourthFloor;
 	BuildCorridor();
+	BuildingLightZone = EIGLightZone::StairCore;
+	BuildStairCore();
+	BuildLowerFloors();
 	BuildingLightZone = EIGLightZone::Lobby;
 	BuildLobby();
 	BuildingLightZone = EIGLightZone::Annex;
@@ -1541,7 +1603,6 @@ void AIGPrologueWorldScene::InitializePrologue()
 	BuildSkyAndFog();
 	BuildDistantSkyline();
 	SpawnInteractables();
-	SpawnStairTransition();
 	UpdateLightZones();
 	GetWorldTimerManager().SetTimer(
 		LightZoneTimer, this, &ThisClass::UpdateLightZones, 0.1f, true);
@@ -2915,83 +2976,8 @@ void AIGPrologueWorldScene::BuildCorridor()
 		FVector(125, 120, 20),
 		CorridorCeil);
 
-	// Down flight into the throat, sinking west into darkness. Korean walk-ups
-	// have a black steel balustrade with a flat cap rail and thin square
-	// balusters.
-	//
-	// The treads used to be authored from X -219 to -329, which is inside the
-	// corridor: the floor slab reaches X -330, so the whole flight was buried
-	// under it and only the upper half of the balustrade showed — a raked
-	// handrail rising out of flat concrete with no stair beneath it. The 72 cm
-	// to the half-landing was a bare drop off the floor's west edge.
-	//
-	// The throat west of X -330 is where the flight belongs, and four treads
-	// at the authored 18 cm rise land exactly on the half-landing at local
-	// Z -72. Each tread's underside meets the top of the one below, so the
-	// flight is a solid stepped mass standing on the landing and butting the
-	// corridor floor — nothing here is cantilevered and nothing is cut out of
-	// the corridor, so the walk west and the turn north onto the 5F flight are
-	// exactly as they were.
-	for (int32 StepIndex = 0; StepIndex < 4; ++StepIndex)
-	{
-		const float StepX = -341.0f - StepIndex * 22.0f;
-		const float StepTopZ = -18.0f * StepIndex;
-		IGPrologueWorld::TagFootstepSurface(CreateBlock(
-			FVector(StepX, -305, StepTopZ - 9.0f),
-			FVector(22, 130, 18), StairSteel),
-			IGPrologueWorld::FootstepMetalStairTag);
-		// Stair nosing: a darker lip on every tread catches the hall light.
-		CreateBlock(
-			FVector(StepX - 10, -305, StepTopZ + 0.4f),
-			FVector(3, 128, 1.6f), Skirting, false);
-	}
-	// Enclose the descending flight beyond the transition volume. Without the
-	// far wall and side returns the sky dome filled the stair throat, making an
-	// ordinary interior landing look like a blue portal from the corridor.
-	CreateBlock(
-		FVector(-392.5f, -385, 80), FVector(125, 20, 340),
-		CorridorWallX);
-	CreateBlock(
-		FVector(-392.5f, -225, 80), FVector(125, 20, 340),
-		CorridorWallX);
-	CreateBlock(
-		FVector(-455, -305, 80), FVector(20, 200, 340),
-		CorridorWallY);
-	CreateBlock(
-		FVector(-392.5f, -305, 250), FVector(125, 160, 20),
-		CorridorCeil);
-	// The 3.5F half-landing at local Z -72, filling what used to be open shaft
-	// void. The down flight now stands on it and its lowest tread's underside
-	// meets it, so the landing is both what the stair arrives on and the strip
-	// of floor west of it. In the legacy chapters the stair portal fires
-	// before a player can reach it, so this slab is only ever walked during
-	// 없는 층 nights — where it is the stage for the first sighting
-	// (STORY_BIBLE_MISSING_FLOOR.md §8 밤1 1-4).
-	IGPrologueWorld::TagFootstepSurface(CreateBlock(
-		FVector(-392.5f, -305, -81), FVector(125, 160, 18),
-		StairSteel), IGPrologueWorld::FootstepMetalStairTag);
-	// Balustrade over that flight. Each baluster stands on its own tread and
-	// reaches the cap rail: the old set used a 17 cm rise under an 18 cm
-	// stair and started four centimetres above the treads, so it drifted out
-	// of the flight as it descended and met the rail nowhere.
-	for (const float RailY : {-243.0f, -367.0f})
-	{
-		CreateBlock(
-			FVector(-383, RailY, 55.6f), FVector(132, 5, 5), PlasticDarkMaterial,
-			false, nullptr, FRotator(39, 0, 0));
-		CreateBlock(
-			FVector(-383, RailY, 27.6f), FVector(130, 3, 3), PlasticDarkMaterial,
-			false, nullptr, FRotator(39, 0, 0));
-		// Four on the treads and one on the landing at the foot.
-		for (int32 BalusterIndex = 0; BalusterIndex < 5; ++BalusterIndex)
-		{
-			const float BalusterX = -341.0f - BalusterIndex * 22.0f;
-			const float BalusterFootZ = -18.0f * BalusterIndex;
-			CreateBlock(
-				FVector(BalusterX, RailY, BalusterFootZ + 45.0f),
-				FVector(2.6f, 2.6f, 90), PlasticDarkMaterial, false);
-		}
-	}
+	// 서쪽 끝 목 너머는 계단탑이다(BuildStairCore). 1층까지 실제 계단이 이어지고,
+	// 4층에서는 동쪽 띠가 북쪽으로 내려가며 서쪽 띠 위는 난간 너머로 뚫려 있다.
 	// A tired green exit lamp glows at the stair throat, screwed to the head
 	// of the stair opening rather than hanging a centimetre clear of it.
 	CreateBlock(FVector(-313, -305, 220), FVector(14, 8, 10),
@@ -3050,6 +3036,593 @@ void AIGPrologueWorldScene::BuildCorridor()
 			DegradedCorridorLight = CorridorLight;
 			DegradedLightBaseIntensity = CorridorLight->Intensity;
 		}
+	}
+
+	ActiveParent = nullptr;
+}
+
+float AIGPrologueWorldScene::GetStoreyFloorZ(const int32 FloorIndex)
+{
+	return IGPrologueWorld::StairStoreyHeight * FMath::Clamp(FloorIndex, 0, 3);
+}
+
+FVector AIGPrologueWorldScene::GetStairDoorwayFeet(const int32 FloorIndex)
+{
+	// 1층은 주차장 쪽 출입구(Y -350..-235) 밖, 위층은 복도 목 기둥 안쪽이다.
+	return FloorIndex <= 0
+		? FVector(IGPrologueWorld::StairCoreEastX + 20.0f, -292.0f, 0.0f)
+		: FVector(IGPrologueWorld::StairCoreEastX + 35.0f, -305.0f, GetStoreyFloorZ(FloorIndex));
+}
+
+bool AIGPrologueWorldScene::IsInsideStairCore(const FVector& Location)
+{
+	return Location.X > IGPrologueWorld::StairInnerWestX
+		&& Location.X < IGPrologueWorld::StairInnerEastX
+		&& Location.Y > IGPrologueWorld::StairInnerSouthY
+		&& Location.Y < IGPrologueWorld::StairInnerNorthY;
+}
+
+bool AIGPrologueWorldScene::IsOnStairFlight(const FVector& Location)
+{
+	return Location.X > IGPrologueWorld::StairInnerWestX
+		&& Location.X < IGPrologueWorld::StairInnerEastX
+		&& Location.Y > IGPrologueWorld::StairFlightSouthY
+		&& Location.Y < IGPrologueWorld::StairFlightNorthY;
+}
+
+void AIGPrologueWorldScene::GetStairClimbFeet(const int32 FromFloor, TArray<FVector>& OutFeet)
+{
+	OutFeet.Reset();
+	const int32 Floor = FMath::Clamp(FromFloor, 0, 2);
+	const float FloorZ = GetStoreyFloorZ(Floor);
+	const float HalfZ = FloorZ + IGPrologueWorld::StairStoreyHeight * 0.5f;
+	const float UpperZ = FloorZ + IGPrologueWorld::StairStoreyHeight;
+	const float HalfRise = IGPrologueWorld::StairRise * 0.5f;
+	const float WestX =
+		(IGPrologueWorld::StairInnerWestX + IGPrologueWorld::StairWestBandEastX) * 0.5f;
+	const float EastX =
+		(IGPrologueWorld::StairEastBandWestX + IGPrologueWorld::StairInnerEastX) * 0.5f;
+	const float SouthY = IGPrologueWorld::StairFlightSouthY;
+	const float NorthY = IGPrologueWorld::StairFlightNorthY;
+	// 반 층 참에서는 띠 폭의 반쯤 들어가서 꺾는다.
+	const float TurnY = NorthY + 55.0f;
+	OutFeet.Add(GetStairDoorwayFeet(Floor));
+	OutFeet.Add(FVector(WestX, SouthY - 30.0f, FloorZ));
+	OutFeet.Add(FVector(WestX, SouthY, FloorZ + HalfRise));
+	OutFeet.Add(FVector(WestX, NorthY, HalfZ - HalfRise));
+	OutFeet.Add(FVector(WestX, TurnY, HalfZ));
+	OutFeet.Add(FVector(EastX, TurnY, HalfZ));
+	OutFeet.Add(FVector(EastX, NorthY, HalfZ + HalfRise));
+	OutFeet.Add(FVector(EastX, SouthY, UpperZ - HalfRise));
+	OutFeet.Add(FVector(EastX, SouthY - 30.0f, UpperZ));
+	OutFeet.Add(GetStairDoorwayFeet(Floor + 1));
+}
+
+void AIGPrologueWorldScene::BuildStairCore()
+{
+	// 서쪽 계단탑. 1층 필로티 옆에서 4층 복도 끝까지 실제로 걸어 오르내린다.
+	// 전에는 1층 발치 다섯 단과 4층 목 네 단만 있고, 그 사이를 0.12초 암전으로
+	// 건너뛰었다. 2·3층이 생기면서 그 사이가 진짜 계단이 됐다.
+	//
+	// 서쪽 띠는 층에서 북쪽으로 반 층 참까지 오르고, 동쪽 띠는 그 참에서 남쪽으로
+	// 올라 다음 층에 닿는다. 두 띠 사이는 벽이라, 아래에서 오는 발소리는 들려도
+	// 몸은 꺾이는 참에 가서야 보인다.
+	//
+	// 좌표는 월드 cm 그대로다. 기하 감사가 숫자를 읽을 수 있게 프레임을 바꾸지 않는다.
+	ActiveParent = nullptr;
+
+	constexpr float OuterWestX = IGPrologueWorld::StairCoreWestX;
+	constexpr float OuterEastX = IGPrologueWorld::StairCoreEastX;
+	constexpr float OuterSouthY = IGPrologueWorld::StairCoreSouthY;
+	constexpr float OuterNorthY = IGPrologueWorld::StairCoreNorthY;
+	constexpr float WestX = IGPrologueWorld::StairInnerWestX;
+	constexpr float EastX = IGPrologueWorld::StairInnerEastX;
+	constexpr float SouthY = IGPrologueWorld::StairInnerSouthY;
+	constexpr float NorthY = IGPrologueWorld::StairInnerNorthY;
+	constexpr float WestBandEastX = IGPrologueWorld::StairWestBandEastX;
+	constexpr float EastBandWestX = IGPrologueWorld::StairEastBandWestX;
+	constexpr float FlightSouthY = IGPrologueWorld::StairFlightSouthY;
+	constexpr float FlightNorthY = IGPrologueWorld::StairFlightNorthY;
+	constexpr float Storey = IGPrologueWorld::StairStoreyHeight;
+	constexpr float Rise = IGPrologueWorld::StairRise;
+	constexpr float Going = IGPrologueWorld::StairGoing;
+	constexpr float TreadThickness = IGPrologueWorld::StairTreadThickness;
+	// 4층 참의 천장 아랫면. 복도 천장과 같은 높이다.
+	constexpr float CeilingZ = 1140.0f;
+	// 벽돌 난간 윗면. 정면 벽돌과 같은 높이에서 끝난다.
+	constexpr float ParapetZ = 1240.0f;
+	const float CoreCenterX = (WestX + EastX) * 0.5f;
+	const float CoreWidth = EastX - WestX;
+	const float WestBandX = (WestX + WestBandEastX) * 0.5f;
+	const float EastBandX = (EastBandWestX + EastX) * 0.5f;
+	const float BandWidth = WestBandEastX - WestX;
+	const float HalfLandingY = (FlightNorthY + NorthY) * 0.5f;
+	const float HalfLandingDepth = NorthY - FlightNorthY;
+
+	UMaterialInterface* LandingFloor = TexMat(TEXT("M_GraniteTile_XY"), ConcreteMaterial);
+	UMaterialInterface* StairSteel = TexMat(TEXT("M_MissingFloorSteelStair"), LandingFloor);
+	UMaterialInterface* StairMass = TexMat(TEXT("M_UtilityConcreteDark"), ConcreteDarkMaterial);
+	UMaterialInterface* CoreWallX = TexMat(TEXT("M_Stucco_X"), ConcreteMaterial);
+	UMaterialInterface* CoreWallY = TexMat(TEXT("M_Stucco_Y"), ConcreteMaterial);
+	UMaterialInterface* CoreCeil = TexMat(TEXT("M_StuccoCeil"), ConcreteMaterial);
+	UMaterialInterface* GranitePanelX = TexMat(TEXT("M_UtilityGraniteCladding"), ConcreteMaterial);
+	UMaterialInterface* VillaBrickX = TexMat(TEXT("M_UtilityVillaBrick"), GranitePanelX);
+	UMaterialInterface* BandConcrete = TexMat(TEXT("M_Concrete_X"), ConcreteMaterial);
+	UMaterialInterface* RoofDeck = TexMat(
+		TEXT("M_RooftopWaterproofing_XY"), TexMat(TEXT("M_Concrete_XY"), ConcreteMaterial));
+
+	// --- 바깥벽 -----------------------------------------------------------
+	// 바깥은 빌라 정면과 같은 붉은 벽돌이고, 안에는 복도와 같은 미장을 한 겹 댄다.
+	// 남쪽 벽은 정면 벽돌과 같은 선(Y -395)에 서서 빌라가 서쪽으로 한 칸 늘어난 것으로 읽힌다.
+	CreateBlock(
+		FVector((OuterWestX + OuterEastX) * 0.5f, OuterSouthY + 5.0f, ParapetZ * 0.5f),
+		FVector(OuterEastX - OuterWestX, 10, ParapetZ), VillaBrickX);
+	CreateBlock(
+		FVector(OuterWestX + 5.0f, (OuterSouthY + 10.0f + OuterNorthY) * 0.5f, ParapetZ * 0.5f),
+		FVector(10, OuterNorthY - OuterSouthY - 10.0f, ParapetZ), VillaBrickX);
+	// 북쪽 벽은 옥상 슬래브 밑에서 끝난다. 그 위는 옥상이 북쪽으로 이어진다.
+	CreateBlock(
+		FVector((OuterWestX + 10.0f + OuterEastX) * 0.5f, OuterNorthY - 5.0f, 590.0f),
+		FVector(OuterEastX - OuterWestX - 10.0f, 10, 1180.0f), VillaBrickX);
+	CreateBlock(
+		FVector(-540.0f, OuterNorthY - 5.0f, 1210.0f), FVector(80, 10, 60), VillaBrickX);
+	// 안쪽 미장. 남쪽과 북쪽은 띠 폭만큼, 서쪽은 남북 벽 사이를 채운다.
+	CreateBlock(
+		FVector(CoreCenterX, SouthY - 5.0f, CeilingZ * 0.5f),
+		FVector(CoreWidth, 10, CeilingZ), CoreWallX);
+	CreateBlock(
+		FVector(WestX - 2.5f, (OuterSouthY + 10.0f + OuterNorthY - 10.0f) * 0.5f, CeilingZ * 0.5f),
+		FVector(5, OuterNorthY - OuterSouthY - 20.0f, CeilingZ), CoreWallY);
+	CreateBlock(
+		FVector(CoreCenterX, NorthY + 2.5f, CeilingZ * 0.5f),
+		FVector(CoreWidth, 5, CeilingZ), CoreWallX);
+	// 동쪽 벽. 계단 옆은 꼭대기까지 막혀 있고, 남쪽 참 쪽은 층마다 복도로 열린다.
+	CreateBlock(
+		FVector((EastX + OuterEastX) * 0.5f, (FlightSouthY + OuterNorthY - 10.0f) * 0.5f, 580.0f),
+		FVector(OuterEastX - EastX, OuterNorthY - 10.0f - FlightSouthY, 1160.0f), CoreWallY);
+	// 1층은 필로티 주차장으로 나간다. 밤 셔터(Y -354..-350)보다 남쪽은 벽으로 둔다.
+	CreateBlock(
+		FVector((EastX + OuterEastX) * 0.5f, -362.5f, 140.0f),
+		FVector(OuterEastX - EastX, 25, 280), CoreWallY);
+	CreateBlock(
+		FVector((EastX + OuterEastX) * 0.5f, -292.5f, 259.0f),
+		FVector(OuterEastX - EastX, 115, 42), CoreWallY);
+	// 2~4층 출입구 위. 복도 천장(층+240)에서 다음 층 참 밑까지다.
+	for (const float FloorZ : {300.0f, 600.0f})
+	{
+		CreateBlock(
+			FVector((EastX + OuterEastX) * 0.5f, (SouthY + FlightSouthY) * 0.5f, FloorZ + 260.0f),
+			FVector(OuterEastX - EastX, FlightSouthY - SouthY, 40), CoreWallY);
+	}
+	CreateBlock(
+		FVector((EastX + OuterEastX) * 0.5f, (SouthY + FlightSouthY) * 0.5f, 1150.0f),
+		FVector(OuterEastX - EastX, FlightSouthY - SouthY, 20), CoreWallY);
+	// 두 띠 사이의 벽.
+	CreateBlock(
+		FVector((WestBandEastX + EastBandWestX) * 0.5f, (FlightSouthY + FlightNorthY) * 0.5f, CeilingZ * 0.5f),
+		FVector(EastBandWestX - WestBandEastX, FlightNorthY - FlightSouthY, CeilingZ), CoreWallY);
+	// 4층 위 천장과 지붕. 옥상 슬래브(X -500..-340, Y -300..220)가 덮지 않는 자리만 채워
+	// 옥상 바닥이 한 높이로 이어진다.
+	CreateBlock(
+		FVector(CoreCenterX, (SouthY + NorthY) * 0.5f, CeilingZ + 10.0f),
+		FVector(CoreWidth, NorthY - SouthY, 20), CoreCeil);
+	CreateBlock(FVector(-540.0f, -137.5f, 1190.0f), FVector(80, 495, 20), RoofDeck);
+	CreateBlock(FVector(-420.0f, -342.5f, 1190.0f), FVector(160, 85, 20), RoofDeck);
+
+	// 바깥 마감. 층 사이 콘크리트 띠와 난간 갓돌이 정면에서 그대로 이어진다.
+	for (const float BandZ : {540.0f, 840.0f})
+	{
+		CreateBlock(
+			FVector((OuterWestX + OuterEastX) * 0.5f, -396.5f, BandZ),
+			FVector(OuterEastX - OuterWestX, 3.0f, 14.0f), BandConcrete, false);
+	}
+	CreateBlock(
+		FVector((OuterWestX - 4.0f + OuterEastX - 4.0f) * 0.5f, -397, 1244),
+		FVector(OuterEastX - OuterWestX, 12, 10), BandConcrete, false);
+	// 계단참마다 창 하나. 정면의 창과 같은 메시다.
+	if (UStaticMesh* StairWindowMesh = PropMesh(TEXT("SM_VillaWindow")))
+	{
+		for (const float WindowZ : {390.0f, 690.0f, 990.0f})
+		{
+			CreateBlock(FVector(-465.0f, -396, WindowZ), FVector(96, 4, 116), WindowDarkMaterial, false);
+			CreateBlock(
+				FVector(-465.0f, -395, WindowZ - 60), FVector(100, 100, 100),
+				nullptr, false, StairWindowMesh, FRotator::ZeroRotator);
+		}
+	}
+
+	// --- 층 참 ------------------------------------------------------------
+	// 층의 남쪽 참은 복도와 같은 화강석이다. 철판은 계단부터라, 발소리가 바뀌는 자리가
+	// 눈에도 보인다(§11 규칙 2). 1층 참은 주차장 바닥(X -340부터)과 맞닿고, 위층 참은
+	// 복도 바닥(X -330부터)과 맞닿는다.
+	IGPrologueWorld::TagFootstepSurface(CreateBlock(
+		FVector((WestX + OuterEastX) * 0.5f, (SouthY + FlightSouthY) * 0.5f, -10.0f),
+		FVector(OuterEastX - WestX, FlightSouthY - SouthY, 20), LandingFloor),
+		IGPrologueWorld::FootstepConcreteTag);
+	for (const float FloorZ : {300.0f, 600.0f, 900.0f})
+	{
+		IGPrologueWorld::TagFootstepSurface(CreateBlock(
+			FVector((WestX - 330.0f) * 0.5f, (SouthY + FlightSouthY) * 0.5f, FloorZ - 10.0f),
+			FVector(-330.0f - WestX, FlightSouthY - SouthY, 20), LandingFloor),
+			IGPrologueWorld::FootstepConcreteTag);
+	}
+
+	// --- 1층에서 2층까지 ---------------------------------------------------
+	// 맨 아래 두 단은 땅에서 자란 덩어리다. 디딤판 밑을 어두운 콘크리트로 채워
+	// 밑이 빈 계단이 아니라는 것이 옆에서도 보인다.
+	for (int32 Step = 1; Step < 9; ++Step)
+	{
+		const float Top = Rise * Step;
+		const float CenterY = FlightSouthY + Going * (Step - 0.5f);
+		const float TreadBottom = Top - TreadThickness < 0.0f ? 0.0f : Top - TreadThickness;
+		IGPrologueWorld::TagFootstepSurface(CreateBlock(
+			FVector(WestBandX, CenterY, (TreadBottom + Top) * 0.5f),
+			FVector(BandWidth, Going, Top - TreadBottom), StairSteel),
+			IGPrologueWorld::FootstepMetalStairTag);
+		if (Step > 1)
+		{
+			CreateBlock(
+				FVector(WestBandX, CenterY, TreadBottom * 0.5f),
+				FVector(BandWidth, Going, TreadBottom), StairMass);
+		}
+	}
+	CreateBlock(
+		FVector(CoreCenterX, HalfLandingY, (Storey * 0.5f - 20.0f) * 0.5f),
+		FVector(CoreWidth, HalfLandingDepth, Storey * 0.5f - 20.0f), StairMass);
+	IGPrologueWorld::TagFootstepSurface(CreateBlock(
+		FVector(CoreCenterX, HalfLandingY, Storey * 0.5f - 10.0f),
+		FVector(CoreWidth, HalfLandingDepth, 20), StairSteel),
+		IGPrologueWorld::FootstepMetalStairTag);
+	for (int32 Step = 1; Step < 9; ++Step)
+	{
+		const float Top = Storey * 0.5f + Rise * Step;
+		const float CenterY = FlightNorthY - Going * (Step - 0.5f);
+		IGPrologueWorld::TagFootstepSurface(CreateBlock(
+			FVector(EastBandX, CenterY, Top - TreadThickness * 0.5f),
+			FVector(BandWidth, Going, TreadThickness), StairSteel),
+			IGPrologueWorld::FootstepMetalStairTag);
+		CreateBlock(
+			FVector(EastBandX, CenterY, (Top - TreadThickness) * 0.5f),
+			FVector(BandWidth, Going, Top - TreadThickness), StairMass);
+	}
+
+	// --- 2층부터 4층까지 ---------------------------------------------------
+	// 디딤판 상자의 밑면이 아랫단 윗면보다 8 cm 낮아 단과 단 사이가 비지 않는다.
+	// 같은 띠의 바로 아래 계단과는 2.75 m가 떨어져 머리가 닿지 않는다.
+	for (int32 Level = 1; Level < 3; ++Level)
+	{
+		const float FloorZ = Storey * Level;
+		const float HalfZ = FloorZ + Storey * 0.5f;
+		for (int32 Step = 1; Step < 9; ++Step)
+		{
+			IGPrologueWorld::TagFootstepSurface(CreateBlock(
+				FVector(WestBandX, FlightSouthY + Going * (Step - 0.5f), FloorZ + Rise * Step - TreadThickness * 0.5f),
+				FVector(BandWidth, Going, TreadThickness), StairSteel),
+				IGPrologueWorld::FootstepMetalStairTag);
+			IGPrologueWorld::TagFootstepSurface(CreateBlock(
+				FVector(EastBandX, FlightNorthY - Going * (Step - 0.5f), HalfZ + Rise * Step - TreadThickness * 0.5f),
+				FVector(BandWidth, Going, TreadThickness), StairSteel),
+				IGPrologueWorld::FootstepMetalStairTag);
+		}
+		IGPrologueWorld::TagFootstepSurface(CreateBlock(
+			FVector(CoreCenterX, HalfLandingY, HalfZ - 10.0f),
+			FVector(CoreWidth, HalfLandingDepth, 20), StairSteel),
+			IGPrologueWorld::FootstepMetalStairTag);
+	}
+
+	// 4층 참 북쪽 가장자리. 서쪽 띠 위로는 계단이 없어 3층까지 뚫려 있다. 한국
+	// 빌라 계단의 검은 철제 난간이다. 살 사이 9 cm라 몸이 빠지지 않는다.
+	CreateBlock(
+		FVector(WestBandX, FlightSouthY - 2.5f, 995.0f),
+		FVector(BandWidth, 4, 4), PlasticDarkMaterial);
+	for (int32 Post = 0; Post < 9; ++Post)
+	{
+		CreateBlock(
+			FVector(WestX + 6.0f + Post * 11.625f, FlightSouthY - 2.5f, 946.5f),
+			FVector(2.5f, 2.5f, 93), PlasticDarkMaterial);
+	}
+
+	// --- 표지와 등 ----------------------------------------------------------
+	// 층 참 서쪽 벽에 칠한 층수. 축광 도료라 밤에도 희미하게 남는다.
+	const auto PaintFloorNumber = [this](const float FloorZ, const TCHAR* Label)
+	{
+		UTextRenderComponent* Number = NewObject<UTextRenderComponent>(
+			this, *FString::Printf(TEXT("StairFloorNumber_%d"), BlockCounter++));
+		Number->SetupAttachment(SceneRoot);
+		Number->SetMobility(EComponentMobility::Static);
+		Number->SetRelativeLocation(FVector(-574.6f, -305.0f, FloorZ + 150.0f));
+		Number->SetHorizontalAlignment(EHTA_Center);
+		Number->SetVerticalAlignment(EVRTA_TextCenter);
+		Number->SetWorldSize(46.0f);
+		Number->SetTextRenderColor(FColor(96, 128, 100));
+		Number->SetText(FText::AsCultureInvariant(FString(Label)));
+		Number->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Number->SetCastShadow(false);
+		Number->RegisterComponent();
+	};
+	PaintFloorNumber(0.0f, TEXT("1F"));
+	PaintFloorNumber(300.0f, TEXT("2F"));
+	PaintFloorNumber(600.0f, TEXT("3F"));
+	PaintFloorNumber(900.0f, TEXT("4F"));
+
+	// 층 참마다 천장 등 하나. 그림자를 드리워 벽 너머 골목에 새지 않는다. 4층 참은
+	// 켜지 않는다 — 복도 끝 죽어 가는 등 너머로 계단이 어둠 속에 내려가야 한다.
+	UStaticMesh* RingMesh = PropMesh(TEXT("SM_CeilingLightRing"));
+	UStaticMesh* DomeMesh = PropMesh(TEXT("SM_CeilingLightDome"));
+	StairCoreLights.Reset();
+	StairCoreLightDiscs.Reset();
+	StairCoreLightIntensities.Reset();
+	for (const float FloorZ : {0.0f, 300.0f, 600.0f})
+	{
+		const float CeilingUnderside = FloorZ + 280.0f;
+		if (RingMesh && DomeMesh)
+		{
+			CreateBlock(
+				FVector(-465.0f, -305.0f, CeilingUnderside), FVector(100, 100, 100),
+				nullptr, false, RingMesh, FRotator::ZeroRotator);
+			StairCoreLightDiscs.Add(CreateBlock(
+				FVector(-465.0f, -305.0f, CeilingUnderside), FVector(100, 100, 100),
+				LightPanelMaterial, false, DomeMesh, FRotator::ZeroRotator));
+		}
+		UPointLightComponent* LandingLight = CreateLight(
+			FVector(-465.0f, -305.0f, CeilingUnderside - 14.0f), 760.0f, 470.0f,
+			FLinearColor(0.92f, 0.95f, 1.0f), true, 14.0f);
+		LandingLight->SetVolumetricScatteringIntensity(0.10f);
+		StairCoreLights.Add(LandingLight);
+		StairCoreLightIntensities.Add(LandingLight->Intensity);
+	}
+
+	ActiveParent = nullptr;
+}
+
+void AIGPrologueWorldScene::BuildLowerFloors()
+{
+	// 2층과 3층. 4층과 같은 폭의 복도가 계단탑에서 동쪽으로 뻗고, 북쪽에 세대 문이
+	// 셋씩 선다. 들어갈 수 있는 집은 층마다 하나다 — 201호는 관리인이 석고보드를
+	// 쌓아 둔 창고, 302호는 할머니가 장롱만 두고 나간 빈집이다. 나머지 문은 잠겨 있다.
+	// 월드 좌표 그대로다.
+	ActiveParent = nullptr;
+
+	UMaterialInterface* CorridorFloor = TexMat(TEXT("M_GraniteTile_XY"), ConcreteMaterial);
+	UMaterialInterface* CorridorCeil = TexMat(TEXT("M_StuccoCeil"), ConcreteMaterial);
+	UMaterialInterface* CorridorWallX = TexMat(TEXT("M_Stucco_X"), ConcreteMaterial);
+	UMaterialInterface* CorridorWallY = TexMat(TEXT("M_Stucco_Y"), ConcreteMaterial);
+	UMaterialInterface* DadoX = TexMat(TEXT("M_StuccoDado_X"), ConcreteDarkMaterial);
+	UMaterialInterface* Skirting = TexMat(TEXT("M_UtilityGraniteCladding"), ConcreteDarkMaterial);
+	UStaticMesh* DoorLeafMesh = PropMesh(TEXT("SM_UnitDoorLeaf"));
+	UStaticMesh* DoorHardwareMesh = PropMesh(TEXT("SM_UnitDoorHardware"));
+	UStaticMesh* DoorFrameMesh = PropMesh(TEXT("SM_UnitDoorFrame"));
+	UStaticMesh* RingMesh = PropMesh(TEXT("SM_CeilingLightRing"));
+	UStaticMesh* DomeMesh = PropMesh(TEXT("SM_CeilingLightDome"));
+	LowerFloorLights.Reset();
+	LowerFloorLightDiscs.Reset();
+	LowerFloorLightIntensities.Reset();
+
+	// 문 위 표찰의 호수. 표찰 판은 흰 상자이고 숫자는 그 앞면에 붙인 글자다.
+	const auto AddDoorNumber = [this](const float DoorX, const float FloorZ, const TCHAR* Number)
+	{
+		UTextRenderComponent* Label = NewObject<UTextRenderComponent>(
+			this, *FString::Printf(TEXT("UnitNumber_%d"), BlockCounter++));
+		Label->SetupAttachment(SceneRoot);
+		Label->SetMobility(EComponentMobility::Static);
+		Label->SetRelativeLocation(FVector(DoorX, -237.1f, FloorZ + 214.0f));
+		Label->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+		Label->SetHorizontalAlignment(EHTA_Center);
+		Label->SetVerticalAlignment(EVRTA_TextCenter);
+		Label->SetWorldSize(6.5f);
+		Label->SetTextRenderColor(FColor(34, 36, 40));
+		Label->SetText(FText::AsCultureInvariant(FString(Number)));
+		Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Label->SetCastShadow(false);
+		Label->RegisterComponent();
+	};
+
+	// 잠긴 세대 문. 4층 이웃 문과 같은 문짝·철물·문선이다.
+	const auto BuildLockedDoor = [this, DoorLeafMesh, DoorHardwareMesh, DoorFrameMesh](
+		const float DoorX, const float FloorZ)
+	{
+		if (DoorLeafMesh)
+		{
+			CreateBlock(
+				FVector(DoorX, -234.5f, FloorZ), FVector(100, 100, 100),
+				nullptr, true, DoorLeafMesh, FRotator::ZeroRotator);
+		}
+		if (DoorHardwareMesh)
+		{
+			CreateBlock(
+				FVector(DoorX, -234.5f, FloorZ), FVector(100, 100, 100),
+				nullptr, false, DoorHardwareMesh, FRotator::ZeroRotator);
+		}
+		if (DoorFrameMesh)
+		{
+			CreateBlock(
+				FVector(DoorX, -233, FloorZ), FVector(100, 100, 100),
+				nullptr, false, DoorFrameMesh, FRotator::ZeroRotator);
+		}
+		CreateBlock(FVector(DoorX, -236, FloorZ + 214.0f), FVector(16, 2, 8), SignWhiteMaterial, false);
+	};
+
+	// 한 층의 복도. 열린 문 하나와 잠긴 문 둘이 북쪽 벽에 선다.
+	const auto BuildStorey = [this, CorridorFloor, CorridorCeil, CorridorWallX, DadoX, Skirting,
+			DoorFrameMesh, RingMesh, DomeMesh, BuildLockedDoor](
+		const float FloorZ, const float OpenDoorX, const float LockedWestX, const float LockedEastX)
+	{
+		// 바닥과 천장. 4층처럼 벽 밑으로 10 cm씩 들어간다.
+		IGPrologueWorld::TagFootstepSurface(CreateBlock(
+			FVector(50, -305, FloorZ - 10.0f), FVector(760, 160, 20), CorridorFloor),
+			IGPrologueWorld::FootstepConcreteTag);
+		CreateBlock(FVector(50, -305, FloorZ + 250.0f), FVector(760, 160, 20), CorridorCeil);
+		// 남쪽은 정면 벽돌의 안쪽 면이다. 미장을 한 겹 대고 허리 아래를 진하게 칠한다.
+		CreateBlock(FVector(55, -373.5f, FloorZ + 120.0f), FVector(750, 3, 240), CorridorWallX);
+		CreateBlock(FVector(55, -371.6f, FloorZ + 50.0f), FVector(750, 0.8f, 100), DadoX, false);
+		CreateBlock(FVector(55, -370.25f, FloorZ + 6.0f), FVector(750, 2.7f, 12), Skirting, false);
+		// 북쪽 벽. 계단탑 목 기둥 뒤를 메우고, 열린 문 자리만 비운다.
+		CreateBlock(FVector(-330, -222.5f, FloorZ + 120.0f), FVector(20, 15, 240), CorridorWallX);
+		CreateBlock(
+			FVector((-320.0f + OpenDoorX - 45.0f) * 0.5f, -225, FloorZ + 120.0f),
+			FVector(OpenDoorX - 45.0f + 320.0f, 20, 240), CorridorWallX);
+		CreateBlock(
+			FVector((OpenDoorX + 45.0f + 430.0f) * 0.5f, -225, FloorZ + 120.0f),
+			FVector(430.0f - OpenDoorX - 45.0f, 20, 240), CorridorWallX);
+		CreateBlock(FVector(OpenDoorX, -225, FloorZ + 225.0f), FVector(90, 20, 30), CorridorWallX);
+		// 문턱. 복도 바닥(Y -225까지)과 집 바닥(Y -215부터) 사이 벽 두께를 메운다.
+		IGPrologueWorld::TagFootstepSurface(CreateBlock(
+			FVector(OpenDoorX, -220, FloorZ - 10.0f), FVector(90, 10, 20),
+			TexMat(TEXT("M_UtilityGraniteCladding"), ConcreteDarkMaterial)),
+			IGPrologueWorld::FootstepConcreteTag);
+		CreateBlock(
+			FVector((-320.0f + OpenDoorX - 51.0f) * 0.5f, -236.75f, FloorZ + 6.0f),
+			FVector(OpenDoorX - 51.0f + 320.0f, 3.5f, 12), Skirting, false);
+		CreateBlock(
+			FVector((OpenDoorX + 51.0f + 430.0f) * 0.5f, -236.75f, FloorZ + 6.0f),
+			FVector(430.0f - OpenDoorX - 51.0f, 3.5f, 12), Skirting, false);
+		if (DoorFrameMesh)
+		{
+			CreateBlock(
+				FVector(OpenDoorX, -233, FloorZ), FVector(100, 100, 100),
+				nullptr, false, DoorFrameMesh, FRotator::ZeroRotator);
+		}
+		CreateBlock(FVector(OpenDoorX, -236, FloorZ + 214.0f), FVector(16, 2, 8), SignWhiteMaterial, false);
+		BuildLockedDoor(LockedWestX, FloorZ);
+		BuildLockedDoor(LockedEastX, FloorZ);
+		// 계단탑으로 나가는 목. 4층과 같은 검은 기둥 둘과 머리, 그 위의 비상구 등이다.
+		CreateBlock(FVector(-330, -237.5f, FloorZ + 120.0f), FVector(20, 15, 240), PlasticDarkMaterial);
+		CreateBlock(FVector(-330, -372.5f, FloorZ + 120.0f), FVector(20, 15, 240), PlasticDarkMaterial);
+		CreateBlock(FVector(-330, -305, FloorZ + 225.0f), FVector(20, 120, 30), PlasticDarkMaterial);
+		CreateBlock(FVector(-313, -305, FloorZ + 220.0f), FVector(14, 8, 10), ScreenGlowMaterial, false);
+		UPointLightComponent* ExitLamp = CreateLight(
+			FVector(-313, -305, FloorZ + 213.0f), 22.0f, 340.0f,
+			FLinearColor(0.30f, 1.0f, 0.42f), false, 5.0f);
+		ExitLamp->SetVolumetricScatteringIntensity(0.4f);
+		// 천장 등 둘. 낮에는 켜져 있고 그 시간에는 죽어 있다.
+		for (const float FixtureX : {-170.0f, 200.0f})
+		{
+			if (RingMesh && DomeMesh)
+			{
+				CreateBlock(
+					FVector(FixtureX, -305, FloorZ + 240.0f), FVector(100, 100, 100),
+					nullptr, false, RingMesh, FRotator::ZeroRotator);
+				LowerFloorLightDiscs.Add(CreateBlock(
+					FVector(FixtureX, -305, FloorZ + 240.0f), FVector(100, 100, 100),
+					LightPanelMaterial, false, DomeMesh, FRotator::ZeroRotator));
+			}
+			UPointLightComponent* HallLight = CreateLight(
+				FVector(FixtureX, -305, FloorZ + 226.0f), 900.0f, 410.0f,
+				FLinearColor(0.88f, 0.96f, 1.0f), true, 16.0f);
+			HallLight->SetVolumetricScatteringIntensity(0.10f);
+			LowerFloorLights.Add(HallLight);
+			LowerFloorLightIntensities.Add(HallLight->Intensity);
+		}
+	};
+
+	// --- 2층 -------------------------------------------------------------
+	BuildingLightZone = EIGLightZone::SecondFloor;
+	BuildStorey(300.0f, -150.0f, -30.0f, 78.0f);
+	AddDoorNumber(-150.0f, 300.0f, TEXT("201"));
+	AddDoorNumber(-30.0f, 300.0f, TEXT("202"));
+	AddDoorNumber(78.0f, 300.0f, TEXT("203"));
+	{
+		// 201호. 세입자가 나간 뒤 관리인이 자재 창고로 쓴다. 장판을 걷어 낸 콘크리트
+		// 바닥에 석고보드가 누워 쌓이고, 북동쪽 구석은 세운 보드와 걸어 둔 비닐 사이로
+		// 사람 하나가 설 자리가 남는다(숨는 자리, SpawnInteractables).
+		UMaterialInterface* PlasterX = TexMat(TEXT("M_MissingFloorPlaster_X"), ConcreteMaterial);
+		UMaterialInterface* PlasterY = TexMat(TEXT("M_MissingFloorPlaster_Y"), ConcreteMaterial);
+		UMaterialInterface* PlasterXY = TexMat(TEXT("M_MissingFloorPlaster_XY"), ConcreteMaterial);
+		UMaterialInterface* BareFloor = TexMat(TEXT("M_Concrete_XY"), ConcreteMaterial);
+		UMaterialInterface* Batten = TexMat(TEXT("M_WoodFurnitureUV"), WoodMaterial);
+		IGPrologueWorld::TagFootstepSurface(CreateBlock(
+			FVector(-160, -65, 290), FVector(280, 300, 20), BareFloor),
+			IGPrologueWorld::FootstepConcreteTag);
+		CreateBlock(FVector(-160, -65, 550), FVector(280, 300, 20), PlasterXY);
+		CreateBlock(FVector(-307.5f, -57.5f, 420), FVector(15, 315, 240), PlasterY);
+		CreateBlock(FVector(-12.5f, -57.5f, 420), FVector(15, 315, 240), PlasterY);
+		CreateBlock(FVector(-160, 92.5f, 420), FVector(280, 15, 240), PlasterX);
+		// 서쪽 벽을 따라 누운 보드 더미. 120 x 240 판을 쌓은 높이 60 cm다.
+		CreateBlock(FVector(-238, -32.5f, 330), FVector(120, 231, 60), PlasterXY);
+		CreateBlock(FVector(-226, -40, 375), FVector(96, 180, 30), PlasterXY);
+		// 숨는 구석. 서쪽은 세워 둔 보드, 남쪽은 각목에 건 비닐이다.
+		CreateBlock(FVector(-117.5f, 51.5f, 410), FVector(15, 63, 220), PlasterY);
+		CreateBlock(FVector(-65, 25.5f, 532), FVector(90, 5, 4), Batten);
+		if (UStaticMesh* SheetMesh = PropMesh(TEXT("SM_ConstructionSheetFloor")))
+		{
+			CreateBlock(
+				FVector(-66, 25, 430), FVector(81, 232.6f, 100),
+				nullptr, false, SheetMesh, FRotator(0, 0, 90));
+		}
+		CreateProp(TEXT("SM_WorkPaintCan"), FVector(-44, -118, 300), nullptr, 25.0f, 1.0f, true);
+		CreateProp(TEXT("SM_WorkPaintCan"), FVector(-40, -144, 300), nullptr, -40.0f, 1.0f, true);
+		CreateProp(TEXT("SM_CottonWorkGlove"), FVector(-232, -60, 390), nullptr, 70.0f, 1.0f, false);
+		CreateProp(TEXT("SM_TrafficCone"), FVector(-278, -190, 300), nullptr, 0.0f, 1.0f, true);
+		// 창고 한가운데 천장 등. 그 시간에는 죽어 있다.
+		if (RingMesh && DomeMesh)
+		{
+			CreateBlock(
+				FVector(-160, -60, 540), FVector(100, 100, 100),
+				nullptr, false, RingMesh, FRotator::ZeroRotator);
+			LowerFloorLightDiscs.Add(CreateBlock(
+				FVector(-160, -60, 540), FVector(100, 100, 100),
+				LightPanelMaterial, false, DomeMesh, FRotator::ZeroRotator));
+		}
+		UPointLightComponent* StoreLight = CreateLight(
+			FVector(-160, -60, 526), 520.0f, 360.0f,
+			FLinearColor(1.0f, 0.93f, 0.82f), true, 12.0f);
+		LowerFloorLights.Add(StoreLight);
+		LowerFloorLightIntensities.Add(StoreLight->Intensity);
+	}
+
+	// --- 3층 -------------------------------------------------------------
+	BuildingLightZone = EIGLightZone::ThirdFloor;
+	BuildStorey(600.0f, -30.0f, -150.0f, 78.0f);
+	AddDoorNumber(-150.0f, 600.0f, TEXT("301"));
+	AddDoorNumber(-30.0f, 600.0f, TEXT("302"));
+	AddDoorNumber(78.0f, 600.0f, TEXT("303"));
+	// 3층 복도 동쪽 끝. 2층은 승강기 홀의 벽이 같은 자리를 막는다.
+	CreateBlock(FVector(440, -300, 720), FVector(20, 170, 240), CorridorWallY);
+	{
+		// 302호. 할머니가 요양원으로 가며 장롱만 두고 나갔다. 장판과 벽지가 남은 빈방이고,
+		// 장롱 문틈이 숨는 자리다(SpawnInteractables).
+		UMaterialInterface* Jangpan = TexMat(TEXT("M_Jangpan"), FloorMaterial);
+		UMaterialInterface* PaperX = TexMat(TEXT("M_Wallpaper_X"), WallMaterial);
+		UMaterialInterface* PaperY = TexMat(TEXT("M_Wallpaper_Y"), WallMaterial);
+		UMaterialInterface* PaperCeil = TexMat(TEXT("M_WallpaperCeil"), WallMaterial);
+		IGPrologueWorld::TagFootstepSurface(CreateBlock(
+			FVector(-20, -65, 590), FVector(280, 300, 20), Jangpan),
+			IGPrologueWorld::FootstepVinylTag);
+		CreateBlock(FVector(-20, -65, 850), FVector(280, 300, 20), PaperCeil);
+		CreateBlock(FVector(-167.5f, -57.5f, 720), FVector(15, 315, 240), PaperY);
+		CreateBlock(FVector(127.5f, -57.5f, 720), FVector(15, 315, 240), PaperY);
+		CreateBlock(FVector(-20, 92.5f, 720), FVector(280, 15, 240), PaperX);
+		if (UStaticMesh* WardrobeMesh = PropMesh(TEXT("SM_Wardrobe")))
+		{
+			CreateBlock(
+				FVector(-138, 0, 600), FVector(100, 100, 100),
+				nullptr, true, WardrobeMesh, FRotator::ZeroRotator);
+		}
+		// 열려 있는 현관문. 안쪽 벽에 붙여 젖혀 두었다.
+		if (DoorLeafMesh)
+		{
+			CreateBlock(
+				FVector(-80, -170, 600), FVector(100, 100, 100),
+				nullptr, true, DoorLeafMesh, FRotator(0, 90, 0));
+		}
+		CreateProp(TEXT("SM_KimchiTub"), FVector(90, 60, 600), nullptr, 15.0f, 1.0f, true);
+		CreateProp(TEXT("SM_Basket"), FVector(84, 20, 600), nullptr, -20.0f, 1.0f, true);
+		CreateProp(TEXT("SM_HouseSlipper"), FVector(-12, -190, 600), nullptr, 8.0f, 1.0f, false);
+		CreateProp(TEXT("SM_HouseSlipper"), FVector(2, -192, 600), nullptr, -4.0f, 1.0f, false);
+		if (RingMesh && DomeMesh)
+		{
+			CreateBlock(
+				FVector(-20, -60, 840), FVector(100, 100, 100),
+				nullptr, false, RingMesh, FRotator::ZeroRotator);
+			LowerFloorLightDiscs.Add(CreateBlock(
+				FVector(-20, -60, 840), FVector(100, 100, 100),
+				LightPanelMaterial, false, DomeMesh, FRotator::ZeroRotator));
+		}
+		UPointLightComponent* RoomLight = CreateLight(
+			FVector(-20, -60, 826), 420.0f, 360.0f,
+			FLinearColor(1.0f, 0.90f, 0.76f), true, 12.0f);
+		LowerFloorLights.Add(RoomLight);
+		LowerFloorLightIntensities.Add(RoomLight->Intensity);
 	}
 
 	ActiveParent = nullptr;
@@ -3126,6 +3699,7 @@ void AIGPrologueWorldScene::ApplyNightAtmosphere(const bool bSealed)
 	{
 		SetFixtureLive(Index, true, false);
 	}
+	ApplyServiceLights();
 	if (HeightFog)
 	{
 		// 실내 공기. 손전등 원뿔이 서고 복도 끝이 흐려진다. 높이 감쇠를 거의
@@ -3201,20 +3775,35 @@ void AIGPrologueWorldScene::UpdateLightZones()
 	const FVector Eye = GetActorTransform().InverseTransformPosition(
 		Controller->PlayerCameraManager->GetCameraLocation());
 	UpdateCorridorSensors(Eye);
-	// 0: 1~2층(로비·골목·편의점), 1: 4층, 2: 옥상·별관. 경계에서 40 cm는 앞의
-	// 판단을 유지해 계단을 오르내릴 때 등이 번갈아 켜지지 않게 한다.
-	constexpr float GroundTop = 700.0f;
-	constexpr float FourthTop = 1170.0f;
+	// 구역 번호: 0 1층(로비·골목·편의점), 4 2층, 5 3층, 1 4층, 2 옥상·별관.
+	// 층 경계는 그 층 슬래브 윗면 20 cm 아래다. 아래층에서 뛰어도 넘지 않고,
+	// 위층 침대 밑에 엎드려도 내려가지 않는다. 경계에서 40 cm는 앞의 판단을
+	// 유지해 계단을 오르내릴 때 등이 번갈아 켜지지 않게 한다.
+	constexpr float LevelFloors[] = {280.0f, 580.0f, 880.0f, 1170.0f};
+	constexpr int32 LevelBands[] = {0, 4, 5, 1, 2};
 	constexpr float Hysteresis = 40.0f;
-	int32 Band = Eye.Z < GroundTop ? 0 : (Eye.Z < FourthTop ? 1 : 2);
-	if (ActiveLightBand >= 0 && ActiveLightBand <= 2 && Band != ActiveLightBand)
+	int32 Level = 0;
+	while (Level < 4 && Eye.Z >= LevelFloors[Level])
 	{
-		const float Boundary = FMath::Max(Band, ActiveLightBand) == 1 ? GroundTop : FourthTop;
-		if (FMath::Abs(Eye.Z - Boundary) < Hysteresis)
+		++Level;
+	}
+	int32 ActiveLevel = INDEX_NONE;
+	for (int32 Index = 0; Index < 5; ++Index)
+	{
+		if (LevelBands[Index] == ActiveLightBand)
 		{
-			Band = ActiveLightBand;
+			ActiveLevel = Index;
 		}
 	}
+	if (ActiveLevel != INDEX_NONE && FMath::Abs(Level - ActiveLevel) == 1)
+	{
+		const float Boundary = LevelFloors[FMath::Min(Level, ActiveLevel)];
+		if (FMath::Abs(Eye.Z - Boundary) < Hysteresis)
+		{
+			Level = ActiveLevel;
+		}
+	}
+	int32 Band = LevelBands[Level];
 	// 3: 다른 층을 비추는 화면(관리실 CCTV 5번)이 살아 있다. 모든 층을 켠다.
 	if (RemoteViewCount > 0)
 	{
@@ -3238,7 +3827,7 @@ void AIGPrologueWorldScene::UpdateLightZones()
 	ActiveLightBand = Band;
 	ActiveHomeView = HomeView;
 
-	// 층마다 보일 수 있는 공간. 4층 창은 전부 불투명한 원경이고, 로비의 유리
+	// 층마다 보일 수 있는 공간. 2~4층 창은 전부 불투명한 원경이고, 로비의 유리
 	// 현관은 골목과 편의점 쪽을 보여 준다. 옥상 가장자리에서는 골목이 내려다보인다.
 	const auto ZoneVisible = [Band, HomeView](const EIGLightZone Zone)
 	{
@@ -3246,25 +3835,34 @@ void AIGPrologueWorldScene::UpdateLightZones()
 		{
 			return true;
 		}
+		const bool bFourth = Band == 1;
+		const bool bRoof = Band == 2;
 		switch (Zone)
 		{
 		case EIGLightZone::HomeInterior:
-			return Band == 1 && HomeView != 2;
+			return bFourth && HomeView != 2;
 		case EIGLightZone::FourthFloorRooms:
-			return Band == 1 && HomeView != 1;
+			return bFourth && HomeView != 1;
 		case EIGLightZone::FourthFloor:
 		case EIGLightZone::UpperStair:
-			return Band >= 1 && HomeView != 1;
+			return (bFourth || bRoof) && HomeView != 1;
 		// 별관은 옥상에서만 보인다. 4층에서 보이는 윗계단 등은 UpperStair에 따로 있다.
 		// 켜 두면 별관 등의 구가 바닥판을 지나 403호까지 닿아, 가려진 그림자를 매
 		// 픽셀 다시 계산하고 그림자 없는 등은 천장을 뚫고 비춘다.
 		case EIGLightZone::Annex:
-			return Band >= 2;
+			return bRoof;
 		case EIGLightZone::Lobby:
 			return Band == 0;
 		case EIGLightZone::Alley:
 		case EIGLightZone::Store:
-			return Band != 1;
+			return Band == 0 || bRoof;
+		case EIGLightZone::SecondFloor:
+			return Band == 4;
+		case EIGLightZone::ThirdFloor:
+			return Band == 5;
+		// 계단을 오르내리는 동안 위아래 참이 보인다. 건물 안이면 층을 가리지 않는다.
+		case EIGLightZone::StairCore:
+			return !bRoof && HomeView != 1;
 		default:
 			return true;
 		}
@@ -3359,13 +3957,6 @@ void AIGPrologueWorldScene::SetRemoteViewActive(const bool bActive)
 	RemoteViewCount = FMath::Max(0, RemoteViewCount + (bActive ? 1 : -1));
 	// 구역을 바로 다시 계산한다. 다음 타이머를 기다리면 CCTV 첫 장면이 꺼진 층을 찍는다.
 	ActiveLightBand = -1;
-	UpdateLightZones();
-}
-
-void AIGPrologueWorldScene::HandleStairTransitionForLights(bool /*bGoingDown*/)
-{
-	// 암전 속에서 순간이동이 끝난 프레임에 바로 맞춘다. 0.1초 주기를 기다리면
-	// 밝아지는 동안 한두 프레임 옛 층의 등으로 그려질 수 있다.
 	UpdateLightZones();
 }
 
@@ -4240,40 +4831,6 @@ void AIGPrologueWorldScene::SetTheHourSealed(const bool bSealed)
 	}
 }
 
-void AIGPrologueWorldScene::SetNightStairPocketEnabled(const bool bEnabled)
-{
-	if (!StairTransition)
-	{
-		return;
-	}
-	const auto ToWorld = [this](const FVector& Local)
-	{
-		return GetActorTransform().TransformPosition(Local);
-	};
-	// Configure only repositions the portal boxes, so re-calling it is the
-	// supported way to slide the trigger. Exits stay untouched in both modes.
-	//
-	// The night position is measured against the flight, not guessed. The
-	// portal box is 24 cm half-width and the pawn capsule is 34 cm, so the
-	// furthest west a player can stand is 58 cm east of the portal's centre.
-	// Treads run west from X -341 at 22 cm apart, so -452 puts that line at
-	// -394 and leaves the third tread (centre -385, two risers down at local
-	// Z -36) standing room; the fourth (-407) trips the portal. At -440 the
-	// line was -382 and the pocket was a single step. The far shaft wall is
-	// at X -445, which is where the sighting figure has its ear, so the
-	// figure stays inside the portal box and unreachable in both cases.
-	const FVector UpperTrigger = bEnabled
-		? FVector(-452.0f, -305.0f, 880.0f)
-		: FVector(-352.0f, -305.0f, 915.0f);
-	StairTransition->Configure(
-		ToWorld(UpperTrigger),
-		ToWorld(FVector(-300.0f, -305.0f, 942.0f)),
-		FRotator(0.0f, 0.0f, 0.0f),
-		ToWorld(FVector(-214.0f, -305.0f, 193.0f)),
-		ToWorld(FVector(-188.0f, -305.0f, 187.0f)),
-		FRotator(0.0f, 0.0f, 0.0f));
-}
-
 bool AIGPrologueWorldScene::ValidateMissingFloorRooftopRoute(
 	float& OutCenterlineLengthCentimeters,
 	int32& OutUpperStepCount) const
@@ -4338,15 +4895,20 @@ float AIGPrologueWorldScene::GetMissingFloorCctvFieldOfView() const
 void AIGPrologueWorldScene::SetMissingFloorAnnexPower(const bool bPowered)
 {
 	bMissingFloorAnnexPowered = bPowered;
-	for (UPointLightComponent* Light : MissingFloorAnnexLights)
+	// 끄는 것은 바로 한다. 켜는 것은 조명 구역이 정한다 — 별관과 윗계단 등은
+	// 아래층에 있는 동안 구역이 꺼 두었으니, 전원이 돌아와도 그 층에서는 켜지 않는다.
+	if (!bPowered)
 	{
-		if (Light)
+		for (UPointLightComponent* Light : MissingFloorAnnexLights)
 		{
-			// 별관과 윗계단 등은 1~2층에 있는 동안 조명 구역이 꺼 두었다. 전원이 돌아와도
-			// 그 층에서는 켜지 않고, 올라오면 UpdateLightZones가 켠다.
-			Light->SetVisibility(bPowered && ActiveLightBand != 0, true);
+			if (Light)
+			{
+				Light->SetVisibility(false, true);
+			}
 		}
 	}
+	ActiveLightBand = -1;
+	UpdateLightZones();
 }
 
 bool AIGPrologueWorldScene::OpenMissingFloorCavity()
@@ -4627,22 +5189,6 @@ void AIGPrologueWorldScene::BuildLobby()
 	CreateBlock(FVector(575, -146.75f, 6), FVector(250, 3.5f, 12), Skirting, false);
 	CreateBlock(FVector(451.75f, -200, 6), FVector(3.5f, 110, 12), Skirting, false);
 
-	// 없는 층 night seal: a fire shutter at the stair-core end of the
-	// connector. Locking the common entrance alone does not shut the building
-	// in — the ground stair mouth opens into the open pilotis car park, so the
-	// stairs are a way out to the alley. Built here so the geometry exists from
-	// the first frame, but hidden and non-colliding until SetTheHourSealed
-	// lowers it; the legacy chapters therefore never see it.
-	StairCoreNightGate = CreateBlock(
-		FVector(-83, -305, 120),
-		FVector(10, 120, 240),
-		Metal,
-		false);
-	if (StairCoreNightGate)
-	{
-		StairCoreNightGate->SetHiddenInGame(true);
-	}
-
 	// Street wall of the lobby, with the common-entrance opening at X 600..686.
 	// West of X 450 the ground floor is the open pilotis car park, which
 	// BuildAlley puts in — Korean villas give the whole ground level to
@@ -4821,6 +5367,9 @@ void AIGPrologueWorldScene::BuildLobby()
 		FVector(1.2f, 18, 24),
 		ScreenGlowMaterial,
 		false);
+	// 2층에 있는 등이라 2층 구역에서 켠다. 로비 구역에 두면 2층 복도에 선 동안
+	// 꺼지고, 1층에 있는 동안 쓸데없이 켜진다.
+	BuildingLightZone = EIGLightZone::SecondFloor;
 	UPointLightComponent* SecondFloorEmergencyLight = CreateLight(
 		FVector(520, -305, SecondFloorZ + 205),
 		18.0f,
@@ -4829,36 +5378,7 @@ void AIGPrologueWorldScene::BuildLobby()
 		false,
 		4.0f);
 	SecondFloorEmergencyLight->SetVolumetricScatteringIntensity(0.08f);
-
-	// Lower mouth of the same occluded switchback stair. Five real treads and
-	// a dark return wall make the floor compression happen behind a plausible
-	// 180-degree corner instead of in the open lobby.
-	// 챌판도 디딤판과 같은 작은 입자의 화강석을 쓴다.
-	// 얇은 마감판의 옆면까지 면 방향에 맞춰 투영한다.
-	UMaterialInterface* LobbyRiser =
-		TexMat(TEXT("M_UtilityGraniteCladding"), ConcreteMaterial);
-	for (int32 LowerStepIndex = 0; LowerStepIndex < 5; ++LowerStepIndex)
-	{
-		const float StepX = -100.0f - LowerStepIndex * 22.0f;
-		const float StepTop = 18.0f + LowerStepIndex * 18.0f;
-		CreateBlock(
-			FVector(StepX, -305, StepTop * 0.5f),
-			FVector(22, 112, StepTop),
-			LobbyFloor);
-		CreateBlock(
-			FVector(StepX + 11.3f, -305, StepTop * 0.5f),
-			FVector(0.6f, 112, StepTop),
-			LobbyRiser,
-			false);
-	}
-	CreateBlock(
-		FVector(-214, -305, 48),
-		FVector(44, 112, 96),
-		LobbyFloor);
-	CreateBlock(
-		FVector(-244, -305, 120),
-		FVector(12, 136, 240),
-		ConcreteDarkMaterial);
+	BuildingLightZone = EIGLightZone::Lobby;
 }
 
 void AIGPrologueWorldScene::BuildAlley()
@@ -4954,9 +5474,9 @@ void AIGPrologueWorldScene::BuildAlley()
 		// 1.7 m 늘여 놓은 민무늬였다.
 		CreateBlock(FVector(50, -308, 244), FVector(780, 166, 12), DarkXY, false);
 		// 주차장 뒤벽은 주차면까지만. 연결 복도의 벽은 BuildLobby가 개구부와
-		// 함께 만든다. 여기서 통째로 덮으면 관리실 문이 다시 막힌다.
+		// 함께 만든다. 여기서 통째로 덮으면 관리실 문이 다시 막힌다. 서쪽은
+		// 계단탑의 동쪽 벽이다(BuildStairCore).
 		CreateBlock(FVector(-215, -232, 120), FVector(250, 16, 240), DarkX);
-		CreateBlock(FVector(-348, -310, 120), FVector(16, 170, 240), DarkY);
 		// Columns on the street line, each with a concrete capital.
 		for (const float ColumnX : {-300.0f, -140.0f, 20.0f, 180.0f, 340.0f})
 		{
@@ -4964,17 +5484,25 @@ void AIGPrologueWorldScene::BuildAlley()
 			CreateBlock(FVector(ColumnX, -378, 232), FVector(46, 46, 12), DarkX, false);
 			CreateBlock(FVector(ColumnX, -378, 8), FVector(46, 46, 16), DarkX, false);
 		}
-		// Painted bay lines and the chain barrier slung between the columns.
-		for (const float LineX : {-220.0f, -60.0f, 100.0f, 260.0f})
+		// 주차면 선과 기둥 사이 체인. 동쪽 기둥들은 연결통로 벽에 묻혀 있어 그
+		// 앞의 선과 체인이 통로 바닥과 벽을 뚫고 지나갔다. 열린 칸에만 둔다.
+		// 체인은 X로 눕혀 두 기둥 면 사이에 건다 — Roll 90은 원통을 Y로 세워
+		// 골목과 주차면 쪽으로 75 cm씩 찌르고 있었다.
+		CreateBlock(FVector(-220, -310, 0.6f), FVector(6, 160, 1.4f), SignWhiteMaterial, false);
+		CreateBlock(
+			FVector(-220, -378, 62), FVector(2.6f, 2.6f, 122),
+			PlasticDarkMaterial, false, CylinderMesh, FRotator(90, 0, 0));
+		// 그 시간의 두 번째 봉쇄. 공동현관만 잠그면 계단탑에서 주차장을 지나 골목으로
+		// 나갈 수 있다. 기둥 안쪽에 내려오는 셔터가 주차장을 건물 안으로 접는다.
+		// 계단탑 1층 출입구(Y -350..-235)와 연결통로 입구는 셔터 북쪽이다. 낮에는
+		// 감춰 두고 SetTheHourSealed가 내린다. 셔터 통은 늘 보인다.
+		StairCoreNightGate = CreateBlock(
+			FVector(-214.5f, -352, 119), FVector(251, 4, 238), Metal, false);
+		if (StairCoreNightGate)
 		{
-			CreateBlock(FVector(LineX, -310, 0.6f), FVector(6, 160, 1.4f), SignWhiteMaterial, false);
+			StairCoreNightGate->SetHiddenInGame(true);
 		}
-		for (const float SpanX : {-220.0f, -60.0f, 100.0f, 260.0f})
-		{
-			CreateBlock(
-				FVector(SpanX, -378, 62), FVector(2.6f, 2.6f, 150),
-				PlasticDarkMaterial, false, CylinderMesh, FRotator(0, 0, 90));
-		}
+		CreateBlock(FVector(-214.5f, -349, 230), FVector(251, 10, 16), Metal, false);
 		// 계단실 문 옆 발신기도 복도와 같은 제품을 쓴다.
 		CreateBlock(FVector(-120, -241, 100), FVector(88, 6, 200), DarkX, false);
 		CreateBlock(FVector(-84, -244.5f, 96), FVector(4, 2, 14), Metal, false);
@@ -4989,13 +5517,10 @@ void AIGPrologueWorldScene::BuildAlley()
 			FVector(-30, -252, 208), 300.0f, 480.0f,
 			FLinearColor(0.98f, 0.78f, 0.48f), true, 12.0f);
 		PilotisLamp->SetVolumetricScatteringIntensity(0.65f);
-		// Rubbish bags and a bicycle nobody has moved in months.
-		PlacePhotoProp(TEXT("trashbag"), FVector(-286, -262, 0), FVector(58, 58, 56), 20.0f);
-		// -35도로 돌리면 상자가 X로 45 cm, Y로 47 cm를 차지한다. (-244, -256)은
-		// 계단 옆 12 cm 벽(X -250..-238) 한가운데였고 북쪽 벽(Y -240..-224)에도
-		// 걸쳐 있었다 — 벽에 꿰인 상자였다. 화강암 기둥 받침(Y -401..-355)과
-		// 쓰레기봉투(Y -291.9까지) 사이 빈 바닥으로 내렸다.
-		PlacePhotoProp(TEXT("cardboard_box_01"), FVector(-300, -322, 0), FVector(46, 38, 32), -35.0f);
+		// 내놓은 쓰레기봉투와 상자. 주차장은 이제 계단탑과 연결통로를 잇는 길이라
+		// 길을 막지 않게 빌라 앞 연석 밖에 둔다.
+		PlacePhotoProp(TEXT("trashbag"), FVector(-236, -455, 0), FVector(58, 58, 56), 20.0f);
+		PlacePhotoProp(TEXT("cardboard_box_01"), FVector(-178, -452, 0), FVector(46, 38, 32), -35.0f);
 	}
 	// The north facade is split by a service gap, so the alley reads as a
 	// junction rather than one long tube. The neighbouring block starts where
@@ -5912,41 +6437,6 @@ void AIGPrologueWorldScene::UpdateNeighborhoodAwake()
 	}
 }
 
-void AIGPrologueWorldScene::SpawnStairTransition()
-{
-	if (!GetWorld() || StairTransition)
-	{
-		return;
-	}
-
-	const FTransform TransitionTransform = GetActorTransform();
-	StairTransition = GetWorld()->SpawnActorDeferred<AIGStairTransition>(
-		AIGStairTransition::StaticClass(),
-		TransitionTransform,
-		this,
-		nullptr,
-		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-	if (!StairTransition)
-	{
-		return;
-	}
-
-	const auto ToWorld = [this](const FVector& Local)
-	{
-		return GetActorTransform().TransformPosition(Local);
-	};
-	StairTransition->Configure(
-		ToWorld(FVector(-352.0f, -305.0f, 915.0f)),
-		ToWorld(FVector(-300.0f, -305.0f, 942.0f)),
-		FRotator(0.0f, 0.0f, 0.0f),
-		ToWorld(FVector(-214.0f, -305.0f, 193.0f)),
-		ToWorld(FVector(-188.0f, -305.0f, 187.0f)),
-		FRotator(0.0f, 0.0f, 0.0f));
-	StairTransition->FinishSpawning(TransitionTransform);
-	StairTransition->OnTransitionCompleted.AddUniqueDynamic(
-		this, &ThisClass::HandleStairTransitionForLights);
-}
-
 void AIGPrologueWorldScene::SpawnInteractables()
 {
 	UWorld* World = GetWorld();
@@ -6125,7 +6615,9 @@ void AIGPrologueWorldScene::SpawnInteractables()
 		{
 			if (!CabLight) { continue; }
 			const float LocalZ = GetActorTransform().InverseTransformPosition(CabLight->GetComponentLocation()).Z;
-			const EIGLightZone CabZone = LocalZ >= 700.0f ? EIGLightZone::FourthFloorRooms : EIGLightZone::Lobby;
+			const EIGLightZone CabZone = LocalZ >= 880.0f
+				? EIGLightZone::FourthFloorRooms
+				: (LocalZ >= 280.0f ? EIGLightZone::SecondFloor : EIGLightZone::Lobby);
 			ZoneLights[static_cast<int32>(CabZone)].Add(CabLight);
 		}
 
@@ -6279,17 +6771,6 @@ void AIGPrologueWorldScene::SpawnInteractables()
 			WaterBottles.Add(WaterBottle);
 		}
 	}
-	CreateBlock(
-		FVector(-352, -305, -90),
-		FVector(48, 130, 18),
-		TexMat(TEXT("M_GraniteTile_XY"), ConcreteMaterial));
-	// The return wall hides the bounded transition at a genuine switchback
-	// corner; the camera never sees the other floor or open sky.
-	CreateBlock(
-		FVector(-382, -305, 20),
-		FVector(12, 150, 220),
-		PlasticDarkMaterial);
-
 	// Self-service checkout on the counter.
 	Checkout = World->SpawnActor<AIGCheckoutCounter>(
 		AIGCheckoutCounter::StaticClass(),
@@ -6352,7 +6833,7 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 		return;
 	}
 
-	// 숨는 자리 셋. 좌표는 각 가구의 앞면 가운데 바닥이고, 자리의 +X가 밖을 본다.
+	// 숨는 자리 다섯. 좌표는 각 가구의 앞면 가운데 바닥이고, 자리의 +X가 밖을 본다.
 	auto SpawnHidingSpot = [&](const FVector& FrontCenter, const float Yaw) -> AIGHidingSpot*
 	{
 		return World->SpawnActor<AIGHidingSpot>(
@@ -6402,6 +6883,35 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 			true);
 		BoothDesk->SetInteractionPrompt(
 			NSLOCTEXT("IGMissingFloor", "HideUnderDeskPrompt", "책상 밑에 숨기"));
+	}
+	// 201호 북동쪽 구석. 세워 둔 석고보드와 각목에 건 비닐 사이에 사람 하나가
+	// 선다. 비닐 선(Y 25)이 앞면이고 남쪽을 본다. 비닐 끝과 보드 사이로 방이 보인다.
+	if (AIGHidingSpot* BoardNook = SpawnHidingSpot(FVector(-66.0f, 25.0f, 300.0f), -90.0f))
+	{
+		BoardNook->Configure(
+			EIGHidingView::DoorGap,
+			FVector(-24.0f, 0.0f, 150.0f),
+			FVector(60.0f, 0.0f, 0.0f),
+			FVector(2.5f, 0.0f, 100.0f),
+			FVector(1.5f, 40.0f, 92.0f),
+			30.0f,
+			15.0f,
+			false);
+		BoardNook->SetInteractionPrompt(
+			NSLOCTEXT("IGMissingFloor", "HideBehindSheetPrompt", "비닐 뒤에 숨기"));
+	}
+	// 302호 장롱. 403호 장롱과 같은 메시라 같은 자리에서 본다(앞면 X -114.4).
+	if (AIGHidingSpot* Wardrobe302 = SpawnHidingSpot(FVector(-114.4f, 0.0f, 600.0f), 0.0f))
+	{
+		Wardrobe302->Configure(
+			EIGHidingView::DoorGap,
+			FVector(-14.0f, 0.0f, 158.0f),
+			FVector(106.4f, 24.0f, 0.0f),
+			FVector(2.5f, 0.0f, 90.0f),
+			FVector(1.5f, 38.0f, 86.0f),
+			35.0f,
+			15.0f,
+			false);
 	}
 
 	// 손전등 건전지 셋. 9×6×1.6 cm 낱개 포장이고, 손전등 빛에 잘 보이게 노란 카드다.

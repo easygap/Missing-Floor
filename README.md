@@ -62,7 +62,7 @@
 
 ## 다운로드
 
-지금 받을 수 있는 건 플레이 테스트 0.2.4입니다. 숨기, 걸쇠와 방화문, 손전등 건전지, 위층 사람 말고 밤에 오는 것들은 다음 플레이 테스트부터 들어갑니다.
+지금 받을 수 있는 건 플레이 테스트 0.2.4입니다. 숨기, 걸쇠와 방화문, 손전등 건전지, 위층 사람 말고 밤에 오는 것들은 다음 플레이 테스트부터 들어갑니다. 2층과 3층도 그때 열립니다.
 
 1. [Windows용 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip)을 받습니다.
 2. 압축을 모두 풀고 `MissingFloor.exe`를 실행합니다. 같은 폴더의 `Engine`, `IndieGame` 폴더가 함께 있어야 켜집니다.
