@@ -980,5 +980,21 @@
  "IGMissingFloor,YudamScooterThought": "……嚇得我心臟差點停了。",
  "IGMissingFloor,CaptionScooterHorn": "［機車喇叭聲］",
  "IGMissingFloor,CaptionScooterScreech": "［輪胎急煞聲］",
- "IGMissingFloor,CaptionScooterWhoosh": "［機車擦身而過］"
+ "IGMissingFloor,CaptionScooterWhoosh": "［機車擦身而過］",
+ "IGMissingFloor,YudamStandBlocked": "頭頂被擋住了，站不起來。",
+ "IGMissingFloor,YudamFlashlightLow": "光越來越暗了，電池大概快沒電了。",
+ "IGMissingFloor,BatteryPickupPrompt": "拿走電池",
+ "IGMissingFloor,YudamBatterySwapped": "是電池。馬上換上。",
+ "IGMissingFloor,YudamBatteryPocketed": "是電池。先收著吧。",
+ "IGMissingFloor,YudamBatteryChanged": "換上了新電池。",
+ "IGMissingFloor,YudamFlashlightLowSpare": "光越來越暗了。關掉換個電池吧。",
+ "IGMissingFloor,HideWardrobePrompt": "躲進衣櫃",
+ "IGMissingFloor,HideUnderBedPrompt": "躲到床底下",
+ "IGMissingFloor,HideExitPrompt": "出來",
+ "IGMissingFloor,HideUnderDeskPrompt": "躲到桌子底下",
+ "IGMissingFloor,BatteryBuyPrompt": "買一排電池",
+ "IGMissingFloor,FireDoorWedgePrompt": "抽掉門擋（長按扶住門慢慢關上）",
+ "IGMissingFloor,CaptionFireDoorSlam": "［防火門砰地關上］",
+ "IGMissingFloor,DoorLatchOpenPrompt": "拉開門閂",
+ "IGMissingFloor,DoorLatchClosePrompt": "插上門閂"
 }

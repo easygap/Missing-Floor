@@ -31,6 +31,14 @@
 
 namespace IGListener
 {
+	// §4. 숨은 자리 안의 소리는 이 거리 안에서 들었을 때만 그 자리를 연다. 그 밖에서
+	// 들은 소리는 평소처럼 그 자리로 찾아오게 할 뿐이다.
+	constexpr float HiddenDetectRadius = 220.0f;
+	// 숨은 소리를 들은 뒤 이만큼 안에 손이 닿으면 끌어낸다. 그 뒤로 숨죽이고 있으면
+	// 그는 자리 앞에서 듣다가 떠난다.
+	constexpr double HiddenDetectMemorySeconds = 2.0;
+	// 숨은 자리 앞에서 손이 닿는 거리. 가구에 막혀 몸이 더 들어오지 못하므로 수평으로 잰다.
+	constexpr float HiddenReachRadius = 180.0f;
 	// Timing of the idle cycle. The triple knock is the player's masked
 	// window to move; keep these in step with CreateWallKnockTriple.
 	constexpr float BangSeconds = 2.1f;
@@ -862,6 +870,24 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 					ReachHit, GetActorLocation(), Player->GetActorLocation(),
 					ECC_Visibility, ReachParams);
 			}
+			// §4. 숨은 사람은 손이 닿는 것만으로는 잡히지 않는다. 장롱 문짝은 손을 막고
+			// 침대는 막지 못하지만, 어느 쪽이든 그는 소리로만 안다. 코앞에서 소리를 냈을
+			// 때만 그 자리를 열어 끌어낸다.
+			const AIGPlayerCharacter* HidingPlayer = Cast<AIGPlayerCharacter>(Player);
+			if (HidingPlayer && HidingPlayer->IsInHidingSpot())
+			{
+				bLungeArmed = false;
+				const bool bHeardInside = GetWorld()->GetTimeSeconds() - LastHeardHiddenPlayerSeconds
+					<= IGListener::HiddenDetectMemorySeconds;
+				if (bHeardInside
+					&& FVector::Dist2D(Player->GetActorLocation(), GetActorLocation())
+						<= IGListener::HiddenReachRadius
+					&& Tuning.bCaptureEnabled)
+				{
+					BeginCapture(Player);
+				}
+				return;
+			}
 			// 듣기만 하는 밤: he reaches the sound and holds there, and that is
 			// where it ends. Touching costs nothing, so the night can never be
 			// taken away — the story, the puzzles and all three endings stay
@@ -913,6 +939,14 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 	if (!CanHear(Event))
 	{
 		return;
+	}
+	if (const AIGPlayerCharacter* HiddenPlayer = Cast<AIGPlayerCharacter>(Event.Instigator.Get());
+		HiddenPlayer
+		&& HiddenPlayer->IsInHidingSpot()
+		&& FVector::DistSquared(Event.Location, GetActorLocation())
+			<= FMath::Square(IGListener::HiddenDetectRadius))
+	{
+		LastHeardHiddenPlayerSeconds = Event.TimeSeconds;
 	}
 	// 귀를 세우게 한 그 탭의 소리다. 대답 인식이 소음 보고보다 먼저 불리므로
 	// 같은 프레임에 같은 자리에서 한 번 더 들어온다. 이미 듣고 있는 소리다.

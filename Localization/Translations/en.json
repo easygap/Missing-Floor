@@ -980,5 +980,21 @@
  "IGMissingFloor,YudamScooterThought": "…Nearly gave me a heart attack.",
  "IGMissingFloor,CaptionScooterHorn": "[scooter horn]",
  "IGMissingFloor,CaptionScooterScreech": "[tires screech]",
- "IGMissingFloor,CaptionScooterWhoosh": "[a scooter whips past]"
+ "IGMissingFloor,CaptionScooterWhoosh": "[a scooter whips past]",
+ "IGMissingFloor,YudamStandBlocked": "No room to stand up here.",
+ "IGMissingFloor,YudamFlashlightLow": "The light's getting weak. Batteries must be running out.",
+ "IGMissingFloor,BatteryPickupPrompt": "Take the batteries",
+ "IGMissingFloor,YudamBatterySwapped": "Batteries. I'll put them in right now.",
+ "IGMissingFloor,YudamBatteryPocketed": "Batteries. Better hang on to these.",
+ "IGMissingFloor,YudamBatteryChanged": "Swapped in fresh batteries.",
+ "IGMissingFloor,YudamFlashlightLowSpare": "The light's getting weak. I'll switch it off and change the batteries.",
+ "IGMissingFloor,HideWardrobePrompt": "Hide in the wardrobe",
+ "IGMissingFloor,HideUnderBedPrompt": "Hide under the bed",
+ "IGMissingFloor,HideExitPrompt": "Get out",
+ "IGMissingFloor,HideUnderDeskPrompt": "Hide under the desk",
+ "IGMissingFloor,BatteryBuyPrompt": "Buy a pack of batteries",
+ "IGMissingFloor,FireDoorWedgePrompt": "Kick out the doorstop (hold to ease the door shut)",
+ "IGMissingFloor,CaptionFireDoorSlam": "[fire door slams shut]",
+ "IGMissingFloor,DoorLatchOpenPrompt": "Undo the latch",
+ "IGMissingFloor,DoorLatchClosePrompt": "Do up the latch"
 }

@@ -31,6 +31,9 @@ namespace IGNightLoop
 	const FVector MercyNoteRestLocation(-150.0f, -269.5f, 900.12f);
 	constexpr float MercyNoteStartYaw = -0.5f;
 	constexpr float MercyNoteRestYaw = -3.5f;
+	// §6. 침대에서 눈을 뜬 뒤 조작이 돌아오기까지. 화면은 그 뒤로도 천천히 밝아지지만
+	// 그동안 둘러보고 걸을 수 있다. 암전 1.25초와 합쳐 1.6초다.
+	constexpr float MaxWakeLockSeconds = 0.35f;
 }
 
 AIGNightLoopDirector::AIGNightLoopDirector()
@@ -728,9 +731,12 @@ float AIGNightLoopDirector::GetWakeEchoSeconds() const
 
 float AIGNightLoopDirector::GetWakeRecoverySeconds() const
 {
-	// Keep input and normal HUD locked until the per-capture camera fade ends;
-	// the short echo animation is allowed to disappear first.
-	return FMath::Max(GetWakeFadeInSeconds(), GetWakeEchoSeconds());
+	// 예전에는 화면이 다 밝아질 때까지 조작을 잠갔다. 첫 포획은 암전까지 합쳐 5초
+	// 넘게 손을 놓아야 했고, 잡힐 때마다 그 시간을 다시 기다렸다. 이제 눈을 뜨는
+	// 순간부터 둘러보고 걸을 수 있다. 밝아지는 페이드는 그대로 흐른다.
+	return FMath::Min(
+		FMath::Max(GetWakeFadeInSeconds(), GetWakeEchoSeconds()),
+		IGNightLoop::MaxWakeLockSeconds);
 }
 
 UIGMissingFloorNarrativeSubsystem* AIGNightLoopDirector::GetNarrative() const

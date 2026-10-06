@@ -297,6 +297,24 @@ bool AIGMissingFloorEpilogueDirector::StartEpilogue(
 		HasExperiencedEpilogueProfile() || bReplayForcedForSession;
 	bActive = true;
 	StartWorldSeconds = GetWorld()->GetTimeSeconds();
+	if (!bReplaySkipAvailable)
+	{
+		// §6. 처음 보는 결말도 10초가 지나면 E를 길게 눌러 넘길 수 있다. 결말을
+		// 끝까지 보게 하는 것은 연출의 힘이어야지 잠긴 입력이어서는 안 된다.
+		GetWorldTimerManager().SetTimer(
+			FirstViewSkipTimer,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				if (!bActive)
+				{
+					return;
+				}
+				bReplaySkipAvailable = true;
+				UpdateSkipHud();
+			}),
+			IGReplaySkip::FirstViewEpilogueDelaySeconds,
+			false);
+	}
 
 	// 최종 리빌의 강제 무음은 공동 대치까지다. 에필로그는 다른 시간이고
 	// 다른 장소이므로 밤의 믹스를 그대로 끌고 가지 않는다.
@@ -947,6 +965,7 @@ void AIGMissingFloorEpilogueDirector::FinishEpilogue()
 	bReplaySkipRewinding = false;
 	SetActorTickEnabled(false);
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	StopBeds();
 	UpdateSkipHud();
 	if (!bReplayForcedForSession)
@@ -1069,6 +1088,7 @@ void AIGMissingFloorEpilogueDirector::EndPlay(
 	const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	StopBeds();
 	Super::EndPlay(EndPlayReason);
 }

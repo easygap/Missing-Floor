@@ -980,5 +980,21 @@
  "IGMissingFloor,YudamScooterThought": "…心臓が止まるかと思った。",
  "IGMissingFloor,CaptionScooterHorn": "［バイクのクラクション］",
  "IGMissingFloor,CaptionScooterScreech": "［タイヤがきしむ音］",
- "IGMissingFloor,CaptionScooterWhoosh": "［バイクがすぐ横をかすめていく］"
+ "IGMissingFloor,CaptionScooterWhoosh": "［バイクがすぐ横をかすめていく］",
+ "IGMissingFloor,YudamStandBlocked": "頭の上がつかえて立てない。",
+ "IGMissingFloor,YudamFlashlightLow": "光が弱くなってきた。電池が切れかけてるのかも。",
+ "IGMissingFloor,BatteryPickupPrompt": "電池を取る",
+ "IGMissingFloor,YudamBatterySwapped": "電池だ。すぐ入れ替えておこう。",
+ "IGMissingFloor,YudamBatteryPocketed": "電池だ。持っておこう。",
+ "IGMissingFloor,YudamBatteryChanged": "新しい電池に替えた。",
+ "IGMissingFloor,YudamFlashlightLowSpare": "光が弱くなってきた。一度消して電池を替えよう。",
+ "IGMissingFloor,HideWardrobePrompt": "洋服ダンスに隠れる",
+ "IGMissingFloor,HideUnderBedPrompt": "ベッドの下に隠れる",
+ "IGMissingFloor,HideExitPrompt": "出る",
+ "IGMissingFloor,HideUnderDeskPrompt": "机の下に隠れる",
+ "IGMissingFloor,BatteryBuyPrompt": "電池を一パック買う",
+ "IGMissingFloor,FireDoorWedgePrompt": "ドアストッパーを外す（長押しでドアを押さえて静かに）",
+ "IGMissingFloor,CaptionFireDoorSlam": "［防火扉がバタンと閉まる］",
+ "IGMissingFloor,DoorLatchOpenPrompt": "掛け金を外す",
+ "IGMissingFloor,DoorLatchClosePrompt": "掛け金をかける"
 }

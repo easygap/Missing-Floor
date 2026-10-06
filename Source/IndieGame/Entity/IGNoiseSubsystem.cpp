@@ -16,8 +16,10 @@ FIGNoiseEvent UIGNoiseSubsystem::ReportNoise(
 	// 추격이 끝나고 10초 반응 기억이 지워졌다 — 그의 Tick은 멈춰 있는데 시계만 흘렀다.
 	Event.TimeSeconds = World ? World->GetTimeSeconds() : 0.0;
 
+	// 숨은 자리 안에서 낸 소리는 문짝과 이불에 먹혀 덜 나간다.
 	const float Effective =
-		FMath::Clamp(Loudness, 0.0f, 1.0f) - GetMaskingAt(Location);
+		FMath::Clamp(Loudness * GetInstigatorMuffle(Instigator), 0.0f, 1.0f)
+		- GetMaskingAt(Location);
 	if (Effective <= 0.0f)
 	{
 		// Swallowed by a hum or the entity's own knocking. Nothing sounded,
@@ -33,6 +35,28 @@ FIGNoiseEvent UIGNoiseSubsystem::ReportNoise(
 	AccumulateHeat(Location, Effective);
 	OnNoiseReported.Broadcast(Event);
 	return Event;
+}
+
+void UIGNoiseSubsystem::SetInstigatorMuffle(const AActor* Instigator, const float Scale)
+{
+	if (!Instigator || Scale >= 1.0f)
+	{
+		if (!Instigator || MuffledInstigator.Get() == Instigator)
+		{
+			MuffledInstigator.Reset();
+			InstigatorMuffleScale = 1.0f;
+		}
+		return;
+	}
+	MuffledInstigator = Instigator;
+	InstigatorMuffleScale = FMath::Clamp(Scale, 0.0f, 1.0f);
+}
+
+float UIGNoiseSubsystem::GetInstigatorMuffle(const AActor* Instigator) const
+{
+	return Instigator && MuffledInstigator.Get() == Instigator
+		? InstigatorMuffleScale
+		: 1.0f;
 }
 
 FIGNoiseEvent UIGNoiseSubsystem::ReportNoiseUnmasked(

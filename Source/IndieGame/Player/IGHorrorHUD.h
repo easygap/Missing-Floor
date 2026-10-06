@@ -570,6 +570,8 @@ private:
 	 * its final radius) instead of suppressing it.
 	 */
 	void DrawNoiseRipple(double CurrentTime);
+	/** 숨어 있는 동안의 가림막. 장롱은 세로 문틈, 침대 밑은 가로로 긴 틈만 남긴다. */
+	void DrawHidingMask();
 	void HandleNoiseReported(const struct FIGNoiseEvent& Event);
 	/** Draws a scalable anti-aliased surface without allocating a Slate widget. */
 	void DrawRoundedHudSurface(

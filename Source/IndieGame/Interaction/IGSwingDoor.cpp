@@ -421,6 +421,7 @@ void AIGSwingDoor::CompleteInteraction_Implementation(const FIGInteractionContex
 		IGOnboardingMemory::MarkQuietDoorLearned();
 		UIGPlayRecordSubsystem::Note(this, TEXT("quiet_door"));
 	}
+	ReleaseLatchForOpening();
 	BeginSwing(
 		!bOpen,
 		true,
@@ -452,6 +453,7 @@ void AIGSwingDoor::EndInteraction_Implementation(
 		return;
 	}
 
+	ReleaseLatchForOpening();
 	BeginSwing(!bOpen, true, false, NormalSwingLoudness, 1.0f);
 }
 
@@ -517,6 +519,54 @@ bool AIGSwingDoor::BeginScriptedSwing(
 		bSuppressCloseThud,
 		NormalSwingLoudness,
 		1.0f);
+}
+
+bool AIGSwingDoor::BeginScriptedSwingWithLoudness(
+	const bool bInOpen,
+	const float Loudness,
+	const float DurationScale,
+	const bool bPlayCreak)
+{
+	return BeginSwing(
+		bInOpen,
+		bPlayCreak,
+		false,
+		FMath::Clamp(Loudness, 0.0f, 1.0f),
+		FMath::Max(DurationScale, 0.05f));
+}
+
+void AIGSwingDoor::SetLatched(const bool bInLatched, const bool bPlaySound)
+{
+	if (bLatched == bInLatched)
+	{
+		return;
+	}
+	bLatched = bInLatched;
+	OnLatchChanged.Broadcast();
+	if (!bPlaySound)
+	{
+		return;
+	}
+	// 철제 걸쇠가 받침에 끼거나 빠지는 짧은 쇳소리. 거는 쪽이 조금 높다.
+	IGAudio::SpawnOneShotFromActorAt(
+		this,
+		IGAudio::SampleOr(
+			TEXT("Lock_Open"),
+			[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateSwitchClick(this, bLatched); }),
+		GetLatchSoundLocation() + FVector(0.0f, 0.0f, 22.0f),
+		0.45f,
+		bLatched ? 1.24f : 1.12f,
+		90.0f,
+		700.0f);
+	ReportSwingNoise(0.05f);
+}
+
+void AIGSwingDoor::ReleaseLatchForOpening()
+{
+	if (!bOpen && bLatched)
+	{
+		SetLatched(false, true);
+	}
 }
 
 bool AIGSwingDoor::BeginSwing(

@@ -14,8 +14,11 @@ class UIGBeamDustComponent;
  * It is deliberately a poor light: a warm, narrow, slightly uneven beam from
  * a cheap convenience-store torch. Three things make it feel handheld rather
  * than head-mounted — the beam lags the view by a few degrees, it swings with
- * the walk cycle, and the contact of a footfall nudges it. Brief brown-outs
- * are pressure cues only: the light never depletes into a progression lock.
+ * the walk cycle, and the contact of a footfall nudges it.
+ *
+ * 건전지는 켜 둔 만큼 닳는다(새것으로 12분). 다 닳아도 빛이 꺼지지는 않고 발밑을
+ * 비출 만큼은 남아 진행이 막히지 않는다. 꺼 두면 조금 살아나고, 20% 아래에서는
+ * 깜박인다. 남은 양은 게이지가 아니라 빛의 세기로 읽는다.
  */
 UCLASS(ClassGroup = (IndieGame), meta = (BlueprintSpawnableComponent))
 class INDIEGAME_API UIGFlashlightComponent : public USceneComponent
@@ -60,12 +63,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Flashlight")
 	bool IsAvailable() const { return bAvailable; }
 
-	/** 호환용으로 남긴 값. 배터리는 닳지 않아 늘 가득이다. */
+	/** 남은 건전지(0~1). HUD에는 내보내지 않는다. */
 	UFUNCTION(BlueprintPure, Category = "Flashlight")
 	float GetBatteryFraction() const { return BatteryFraction; }
 
 	UFUNCTION(BlueprintCallable, Category = "Flashlight")
 	void RefillBattery(float Fraction);
+
+	/** 지금 건전지로 낼 수 있는 빛의 비율. 다 닳아도 바닥값 아래로는 내려가지 않는다. */
+	float GetCellOutput() const;
+
+	/** 주머니에 넣어 둔 건전지. 약해진 손전등을 다시 켤 때 하나씩 갈아 끼운다. */
+	void AddSpareBattery() { ++SpareBatteries; }
+	int32 GetSpareBatteries() const { return SpareBatteries; }
 
 	/** Nudges the beam, e.g. on a footfall or a scare. */
 	void AddImpulse(const FRotator& Impulse);
@@ -120,6 +130,11 @@ private:
 	FRotator ImpulseOffset = FRotator::ZeroRotator;
 	FRotator PreviousWorldRotation = FRotator::ZeroRotator;
 	float BatteryFraction = 1.0f;
+	/** 꺼진 시각. 다시 켤 때 그동안 살아난 만큼을 더한다(꺼진 동안은 틱이 없다). */
+	double SwitchedOffSeconds = -1.0;
+	/** 건전지가 약하다는 속말을 이번 건전지에서 이미 했다. */
+	bool bLowBatteryNoticed = false;
+	int32 SpareBatteries = 0;
 	float FlickerTime = 0.0f;
 	float FlickerValue = 1.0f;
 	float BrownOutTimer = 0.0f;

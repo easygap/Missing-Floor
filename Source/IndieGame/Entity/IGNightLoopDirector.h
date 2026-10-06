@@ -69,9 +69,12 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
-	/** 플레이어를 옮기기 전 포옹 암전 시간(초). */
+	/**
+	 * 플레이어를 옮기기 전 포옹 암전 시간(초). 화면은 0.55~0.95초에 이미 끊긴다.
+	 * 끊긴 뒤의 검은 화면이 1초 넘게 이어지면 연출이 아니라 멈춘 화면으로 읽힌다(§6).
+	 */
 	UPROPERTY(EditAnywhere, Category = "NightLoop", meta = (ClampMin = "0.0"))
-	float FadeOutSeconds = 2.15f;
+	float FadeOutSeconds = 1.25f;
 
 private:
 	void HandlePlayerCaptured(APawn* Player);

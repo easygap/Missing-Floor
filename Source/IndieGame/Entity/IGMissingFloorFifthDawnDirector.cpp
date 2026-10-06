@@ -125,6 +125,24 @@ bool AIGMissingFloorFifthDawnDirector::StartInterlude(
 		|| bReplayAvailabilityForcedForSession;
 	bActive = true;
 	StartWorldSeconds = GetWorld()->GetTimeSeconds();
+	if (!bReplaySkipAvailable)
+	{
+		// §6. 처음 보는 사람도 붙잡아 두지 않는다. 15초면 이 막간이 무엇인지는
+		// 알게 된다. 그 뒤로는 E를 길게 눌러 넘어간다.
+		GetWorldTimerManager().SetTimer(
+			FirstViewSkipTimer,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				if (!bActive)
+				{
+					return;
+				}
+				bReplaySkipAvailable = true;
+				UpdateSensoryHudSkip();
+			}),
+			IGReplaySkip::FirstViewDelaySeconds,
+			false);
+	}
 	// 역사층의 소리는 눈을 감은 자리와 그때 보던 방향에 놓는다. 화면은 검어도
 	// 그 자리의 공간이라 고개를 돌리면 소리도 돈다.
 	InterludeOrigin = InPlayer->GetActorLocation();
@@ -730,6 +748,7 @@ void AIGMissingFloorFifthDawnDirector::FinishInterlude(
 	bReplaySkipRewinding = false;
 	SetActorTickEnabled(false);
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	ReleaseInterludeAudio();
 	SetSensoryHud(false);
 	if (!Player.Get())
@@ -914,6 +933,7 @@ void AIGMissingFloorFifthDawnDirector::EndPlay(
 	}
 	bActive = false;
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	ReleaseInterludeAudio();
 	SetSensoryHud(false);
 	SetActorTickEnabled(false);

@@ -678,7 +678,9 @@ $reviewedTickingFiles = @(
 	'IGMissingFloorFifthDawnDirector.cpp',
 	'IGMissingFloorEpilogueDirector.cpp',
 	'IGMissingFloorMercyDirector.cpp',
-	'IGCctvChannelFive.cpp'
+	'IGCctvChannelFive.cpp',
+	# 숨는 자리. 사람이 드나들거나 안에 있는 동안에만 켜고, 다 나오면 끈다.
+	'IGHidingSpot.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)
@@ -951,11 +953,14 @@ foreach ($selectionInvariant in @(
 		throw "Store water selection/static-proxy invariant is missing: $selectionInvariant"
 	}
 }
-if ($flashlightHeader.Contains('BatterySeconds') -or
-	$flashlightSource -match
-		'BatteryFraction\s*=\s*FMath::Max\([^;]*DeltaSeconds' -or
+# 건전지는 닳지만 빛이 꺼지지는 않는다. 바닥값이 없어지거나 너무 낮아지면 다 닳은
+# 손전등이 진행을 막는다.
+$emptyCellFloor = [regex]::Match($flashlightSource, 'constexpr float EmptyCellFloor = ([0-9.]+)f;')
+if (-not $emptyCellFloor.Success -or
+	[double]::Parse($emptyCellFloor.Groups[1].Value, [Globalization.CultureInfo]::InvariantCulture) -lt 0.12 -or
+	-not $flashlightSource.Contains('FMath::Lerp(IGFlashlight::EmptyCellFloor, 1.0f, Knee)') -or
 	-not $flashlightSource.Contains('presentation-only and always recover')) {
-	throw 'Flashlight brown-outs must remain presentation-only without battery depletion.'
+	throw 'A drained flashlight must keep EmptyCellFloor (>= 0.12) of its beam, and brown-outs must always recover.'
 }
 foreach ($requiredIdleTickInvariant in @(
 	'PrimaryComponentTick.bStartWithTickEnabled = false',

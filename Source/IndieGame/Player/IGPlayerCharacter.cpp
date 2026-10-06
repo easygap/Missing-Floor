@@ -25,6 +25,7 @@
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
 #include "InputCoreTypes.h"
+#include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGPickupItem.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Narrative/IGStoryHelpers.h"
@@ -72,6 +73,17 @@ namespace IGPlayerNoise
 	constexpr float ListenBraking = 2600.0f;
 	constexpr float CrouchTransitionSeconds = 0.35f;
 	constexpr float CrouchTransitionSpeedScale = 0.5f;
+	// §9. 계단 끝이나 턱에서 발을 뗀 직후, 또는 착지 직전에 누른 점프가 씹히지 않는
+	// 여유. 둘 다 사람 손이 한 박자 늦거나 이른 만큼이다.
+	constexpr float CoyoteSeconds = 0.12f;
+	constexpr float JumpBufferSeconds = 0.12f;
+	// 숨을 내쉰 뒤 다시 참기까지. 놓은 반동을 연타로 지우지 못한다.
+	constexpr float BreathHoldCooldownSeconds = 0.8f;
+	// 앞으로 이만큼(약 50도 안쪽) 향해야 달린다. 옆걸음·뒷걸음은 걷는 속도다.
+	constexpr float SprintForwardDot = 0.64f;
+	// 일어서려는데 이만큼 막혀 있으면 속말로 알린다. 문틀 밑을 지나며 잠깐 막힌
+	// 정도로는 말하지 않는다.
+	constexpr float BlockedStandNoticeSeconds = 0.35f;
 	constexpr float KnockInputLockSeconds = 0.9f;
 	constexpr float KnockSequenceResetSeconds = 1.8f;
 	// §18.3 헤드밥 진폭. 자세마다 다르다 — 앉은 걸음이 선 걸음만큼 흔들리면
@@ -113,6 +125,8 @@ namespace IGPlayerNoise
 	// §5.1: 홀드를 놓쳐서 손이 미끄러지는 소리. 쪽지 넘기는 것과 같은
 	// 크기지만 다른 행동이라 각자 든다.
 	constexpr float ForcedReleaseLoudness = 0.08f;
+	// 손전등 스위치. 0.04면 1 m 남짓까지만 간다. 문 바로 너머에 붙은 것에게만 들린다.
+	constexpr float FlashlightClickLoudness = 0.04f;
 	constexpr float SprintFootstepLoudness = 0.50f;
 	constexpr float ExhaustedSprintFootstepLoudness = 0.70f;
 	constexpr float MicrophonePollSeconds = 0.08f;
@@ -329,6 +343,9 @@ void AIGPlayerCharacter::Tick(const float DeltaSeconds)
 	}
 
 	UpdateContextualActions(DeltaSeconds);
+	UpdateJumpAssist();
+	UpdateStandBlock(DeltaSeconds);
+	UpdateSprintDirection();
 	UpdateCrouchTransition(DeltaSeconds);
 	UpdateFootsteps(DeltaSeconds);
 	if (StressComponent)
@@ -418,6 +435,13 @@ void AIGPlayerCharacter::ToggleFlashlight()
 
 	const bool bNowOn = Flashlight->Toggle();
 	UIGPlayRecordSubsystem::Note(this, TEXT("flashlight"));
+	if (UWorld* World = GetWorld())
+	{
+		if (UIGNoiseSubsystem* Noise = World->GetSubsystem<UIGNoiseSubsystem>())
+		{
+			Noise->ReportNoise(GetActorLocation(), IGPlayerNoise::FlashlightClickLoudness, this);
+		}
+	}
 	// The click is audible either way — a dead cell still clicks. 바코드
 	// 스캐너 삐 소리를 높여 쓰던 것을 진짜 슬라이드 스위치 소리로 바꿨다.
 	IGAudio::SpawnOneShotAt(
@@ -484,6 +508,37 @@ void AIGPlayerCharacter::SetCameraMotionEnabled(const bool bEnabled)
 	}
 }
 
+AIGHidingSpot* AIGPlayerCharacter::GetHidingSpot() const
+{
+	return HidingSpot.Get();
+}
+
+bool AIGPlayerCharacter::IsInHidingSpot() const
+{
+	return HidingSpot.IsValid();
+}
+
+void AIGPlayerCharacter::SetHidingSpot(AIGHidingSpot* Spot)
+{
+	HidingSpot = Spot;
+}
+
+void AIGPlayerCharacter::LeaveHidingSpotImmediately()
+{
+	if (AIGHidingSpot* Spot = HidingSpot.Get())
+	{
+		Spot->ForceExit();
+	}
+	HidingSpot.Reset();
+}
+
+FVector AIGPlayerCharacter::GetEyeOffsetFromActor() const
+{
+	return FirstPersonCamera
+		? FirstPersonCamera->GetComponentLocation() - GetActorLocation()
+		: FVector(0.0f, 0.0f, BaseEyeHeight);
+}
+
 void AIGPlayerCharacter::PlayScareKick(const float Degrees)
 {
 	ScareCameraKick = FMath::Max(ScareCameraKick, FMath::Clamp(Degrees, 0.0f, 4.0f));
@@ -503,6 +558,9 @@ bool AIGPlayerCharacter::HasPhysicalCaptureView() const
 
 void AIGPlayerCharacter::PlayCaptureFeedback(const float DurationSeconds, const float CutSeconds)
 {
+	// 숨어 있다 잡히면 그 자리에서 끌려 나온다. 충돌과 이동을 먼저 돌려놓아야
+	// 뒤따르는 리셋이 몸을 침대로 옮길 수 있다.
+	LeaveHidingSpotImmediately();
 	CaptureFeedbackDurationSeconds = FMath::Max(DurationSeconds, 0.05f);
 	CaptureFeedbackRemainingSeconds = CaptureFeedbackDurationSeconds;
 	CaptureStartRotation = GetControlRotation();
@@ -695,10 +753,84 @@ void AIGPlayerCharacter::ApplyContextMovementSpeed()
 void AIGPlayerCharacter::RefreshSprintState()
 {
 	bSprinting = bSprintInputHeld
+		&& bSprintDirectionAllowed
 		&& !bListening
 		&& !bIsCrouched
 		&& CrouchTransitionRemaining <= 0.0f;
 	ApplyContextMovementSpeed();
+}
+
+void AIGPlayerCharacter::UpdateJumpAssist()
+{
+	const UWorld* World = GetWorld();
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!World || !MovementComponent || !MovementComponent->IsMovingOnGround())
+	{
+		return;
+	}
+	const double Now = World->GetTimeSeconds();
+	LastGroundedSeconds = Now;
+	bCoyoteJumpReady = true;
+	// 착지 직전에 누른 점프는 땅을 디딘 다음 프레임에 뛴다. Landed 안에서 뛰면
+	// 착지 처리가 점프 입력을 곧바로 지운다.
+	if (JumpBufferedUntilSeconds < Now)
+	{
+		return;
+	}
+	JumpBufferedUntilSeconds = -1.0;
+	if (bIsCrouched || AIGReadableNote::GetOpenNote())
+	{
+		return;
+	}
+	bSprinting = false;
+	ApplyContextMovementSpeed();
+	Jump();
+}
+
+void AIGPlayerCharacter::UpdateStandBlock(const float DeltaSeconds)
+{
+	// 일어서라고 했는데 아직 앉아 있으면 머리 위가 막힌 것이다. 엔진은 자리가
+	// 나는 대로 알아서 세우므로 여기서는 왜 안 일어나는지만 알려 준다.
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	const bool bStandBlocked = MovementComponent
+		&& bIsCrouched
+		&& !MovementComponent->bWantsToCrouch;
+	if (!bStandBlocked)
+	{
+		BlockedStandSeconds = 0.0f;
+		if (!bIsCrouched)
+		{
+			bBlockedStandThoughtShown = false;
+		}
+		return;
+	}
+	BlockedStandSeconds += DeltaSeconds;
+	if (bBlockedStandThoughtShown
+		|| BlockedStandSeconds < IGPlayerNoise::BlockedStandNoticeSeconds)
+	{
+		return;
+	}
+	bBlockedStandThoughtShown = true;
+	AIGHorrorHUD::PushThought(
+		this,
+		NSLOCTEXT("IGMissingFloor", "YudamStandBlocked", "머리 위가 막혀서 못 일어나겠어."),
+		2.0f);
+}
+
+void AIGPlayerCharacter::UpdateSprintDirection()
+{
+	// 달리기는 앞으로만 한다. 뒷걸음으로 달리면 쫓아오는 것을 보면서 도망칠 수
+	// 있어 쫓기는 긴장이 빠진다. 서 있을 때는 막지 않는다(먼저 Shift를 쥐고 출발한다).
+	const FVector Input = GetLastMovementInputVector().GetSafeNormal2D();
+	const bool bForward = Input.IsNearlyZero()
+		|| FVector::DotProduct(Input, GetActorForwardVector().GetSafeNormal2D())
+			>= IGPlayerNoise::SprintForwardDot;
+	if (bForward == bSprintDirectionAllowed)
+	{
+		return;
+	}
+	bSprintDirectionAllowed = bForward;
+	RefreshSprintState();
 }
 
 void AIGPlayerCharacter::UpdateCrouchTransition(const float DeltaSeconds)
@@ -713,7 +845,9 @@ void AIGPlayerCharacter::UpdateCrouchTransition(const float DeltaSeconds)
 		CrouchTransitionRemaining - DeltaSeconds);
 	const float Alpha = CrouchTransitionRemaining
 		/ IGPlayerNoise::CrouchTransitionSeconds;
-	CrouchCameraCompensation = CrouchCameraCompensationStart * Alpha;
+	// 곧게 내리면 엘리베이터처럼 읽힌다. 무릎이 천천히 굽기 시작해 끝에서 멎는다.
+	const float EasedAlpha = Alpha * Alpha * (3.0f - 2.0f * Alpha);
+	CrouchCameraCompensation = CrouchCameraCompensationStart * EasedAlpha;
 	if (!bCameraMotionEnabled && FirstPersonCamera)
 	{
 		// 연출 중 흔들림을 꺼도 자세 전환의 보정은 끝까지 돌려준다.
@@ -798,8 +932,16 @@ void AIGPlayerCharacter::UpdateContextualActions(const float DeltaSeconds)
 		BreathHeldSeconds += DeltaSeconds;
 		if (BreathHeldSeconds >= IGPlayerNoise::MaximumBreathHoldSeconds)
 		{
+			// 4초를 넘겨 터진 숨은 키를 다시 눌러야 참는다. 쥐고만 있으면 0.8초마다
+			// 저절로 다시 참게 되어 한계가 없어진다.
+			bHoldBreathInputHeld = false;
 			FinishHoldBreath(true);
 		}
+	}
+	else if (bHoldBreathInputHeld)
+	{
+		// 쉬는 틈에 눌러 둔 숨 참기는 틈이 끝나는 대로 이어서 참는다.
+		BeginHoldBreath();
 	}
 }
 
@@ -1534,17 +1676,46 @@ void AIGPlayerCharacter::EndSprint()
 
 void AIGPlayerCharacter::BeginJump()
 {
-	if (AIGReadableNote::GetOpenNote() || !GetCharacterMovement()->IsMovingOnGround())
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	const UWorld* World = GetWorld();
+	if (AIGReadableNote::GetOpenNote() || !MovementComponent || !World || IsInHidingSpot())
 	{
+		return;
+	}
+	// 앉은 채로는 뛰지 않는다. 점프 키는 먼저 일어서는 데 쓴다. 머리 위가 막혔으면
+	// 일어서기만 걸어 두고, 엔진이 자리가 나는 대로 세운다.
+	if (bIsCrouched || MovementComponent->bWantsToCrouch)
+	{
+		bSprinting = false;
+		CrouchTransitionRemaining = IGPlayerNoise::CrouchTransitionSeconds;
+		UnCrouch();
+		SetCameraMotionEnabled(true);
+		ApplyContextMovementSpeed();
+		return;
+	}
+	const double Now = World->GetTimeSeconds();
+	if (!MovementComponent->IsMovingOnGround())
+	{
+		// 걸어서 턱을 내려선 직후는 아직 땅으로 친다. 뛰어서 뜬 몸(JumpCurrentCount 1)은
+		// 해당이 없다. 그 밖의 공중 입력은 착지할 때까지 잠깐 기억한다.
+		if (MovementComponent->IsFalling()
+			&& JumpCurrentCount == 0
+			&& bCoyoteJumpReady
+			&& Now - LastGroundedSeconds <= IGPlayerNoise::CoyoteSeconds)
+		{
+			bCoyoteJumpReady = false;
+			bSprinting = false;
+			ApplyContextMovementSpeed();
+			LaunchCharacter(FVector(0.0f, 0.0f, MovementComponent->JumpZVelocity), false, true);
+			return;
+		}
+		JumpBufferedUntilSeconds = Now + IGPlayerNoise::JumpBufferSeconds;
 		return;
 	}
 	// 공중에서는 달리기 속도를 내리되 Shift가 눌려 있다는 사실은 남긴다.
 	// 지우면 착지 뒤 IE_Pressed가 다시 오지 않아 걷기로 굳는다.
 	bSprinting = false;
-	if (bIsCrouched)
-	{
-		UnCrouch();
-	}
+	bCoyoteJumpReady = false;
 	ApplyContextMovementSpeed();
 	Jump();
 }
@@ -1612,6 +1783,11 @@ void AIGPlayerCharacter::Landed(const FHitResult& Hit)
 void AIGPlayerCharacter::BeginCrouchInput()
 {
 	bCrouchInputHeld = true;
+	// 숨어 있는 동안 자세는 자리가 정한다. 침대 밑에서 일어서면 캡슐이 침대를 뚫는다.
+	if (IsInHidingSpot())
+	{
+		return;
+	}
 	const bool bToggleCrouch = !AccessibilitySubsystem
 		|| AccessibilitySubsystem->UsesToggleCrouch();
 	if (bToggleCrouch)
@@ -1630,7 +1806,7 @@ void AIGPlayerCharacter::BeginCrouchInput()
 void AIGPlayerCharacter::EndCrouchInput()
 {
 	bCrouchInputHeld = false;
-	if (!AccessibilitySubsystem || AccessibilitySubsystem->UsesToggleCrouch())
+	if (!AccessibilitySubsystem || AccessibilitySubsystem->UsesToggleCrouch() || IsInHidingSpot())
 	{
 		return;
 	}
@@ -1645,7 +1821,14 @@ void AIGPlayerCharacter::ToggleCrouch()
 {
 	bSprinting = false;
 	CrouchTransitionRemaining = IGPlayerNoise::CrouchTransitionSeconds;
-	if (bIsCrouched)
+	// 앉아 있는지가 아니라 앉으려는지로 뒤집는다. 머리 위가 막혀 못 일어선 사이에
+	// 다시 누르면 일어서기를 거둔다. bIsCrouched로 보면 UnCrouch만 거듭 부르다가
+	// 자리가 나는 순간 원치 않게 일어섰다.
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	const bool bWantsCrouch = MovementComponent
+		? static_cast<bool>(MovementComponent->bWantsToCrouch)
+		: bIsCrouched;
+	if (bWantsCrouch)
 	{
 		UnCrouch();
 	}
@@ -2161,7 +2344,17 @@ void AIGPlayerCharacter::EndListen()
 
 void AIGPlayerCharacter::BeginHoldBreath()
 {
+	bHoldBreathInputHeld = true;
 	if (bHoldingBreath)
+	{
+		return;
+	}
+	// 방금 내쉬었다. 쉬는 틈 동안은 키를 쥐고 있다는 것만 남기고, 틈이 끝나면
+	// UpdateContextualActions가 이어서 참게 한다.
+	const UWorld* World = GetWorld();
+	if (World
+		&& World->GetTimeSeconds() - BreathReleasedSeconds
+			< IGPlayerNoise::BreathHoldCooldownSeconds)
 	{
 		return;
 	}
@@ -2178,6 +2371,7 @@ void AIGPlayerCharacter::BeginHoldBreath()
 
 void AIGPlayerCharacter::EndHoldBreath()
 {
+	bHoldBreathInputHeld = false;
 	FinishHoldBreath(false);
 }
 
@@ -2190,6 +2384,10 @@ void AIGPlayerCharacter::FinishHoldBreath(const bool bForcedRelease)
 	const float HeldSeconds = BreathHeldSeconds;
 	bHoldingBreath = false;
 	BreathHeldSeconds = 0.0f;
+	if (const UWorld* World = GetWorld())
+	{
+		BreathReleasedSeconds = World->GetTimeSeconds();
+	}
 	// 1초 넘게 참았으면 놓는 순간 1.5배 반동이 온다(§5.2). 잠깐 탭한 것은 반동 없이.
 	if (StressComponent)
 	{
@@ -2478,6 +2676,12 @@ void AIGPlayerCharacter::BeginInteraction()
 	{
 		OpenNote->PlayHandlingSound(false);
 		OpenNote->Close();
+		return;
+	}
+	// 숨어 있는 동안 E는 어디를 보고 있든 「나오기」다.
+	if (AIGHidingSpot* Spot = HidingSpot.Get())
+	{
+		Spot->RequestExit();
 		return;
 	}
 	if (UWorld* World = GetWorld())

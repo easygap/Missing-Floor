@@ -104,6 +104,8 @@ private:
 
 	TWeakObjectPtr<AIGPlayerCharacter> Player;
 	FTimerHandle CueTimerHandle;
+	/** 처음 보는 사람에게도 건너뛰기를 여는 타이머(§6). */
+	FTimerHandle FirstViewSkipTimer;
 	FName ActiveEndingId;
 	double StartWorldSeconds = 0.0;
 	uint32 FiredCueMask = 0;

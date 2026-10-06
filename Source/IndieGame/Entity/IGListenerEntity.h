@@ -651,6 +651,8 @@ private:
 	double LastKnockCaptionSeconds = -1000.0;
 	/** 다가오는 걸음을 대체 채널에 보낸 마지막 시각. */
 	double LastApproachCueSeconds = -1000.0;
+	/** 숨어 있는 그녀의 소리를 코앞에서 들은 마지막 시각(§4). 이때만 숨은 자리를 연다. */
+	double LastHeardHiddenPlayerSeconds = -1000.0;
 	void UpdateBreathLoop(float Distance);
 	void TryCloseCallStinger(const AIGPlayerCharacter* Player, float Distance);
 

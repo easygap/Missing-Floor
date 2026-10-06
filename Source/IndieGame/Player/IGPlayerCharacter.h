@@ -136,6 +136,16 @@ public:
 	bool IsHoldingBreath() const { return bHoldingBreath; }
 	bool IsSprinting() const { return bSprinting; }
 
+	/** 숨어 있는 자리. 드나드는 중에도 그 자리를 돌려준다. */
+	class AIGHidingSpot* GetHidingSpot() const;
+	bool IsInHidingSpot() const;
+	/** 숨는 자리가 부른다. 들어갈 때 자리를, 다 나왔을 때 nullptr를 준다. */
+	void SetHidingSpot(class AIGHidingSpot* Spot);
+	/** 숨어 있으면 그 자리에서 바로 꺼낸다. 잡힘과 장면 전환이 부른다. */
+	void LeaveHidingSpotImmediately();
+	/** 몸의 원점에서 눈(카메라)까지. 숨는 자리가 몸을 어디에 둘지 정할 때 쓴다. */
+	FVector GetEyeOffsetFromActor() const;
+
 	UFUNCTION(BlueprintPure, Category = "Player|Audio")
 	EIGFootstepSurface GetLastFootstepSurface() const { return LastFootstepSurface; }
 
@@ -201,6 +211,12 @@ private:
 	void RefreshSprintState();
 	void UpdateCrouchTransition(float DeltaSeconds);
 	void UpdateContextualActions(float DeltaSeconds);
+	/** 발을 뗀 직후의 점프와 착지 직전에 미리 누른 점프를 받아 준다(§9). */
+	void UpdateJumpAssist();
+	/** 일어서려는데 머리 위가 막혔으면 한 번 알려 준다. */
+	void UpdateStandBlock(float DeltaSeconds);
+	/** 옆·뒤로 움직이는 동안은 달리지 않는다. */
+	void UpdateSprintDirection();
 	void FinishHoldBreath(bool bForcedRelease);
 	void ApplyPlayerKnockFeedback();
 	void RegisterKnockSequenceTap();
@@ -313,6 +329,18 @@ private:
 	bool bListening = false;
 	bool bListenTriggered = false;
 	bool bHoldingBreath = false;
+	/** 숨 참기 키를 쥐고 있다. 내쉰 직후의 쉬는 틈이 끝나면 다시 참는다. */
+	bool bHoldBreathInputHeld = false;
+	double BreathReleasedSeconds = -10.0;
+	/** 마지막으로 땅을 디딘 시각과, 공중에서 미리 누른 점프가 유효한 시각. */
+	double LastGroundedSeconds = -10.0;
+	double JumpBufferedUntilSeconds = -1.0;
+	bool bCoyoteJumpReady = false;
+	/** 일어서라고 한 뒤에도 앉아 있던 시간. 속말은 앉을 때마다 한 번이다. */
+	float BlockedStandSeconds = 0.0f;
+	bool bBlockedStandThoughtShown = false;
+	bool bSprintDirectionAllowed = true;
+	TWeakObjectPtr<class AIGHidingSpot> HidingSpot;
 	bool bInteractionRedirectedToListen = false;
 	bool bInteractionRedirectedToInterludeListen = false;
 	/** 패드 엿듣기 키를 밤3 벽이 아닌 엿듣기 판정에서 눌러 상호작용 홀드로 넘긴 중. */
