@@ -1852,14 +1852,16 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreatePlayerBreathLoop(UObje
 	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGPlayerBreathLoop"));
 	constexpr float LoopSeconds = 4.2f;
 	TArray<FIGToneNote> Notes;
-	// 들숨은 이 사이로 새는 고역이 얹힌 대역 잡음, 날숨은 낮고 목이 조금 울린다.
+	// 들숨은 이 사이로 새는 고역이 얹힌 대역 잡음, 날숨은 목이 조금 울린다.
 	// 두 번째 짝은 짧고 급하다 — 같은 숨이 두 번 반복되면 기계 소리다.
-	Notes.Add({0.00f, 1.05f, 900.0f, 0.200f, 0.55f, 1.3f, EIGToneWaveform::BandNoise, 0.22f});
-	Notes.Add({0.10f, 0.90f, 1600.0f, 0.080f, 0.60f, 1.2f, EIGToneWaveform::BandNoise, 0.35f});
-	Notes.Add({1.30f, 1.20f, 520.0f, 0.220f, 0.25f, 1.1f, EIGToneWaveform::BandNoise, 0.20f});
-	Notes.Add({1.35f, 0.80f, 110.0f, 0.050f, 0.30f, 1.0f, EIGToneWaveform::Sub});
-	Notes.Add({2.75f, 0.70f, 980.0f, 0.170f, 0.50f, 1.3f, EIGToneWaveform::BandNoise, 0.22f});
-	Notes.Add({3.50f, 0.68f, 540.0f, 0.190f, 0.25f, 1.1f, EIGToneWaveform::BandNoise, 0.20f});
+	// 유담은 스물일곱 살 여자다. 숨의 대역은 남자 숨보다 18% 남짓 높고, 날숨에 섞이는
+	// 목소리는 220 Hz 근처다. 110 Hz로 두면 숨만 들어도 남자로 들린다.
+	Notes.Add({0.00f, 1.05f, 1050.0f, 0.200f, 0.55f, 1.3f, EIGToneWaveform::BandNoise, 0.22f});
+	Notes.Add({0.10f, 0.90f, 1850.0f, 0.080f, 0.60f, 1.2f, EIGToneWaveform::BandNoise, 0.35f});
+	Notes.Add({1.30f, 1.20f, 620.0f, 0.220f, 0.25f, 1.1f, EIGToneWaveform::BandNoise, 0.20f});
+	Notes.Add({1.35f, 0.80f, 220.0f, 0.035f, 0.30f, 1.0f, EIGToneWaveform::Sub});
+	Notes.Add({2.75f, 0.70f, 1150.0f, 0.170f, 0.50f, 1.3f, EIGToneWaveform::BandNoise, 0.22f});
+	Notes.Add({3.50f, 0.68f, 640.0f, 0.190f, 0.25f, 1.1f, EIGToneWaveform::BandNoise, 0.20f});
 	Wave->ConfigureNotes(MoveTemp(Notes), true, LoopSeconds);
 	Wave->ConfigurePitchWow(0.010f, 0.23f);
 	return Wave;
@@ -1870,11 +1872,12 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreatePlayerGasp(UObject* Ou
 	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGPlayerGasp"));
 	TArray<FIGToneNote> Notes;
 	// 공기를 한 번에 들이켠다. 끝에서 성문이 닫히는 고역과 목의 딸깍.
-	Notes.Add({0.00f, 0.42f, 1400.0f, 0.270f, 0.18f, 1.5f, EIGToneWaveform::BandNoise, 0.30f});
-	Notes.Add({0.02f, 0.36f, 720.0f, 0.180f, 0.22f, 1.4f, EIGToneWaveform::BandNoise, 0.25f});
-	Notes.Add({0.04f, 0.30f, 130.0f, 0.050f, 0.20f, 1.6f, EIGToneWaveform::Growl, 0.15f});
-	Notes.Add({0.30f, 0.14f, 2600.0f, 0.080f, 0.10f, 2.0f, EIGToneWaveform::BandNoise, 0.45f});
-	Notes.Add({0.41f, 0.012f, 3000.0f, 0.080f, 0.10f, 1.0f, EIGToneWaveform::WhiteNoise});
+	// 들이켜는 순간 걸리는 목소리는 250 Hz 언저리의 짧은 '흡'이다(여자 목소리).
+	Notes.Add({0.00f, 0.42f, 1650.0f, 0.270f, 0.18f, 1.5f, EIGToneWaveform::BandNoise, 0.30f});
+	Notes.Add({0.02f, 0.36f, 850.0f, 0.180f, 0.22f, 1.4f, EIGToneWaveform::BandNoise, 0.25f});
+	Notes.Add({0.04f, 0.22f, 250.0f, 0.035f, 0.12f, 1.8f, EIGToneWaveform::Triangle});
+	Notes.Add({0.30f, 0.14f, 3000.0f, 0.080f, 0.10f, 2.0f, EIGToneWaveform::BandNoise, 0.45f});
+	Notes.Add({0.41f, 0.012f, 3400.0f, 0.080f, 0.10f, 1.0f, EIGToneWaveform::WhiteNoise});
 	Wave->ConfigureNotes(MoveTemp(Notes), false);
 	return Wave;
 }
@@ -1883,13 +1886,14 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreatePlayerExhale(UObject* 
 {
 	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGPlayerExhale"));
 	TArray<FIGToneNote> Notes;
-	// 한숨. 낮은 대역 잡음에 목소리가 살짝 섞이고, 날숨이 세 번 끊긴다 — 떨림이다.
-	Notes.Add({0.00f, 0.95f, 480.0f, 0.220f, 0.10f, 1.7f, EIGToneWaveform::BandNoise, 0.18f});
-	Notes.Add({0.00f, 0.80f, 300.0f, 0.150f, 0.12f, 1.6f, EIGToneWaveform::BandNoise, 0.22f});
-	Notes.Add({0.02f, 0.55f, 95.0f, 0.050f, 0.15f, 1.5f, EIGToneWaveform::Sub});
-	Notes.Add({0.34f, 0.07f, 620.0f, 0.090f, 0.20f, 1.2f, EIGToneWaveform::BandNoise, 0.30f});
-	Notes.Add({0.56f, 0.07f, 600.0f, 0.080f, 0.20f, 1.2f, EIGToneWaveform::BandNoise, 0.30f});
-	Notes.Add({0.78f, 0.08f, 560.0f, 0.070f, 0.20f, 1.2f, EIGToneWaveform::BandNoise, 0.30f});
+	// 한숨. 대역 잡음에 목소리가 살짝 섞이고, 날숨이 세 번 끊긴다 — 떨림이다.
+	// 섞이는 목소리는 205 Hz. 녹음이 없는 소리라 여기서 음역을 정해야 한다.
+	Notes.Add({0.00f, 0.95f, 570.0f, 0.220f, 0.10f, 1.7f, EIGToneWaveform::BandNoise, 0.18f});
+	Notes.Add({0.00f, 0.80f, 360.0f, 0.150f, 0.12f, 1.6f, EIGToneWaveform::BandNoise, 0.22f});
+	Notes.Add({0.02f, 0.55f, 205.0f, 0.035f, 0.15f, 1.5f, EIGToneWaveform::Sub});
+	Notes.Add({0.34f, 0.07f, 730.0f, 0.090f, 0.20f, 1.2f, EIGToneWaveform::BandNoise, 0.30f});
+	Notes.Add({0.56f, 0.07f, 710.0f, 0.080f, 0.20f, 1.2f, EIGToneWaveform::BandNoise, 0.30f});
+	Notes.Add({0.78f, 0.08f, 660.0f, 0.070f, 0.20f, 1.2f, EIGToneWaveform::BandNoise, 0.30f});
 	Wave->ConfigureNotes(MoveTemp(Notes), false);
 	return Wave;
 }
