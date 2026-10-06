@@ -1027,5 +1027,6 @@
  "IGMissingFloor,YudamGuestGone": "出ていった。ドアが……勝手に閉まった。",
  "IGMissingFloor,YudamGuestPeephole": "廊下には誰もいない。……声はドアのすぐ前からしたのに。",
  "IGMissingFloor,CaptionGuestWrongCode": "［番号違いの警告音］",
- "IGMissingFloor,CaptionGuestKeypadAgain": "［もう一度ドアロックの番号を押す］"
+ "IGMissingFloor,CaptionGuestKeypadAgain": "［もう一度ドアロックの番号を押す］",
+ "IGMissingFloor,CaptionGuestPaper": "［ドアの下から紙を差し込む音］"
 }

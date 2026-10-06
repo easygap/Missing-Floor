@@ -40,9 +40,9 @@ public:
 	void SetTrembling(bool bInTrembling) { bTrembling = bInTrembling; }
 
 	/**
-	 * 손님의 몸으로 갈아입힌다. 현관문마다 붙어 있던 전단지, 택배 송장, 가스 점검
-	 * 스티커, 임대 안내문이 겹겹이 붙어 사람 꼴을 이룬다. 얼굴 자리에는 배달
-	 * 자석이 붙어 있다. 한 번만 입힌다.
+	 * 손님의 몸으로 갈아입힌다. 공동현관 옆의 「원룸 있습니다」 전단, 입주민 안내문,
+	 * 누렇게 바랜 빈 종이가 겹겹이 붙어 사람 꼴을 이룬다. 얼굴 자리에는 403호 문의
+	 * 통닭집 자석이 붙어 있다. 한 번만 입힌다.
 	 */
 	void DressAsPaper();
 	bool IsPaper() const { return bPaper; }

@@ -1027,5 +1027,6 @@
  "IGMissingFloor,YudamGuestGone": "它走了。门……自己关上了。",
  "IGMissingFloor,YudamGuestPeephole": "走廊里没有人。……可声音明明就在门口。",
  "IGMissingFloor,CaptionGuestWrongCode": "［密码错误的提示音］",
- "IGMissingFloor,CaptionGuestKeypadAgain": "［又按了一遍门锁密码］"
+ "IGMissingFloor,CaptionGuestKeypadAgain": "［又按了一遍门锁密码］",
+ "IGMissingFloor,CaptionGuestPaper": "［有纸从门底下塞进来的声音］"
 }

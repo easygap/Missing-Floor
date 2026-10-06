@@ -4,7 +4,10 @@
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
 #include "Components/AudioComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Core/IGPrologueWorldScene.h"
+#include "Engine/CollisionProfile.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
@@ -18,6 +21,7 @@
 #include "Entity/IGShadowFigure.h"
 #include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGSwingDoor.h"
+#include "Materials/MaterialInterface.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Player/IGFlashlightComponent.h"
 #include "Player/IGHorrorHUD.h"
@@ -96,6 +100,21 @@ namespace IGNightThreat
 	constexpr float MurmurPitchByNight[] = {1.0f, 1.0f, 1.32f, 0.92f, 0.86f};
 	// 들어와 움직이는 동안 종이가 스치는 간격.
 	constexpr float RustleSeconds = 0.6f;
+	// 문 밑으로 들어오는 종이. 두 번째 말 뒤, 도어락을 누르기 전에 민다.
+	constexpr float PaperSlideAt = 9.6f;
+	// 세 번에 나눠 민다. 민 시각(초)과 그때 앞 가장자리가 문짝 안쪽 면을 넘어 들어온
+	// 거리(cm). 처음에는 문짝 밖에 숨어 있다. 마지막에는 현관 바닥에 한 뼘쯤 나온다.
+	constexpr float PaperShoveTimes[] = {0.0f, 0.55f, 1.3f};
+	constexpr float PaperShoveReach[] = {2.0f, 13.0f, 27.0f};
+	constexpr float PaperStartReach = -4.0f;
+	constexpr float PaperShoveSeconds = 0.2f;
+	// A4를 세로로 민다. 문 가운데에서 조금 비켜서, 조금 비뚤게. 전단 메시의 크기와 같다.
+	constexpr float PaperLengthCm = 29.7f;
+	constexpr float PaperWidthCm = 21.0f;
+	constexpr float PaperOffsetX = -7.0f;
+	constexpr float PaperYawDegrees = 5.0f;
+	// 문짝 두께의 절반. 문짝 안쪽 면이 HomeDoorY에서 이만큼 안쪽(+Y)이다.
+	constexpr float DoorHalfThickness = 2.5f;
 }
 
 AIGNightThreatDirector::AIGNightThreatDirector()
@@ -156,6 +175,37 @@ void AIGNightThreatDirector::Configure(
 		{
 			AudioDirector->PrepareSound(EoduksiniBreath->Sound, EIGAudioBus::Entity);
 		}
+	}
+	if (!PaperUnderDoor)
+	{
+		PaperUnderDoor = NewObject<UStaticMeshComponent>(this, TEXT("GuestPaperUnderDoor"));
+		PaperUnderDoor->SetMobility(EComponentMobility::Movable);
+		// 공동현관 옆에 붙어 있던 「원룸 있습니다」 전단과 같은 종이다. 메시가 없으면 흰 종이.
+		if (UStaticMesh* Notice = LoadObject<UStaticMesh>(
+				nullptr, TEXT("/Game/Meshes/SM_RentalNoticeA4.SM_RentalNoticeA4"), nullptr, LOAD_NoWarn))
+		{
+			PaperUnderDoor->SetStaticMesh(Notice);
+		}
+		else
+		{
+			bPaperUnderDoorIsCube = true;
+			PaperUnderDoor->SetStaticMesh(
+				LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"), nullptr, LOAD_NoWarn));
+			if (UMaterialInterface* Blank = LoadObject<UMaterialInterface>(
+					nullptr, TEXT("/Game/Prototype/Materials/M_PaperClean.M_PaperClean"), nullptr, LOAD_NoWarn))
+			{
+				PaperUnderDoor->SetMaterial(0, Blank);
+			}
+			// 큐브는 100 cm다. 두께는 1 mm로 둔다. 더 얇으면 멀리서 깜박인다.
+			PaperUnderDoor->SetRelativeScale3D(FVector(
+				IGNightThreat::PaperWidthCm / 100.0f, IGNightThreat::PaperLengthCm / 100.0f, 0.001f));
+		}
+		PaperUnderDoor->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+		PaperUnderDoor->SetGenerateOverlapEvents(false);
+		PaperUnderDoor->SetCanEverAffectNavigation(false);
+		PaperUnderDoor->SetCastShadow(false);
+		PaperUnderDoor->SetVisibility(false);
+		PaperUnderDoor->RegisterComponent();
 	}
 	if (UIGNoiseSubsystem* Noise = World->GetSubsystem<UIGNoiseSubsystem>())
 	{
@@ -257,10 +307,12 @@ void AIGNightThreatDirector::Update()
 		}
 		DarknessSeconds = 0.0f;
 		HomeDwellSeconds = 0.0f;
+		HidePaperUnderDoor();
 		return;
 	}
 
 	UpdateGuest(DeltaSeconds);
+	UpdatePaperUnderDoor(DeltaSeconds);
 	UpdateEoduksini(DeltaSeconds);
 }
 
@@ -787,6 +839,8 @@ void AIGNightThreatDirector::StartGuest()
 	GuestElapsed = 0.0f;
 	GuestStep = 0;
 	GuestRustleSeconds = 0.0f;
+	bPaperUnderDoorPlayed = false;
+	HidePaperUnderDoor();
 	SetPeepholeOffered(true);
 	PlayerDoorKnockTimes.Reset();
 	bGuestAnswered = false;
@@ -929,6 +983,118 @@ void AIGNightThreatDirector::HandlePeepholeExamined(AIGMissingFloorEvidence* Evi
 	}
 }
 
+namespace IGNightThreat
+{
+	/** 종이가 지나가는 문 아래 자리. X는 문 가운데에서 조금 비켜 있다. */
+	static FVector GetPaperDoorBottom()
+	{
+		return FVector(
+			AIGPrologueWorldScene::HomeDoorX + AIGPrologueWorldScene::WideDoorLeafWidth * 0.5f + PaperOffsetX,
+			AIGPrologueWorldScene::HomeDoorY + DoorHalfThickness,
+			AIGPrologueWorldScene::FourthFloorZ);
+	}
+}
+
+void AIGNightThreatDirector::BeginPaperUnderDoor()
+{
+	bPaperUnderDoorPlayed = true;
+	UWorld* World = GetWorld();
+	if (!PaperUnderDoor || !World)
+	{
+		return;
+	}
+	using namespace IGNightThreat;
+	const FVector DoorBottom = GetPaperDoorBottom();
+	// 현관 바닥을 직접 잰다. 문턱이나 바닥 타일이 바뀌어도 종이가 뜨거나 묻히지 않는다.
+	PaperUnderDoorFloorZ = DoorBottom.Z;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGGuestPaperFloor), false, PlayerPawn.Get());
+	if (Guest)
+	{
+		Params.AddIgnoredActor(Guest);
+	}
+	const FVector Probe(
+		DoorBottom.X,
+		DoorBottom.Y + PaperShoveReach[UE_ARRAY_COUNT(PaperShoveReach) - 1] - PaperLengthCm * 0.5f,
+		DoorBottom.Z + 40.0f);
+	FHitResult Floor;
+	if (World->LineTraceSingleByChannel(Floor, Probe, Probe - FVector(0.0f, 0.0f, 80.0f), ECC_Visibility, Params))
+	{
+		PaperUnderDoorFloorZ = Floor.ImpactPoint.Z;
+	}
+	PaperUnderDoorElapsed = 0.0f;
+	PaperUnderDoorShoves = 0;
+	// 전단 메시는 인쇄면이 -Y, 글자 위쪽이 +Z다. 옆으로 90도 눕혀 인쇄면을 위로 하고,
+	// 반 바퀴 돌려 글자 위쪽이 문을 향하게 한다. 방 안에서 내려다보면 바로 읽힌다.
+	PaperUnderDoor->SetWorldRotation(bPaperUnderDoorIsCube
+		? FRotator(0.0f, PaperYawDegrees, 0.0f)
+		: FRotator(0.0f, 180.0f + PaperYawDegrees, 90.0f));
+	PaperUnderDoor->SetVisibility(true);
+	UpdatePaperUnderDoor(0.0f);
+	AIGHorrorHUD::PushAudioCaptionAt(
+		this,
+		NSLOCTEXT("IGMissingFloor", "CaptionGuestPaper", "[문 밑으로 종이를 밀어 넣는 소리]"),
+		2.2f,
+		DoorBottom + FVector(0.0f, 0.0f, 10.0f));
+}
+
+void AIGNightThreatDirector::UpdatePaperUnderDoor(const float DeltaSeconds)
+{
+	if (!PaperUnderDoor || PaperUnderDoorElapsed < 0.0f)
+	{
+		return;
+	}
+	using namespace IGNightThreat;
+	PaperUnderDoorElapsed += DeltaSeconds;
+	const FVector DoorBottom = GetPaperDoorBottom();
+	// 한 번 밀 때마다 0.2초 들어오고 멎는다. 손가락으로 밀어 넣는 박자다.
+	float Reach = PaperStartReach;
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(PaperShoveTimes); ++Index)
+	{
+		const float Since = PaperUnderDoorElapsed - PaperShoveTimes[Index];
+		if (Since < 0.0f)
+		{
+			break;
+		}
+		if (Index >= PaperUnderDoorShoves)
+		{
+			PaperUnderDoorShoves = Index + 1;
+			// 미는 손마다 종이가 문턱에 쓸린다.
+			IGAudio::SpawnOneShotAt(
+				this,
+				IGAudio::SampleVariantOr(
+					TEXT("Paper_Turn"), 2, static_cast<uint32>(GuestNight * 31 + Index),
+					[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreatePickupRustle(this); }),
+				DoorBottom + FVector(0.0f, 0.0f, 4.0f),
+				0.5f,
+				FMath::FRandRange(0.9f, 1.08f),
+				80.0f,
+				800.0f,
+				EIGAudioBus::World);
+		}
+		const float From = Index == 0 ? PaperStartReach : PaperShoveReach[Index - 1];
+		Reach = FMath::Lerp(From, PaperShoveReach[Index], FMath::Clamp(Since / PaperShoveSeconds, 0.0f, 1.0f));
+	}
+	// 종이 가운데는 앞 가장자리에서 길이의 절반 뒤다. 바닥에서 두께의 절반보다 조금 띄운다.
+	PaperUnderDoor->SetWorldLocation(FVector(
+		DoorBottom.X,
+		DoorBottom.Y + Reach - PaperLengthCm * 0.5f,
+		PaperUnderDoorFloorZ + (bPaperUnderDoorIsCube ? 0.12f : 0.06f)));
+	const int32 LastShove = static_cast<int32>(UE_ARRAY_COUNT(PaperShoveTimes)) - 1;
+	if (PaperUnderDoorElapsed >= PaperShoveTimes[LastShove] + PaperShoveSeconds)
+	{
+		PaperUnderDoorElapsed = -1.0f;
+	}
+}
+
+void AIGNightThreatDirector::HidePaperUnderDoor()
+{
+	PaperUnderDoorElapsed = -1.0f;
+	if (PaperUnderDoor && PaperUnderDoor->IsVisible())
+	{
+		PaperUnderDoor->SetVisibility(false);
+	}
+}
+
 void AIGNightThreatDirector::RegisterPlayerDoorKnock(const AActor* KnockedActor)
 {
 	const UWorld* World = GetWorld();
@@ -1061,6 +1227,12 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 	}
 
 	GuestElapsed += DeltaSeconds;
+	// 대답하지 않으면 두 번째 말 뒤에 문 밑으로 종이가 들어온다.
+	if (GuestStage == EIGGuestStage::Knocking && !bGuestAnswered && !bPaperUnderDoorPlayed
+		&& GuestElapsed >= IGNightThreat::PaperSlideAt)
+	{
+		BeginPaperUnderDoor();
+	}
 	using namespace IGNightThreat;
 	switch (GuestStage)
 	{

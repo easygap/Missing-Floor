@@ -1027,5 +1027,6 @@
  "IGMissingFloor,YudamGuestGone": "It left. The door… shut on its own.",
  "IGMissingFloor,YudamGuestPeephole": "There's no one in the hallway. …But the voice came from right outside the door.",
  "IGMissingFloor,CaptionGuestWrongCode": "[the door lock beeps: wrong code]",
- "IGMissingFloor,CaptionGuestKeypadAgain": "[the code is punched in again]"
+ "IGMissingFloor,CaptionGuestKeypadAgain": "[the code is punched in again]",
+ "IGMissingFloor,CaptionGuestPaper": "[paper being pushed in under the door]"
 }

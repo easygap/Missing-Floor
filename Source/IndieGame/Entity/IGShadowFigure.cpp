@@ -106,57 +106,76 @@ void AIGShadowFigure::DressAsPaper()
 	{
 		return;
 	}
-	// 현관문에 붙던 것들. 같은 종이가 두 번 붙지 않게 돌려 쓴다.
-	UMaterialInterface* const Prints[] = {
-		Load(TEXT("/Game/Prototype/Materials/MI_DoorPrints401.MI_DoorPrints401")),
-		Load(TEXT("/Game/Prototype/Materials/MI_ShippingLabels.MI_ShippingLabels")),
-		Load(TEXT("/Game/Prototype/Materials/M_UtilityMeterLabel.M_UtilityMeterLabel")),
-		Load(TEXT("/Game/Prototype/Materials/MI_RentalNoticeA4.MI_RentalNoticeA4")),
-		Load(TEXT("/Game/Prototype/Materials/M_LobbyContactNotice.M_LobbyContactNotice")),
-		Load(TEXT("/Game/Prototype/Materials/MI_DoorPrints402.MI_DoorPrints402")),
-		Load(TEXT("/Game/Prototype/Materials/M_LobbyWaterNotice.M_LobbyWaterNotice")),
-		Load(TEXT("/Game/Prototype/Materials/M_BoothReceipts.M_BoothReceipts")),
-		Load(TEXT("/Game/Prototype/Materials/M_PaperClean.M_PaperClean")),
-		Load(TEXT("/Game/Prototype/Materials/M_LobbyForumPrint.M_LobbyForumPrint"))};
+	// 붙는 것은 이 건물 사람이면 다 본 종이다. 공동현관 옆 「원룸 있습니다」 전단, 입주민
+	// 안내문, 누렇게 바랜 빈 종이. 장부·영수증·운송장처럼 이야기의 단서가 적힌 종이는
+	// 쓰지 않는다. 손님은 오빠와 상관없는 이 건물의 것이고, 단서가 엉뚱한 데서 보이면
+	// 단서가 아니게 된다.
+	UStaticMesh* Notice = LoadObject<UStaticMesh>(
+		nullptr, TEXT("/Game/Meshes/SM_RentalNoticeA4.SM_RentalNoticeA4"), nullptr, LOAD_NoWarn);
+	enum class ESheetKind : uint8
+	{
+		RentalNotice,
+		ResidentNotice,
+		OldPaper,
+		CleanPaper
+	};
+	UMaterialInterface* const ResidentNotice =
+		Load(TEXT("/Game/Prototype/Materials/M_LobbyContactNotice.M_LobbyContactNotice"));
+	UMaterialInterface* const CleanPaper = Load(TEXT("/Game/Prototype/Materials/M_PaperClean.M_PaperClean"));
 	struct FSheet
 	{
 		bool bOnSpine;
 		FVector Location;
 		FRotator Rotation;
 		FVector2D SizeCm;
+		ESheetKind Kind;
 	};
 	// 기본 몸(2 m) 기준 자리. 허리 위는 Spine 좌표(허리 Z 100이 원점)다. 몸통이
 	// 타원 기둥이라 판판한 종이는 가운데만 닿고 가장자리가 들뜬다. 자리는 낱장의
 	// 어느 점도 몸 부품 안으로 들어가지 않게 잡았다(다 자라 숙인 자세까지).
-	// 손에 붙은 두 장은 손끝에서 바닥까지 늘어진 영수증이다.
+	// 손에 붙은 두 장은 손끝에서 바닥까지 늘어진 긴 종잇조각이다.
 	const FSheet Layout[] = {
-		{false, FVector(24.0f, -6.5f, 70.5f), FRotator(4.0f, -10.0f, 9.0f), FVector2D(21.0f, 29.7f)},
-		{false, FVector(21.0f, 12.5f, 37.5f), FRotator(-6.0f, 25.0f, -14.0f), FVector2D(15.0f, 21.0f)},
-		{false, FVector(-24.5f, 2.0f, 60.0f), FRotator(3.0f, 180.0f, 6.0f), FVector2D(21.0f, 29.7f)},
-		{false, FVector(-6.0f, 20.0f, 48.0f), FRotator(0.0f, 90.0f, -10.0f), FVector2D(18.0f, 24.0f)},
-		{false, FVector(-6.0f, -21.0f, 22.5f), FRotator(5.0f, -90.0f, 12.0f), FVector2D(21.0f, 29.7f)},
-		{false, FVector(25.0f, -1.5f, 11.0f), FRotator(-8.0f, 4.0f, 3.0f), FVector2D(12.0f, 9.0f)},
-		{true, FVector(19.5f, 2.0f, 30.0f), FRotator(2.0f, 0.0f, -7.0f), FVector2D(15.0f, 21.0f)},
-		{true, FVector(14.5f, -10.0f, 52.0f), FRotator(-4.0f, -35.0f, 16.0f), FVector2D(10.0f, 7.0f)},
-		{true, FVector(-19.0f, 0.0f, 38.0f), FRotator(0.0f, 180.0f, 4.0f), FVector2D(15.0f, 21.0f)},
-		{true, FVector(-4.0f, 14.0f, 24.0f), FRotator(0.0f, 90.0f, 8.0f), FVector2D(14.0f, 20.0f)},
-		{true, FVector(14.0f, -26.0f, -87.0f), FRotator(0.0f, 0.0f, 2.0f), FVector2D(8.0f, 26.0f)},
-		{true, FVector(14.0f, 26.0f, -83.0f), FRotator(0.0f, 0.0f, -3.0f), FVector2D(7.0f, 18.0f)},
-		{true, FVector(18.5f, 4.0f, 58.0f), FRotator(0.0f, 8.0f, 3.0f), FVector2D(9.0f, 6.0f)}};
+		{false, FVector(24.0f, -6.5f, 70.5f), FRotator(4.0f, -10.0f, 9.0f), FVector2D(21.0f, 29.7f), ESheetKind::RentalNotice},
+		{false, FVector(21.0f, 12.5f, 37.5f), FRotator(-6.0f, 25.0f, -14.0f), FVector2D(15.0f, 21.0f), ESheetKind::ResidentNotice},
+		{false, FVector(-24.5f, 2.0f, 60.0f), FRotator(3.0f, 180.0f, 6.0f), FVector2D(21.0f, 29.7f), ESheetKind::RentalNotice},
+		{false, FVector(-6.0f, 20.0f, 48.0f), FRotator(0.0f, 90.0f, -10.0f), FVector2D(18.0f, 24.0f), ESheetKind::OldPaper},
+		{false, FVector(-6.0f, -21.0f, 22.5f), FRotator(5.0f, -90.0f, 12.0f), FVector2D(21.0f, 29.7f), ESheetKind::RentalNotice},
+		{false, FVector(25.0f, -1.5f, 11.0f), FRotator(-8.0f, 4.0f, 3.0f), FVector2D(12.0f, 9.0f), ESheetKind::CleanPaper},
+		{true, FVector(19.5f, 2.0f, 30.0f), FRotator(2.0f, 0.0f, -7.0f), FVector2D(15.0f, 21.0f), ESheetKind::RentalNotice},
+		{true, FVector(14.5f, -10.0f, 52.0f), FRotator(-4.0f, -35.0f, 16.0f), FVector2D(10.0f, 7.0f), ESheetKind::CleanPaper},
+		{true, FVector(-19.0f, 0.0f, 38.0f), FRotator(0.0f, 180.0f, 4.0f), FVector2D(15.0f, 21.0f), ESheetKind::ResidentNotice},
+		{true, FVector(-4.0f, 14.0f, 24.0f), FRotator(0.0f, 90.0f, 8.0f), FVector2D(14.0f, 20.0f), ESheetKind::OldPaper},
+		{true, FVector(14.0f, -26.0f, -87.0f), FRotator(0.0f, 0.0f, 2.0f), FVector2D(8.0f, 26.0f), ESheetKind::CleanPaper},
+		{true, FVector(14.0f, 26.0f, -83.0f), FRotator(0.0f, 0.0f, -3.0f), FVector2D(7.0f, 18.0f), ESheetKind::CleanPaper},
+		{true, FVector(18.5f, 4.0f, 58.0f), FRotator(0.0f, 8.0f, 3.0f), FVector2D(9.0f, 6.0f), ESheetKind::OldPaper}};
 	int32 Index = 0;
 	for (const FSheet& Sheet : Layout)
 	{
 		UStaticMeshComponent* Component = NewObject<UStaticMeshComponent>(
 			this, *FString::Printf(TEXT("PaperSheet_%d"), Index));
 		Component->SetupAttachment(Sheet.bOnSpine ? Spine.Get() : FigureRoot.Get());
-		Component->SetStaticMesh(Cube);
-		// 원통 몸 앞의 얇은 낱장. 큐브는 100 cm다.
 		Component->SetRelativeLocation(Sheet.Location);
-		Component->SetRelativeRotation(Sheet.Rotation);
-		Component->SetRelativeScale3D(FVector(0.004f, Sheet.SizeCm.X / 100.0f, Sheet.SizeCm.Y / 100.0f));
-		if (UMaterialInterface* Print = Prints[Index % UE_ARRAY_COUNT(Prints)])
+		if (Sheet.Kind == ESheetKind::RentalNotice && Notice)
 		{
-			Component->SetMaterial(0, Print);
+			// 전단 메시는 21×29.7 cm, 인쇄면이 -Y다. 먼저 90도 돌려 인쇄면을 배치 표의
+			// 바깥(+X)으로 맞춘 뒤 표의 기울기를 얹는다.
+			Component->SetStaticMesh(Notice);
+			Component->SetRelativeRotation(FQuat(Sheet.Rotation) * FQuat(FRotator(0.0f, 90.0f, 0.0f)));
+			Component->SetRelativeScale3D(FVector(Sheet.SizeCm.X / 21.0f, 1.0f, Sheet.SizeCm.Y / 29.7f));
+		}
+		else
+		{
+			// 원통 몸 앞의 얇은 낱장. 큐브는 100 cm다.
+			Component->SetStaticMesh(Cube);
+			Component->SetRelativeRotation(Sheet.Rotation);
+			Component->SetRelativeScale3D(FVector(0.004f, Sheet.SizeCm.X / 100.0f, Sheet.SizeCm.Y / 100.0f));
+			UMaterialInterface* Print = Sheet.Kind == ESheetKind::ResidentNotice ? ResidentNotice
+				: Sheet.Kind == ESheetKind::OldPaper ? ShadowMaterial.Get()
+				: CleanPaper;
+			if (Print)
+			{
+				Component->SetMaterial(0, Print);
+			}
 		}
 		Component->SetMobility(EComponentMobility::Movable);
 		Component->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
