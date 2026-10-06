@@ -116,6 +116,8 @@ private:
 	void GoOnDuty();
 	void GoOffDuty();
 	void ShowBody(bool bShow);
+	/** 안쪽 방 자리로 옮긴다. 걷던 길은 버린다. */
+	void SnapToRestNode();
 
 	void StartRound();
 	void EnterRestingAtDoor(float RestSeconds);
