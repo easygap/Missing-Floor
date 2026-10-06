@@ -19,7 +19,7 @@ foreach ($script in @('import_retail_refresh.py', 'import_texture_atlas.py', 'te
 }
 $retailEditor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath (Join-Path $retailRoot 'IndieGame.uproject') -Commandlet
 $retailLog = Join-Path $retailImport 'Saved/Logs/RetailRefresh.log'
-& $retailEditor $retailProject -unattended -nosplash -nullrhi -nosound "-ExecutePythonScript=$retailImport/Scripts/import_retail_refresh.py" "-abslog=$retailLog"
+& $retailEditor $retailProject -unattended -nosplash -nullrhi -nosound -RenderOffscreen "-ExecutePythonScript=$retailImport/Scripts/import_retail_refresh.py" "-abslog=$retailLog"
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $retailLog -Pattern 'RETAIL_REFRESH PASS') -or (Select-String -LiteralPath $retailLog -Pattern 'LogPython: Error|Failed to compile Material')) {
     throw "매장 재질 반입 실패: $retailLog"
 }

@@ -34,7 +34,7 @@ foreach ($script in @('retail_surface_contract.py', 'build_grime_materials.py'))
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath $project -Commandlet
 $log = Join-Path $root 'Saved/Logs/GrimeMaterials.log'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
-& $editor $project -unattended -nop4 -nosplash -nullrhi -nosound -stdout -FullStdOutLogOutput "-abslog=$log" "-ExecutePythonScript=$(Join-Path $stage 'Scripts/build_grime_materials.py')" | Out-Null
+& $editor $project -unattended -nop4 -nosplash -nullrhi -nosound -RenderOffscreen -stdout -FullStdOutLogOutput "-abslog=$log" "-ExecutePythonScript=$(Join-Path $stage 'Scripts/build_grime_materials.py')" | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'GRIME_MATERIALS PASS')) {
 	throw "때 재질 생성 실패: $log"
 }

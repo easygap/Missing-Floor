@@ -75,6 +75,8 @@ try {
     $writer = [IO.StreamWriter]::new($memoryCsv, $false, [Text.UTF8Encoding]::new($false))
     $writer.WriteLine('ElapsedSeconds,ProcessId,DedicatedBytes,SharedBytes,ValidCounters,QueryStatus')
     # 화면에 실제로 표시되는 경로를 잰다. 계측 도구만 숨기고 게임 창은 표시한다.
+    # visible-window: intentional — 최소화하면 언리얼이 프레임을 내보내지 않아 PresentMon이 잴 것이 없다.
+    # 호출하는 Run-WindowsRuntimeProfile.ps1이 -AllowVisibleWindow 없이는 여기까지 오지 않는다.
     $game = Start-Process -FilePath $Launcher `
         -ArgumentList @($GameArguments | ForEach-Object { ConvertTo-QuotedArgument $_ }) `
         -WorkingDirectory (Split-Path $Launcher -Parent) -WindowStyle Normal -PassThru

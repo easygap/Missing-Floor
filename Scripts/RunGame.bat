@@ -1,4 +1,5 @@
 @echo off
+rem visible-window: intentional (a person opens this window to play or edit)
 setlocal
 set "PROJECT_ROOT=%~dp0.."
 set "PROJECT_FILE=%PROJECT_ROOT%\IndieGame.uproject"

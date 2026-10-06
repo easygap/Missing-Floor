@@ -364,6 +364,26 @@ foreach ($headlessScript in $headlessScripts) {
 		}
 	}
 }
+# 자동 검사나 반입이 게임·에디터 창을 사용자 화면 앞에 띄우면 안 된다.
+# -RenderOffscreen이 있으면 엔진이 창을 아예 만들지 않는다. 숨김 실행(-WindowStyle Hidden)은
+# 런처만 숨기고 실제 게임 프로세스의 창은 그대로 뜨므로 대신이 되지 못한다.
+# 일부러 창을 보여 줘야 하는 스크립트만 'visible-window: intentional' 표식을 단다.
+$launchScripts = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Scripts') -Recurse -File |
+	Where-Object { $_.Extension -in @('.ps1', '.bat') -and $_.Name -ne 'Validate-Project.ps1' })
+foreach ($launchScript in $launchScripts) {
+	$launchText = Get-Content -Raw -Encoding UTF8 -LiteralPath $launchScript.FullName
+	$launchesUnreal = $launchText -match 'Resolve-UnrealEditor\.ps1' -or
+		$launchText -match '(?i)Start-Process\s+-FilePath\s+\$(launcher|game\w*|exe\w*)\b'
+	if (-not $launchesUnreal) { continue }
+	if ($launchText.Contains('visible-window: intentional')) { continue }
+	# 커맨드릿(-run=)과 UAT 쿠크는 처음부터 창을 만들지 않는다.
+	$runsOnlyCommandlets = ($launchText -match '(?i)-run=|RunUAT') -and
+		($launchText -notmatch '(?i)-game\b|-ExecutePythonScript')
+	if ($runsOnlyCommandlets) { continue }
+	if ($launchText -notmatch '(?i)-RenderOffscreen') {
+		throw "게임이나 에디터 창이 화면에 뜰 수 있습니다. -RenderOffscreen을 넣거나 의도를 표시하세요: $($launchScript.FullName)"
+	}
+}
 foreach ($launcherScript in @(
 	'Scripts/RunGame.bat',
 	'Scripts/RunEditor.bat'
