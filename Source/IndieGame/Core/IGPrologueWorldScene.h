@@ -12,7 +12,6 @@ class AIGInspectable;
 class AIGNeighborhoodLifeDirector;
 class AIGPickupItem;
 class AIGSlidingDoor;
-class AIGStairTransition;
 class AIGSwingDoor;
 class AIGZoneTrigger;
 class UAudioComponent;
@@ -48,6 +47,12 @@ enum class EIGLightZone : uint8
 	FourthFloorRooms,
 	// 403호 안. 문이 닫혀 있으면 복도에서 보이지 않는다.
 	HomeInterior,
+	// 2층과 3층의 복도와 집. 그 층에 있을 때만 켠다.
+	SecondFloor,
+	ThirdFloor,
+	// 서쪽 계단탑. 층을 가리지 않고 건물 안이면 켠다 — 계단을 오르내리는 동안
+	// 위아래 참이 보이기 때문이다. 옥상에서는 끈다.
+	StairCore,
 	Count
 };
 
@@ -204,7 +209,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Story|Night")
 	bool IsTheHourSealed() const { return bTheHourSealed; }
 
-	/** True once BuildLobby has produced the connector gate the seal needs. */
+	/** True once BuildAlley has produced the pilotis shutter the seal needs. */
 	bool HasNightSealGeometry() const { return StairCoreNightGate != nullptr; }
 
 	/** P1 fixtures, so the puzzle's director can dress them without rebuilding. */
@@ -215,14 +220,6 @@ public:
 	UStaticMeshComponent* GetCommonBreakerToggle() const { return CommonBreakerToggle; }
 	void SetCommonInspectionLightsEnabled(bool bEnabled);
 	bool AreCommonInspectionLightsOff() const;
-
-	/**
-	 * 없는 층 밤1: slides the stair teleport west so the 3.5F half-landing
-	 * becomes a walkable viewing pocket instead of being swallowed by the
-	 * portal. Off restores the legacy trigger position byte-for-byte, so the
-	 * chapters that never meet the night keep their exact traversal.
-	 */
-	void SetNightStairPocketEnabled(bool bEnabled);
 
 	/**
 	 * Release topology for 없는 층 night 3. The path is built from real
@@ -454,6 +451,10 @@ private:
 	/** Shows the aging planes the current stage has reached, hides the rest. */
 	void ApplyUnit403AgeStage();
 	void BuildCorridor();
+	/** 서쪽 계단탑. 1층부터 4층까지 실제 계단과 층·반 층 참, 바깥 벽돌. */
+	void BuildStairCore();
+	/** 2층과 3층 복도, 201호 자재 창고와 302호 빈집. */
+	void BuildLowerFloors();
 	void BuildLobby();
 	/**
 	 * 없는 층 밤3: extends the real 4F stair to the roof, builds the 6.4 m
@@ -468,7 +469,6 @@ private:
 	void SpawnInteractables();
 	/** §4 숨는 자리, 건전지, 계단실 방화문과 고임목, 403호 걸쇠. */
 	void SpawnShelterProps(const FActorSpawnParameters& SpawnParameters);
-	void SpawnStairTransition();
 	void AddStaticPurchaseBagProxy(
 		AIGPickupItem* WaterBottle,
 		EIGPurchaseProfile PurchaseProfile);
@@ -588,7 +588,6 @@ private:
 	UPROPERTY(Transient) TObjectPtr<AIGSwingDoor> HomeDoor;
 	UPROPERTY(Transient) TObjectPtr<AIGSwingDoor> BuildingDoor;
 	UPROPERTY(Transient) TObjectPtr<AIGElevator> Elevator;
-	UPROPERTY(Transient) TObjectPtr<AIGStairTransition> StairTransition;
 	UPROPERTY(Transient) TObjectPtr<AIGSlidingDoor> StoreDoor;
 	UPROPERTY(Transient) TObjectPtr<AIGCheckoutCounter> Checkout;
 	UPROPERTY(Transient) TObjectPtr<AIGNeighborhoodLifeDirector> NeighborhoodLifeDirector;
@@ -607,11 +606,20 @@ private:
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> LobbyLightDiscs;
 	UPROPERTY(Transient) TObjectPtr<AIGPickupItem> Flashlight;
 	/**
-	 * 없는 층: the roller shutter across the lobby-to-stair-core connector.
-	 * Built hidden and non-colliding; SetTheHourSealed is the only thing that
-	 * ever shows it, so the legacy chapters never meet it.
+	 * 없는 층: 필로티 주차장 거리 쪽에 내려오는 셔터. 계단탑 1층 출입구와
+	 * 연결통로가 셔터 안쪽에 남아 그 시간에도 1층 로비와 관리실까지 걸어갈 수
+	 * 있다. 감추고 충돌을 끈 채 지어 두고, SetTheHourSealed만 내린다.
 	 */
 	UPROPERTY(Transient) TObjectPtr<UStaticMeshComponent> StairCoreNightGate;
+	/** 계단탑 층 참의 등(1~3층)과 2·3층 복도와 집의 등. 그 시간에는 꺼진다. */
+	UPROPERTY(Transient) TArray<TObjectPtr<UPointLightComponent>> StairCoreLights;
+	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> StairCoreLightDiscs;
+	UPROPERTY(Transient) TArray<TObjectPtr<UPointLightComponent>> LowerFloorLights;
+	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> LowerFloorLightDiscs;
+	/** 위 두 묶음의 낮 세기. 밤과 차단기가 0으로 내렸다가 이 값으로 되돌린다. */
+	TArray<float> StairCoreLightIntensities;
+	TArray<float> LowerFloorLightIntensities;
+	void ApplyServiceLights();
 	/** P1: the fifth meter's dial, which never turns, and its dead breaker. */
 	UPROPERTY(Transient) TObjectPtr<UStaticMeshComponent> FifthMeterDisc;
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> UtilityMeterDiscs;
@@ -673,8 +681,6 @@ private:
 	 * 로비가 보이지 않는다. 세기(연출)는 건드리지 않고 표시 여부만 바꾼다.
 	 */
 	void UpdateLightZones();
-	UFUNCTION()
-	void HandleStairTransitionForLights(bool bGoingDown);
 
 	/**
 	 * 창밖과 옥상 둘레의 동네가 몇 집이나 깨어 있는지(0~1). 입주한 저녁에는 거의

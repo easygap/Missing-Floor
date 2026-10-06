@@ -84,7 +84,6 @@ void AIGNightPhaseDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		if (AIGPrologueWorldScene* WorldScene = Scene.Get())
 		{
 			WorldScene->SetTheHourSealed(false);
-			WorldScene->SetNightStairPocketEnabled(false);
 		}
 		ApplySealedPresentation(false);
 	}
@@ -138,8 +137,6 @@ void AIGNightPhaseDirector::BeginTheHour(const int32 NightIndex)
 	if (AIGPrologueWorldScene* WorldScene = Scene.Get())
 	{
 		WorldScene->SetTheHourSealed(true);
-		// The half-landing viewing pocket exists only while the hour does.
-		WorldScene->SetNightStairPocketEnabled(true);
 		// §11 V2 403호 3단계 노화. The prologue and the first night are a flat
 		// she lives in; nights two and three crack the ceiling corner; night
 		// four has the damp down the wall. Driven off the night rather than any
@@ -424,7 +421,6 @@ void AIGNightPhaseDirector::ApplyDawnWorld()
 	{
 		// 등·안개·노출, 그리고 창 너머 도로가 낮으로 돌아온다(ApplyNightAtmosphere).
 		WorldScene->SetTheHourSealed(false);
-		WorldScene->SetNightStairPocketEnabled(false);
 	}
 	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
 	{

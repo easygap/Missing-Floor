@@ -992,6 +992,7 @@
  "IGMissingFloor,HideUnderBedPrompt": "ベッドの下に隠れる",
  "IGMissingFloor,HideExitPrompt": "出る",
  "IGMissingFloor,HideUnderDeskPrompt": "机の下に隠れる",
+ "IGMissingFloor,HideBehindSheetPrompt": "ビニールの陰に隠れる",
  "IGMissingFloor,BatteryBuyPrompt": "電池を一パック買う",
  "IGMissingFloor,FireDoorWedgePrompt": "ドアストッパーを外す（長押しでドアを押さえて静かに）",
  "IGMissingFloor,CaptionFireDoorSlam": "［防火扉がバタンと閉まる］",
