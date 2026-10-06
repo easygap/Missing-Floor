@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Player/IGPlayerCharacter.h"
+#include "Player/IGPlayerController.h"
 
 namespace IGHiding
 {
@@ -26,6 +27,9 @@ namespace IGHiding
 	constexpr float HurriedSpeed = 340.0f;
 	// 숨어 있는 몸이 이보다 멀리 옮겨졌으면 다른 연출이 데려간 것이다.
 	constexpr float ExternalMoveTolerance = 60.0f;
+	// 숨은 사람의 시선은 가구 앞면에서 이만큼 바깥에서 잰다.
+	constexpr float PeekOutsideFront = 6.0f;
+	const FName LookLockReason(TEXT("HidingSpot"));
 }
 
 AIGHidingSpot::AIGHidingSpot()
@@ -125,12 +129,14 @@ void AIGHidingSpot::BeginEnter(AIGPlayerCharacter* Player)
 	Player->SetHidingSpot(this);
 	bHurriedEntry = Player->GetVelocity().Size2D() >= IGHiding::HurriedSpeed;
 	PhaseSeconds = 0.0f;
+	bCrouchedForEntry = false;
 	SetActorTickEnabled(true);
 	// 침대 밑은 앉아야 들어간다. 선 채로 눌렀으면 먼저 앉히고, 엔진이 앉힌
 	// 다음 프레임부터 미끄러져 들어간다. 이동을 끈 뒤에는 앉지 못한다.
 	if (bRequiresCrouch && !Player->bIsCrouched)
 	{
 		Player->Crouch();
+		bCrouchedForEntry = true;
 		Phase = EPhase::Crouching;
 		return;
 	}
@@ -154,7 +160,10 @@ void AIGHidingSpot::StartEnterTransition()
 		Movement->DisableMovement();
 	}
 	TransitionFrom = Player->GetActorLocation();
-	TransitionTo = GetBodyLocationForEye(*Player, GetActorTransform().TransformPosition(EyeLocal));
+	LastPlacedLocation = TransitionFrom;
+	TransitionTo = GetHiddenBodyLocation(*Player);
+	LiftFrom = Player->GetHidingCameraLift();
+	LiftTo = GetHiddenCameraLift(*Player, TransitionTo);
 	if (const AController* Controller = Player->GetController())
 	{
 		RotationFrom = Controller->GetControlRotation();
@@ -177,7 +186,8 @@ void AIGHidingSpot::FinishEnter()
 	}
 	Phase = EPhase::Hidden;
 	PhaseSeconds = 0.0f;
-	Player->SetActorLocation(TransitionTo, false, nullptr, ETeleportType::TeleportPhysics);
+	PlaceOccupant(*Player, TransitionTo);
+	Player->SetHidingCameraLift(LiftTo);
 	if (AController* Controller = Player->GetController())
 	{
 		Controller->SetControlRotation(RotationTo);
@@ -213,7 +223,10 @@ void AIGHidingSpot::RequestExit()
 		}
 	}
 	TransitionFrom = Player->GetActorLocation();
+	LastPlacedLocation = TransitionFrom;
 	TransitionTo = GetExitWorldLocation(*Player);
+	LiftFrom = Player->GetHidingCameraLift();
+	LiftTo = 0.0f;
 	if (const AController* Controller = Player->GetController())
 	{
 		RotationFrom = Controller->GetControlRotation();
@@ -226,8 +239,12 @@ void AIGHidingSpot::RequestExit()
 void AIGHidingSpot::FinishExit(const bool bPlaceAtExit)
 {
 	AIGPlayerCharacter* Player = Occupant.Get();
+	// 앉기를 기다리다 끝났으면 가구 안에 들어간 적이 없다. 몸을 옮기지 않는다.
+	const bool bWasInside = IsOccupantConcealed();
+	const bool bUndoCrouch = bCrouchedForEntry && !bWasInside;
 	Phase = EPhase::Idle;
 	PhaseSeconds = 0.0f;
+	bCrouchedForEntry = false;
 	SetActorTickEnabled(false);
 	SetViewLimited(false);
 	SetLookLocked(false);
@@ -243,8 +260,15 @@ void AIGHidingSpot::FinishExit(const bool bPlaceAtExit)
 			Noise->SetInstigatorMuffle(Player, 1.0f);
 		}
 	}
+	Player->SetHidingCameraLift(0.0f);
 	Player->SetActorEnableCollision(true);
-	if (bPlaceAtExit)
+	if (bUndoCrouch)
+	{
+		// 들어가려고 앉혔는데 못 들어갔다. 앉으려던 마음을 거두지 않으면 나중에 머리
+		// 위가 비는 순간 저절로 앉는다.
+		Player->UnCrouch();
+	}
+	if (bPlaceAtExit && bWasInside)
 	{
 		// 나오는 자리에 무엇이 서 있으면 TeleportTo가 가까운 빈자리를 찾는다. 그마저
 		// 없으면 그 자리에 두고 이동 컴포넌트가 밀어낸다.
@@ -254,8 +278,9 @@ void AIGHidingSpot::FinishExit(const bool bPlaceAtExit)
 			Player->SetActorLocation(ExitWorld, false, nullptr, ETeleportType::TeleportPhysics);
 		}
 	}
+	// 이동은 이 자리가 들어갈 때 껐다. 끈 쪽이 되살린다.
 	if (UCharacterMovementComponent* Movement = Player->GetCharacterMovement();
-		Movement && Movement->MovementMode == MOVE_None)
+		bWasInside && Movement && Movement->MovementMode == MOVE_None)
 	{
 		Movement->SetMovementMode(MOVE_Walking);
 	}
@@ -291,23 +316,27 @@ void AIGHidingSpot::Tick(const float DeltaSeconds)
 		else if (PhaseSeconds > 0.5f)
 		{
 			// 앉지 못했다(머리 위가 이미 막혔거나 이동이 꺼져 있다). 들어가지 않는다.
-			Phase = EPhase::Idle;
-			SetActorTickEnabled(false);
-			Occupant.Reset();
-			Player->SetHidingSpot(nullptr);
+			FinishExit(false);
 		}
 		break;
 
 	case EPhase::Entering:
 	case EPhase::Exiting:
 	{
+		// 드나드는 사이에 다른 연출이 몸을 옮겼거나(포획 리셋, 기상 자리) 이동을
+		// 되살렸으면 그쪽을 따른다. 그대로 보간하면 옮겨 놓은 몸을 다시 끌고 온다.
+		const UCharacterMovementComponent* Movement = Player->GetCharacterMovement();
+		const bool bMovedAway = FVector::DistSquared(Player->GetActorLocation(), LastPlacedLocation)
+			> FMath::Square(IGHiding::ExternalMoveTolerance);
+		if (bMovedAway || (Movement && Movement->MovementMode != MOVE_None))
+		{
+			FinishExit(!bMovedAway);
+			break;
+		}
 		const float Alpha = FMath::Clamp(PhaseSeconds / IGHiding::TransitionSeconds, 0.0f, 1.0f);
 		const float Eased = Alpha * Alpha * (3.0f - 2.0f * Alpha);
-		Player->SetActorLocation(
-			FMath::Lerp(TransitionFrom, TransitionTo, Eased),
-			false,
-			nullptr,
-			ETeleportType::TeleportPhysics);
+		PlaceOccupant(*Player, FMath::Lerp(TransitionFrom, TransitionTo, Eased));
+		Player->SetHidingCameraLift(FMath::Lerp(LiftFrom, LiftTo, Eased));
 		if (AController* Controller = Player->GetController())
 		{
 			// 짧은 쪽으로 돈다. 성분별 보간은 179도에서 -179도로 가며 한 바퀴를 돈다.
@@ -332,12 +361,14 @@ void AIGHidingSpot::Tick(const float DeltaSeconds)
 	{
 		// 숨어 있는 동안 다른 연출이 몸을 옮기거나 이동을 되살렸으면(포획 리셋, 장면
 		// 전환) 그쪽을 따른다. 충돌이 꺼진 채 걷게 두면 바닥을 뚫고 떨어진다.
+		// 옮겨 갔으면 그 자리에 둔다. 제자리에서 이동만 되살아났으면 가구 속에서
+		// 충돌이 켜지지 않게 나오는 자리로 꺼낸다.
 		const UCharacterMovementComponent* Movement = Player->GetCharacterMovement();
 		const bool bMovedAway = FVector::DistSquared(Player->GetActorLocation(), TransitionTo)
 			> FMath::Square(IGHiding::ExternalMoveTolerance);
 		if (bMovedAway || (Movement && Movement->MovementMode != MOVE_None))
 		{
-			FinishExit(false);
+			FinishExit(!bMovedAway);
 		}
 		break;
 	}
@@ -377,15 +408,40 @@ void AIGHidingSpot::SetLookLocked(const bool bLocked)
 	{
 		return;
 	}
-	const AIGPlayerCharacter* Player = Occupant.Get();
-	APlayerController* Controller = Player ? Cast<APlayerController>(Player->GetController()) : nullptr;
-	if (!Controller)
+	if (bLocked)
 	{
-		bLookLocked = false;
+		const AIGPlayerCharacter* Player = Occupant.Get();
+		APlayerController* Controller = Player ? Cast<APlayerController>(Player->GetController()) : nullptr;
+		if (!Controller)
+		{
+			return;
+		}
+		// 컨트롤러의 무시 카운터를 직접 올리면 다른 잠금이 바뀔 때 0으로 돌아간다.
+		// 이름 붙은 잠금으로 건다.
+		if (AIGPlayerController* Owned = Cast<AIGPlayerController>(Controller))
+		{
+			Owned->AddInputLock(IGHiding::LookLockReason, false, true);
+		}
+		else
+		{
+			Controller->SetIgnoreLookInput(true);
+		}
+		LockedController = Controller;
+		bLookLocked = true;
 		return;
 	}
-	bLookLocked = bLocked;
-	Controller->SetIgnoreLookInput(bLocked);
+	// 몸이 먼저 사라졌어도 잠근 컨트롤러는 남아 있다. 그쪽에서 푼다.
+	bLookLocked = false;
+	APlayerController* Controller = LockedController.Get();
+	LockedController.Reset();
+	if (AIGPlayerController* Owned = Cast<AIGPlayerController>(Controller))
+	{
+		Owned->RemoveInputLock(IGHiding::LookLockReason);
+	}
+	else if (Controller)
+	{
+		Controller->SetIgnoreLookInput(false);
+	}
 }
 
 void AIGHidingSpot::SetViewLimited(const bool bLimited)
@@ -394,15 +450,21 @@ void AIGHidingSpot::SetViewLimited(const bool bLimited)
 	{
 		return;
 	}
+	// 거는 쪽은 지금 몸의 컨트롤러를, 푸는 쪽은 걸 때 기억해 둔 컨트롤러를 쓴다.
+	// 몸이 먼저 사라져도 시야 제한이 남지 않는다.
 	const AIGPlayerCharacter* Player = Occupant.Get();
-	const APlayerController* Controller = Player ? Cast<APlayerController>(Player->GetController()) : nullptr;
+	APlayerController* Controller = bLimited
+		? (Player ? Cast<APlayerController>(Player->GetController()) : nullptr)
+		: LimitedController.Get();
 	APlayerCameraManager* Camera = Controller ? Controller->PlayerCameraManager.Get() : nullptr;
 	if (!Camera)
 	{
 		bViewLimited = false;
+		LimitedController.Reset();
 		return;
 	}
 	bViewLimited = bLimited;
+	LimitedController = bLimited ? Controller : nullptr;
 	if (bLimited)
 	{
 		SavedYawMin = Camera->ViewYawMin;
@@ -468,11 +530,36 @@ void AIGHidingSpot::PlaySpotSound(const bool bEntering)
 		EIGAudioBus::World);
 }
 
-FVector AIGHidingSpot::GetBodyLocationForEye(const AIGPlayerCharacter& Player, const FVector& EyeWorld) const
+FVector AIGHidingSpot::GetHiddenBodyLocation(const AIGPlayerCharacter& Player) const
 {
-	// 몸은 눈이 자리의 눈 위치에 오도록 놓는다. 몸이 가구 안으로 들어가도 충돌을
-	// 꺼 두었으므로 끼지 않는다.
-	return EyeWorld - Player.GetEyeOffsetFromActor();
+	// 몸은 눈 바로 아래, 이 자리가 놓인 바닥에 선다. 눈높이는 카메라만 내려 맞춘다.
+	// 몸째 눈에 맞춰 내리면 침대 밑에서는 바닥 아래로 가라앉고, 「집 안에 있나」
+	// 「몇 층에 있나」 같은 위치 판정이 모두 틀어진다. 충돌은 꺼 두었으므로 가구와
+	// 겹쳐도 끼지 않는다.
+	const FVector EyeWorld = GetActorTransform().TransformPosition(EyeLocal);
+	const FVector CameraBase = FRotator(0.0f, GetActorRotation().Yaw, 0.0f)
+		.RotateVector(Player.GetCameraBaseLocation());
+	const UCapsuleComponent* Capsule = Player.GetCapsuleComponent();
+	const float HalfHeight = Capsule ? Capsule->GetScaledCapsuleHalfHeight() : 88.0f;
+	return FVector(EyeWorld.X - CameraBase.X, EyeWorld.Y - CameraBase.Y, GetActorLocation().Z + HalfHeight);
+}
+
+float AIGHidingSpot::GetHiddenCameraLift(const AIGPlayerCharacter& Player, const FVector& BodyLocation) const
+{
+	// 앉을 때 잠깐 얹히는 보정은 0.35초면 빠지므로 여기 넣지 않는다.
+	const FVector EyeWorld = GetActorTransform().TransformPosition(EyeLocal);
+	return EyeWorld.Z - (BodyLocation.Z + Player.GetCameraBaseLocation().Z);
+}
+
+void AIGHidingSpot::PlaceOccupant(AIGPlayerCharacter& Player, const FVector& Location)
+{
+	Player.SetActorLocation(Location, false, nullptr, ETeleportType::TeleportPhysics);
+	LastPlacedLocation = Player.GetActorLocation();
+}
+
+FVector AIGHidingSpot::GetPeekLocation() const
+{
+	return GetActorTransform().TransformPosition(FVector(IGHiding::PeekOutsideFront, 0.0f, EyeLocal.Z));
 }
 
 FVector AIGHidingSpot::GetExitWorldLocation(const AIGPlayerCharacter& Player) const

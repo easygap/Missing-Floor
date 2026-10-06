@@ -516,8 +516,9 @@ void AIGPlayerCharacter::SetCameraMotionEnabled(const bool bEnabled)
 	{
 		FirstPersonCamera->SetRelativeLocation(
 			CameraBaseLocation
-				+ FVector(0.0f, 0.0f, CrouchCameraCompensation));
+				+ FVector(0.0f, 0.0f, CrouchCameraCompensation + HidingCameraLift));
 		AppliedCrouchCameraCompensation = CrouchCameraCompensation;
+		AppliedHidingCameraLift = HidingCameraLift;
 	}
 }
 
@@ -543,6 +544,25 @@ void AIGPlayerCharacter::LeaveHidingSpotImmediately()
 		Spot->ForceExit();
 	}
 	HidingSpot.Reset();
+}
+
+bool AIGPlayerCharacter::IsConcealedInHidingSpot() const
+{
+	const AIGHidingSpot* Spot = HidingSpot.Get();
+	return Spot && Spot->IsOccupantConcealed();
+}
+
+void AIGPlayerCharacter::SetHidingCameraLift(const float Centimeters)
+{
+	// 앉기 보정처럼 지금 얹힌 값과의 차이만 더한다. 흔들림이 꺼져 있어도 맞는다.
+	HidingCameraLift = Centimeters;
+	if (FirstPersonCamera)
+	{
+		FVector CameraLocation = FirstPersonCamera->GetRelativeLocation();
+		CameraLocation.Z += HidingCameraLift - AppliedHidingCameraLift;
+		FirstPersonCamera->SetRelativeLocation(CameraLocation);
+	}
+	AppliedHidingCameraLift = HidingCameraLift;
 }
 
 FVector AIGPlayerCharacter::GetEyeOffsetFromActor() const
@@ -574,6 +594,10 @@ void AIGPlayerCharacter::PlayCaptureFeedback(const float DurationSeconds, const 
 	// 숨어 있다 잡히면 그 자리에서 끌려 나온다. 충돌과 이동을 먼저 돌려놓아야
 	// 뒤따르는 리셋이 몸을 침대로 옮길 수 있다.
 	LeaveHidingSpotImmediately();
+	// 입력이 막히면 키를 뗀 것이 전해지지 않는다. 쥐고 있던 숨 참기를 여기서 놓아야
+	// 깨어난 뒤 4초를 저절로 참다가 터지는 소리를 내지 않는다.
+	bHoldBreathInputHeld = false;
+	FinishHoldBreath(false);
 	CaptureFeedbackDurationSeconds = FMath::Max(DurationSeconds, 0.05f);
 	CaptureFeedbackRemainingSeconds = CaptureFeedbackDurationSeconds;
 	CaptureStartRotation = GetControlRotation();
@@ -1093,8 +1117,9 @@ void AIGPlayerCharacter::UpdateCameraMotion(const float DeltaSeconds)
 	// 제 감쇠를 갖고 있어 여기서 한 번 더 부드럽게 할 이유가 없다.
 	FirstPersonCamera->SetRelativeLocation(
 		CameraBaseLocation + TargetOffset
-			+ FVector(0.0f, 0.0f, CrouchCameraCompensation));
+			+ FVector(0.0f, 0.0f, CrouchCameraCompensation + HidingCameraLift));
 	AppliedCrouchCameraCompensation = CrouchCameraCompensation;
+	AppliedHidingCameraLift = HidingCameraLift;
 
 	// Fear tremor rides on the camera's own rotation rather than the control
 	// rotation, so it shakes the view without fighting the player's aim.

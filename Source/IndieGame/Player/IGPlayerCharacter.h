@@ -149,8 +149,18 @@ public:
 	void SetHidingSpot(class AIGHidingSpot* Spot);
 	/** 숨어 있으면 그 자리에서 바로 꺼낸다. 잡힘과 장면 전환이 부른다. */
 	void LeaveHidingSpotImmediately();
-	/** 몸의 원점에서 눈(카메라)까지. 숨는 자리가 몸을 어디에 둘지 정할 때 쓴다. */
+	/** 몸의 원점에서 눈(카메라)까지. 숨어서 내린 카메라도 들어 있다. */
 	FVector GetEyeOffsetFromActor() const;
+	/** 숨는 자리 안에 있다(드나드는 0.45초 포함). 앉기를 기다리는 동안은 아니다. */
+	bool IsConcealedInHidingSpot() const;
+	/**
+	 * 숨어 있는 동안 카메라만 내린다(cm, 아래가 음수). 몸은 가구 바닥 높이에 그대로
+	 * 서 있어서, 위치로 재는 판정(집 안인지, 어느 층인지)이 흔들리지 않는다.
+	 */
+	void SetHidingCameraLift(float Centimeters);
+	float GetHidingCameraLift() const { return HidingCameraLift; }
+	/** 서 있을 때 몸의 원점에서 카메라까지. 앉아도 같다(앉는 보정은 잠깐만 얹힌다). */
+	const FVector& GetCameraBaseLocation() const { return CameraBaseLocation; }
 
 	/** 지금 서 있는 자리의 어둠(0~1). 켜진 손전등은 어둠을 0으로 만든다. */
 	float GetDarkness() const { return CachedDarkness; }
@@ -313,6 +323,8 @@ private:
 	float CrouchCameraCompensation = 0.0f;
 	float CrouchCameraCompensationStart = 0.0f;
 	float AppliedCrouchCameraCompensation = 0.0f;
+	float HidingCameraLift = 0.0f;
+	float AppliedHidingCameraLift = 0.0f;
 	float KnockCameraKick = 0.0f;
 	/** 착지 직후 시점이 내려앉는 깊이(cm). 무릎이 접히는 만큼이고 곧 되돌아온다. */
 	float LandingDip = 0.0f;

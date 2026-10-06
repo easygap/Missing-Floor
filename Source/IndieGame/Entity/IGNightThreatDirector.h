@@ -80,6 +80,10 @@ private:
 	/** 추격 없음(듣기만 하는 밤)이면 거짓이다. 그때는 아무도 잡지 않고 놀래기만 한다. */
 	bool IsCaptureAllowed() const;
 	FVector GetPlayerEye() const;
+	/** 무엇이 보이는지 재는 자리. 숨어 있으면 가구 앞면 바로 바깥이다. */
+	FVector GetPlayerSightOrigin() const;
+	/** 몸이 선 바닥 높이. 숨어서 눈이 낮아져도 그대로다. */
+	float GetPlayerFeetZ() const;
 	bool IsPlayerLookingAt(const FVector& Target, float HalfAngleDegrees, const AActor* Ignored) const;
 	bool IsTorchOn(const FVector& Target) const;
 	bool HasLineOfSight(const FVector& From, const FVector& To, const AActor* Ignored) const;
@@ -91,7 +95,7 @@ private:
 	void UpdateEoduksini(float DeltaSeconds);
 	bool TryManifestEoduksini();
 	bool FindManifestSpot(FVector& OutLocation) const;
-	bool IsValidManifestSpot(const FVector& Candidate, const FVector& Eye, FVector& OutFloor) const;
+	bool IsValidManifestSpot(const FVector& Candidate, FVector& OutFloor) const;
 	void DismissEoduksini(bool bSilently);
 	float GetDarknessThresholdSeconds() const;
 

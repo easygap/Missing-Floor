@@ -144,6 +144,13 @@ void AIGNightLoopDirector::RequestExternalCapture(APawn* Player)
 	{
 		return;
 	}
+	// 밤4 가면 대치 중에는 결말 C가 포획을 혼자 맡는다. 다른 괴이가 침대 리셋을
+	// 걸면 타임라인 둘이 부딪친다. 괴이 감독도 그동안은 나오지 않는다.
+	if (const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+		Narrative && Narrative->GetNightIndex() == 4 && Narrative->IsNightFourMaskRunning())
+	{
+		return;
+	}
 	BeginCaptureReset(Character, true);
 }
 

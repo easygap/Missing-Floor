@@ -110,6 +110,9 @@ bool AIGMissingFloorFifthDawnDirector::StartInterlude(
 	}
 
 	Player = InPlayer;
+	// 숨어 있었으면 먼저 꺼낸다. 막간이 이동을 끈 뒤에 숨는 자리가 이동을 되살리거나
+	// 시야 제한을 남기면 막간의 화면과 부딪친다.
+	InPlayer->LeaveHidingSpotImmediately();
 	ElapsedSeconds = 0.0f;
 	FiredCueMask = 0;
 	PlayerKnockCount = 0;

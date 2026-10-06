@@ -5,6 +5,7 @@
 #include "IGHidingSpot.generated.h"
 
 class AIGPlayerCharacter;
+class APlayerController;
 class UBoxComponent;
 
 /** 숨은 자리에서 밖이 어떻게 보이는가. HUD가 가림막 모양을 고른다. */
@@ -21,9 +22,9 @@ enum class EIGHidingView : uint8
  * 숨는 자리(§4). E로 들어가고 안에서 E를 다시 누르면 나온다.
  *
  * 들고 나는 0.45초 동안만 시선이 걸리고, 안에서는 정해진 각도 안에서 둘러본다.
- * 몸은 충돌을 끄고 자리 안으로 옮기며, 그동안 낸 소리는 UIGNoiseSubsystem이
- * 0.55배로 줄여 내보낸다. 숨 참기와 손전등은 그대로 된다. 잡히면 그 자리에서
- * 바로 끌려 나온다(ForceExit).
+ * 몸은 충돌을 끄고 눈 바로 아래의 가구 바닥에 세우며, 눈높이는 카메라만 내려
+ * 맞춘다. 그동안 낸 소리는 UIGNoiseSubsystem이 0.55배로 줄여 내보낸다. 숨 참기와
+ * 손전등은 그대로 된다. 잡히면 그 자리에서 바로 끌려 나온다(ForceExit).
  */
 UCLASS()
 class INDIEGAME_API AIGHidingSpot : public AIGInteractableActor
@@ -53,6 +54,17 @@ public:
 	bool IsOccupied() const { return Occupant.IsValid(); }
 	/** 다 들어가 앉아 있다. 드나드는 중이면 false다. */
 	bool IsPlayerInside() const { return Phase == EPhase::Hidden; }
+	/** 가구 안에 있다. 드나드는 0.45초도 포함하고, 앉기를 기다리는 동안은 뺀다. */
+	bool IsOccupantConcealed() const
+	{
+		return Phase == EPhase::Entering || Phase == EPhase::Hidden || Phase == EPhase::Exiting;
+	}
+	/**
+	 * 숨은 눈이 밖을 내다보는 자리. 가구 앞면 바로 바깥의 눈높이다. 가구 메시와
+	 * 상호작용 상자가 시선 추적을 막으므로, 숨은 사람이 무엇을 볼 수 있는지는
+	 * 이 점에서 잰다.
+	 */
+	FVector GetPeekLocation() const;
 	EIGHidingView GetView() const { return View; }
 
 	/** 가림막의 짙기(0~1). 드나드는 동안 차오르고 빠진다. */
@@ -94,7 +106,12 @@ private:
 	void SetViewLimited(bool bLimited);
 	void ReportSpotNoise(float Loudness);
 	void PlaySpotSound(bool bEntering);
-	FVector GetBodyLocationForEye(const AIGPlayerCharacter& Player, const FVector& EyeWorld) const;
+	/** 숨은 동안 몸이 설 자리. 눈 바로 아래, 이 자리가 놓인 바닥 위다. */
+	FVector GetHiddenBodyLocation(const AIGPlayerCharacter& Player) const;
+	/** 그 자리에 선 몸에서 눈 위치까지 카메라를 내리는 양(cm). */
+	float GetHiddenCameraLift(const AIGPlayerCharacter& Player, const FVector& BodyLocation) const;
+	/** 몸을 옮기고 그 자리를 기억한다. 다음 틱에 다른 연출이 옮겼는지 본다. */
+	void PlaceOccupant(AIGPlayerCharacter& Player, const FVector& Location);
 	FVector GetExitWorldLocation(const AIGPlayerCharacter& Player) const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Hiding")
@@ -115,6 +132,14 @@ private:
 	float PhaseSeconds = 0.0f;
 	FVector TransitionFrom = FVector::ZeroVector;
 	FVector TransitionTo = FVector::ZeroVector;
+	FVector LastPlacedLocation = FVector::ZeroVector;
+	float LiftFrom = 0.0f;
+	float LiftTo = 0.0f;
+	/** 들어가려고 이 자리가 앉혔다. 못 들어가고 끝나면 다시 세운다. */
+	bool bCrouchedForEntry = false;
+	/** 잠근 컨트롤러. 몸이 먼저 사라져도 이걸로 풀어 준다. */
+	TWeakObjectPtr<APlayerController> LockedController;
+	TWeakObjectPtr<APlayerController> LimitedController;
 	FRotator RotationFrom = FRotator::ZeroRotator;
 	FRotator RotationTo = FRotator::ZeroRotator;
 	float SavedYawMin = 0.0f;

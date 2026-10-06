@@ -874,7 +874,7 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 			// 침대는 막지 못하지만, 어느 쪽이든 그는 소리로만 안다. 코앞에서 소리를 냈을
 			// 때만 그 자리를 열어 끌어낸다.
 			const AIGPlayerCharacter* HidingPlayer = Cast<AIGPlayerCharacter>(Player);
-			if (HidingPlayer && HidingPlayer->IsInHidingSpot())
+			if (HidingPlayer && HidingPlayer->IsConcealedInHidingSpot())
 			{
 				bLungeArmed = false;
 				const bool bHeardInside = GetWorld()->GetTimeSeconds() - LastHeardHiddenPlayerSeconds
@@ -942,7 +942,7 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 	}
 	if (const AIGPlayerCharacter* HiddenPlayer = Cast<AIGPlayerCharacter>(Event.Instigator.Get());
 		HiddenPlayer
-		&& HiddenPlayer->IsInHidingSpot()
+		&& HiddenPlayer->IsConcealedInHidingSpot()
 		&& FVector::DistSquared(Event.Location, GetActorLocation())
 			<= FMath::Square(IGListener::HiddenDetectRadius))
 	{
@@ -3296,6 +3296,12 @@ void AIGListenerEntity::BeginCapture(APawn* Player)
 	if (State == EIGListenerState::CaptureHold)
 	{
 		return;
+	}
+	// 숨어 있던 사람은 먼저 자리 밖으로 끌려 나온다. 넘어지는 눈높이와 얼굴이 덮치는
+	// 자리는 그다음에 잰다. 순서가 바뀌면 가구 속 눈을 기준으로 덮친다.
+	if (AIGPlayerCharacter* HiddenPlayer = Cast<AIGPlayerCharacter>(Player))
+	{
+		HiddenPlayer->LeaveHidingSpotImmediately();
 	}
 	EnterState(EIGListenerState::CaptureHold);
 	if (Player)

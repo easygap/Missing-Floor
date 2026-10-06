@@ -4,9 +4,11 @@
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
 #include "Components/AudioComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/CollisionProfile.h"
+#include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -94,6 +96,9 @@ namespace IGNightThreat
 	constexpr float SearchHoldSeconds = 5.0f;
 	// 보이는 사람을 쫓다 이보다 멀어지면 포기한다.
 	constexpr float GiveUpDistance = 900.0f;
+	// 발 높이가 이만큼 넘게 다르면 다른 층이다. 계단으로 달아났으면 손이 닿지 않고
+	// 소리도 듣지 못한다. 문 너머 층까지 따라가지 않는다.
+	constexpr float SameFloorTolerance = 150.0f;
 	// 손님의 몸 크기(0~1). 2.1 m, 문틀만 하다. 고개를 숙이고 들어온다.
 	constexpr float GuestGrowth = 0.55f;
 	// 철문 너머 말소리의 높낮이. 밤2 나린(젊은 여자), 밤3 배달 기사, 밤4 오빠.
@@ -354,6 +359,13 @@ bool AIGNightThreatDirector::IsQuietWindow() const
 			return false;
 		}
 	}
+	// 밤4 마지막 대치(가면)는 결말 C가 혼자 맡는다. 거기에 다른 괴이의 침대 리셋이
+	// 끼어들면 타임라인 둘이 부딪친다.
+	if (const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+		Narrative && Narrative->GetNightIndex() == 4 && Narrative->IsNightFourMaskRunning())
+	{
+		return false;
+	}
 	for (TActorIterator<AIGMissingFloorFifthDawnDirector> It(World); It; ++It)
 	{
 		if (It->IsActive())
@@ -377,6 +389,32 @@ FVector AIGNightThreatDirector::GetPlayerEye() const
 	return Player ? Player->GetActorLocation() + Player->GetEyeOffsetFromActor() : FVector::ZeroVector;
 }
 
+FVector AIGNightThreatDirector::GetPlayerSightOrigin() const
+{
+	// 숨어 있으면 눈이 가구 안에 있다. 문짝과 침대 틀이 시선 추적을 막으므로
+	// 무엇이 보이는지는 가구 앞면 바로 바깥에서 잰다.
+	const AIGPlayerCharacter* Player = PlayerPawn.Get();
+	if (Player && Player->IsConcealedInHidingSpot())
+	{
+		if (const AIGHidingSpot* Spot = Player->GetHidingSpot())
+		{
+			return Spot->GetPeekLocation();
+		}
+	}
+	return GetPlayerEye();
+}
+
+float AIGNightThreatDirector::GetPlayerFeetZ() const
+{
+	const AIGPlayerCharacter* Player = PlayerPawn.Get();
+	if (!Player)
+	{
+		return 0.0f;
+	}
+	const UCapsuleComponent* Capsule = Player->GetCapsuleComponent();
+	return Player->GetActorLocation().Z - (Capsule ? Capsule->GetScaledCapsuleHalfHeight() : 88.0f);
+}
+
 bool AIGNightThreatDirector::HasLineOfSight(const FVector& From, const FVector& To, const AActor* Ignored) const
 {
 	const UWorld* World = GetWorld();
@@ -388,6 +426,14 @@ bool AIGNightThreatDirector::HasLineOfSight(const FVector& From, const FVector& 
 	if (Ignored)
 	{
 		Params.AddIgnoredActor(Ignored);
+	}
+	// 숨은 자리의 상호작용 상자도 시선 추적을 막는다. 숨은 사람 자신의 자리는 뺀다.
+	if (const AIGPlayerCharacter* Player = PlayerPawn.Get())
+	{
+		if (const AIGHidingSpot* Spot = Player->GetHidingSpot())
+		{
+			Params.AddIgnoredActor(Spot);
+		}
 	}
 	FHitResult Hit;
 	return !World->LineTraceSingleByChannel(Hit, From, To, ECC_Visibility, Params);
@@ -408,7 +454,7 @@ bool AIGNightThreatDirector::IsPlayerLookingAt(
 	{
 		return false;
 	}
-	return HasLineOfSight(Eye, Target, Ignored);
+	return HasLineOfSight(GetPlayerSightOrigin(), Target, Ignored);
 }
 
 bool AIGNightThreatDirector::IsTorchOn(const FVector& Target) const
@@ -618,7 +664,7 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 	}
 }
 
-bool AIGNightThreatDirector::IsValidManifestSpot(const FVector& Candidate, const FVector& Eye, FVector& OutFloor) const
+bool AIGNightThreatDirector::IsValidManifestSpot(const FVector& Candidate, FVector& OutFloor) const
 {
 	const UWorld* World = GetWorld();
 	if (!World)
@@ -630,15 +676,16 @@ bool AIGNightThreatDirector::IsValidManifestSpot(const FVector& Candidate, const
 	{
 		Params.AddIgnoredActor(Eoduksini);
 	}
-	// 같은 층 바닥이 있어야 한다. 눈보다 80~220 cm 아래.
+	// 플레이어가 선 바닥과 같은 층이어야 한다. 발 높이에서 위아래 60 cm 안. 숨어서
+	// 눈이 바닥 가까이 있어도 몸이 선 바닥으로 잰다.
+	const float FeetZ = GetPlayerFeetZ();
 	FHitResult Floor;
-	const FVector Top(Candidate.X, Candidate.Y, Eye.Z + 20.0f);
+	const FVector Top(Candidate.X, Candidate.Y, FeetZ + 180.0f);
 	if (!World->LineTraceSingleByChannel(Floor, Top, Top - FVector(0.0f, 0.0f, 420.0f), ECC_Visibility, Params))
 	{
 		return false;
 	}
-	const float Drop = Eye.Z - Floor.ImpactPoint.Z;
-	if (Drop < 80.0f || Drop > 220.0f)
+	if (FMath::Abs(Floor.ImpactPoint.Z - FeetZ) > 60.0f)
 	{
 		return false;
 	}
@@ -654,7 +701,7 @@ bool AIGNightThreatDirector::IsValidManifestSpot(const FVector& Candidate, const
 		return false;
 	}
 	// 그 자리가 눈에 보여야 한다. 고개를 돌리면 거기 있다.
-	return HasLineOfSight(Eye, OutFloor + FVector(0.0f, 0.0f, 120.0f), Eoduksini);
+	return HasLineOfSight(GetPlayerSightOrigin(), OutFloor + FVector(0.0f, 0.0f, 120.0f), Eoduksini);
 }
 
 bool AIGNightThreatDirector::FindManifestSpot(FVector& OutLocation) const
@@ -667,12 +714,12 @@ bool AIGNightThreatDirector::FindManifestSpot(FVector& OutLocation) const
 	const FVector Eye = GetPlayerEye();
 	FVector Floor;
 	// 숨어 있으면 틈 앞. 어둠은 숨어 있어도 쌓인다.
-	if (const AIGHidingSpot* Spot = Player->GetHidingSpot())
+	if (const AIGHidingSpot* Spot = Player->IsConcealedInHidingSpot() ? Player->GetHidingSpot() : nullptr)
 	{
 		const FVector Forward = Spot->GetActorForwardVector().GetSafeNormal2D();
 		for (const float Distance : {300.0f, 240.0f, 380.0f})
 		{
-			if (IsValidManifestSpot(Spot->GetActorLocation() + Forward * Distance, Eye, Floor))
+			if (IsValidManifestSpot(Spot->GetActorLocation() + Forward * Distance, Floor))
 			{
 				OutLocation = Floor;
 				return true;
@@ -687,7 +734,7 @@ bool AIGNightThreatDirector::FindManifestSpot(FVector& OutLocation) const
 		for (const float Angle : {150.0f, -150.0f, 180.0f, 120.0f, -120.0f, 90.0f, -90.0f, 35.0f, -35.0f})
 		{
 			const FVector Direction = FRotator(0.0f, ViewYaw + Angle, 0.0f).Vector();
-			if (IsValidManifestSpot(Eye + Direction * Distance, Eye, Floor))
+			if (IsValidManifestSpot(Eye + Direction * Distance, Floor))
 			{
 				OutLocation = Floor;
 				return true;
@@ -1244,7 +1291,7 @@ void AIGNightThreatDirector::OpenDoorForGuest()
 		IGNightThreat::GuestGrowth);
 	GuestStage = EIGGuestStage::Inside;
 	GuestElapsed = 0.0f;
-	bPlayerHiddenWhenOpened = Player->IsInHidingSpot();
+	bPlayerHiddenWhenOpened = Player->IsConcealedInHidingSpot();
 	if (UIGStressComponent* Stress = Player->GetStress())
 	{
 		Stress->ApplyScare(0.6f);
@@ -1351,7 +1398,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 	case EIGGuestStage::Keypad:
 	{
 		// 두드리는 동안 문을 열면 바로 거기 서 있다.
-		if (Door->IsOpen())
+		if (Door->IsOpen() && Guest)
 		{
 			Guest->Manifest(
 				FVector(AIGPrologueWorldScene::HomeDoorX + AIGPrologueWorldScene::WideDoorLeafWidth * 0.5f,
@@ -1576,10 +1623,17 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 			}
 		}
 		LastGuestLocation = BodyLocation;
+		// 계단으로 달아나 다른 층에 있으면 거기까지 오지 않는다. 몸이 바닥을 뚫고
+		// 따라오거나 위층에서 손을 뻗지 않게 한다.
+		if (FMath::Abs(GetPlayerFeetZ() - BodyLocation.Z) > SameFloorTolerance)
+		{
+			EndGuest(true);
+			return;
+		}
 		const FVector PlayerFloor(Player->GetActorLocation().X, Player->GetActorLocation().Y, BodyLocation.Z);
 		const float Distance = FVector::Dist2D(PlayerFloor, BodyLocation);
 		Body->SetTargetYaw((PlayerFloor - BodyLocation).Rotation().Yaw);
-		const bool bHidden = Player->IsInHidingSpot();
+		const bool bHidden = Player->IsConcealedInHidingSpot();
 		// 숨는 것을 봤으면 그 자리로 간다. 못 봤으면 소리로만 찾는다.
 		const bool bSawHide = bHidden && !bPlayerHiddenWhenOpened && Distance < 400.0f;
 		if (!bHidden || bSawHide || bGuestHeardPlayer)
@@ -1642,7 +1696,12 @@ void AIGNightThreatDirector::HandleNoise(const FIGNoiseEvent& Event)
 	{
 		return;
 	}
-	if (FVector::Dist2D(Event.Location, Guest->GetActorLocation()) <= IGNightThreat::GuestHearing)
+	// 소리가 실제로 닿는 거리 안에서만 듣는다. 숨은 자리 안의 소리는 이미 줄어든
+	// 반경으로 온다. 다른 층의 소리는 바닥에 막힌다(소리는 대개 바닥 90 cm 위에서 난다).
+	const FVector GuestAt = Guest->GetActorLocation();
+	const bool bSameFloor = FMath::Abs(Event.Location.Z - 90.0f - GuestAt.Z) <= IGNightThreat::SameFloorTolerance;
+	if (bSameFloor
+		&& FVector::Dist2D(Event.Location, GuestAt) <= FMath::Min(IGNightThreat::GuestHearing, Event.Radius))
 	{
 		bGuestHeardPlayer = true;
 	}

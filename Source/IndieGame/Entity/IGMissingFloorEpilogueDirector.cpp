@@ -282,6 +282,8 @@ bool AIGMissingFloorEpilogueDirector::StartEpilogue(
 	}
 
 	Player = InPlayer;
+	// 숨어 있었으면 먼저 꺼낸다. 에필로그가 이동을 끈 뒤에 숨는 자리가 되살리지 않게.
+	InPlayer->LeaveHidingSpotImmediately();
 	ActiveEndingId = EndingId;
 	bEndingA = EndingId == IGEpilogue::EndingAId;
 	FiredCueMask = 0;
