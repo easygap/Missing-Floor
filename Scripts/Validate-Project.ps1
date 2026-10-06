@@ -1203,15 +1203,25 @@ foreach ($doorSafetySource in @($swingDoorSource, $slidingDoorSource)) {
 	}
 }
 
+# 골목에는 배달 오토바이만 다닌다. 몸을 통과하지 않고(ResolvePlayerClearance), 비킬 폭이
+# 없으면 서며, 첫 외출의 루이턴 버스(LaunchAlleyNearMiss)는 한 판에 한 번이다.
 foreach ($requiredNeighborhoodFeature in @(
 	'PrimeOutdoorSequence',
 	'bOutdoorSequencePrimed',
-	'EIGPooledVehicleKind::DeliveryMotorcycle',
+	'LaunchAlleyNearMiss',
+	'ResolvePlayerClearance',
+	'ComputeLaneLimits',
+	'Neighborhood.ScooterNearMiss',
 	'ActivateLeaves',
 	'CatTraceRoot'
 )) {
 	if (-not $neighborhoodSource.Contains($requiredNeighborhoodFeature)) {
 		throw "Required neighborhood-life feature is missing: $requiredNeighborhoodFeature"
+	}
+}
+foreach ($forbiddenNeighborhoodFeature in @('PassengerCar', 'VehicleCabin')) {
+	if ($neighborhoodSource.Contains($forbiddenNeighborhoodFeature)) {
+		throw "폭 2.6 m 골목에 승용차를 다시 넣지 마세요: $forbiddenNeighborhoodFeature"
 	}
 }
 

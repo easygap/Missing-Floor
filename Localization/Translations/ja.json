@@ -971,5 +971,14 @@
  "IGFrontendProbe,DialogueSpeaker": "スマホ",
  "IGFrontendProbe,DialogueDefaultKorean": "メッセージでの通報を受け付けました。まもなく担当の警察官からご連絡いたします。",
  "IGFrontendProbe,SoundCaption": "［天井から三回ノックする音］",
- "IGFrontendProbe,DialogueLongKorean": "電話がつながりません。天井からノックの音が三回して、同時にスマホのアラームが午前4時半を知らせました。この文章は文字を大きくしても途切れず、次のページに続く必要があります。プレイヤーが移動中でも、前の文を上書きしてはいけません。"
+ "IGFrontendProbe,DialogueLongKorean": "電話がつながりません。天井からノックの音が三回して、同時にスマホのアラームが午前4時半を知らせました。この文章は文字を大きくしても途切れず、次のページに続く必要があります。プレイヤーが移動中でも、前の文を上書きしてはいけません。",
+ "IGMissingFloor,ScooterRiderSpeaker": "配達員",
+ "IGMissingFloor,ScooterRiderStartled": "うわ、びっくりした…",
+ "IGMissingFloor,ScooterRiderPassing": "すみません、ちょっと通ります。",
+ "IGMissingFloor,ScooterRiderBrushed": "大丈夫ですか？ 本当にすみません！",
+ "IGMissingFloor,ScooterRiderSorry": "あっ、すみません！",
+ "IGMissingFloor,YudamScooterThought": "…心臓が止まるかと思った。",
+ "IGMissingFloor,CaptionScooterHorn": "［バイクのクラクション］",
+ "IGMissingFloor,CaptionScooterScreech": "［タイヤがきしむ音］",
+ "IGMissingFloor,CaptionScooterWhoosh": "［バイクがすぐ横をかすめていく］"
 }

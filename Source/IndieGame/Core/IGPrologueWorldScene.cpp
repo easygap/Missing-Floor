@@ -1548,7 +1548,7 @@ void AIGPrologueWorldScene::InitializePrologue()
 	RefreshPurchaseProfilePresentation();
 	CreateAmbience();
 
-	// 평범한 골목 생활은 이야기가 기대는 기준선이다. 승용차와 배달 오토바이,
+	// 평범한 골목 생활은 이야기가 기대는 기준선이다. 샛길로 드나드는 배달 오토바이,
 	// 바람에 날리는 잎, 시야 끝을 스치는 길고양이가 그 몫을 한다.
 	FActorSpawnParameters NeighborhoodParameters;
 	NeighborhoodParameters.Owner = this;

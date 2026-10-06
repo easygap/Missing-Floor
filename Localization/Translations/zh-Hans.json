@@ -971,5 +971,14 @@
  "IGFrontendProbe,DialogueSpeaker": "手机",
  "IGFrontendProbe,DialogueDefaultKorean": "您的短信报警已受理。负责民警将很快与您联系。",
  "IGFrontendProbe,SoundCaption": "［天花板传来三下敲击声］",
- "IGFrontendProbe,DialogueLongKorean": "电话无法接通。天花板传来三下敲击声，同一时刻，手机闹钟提示凌晨四点半到了。这句话在大字号下也不能被截断，而要接到下一页显示。即使玩家正在移动，也不能覆盖前一句。"
+ "IGFrontendProbe,DialogueLongKorean": "电话无法接通。天花板传来三下敲击声，同一时刻，手机闹钟提示凌晨四点半到了。这句话在大字号下也不能被截断，而要接到下一页显示。即使玩家正在移动，也不能覆盖前一句。",
+ "IGMissingFloor,ScooterRiderSpeaker": "外卖骑手",
+ "IGMissingFloor,ScooterRiderStartled": "哎哟，吓我一跳……",
+ "IGMissingFloor,ScooterRiderPassing": "不好意思，借过一下。",
+ "IGMissingFloor,ScooterRiderBrushed": "你没事吧？真的对不起！",
+ "IGMissingFloor,ScooterRiderSorry": "啊，不好意思！",
+ "IGMissingFloor,YudamScooterThought": "……吓得我心脏都快停了。",
+ "IGMissingFloor,CaptionScooterHorn": "［摩托车喇叭声］",
+ "IGMissingFloor,CaptionScooterScreech": "［轮胎急刹声］",
+ "IGMissingFloor,CaptionScooterWhoosh": "［摩托车擦身而过］"
 }

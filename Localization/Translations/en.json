@@ -971,5 +971,14 @@
  "IGFrontendProbe,DialogueSpeaker": "Phone",
  "IGFrontendProbe,DialogueDefaultKorean": "Your text report has been received. An officer will contact you shortly.",
  "IGFrontendProbe,SoundCaption": "[three knocks from the ceiling]",
- "IGFrontendProbe,DialogueLongKorean": "The call won’t connect. Three knocks came from the ceiling, and at the same moment the phone alarm went off for 4:30 a.m. This sentence must continue onto the next page without being cut off, even at large text sizes. It must not overwrite the previous line, even while the player is moving."
+ "IGFrontendProbe,DialogueLongKorean": "The call won’t connect. Three knocks came from the ceiling, and at the same moment the phone alarm went off for 4:30 a.m. This sentence must continue onto the next page without being cut off, even at large text sizes. It must not overwrite the previous line, even while the player is moving.",
+ "IGMissingFloor,ScooterRiderSpeaker": "Delivery rider",
+ "IGMissingFloor,ScooterRiderStartled": "Jeez, you scared me…",
+ "IGMissingFloor,ScooterRiderPassing": "Excuse me, coming through.",
+ "IGMissingFloor,ScooterRiderBrushed": "You okay? I’m really sorry!",
+ "IGMissingFloor,ScooterRiderSorry": "Oh, sorry!",
+ "IGMissingFloor,YudamScooterThought": "…Nearly gave me a heart attack.",
+ "IGMissingFloor,CaptionScooterHorn": "[scooter horn]",
+ "IGMissingFloor,CaptionScooterScreech": "[tires screech]",
+ "IGMissingFloor,CaptionScooterWhoosh": "[a scooter whips past]"
 }

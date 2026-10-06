@@ -971,5 +971,14 @@
  "IGFrontendProbe,DialogueSpeaker": "手機",
  "IGFrontendProbe,DialogueDefaultKorean": "您的簡訊報案已受理。承辦員警會盡快與您聯繫。",
  "IGFrontendProbe,SoundCaption": "［天花板傳來三下敲擊聲］",
- "IGFrontendProbe,DialogueLongKorean": "電話無法接通。天花板傳來三下敲擊聲，同一刻，手機鬧鐘響了，時間是凌晨四點半。這段文字即使字體放大也不能被切掉，要接續到下一頁。即使玩家正在移動，也不能蓋掉前一句。"
+ "IGFrontendProbe,DialogueLongKorean": "電話無法接通。天花板傳來三下敲擊聲，同一刻，手機鬧鐘響了，時間是凌晨四點半。這段文字即使字體放大也不能被切掉，要接續到下一頁。即使玩家正在移動，也不能蓋掉前一句。",
+ "IGMissingFloor,ScooterRiderSpeaker": "外送員",
+ "IGMissingFloor,ScooterRiderStartled": "哎唷，嚇我一跳……",
+ "IGMissingFloor,ScooterRiderPassing": "不好意思，借過一下。",
+ "IGMissingFloor,ScooterRiderBrushed": "妳沒事吧？真的很抱歉！",
+ "IGMissingFloor,ScooterRiderSorry": "啊，不好意思！",
+ "IGMissingFloor,YudamScooterThought": "……嚇得我心臟差點停了。",
+ "IGMissingFloor,CaptionScooterHorn": "［機車喇叭聲］",
+ "IGMissingFloor,CaptionScooterScreech": "［輪胎急煞聲］",
+ "IGMissingFloor,CaptionScooterWhoosh": "［機車擦身而過］"
 }
