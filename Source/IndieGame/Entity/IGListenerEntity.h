@@ -80,6 +80,8 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Listener")
 	EIGListenerState GetListenerState() const { return State; }
+	/** 닫힌 403호 문 앞에 와 있다(두드리거나 듣는 중). 다른 괴이가 그 문을 쓰지 않게 본다. */
+	bool IsAtHomeDoor() const { return bAtHomeDoor; }
 
 	/** Capture escalation, 0..3. Raised by the director on each loop reset. */
 	UFUNCTION(BlueprintPure, Category = "Listener")

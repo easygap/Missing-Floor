@@ -19,6 +19,7 @@
 #include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
 #include "Entity/IGMissingFloorNightFourDirector.h"
+#include "Entity/IGNightThreatDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "Environment/IGDustSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -335,7 +336,12 @@ void AIGPlayerCharacter::Tick(const float DeltaSeconds)
 	if (DarknessSampleTimer <= 0.0f)
 	{
 		DarknessSampleTimer = 0.25f;
-		CachedDarkness = FMath::FInterpTo(CachedDarkness, SampleAmbientDarkness(), 1.0f, 0.55f);
+		// 불빛 판정은 한 번만 돈다. 손전등이 켜져 있으면 공포 모델의 어둠은 0이고,
+		// 방의 어둠은 그대로 잰다.
+		const float RoomDarkness = SampleAmbientDarkness(false);
+		const bool bTorchLit = Flashlight && Flashlight->IsProvidingLight();
+		CachedRoomDarkness = FMath::FInterpTo(CachedRoomDarkness, RoomDarkness, 1.0f, 0.55f);
+		CachedDarkness = FMath::FInterpTo(CachedDarkness, bTorchLit ? 0.0f : RoomDarkness, 1.0f, 0.55f);
 		if (StressComponent)
 		{
 			StressComponent->SetDarkness(CachedDarkness);
@@ -367,7 +373,7 @@ void AIGPlayerCharacter::Tick(const float DeltaSeconds)
 	UpdateMicrophoneNoise(DeltaSeconds);
 }
 
-float AIGPlayerCharacter::SampleAmbientDarkness() const
+float AIGPlayerCharacter::SampleAmbientDarkness(const bool bCountFlashlight) const
 {
 	// There is no cheap way to read scene luminance from gameplay code, so
 	// darkness is inferred from the lights that can actually reach us: any
@@ -385,7 +391,7 @@ float AIGPlayerCharacter::SampleAmbientDarkness() const
 	// A working torch is enough light to keep the dark at bay — but only
 	// while it is genuinely lit. IsProvidingLight() is false through a
 	// brown-out, so a dying cell stops shielding the player from the dark.
-	if (Flashlight && Flashlight->IsProvidingLight())
+	if (bCountFlashlight && Flashlight && Flashlight->IsProvidingLight())
 	{
 		return 0.0f;
 	}
@@ -395,6 +401,11 @@ float AIGPlayerCharacter::SampleAmbientDarkness() const
 	{
 		const UPointLightComponent* Light = *LightIterator;
 		if (!IsValid(Light) || Light->GetWorld() != World || !Light->IsVisible())
+		{
+			continue;
+		}
+		// 손에 든 손전등(스포트라이트도 점광원의 자식이다)은 방의 불빛이 아니다.
+		if (Light->GetOwner() == this)
 		{
 			continue;
 		}
@@ -2014,6 +2025,11 @@ void AIGPlayerCharacter::Knock()
 		// here too. Doing it after the noise report keeps the order honest: the
 		// building hears the knock, and then he decides what it meant.
 		OfferAnswerKnock(FocusedActor->GetActorLocation());
+		// 현관문 밖의 손님도 같은 박자를 듣는다. 오빠의 노크면 물러간다.
+		for (TActorIterator<AIGNightThreatDirector> It(World); It; ++It)
+		{
+			It->RegisterPlayerDoorKnock(FocusedActor);
+		}
 		ApplyPlayerKnockFeedback();
 	}
 }

@@ -680,7 +680,9 @@ $reviewedTickingFiles = @(
 	'IGMissingFloorMercyDirector.cpp',
 	'IGCctvChannelFive.cpp',
 	# 숨는 자리. 사람이 드나들거나 안에 있는 동안에만 켜고, 다 나오면 끈다.
-	'IGHidingSpot.cpp'
+	'IGHidingSpot.cpp',
+	# 어둠의 몸(어둑시니·손님). 나타나 있는 동안에만 켜고, 사라지면 끈다.
+	'IGShadowFigure.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)

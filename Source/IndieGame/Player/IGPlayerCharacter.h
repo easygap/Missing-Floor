@@ -146,6 +146,11 @@ public:
 	/** 몸의 원점에서 눈(카메라)까지. 숨는 자리가 몸을 어디에 둘지 정할 때 쓴다. */
 	FVector GetEyeOffsetFromActor() const;
 
+	/** 지금 서 있는 자리의 어둠(0~1). 켜진 손전등은 어둠을 0으로 만든다. */
+	float GetDarkness() const { return CachedDarkness; }
+	/** 손전등을 뺀 어둠. 방이나 복도에 불이 켜져 있으면 낮다. */
+	float GetRoomDarkness() const { return CachedRoomDarkness; }
+
 	UFUNCTION(BlueprintPure, Category = "Player|Audio")
 	EIGFootstepSurface GetLastFootstepSurface() const { return LastFootstepSurface; }
 
@@ -227,8 +232,11 @@ private:
 	void StopChaseHaptic();
 	void UpdateChaseHaptic(float DeltaSeconds);
 	void PlayHapticFeedback(float Intensity, float DurationSeconds) const;
-	/** Samples how dark it is where the player stands, for the stress model. */
-	float SampleAmbientDarkness() const;
+	/**
+	 * Samples how dark it is where the player stands, for the stress model.
+	 * bCountFlashlight가 false면 손전등을 빼고 방의 불빛만 잰다(어둑시니가 쓴다).
+	 */
+	float SampleAmbientDarkness(bool bCountFlashlight = true) const;
 	/** Footstep cadence and its noise report; runs whether or not the camera bobs. */
 	void UpdateFootsteps(float DeltaSeconds);
 	void UpdateCaptureFeedback(float DeltaSeconds);
@@ -365,6 +373,8 @@ private:
 	/** Throttles the darkness probe: it traces, so it does not run per frame. */
 	float DarknessSampleTimer = 0.0f;
 	float CachedDarkness = 0.0f;
+	/** 손전등을 뺀 어둠. 방에 불이 켜져 있는지만 본다. */
+	float CachedRoomDarkness = 0.0f;
 	/** Held-item inertia: lag offset and the previous view rotation driving it. */
 	FRotator CarrySwayOffset = FRotator::ZeroRotator;
 	FRotator PreviousControlRotation = FRotator::ZeroRotator;

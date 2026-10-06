@@ -36,6 +36,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "NightLoop")
 	void RegisterEntity(AIGListenerEntity* Entity);
 
+	/**
+	 * 위층 사람이 아닌 다른 괴이가 잡았다(어둑시니, 손님). 침대로 돌아가는 것은
+	 * 같지만 그의 공격성 단계는 올리지 않는다. 그는 그 자리에 없었다.
+	 */
+	void RequestExternalCapture(APawn* Player);
+
+	/** 마지막으로 잡힌 게임 시각. 다른 괴이들이 숨 돌릴 틈(§7)을 잰다. 없으면 음수. */
+	double GetLastCaptureSeconds() const { return LastCaptureSeconds; }
+
 	UFUNCTION(BlueprintPure, Category = "NightLoop")
 	int32 GetCaptureCount() const { return CaptureCount; }
 
@@ -78,6 +87,8 @@ protected:
 
 private:
 	void HandlePlayerCaptured(APawn* Player);
+	/** 위층 사람의 포획과 다른 괴이의 포획이 함께 쓰는 암전과 리셋. */
+	void BeginCaptureReset(AIGPlayerCharacter* Character, bool bExternal);
 	void FinishReset();
 	void FinishWakeRecovery();
 	/** 포획 암전을 걷고 조작을 돌려준다. 정상 복귀가 끊긴 자리에서만 부른다. */
@@ -110,6 +121,9 @@ private:
 	bool bMercyNoteRevealed = false;
 	bool bMercyNoteSliding = false;
 	int32 CaptureCount = 0;
+	/** 이번 리셋이 위층 사람이 아닌 괴이의 것이다. 공격성 단계를 올리지 않는다. */
+	bool bExternalCaptureInFlight = false;
+	double LastCaptureSeconds = -1000.0;
 	float MercyNoteSlideElapsedSeconds = 0.0f;
 	FTimerHandle ResetTimer;
 	FTimerHandle CaptureFadeTimer;

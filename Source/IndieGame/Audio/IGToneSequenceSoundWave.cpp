@@ -585,6 +585,29 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateScannerBeep(UObject* O
 	return Wave;
 }
 
+UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDoorlockCode(UObject* Outer)
+{
+	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGDoorlockCode"));
+	TArray<FIGToneNote> Notes;
+	// 번호 넷은 사람 손이라 간격이 고르지 않다. 확인 키는 조금 낮다.
+	Notes.Add({0.00f, 0.065f, 2349.0f, 0.130f, 0.03f, 0.8f, EIGToneWaveform::SoftSquare});
+	Notes.Add({0.31f, 0.065f, 2349.0f, 0.130f, 0.03f, 0.8f, EIGToneWaveform::SoftSquare});
+	Notes.Add({0.58f, 0.065f, 2349.0f, 0.130f, 0.03f, 0.8f, EIGToneWaveform::SoftSquare});
+	Notes.Add({0.92f, 0.065f, 2349.0f, 0.130f, 0.03f, 0.8f, EIGToneWaveform::SoftSquare});
+	Notes.Add({1.30f, 0.085f, 1976.0f, 0.130f, 0.03f, 0.8f, EIGToneWaveform::SoftSquare});
+	// 풀리는 음. 도·미·솔·도로 오른다.
+	Notes.Add({1.62f, 0.075f, 1047.0f, 0.110f, 0.05f, 1.2f, EIGToneWaveform::Triangle});
+	Notes.Add({1.70f, 0.075f, 1319.0f, 0.110f, 0.05f, 1.2f, EIGToneWaveform::Triangle});
+	Notes.Add({1.78f, 0.075f, 1568.0f, 0.110f, 0.05f, 1.2f, EIGToneWaveform::Triangle});
+	Notes.Add({1.86f, 0.140f, 2093.0f, 0.110f, 0.05f, 1.6f, EIGToneWaveform::Triangle});
+	// 모터가 잠금쇠를 끌어당기고 끝에서 철컥.
+	Notes.Add({2.02f, 0.32f, 380.0f, 0.070f, 0.15f, 1.0f, EIGToneWaveform::BandNoise, 0.45f});
+	Notes.Add({2.34f, 0.03f, 1400.0f, 0.090f, 0.05f, 1.0f, EIGToneWaveform::ValueNoise});
+	Notes.Add({2.34f, 0.08f, 92.0f, 0.110f, 0.01f, 2.4f, EIGToneWaveform::Sine});
+	Wave->ConfigureNotes(MoveTemp(Notes), false);
+	return Wave;
+}
+
 UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateRegisterSound(UObject* Outer)
 {
 	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGRegisterSound"));
@@ -1607,6 +1630,32 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateEntityBreathLoop(UObje
 	Notes.Add({2.75f, 0.03f, 2400.0f, 0.045f, 0.10f, 1.0f, EIGToneWaveform::WhiteNoise});
 	Wave->ConfigureNotes(MoveTemp(Notes), true, LoopSeconds);
 	Wave->ConfigurePitchWow(0.006f, 0.19f);
+	return Wave;
+}
+
+UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDarknessInhale(UObject* Outer)
+{
+	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGDarknessInhale"));
+	TArray<FIGToneNote> Notes;
+	// 목소리 없는 바람이 길게 차오른다. 그 밑에 귀보다 몸으로 듣는 저음.
+	Notes.Add({0.00f, 1.60f, 240.0f, 0.100f, 0.75f, 1.0f, EIGToneWaveform::BandNoise, 0.25f});
+	Notes.Add({0.10f, 1.50f, 420.0f, 0.060f, 0.70f, 1.2f, EIGToneWaveform::BandNoise, 0.35f});
+	Notes.Add({0.20f, 1.40f, 38.0f, 0.050f, 0.60f, 1.0f, EIGToneWaveform::Sub});
+	Wave->ConfigureNotes(MoveTemp(Notes), false);
+	return Wave;
+}
+
+UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateDarknessBreathLoop(UObject* Outer)
+{
+	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGDarknessBreathLoop"));
+	constexpr float LoopSeconds = 3.6f;
+	TArray<FIGToneNote> Notes;
+	// 위층 사람의 숨보다 느리고 목이 울리지 않는다. 사람의 숨이 아니라 방이 숨 쉰다.
+	Notes.Add({0.00f, 1.40f, 260.0f, 0.080f, 0.60f, 1.1f, EIGToneWaveform::BandNoise, 0.30f});
+	Notes.Add({1.70f, 1.60f, 170.0f, 0.070f, 0.25f, 1.0f, EIGToneWaveform::BandNoise, 0.30f});
+	Notes.Add({0.00f, 3.60f, 33.0f, 0.035f, 0.30f, 0.8f, EIGToneWaveform::Sub});
+	Wave->ConfigureNotes(MoveTemp(Notes), true, LoopSeconds);
+	Wave->ConfigurePitchWow(0.004f, 0.12f);
 	return Wave;
 }
 

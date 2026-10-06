@@ -153,6 +153,12 @@ public:
 	/** Single barcode-scanner beep. */
 	static UIGToneSequenceSoundWave* CreateScannerBeep(UObject* Outer);
 
+	/**
+	 * 밖에서 누르는 디지털 도어락. 사람 손 박자로 넷, 확인 하나, 그리고 풀리는
+	 * 「띠리리릭」과 모터·걸림쇠. 우리나라 현관에서 가장 익숙한 소리다.
+	 */
+	static UIGToneSequenceSoundWave* CreateDoorlockCode(UObject* Outer);
+
 	/** Register confirmation beeps with a cash-drawer clunk. */
 	static UIGToneSequenceSoundWave* CreateRegisterSound(UObject* Outer);
 
@@ -314,6 +320,12 @@ public:
 
 	/** 그의 숨. 3.2초 루프, 들이쉬고 목이 울리고 내쉰다. 가까울수록 커진다. */
 	static UIGToneSequenceSoundWave* CreateEntityBreathLoop(UObject* Outer);
+
+	/** 어둠이 숨을 들이쉰다. 어둑시니가 나타나는 소리. 목소리가 없는 바람이다. */
+	static UIGToneSequenceSoundWave* CreateDarknessInhale(UObject* Outer);
+
+	/** 어둑시니의 숨. 3.6초 루프. 쳐다볼수록 커지게 볼륨은 부르는 쪽이 올린다. */
+	static UIGToneSequenceSoundWave* CreateDarknessBreathLoop(UObject* Outer);
 
 	/** 무엇을 들었을 때: 날카롭게 들이쉬고 낮게 으르렁. 조사가 시작되는 소리. */
 	static UIGToneSequenceSoundWave* CreateEntityAlertVocal(UObject* Outer);
