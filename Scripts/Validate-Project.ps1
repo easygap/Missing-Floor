@@ -1231,9 +1231,19 @@ $frontendContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-FrontendContract.ps1'
 & $frontendContractScript
 
+# System.Drawing.Common은 .NET 6부터 Windows에서만 돈다. 이 검사들은 맑은 고딕 글자 폭과
+# 그림 크기를 재는 것이라 다른 운영체제에서는 잴 대상 자체가 없다. 건너뛴 사실은 남긴다.
+function Invoke-WindowsOnlyContract([string]$ContractScript) {
+	if ($IsLinux -or $IsMacOS) {
+		Write-Host "SKIP $(Split-Path -Leaf $ContractScript) — System.Drawing은 Windows 전용"
+		return
+	}
+	& $ContractScript
+}
+
 $artAssetContractScript = Join-Path $projectRoot `
 	'Scripts/Test-ArtAssetContract.ps1'
-& $artAssetContractScript
+Invoke-WindowsOnlyContract $artAssetContractScript
 
 $missingFloorM0InputContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-M0InputContract.ps1'
@@ -1289,7 +1299,7 @@ $missingFloorM6AudioVisualContractScript = Join-Path $projectRoot `
 
 $missingFloorM65MercyNoteContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-M65MercyNoteContract.ps1'
-& $missingFloorM65MercyNoteContractScript
+Invoke-WindowsOnlyContract $missingFloorM65MercyNoteContractScript
 
 # §20 난이도 네 모드와 자비 안전망. 파일은 있었는데 아무도 부르지
 # 않아서 108개 단언이 그냥 안 돌고 있었다.
@@ -1299,7 +1309,7 @@ $missingFloorM8DifficultyContractScript = Join-Path $projectRoot `
 
 $missingFloorM65AudioCalibrationContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-M65AudioCalibrationContract.ps1'
-& $missingFloorM65AudioCalibrationContractScript
+Invoke-WindowsOnlyContract $missingFloorM65AudioCalibrationContractScript
 
 $missingFloorM3CctvChannelContractScript = Join-Path $projectRoot `
 	'Scripts/Test-MissingFloor-M3CctvChannelContract.ps1'
