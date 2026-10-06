@@ -316,6 +316,13 @@ void AIGNightThreatDirector::Update()
 	UpdateEoduksini(DeltaSeconds);
 }
 
+bool AIGNightThreatDirector::IsCaptureAllowed() const
+{
+	// 난이도는 위층 사람의 튜닝이 들고 있다. 그가 잡지 않는 밤이면 아무도 잡지 않는다.
+	const AIGListenerEntity* Upstairs = Listener.Get();
+	return !Upstairs || Upstairs->GetTuning().bCaptureEnabled;
+}
+
 bool AIGNightThreatDirector::IsQuietWindow() const
 {
 	const UWorld* World = GetWorld();
@@ -443,12 +450,16 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 
 	if (EoduksiniCaptureSeconds >= 0.0)
 	{
-		// 삼키는 중. 화면이 끊기고 침대로 옮겨질 때까지 그 자리에 둔다.
+		// 삼키는 중. 화면이 끊기고 침대로 옮겨질 때까지 그 자리에 둔다. 잡지 않는
+		// 난이도에서는 리셋이 없으니 덮쳐 오는 1.4초를 다 보여 주고 흩어진다.
 		const AIGNightLoopDirector* Loop = NightLoop.Get();
-		if (Now - EoduksiniCaptureSeconds > 1.4 || (Loop && !Loop->IsCaptureResetInFlight()))
+		const bool bResetSettled = !bEoduksiniHarmlessLunge && Loop && !Loop->IsCaptureResetInFlight();
+		if (Now - EoduksiniCaptureSeconds > 1.4 || bResetSettled)
 		{
+			const bool bWasHarmless = bEoduksiniHarmlessLunge;
 			EoduksiniCaptureSeconds = -1.0;
-			DismissEoduksini(true);
+			bEoduksiniHarmlessLunge = false;
+			DismissEoduksini(!bWasHarmless);
 		}
 		return;
 	}
@@ -586,7 +597,17 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 			200.0f,
 			1200.0f,
 			EIGAudioBus::Entity);
-		if (AIGNightLoopDirector* Loop = NightLoop.Get())
+		if (!IsCaptureAllowed())
+		{
+			// 추격 없음. 덮쳐 오다 흩어진다. 놀람만 남고 침대로 가지 않는다.
+			bEoduksiniHarmlessLunge = true;
+			if (UIGStressComponent* Stress = Player->GetStress())
+			{
+				Stress->ApplyScare(0.6f);
+			}
+			Player->PlayScareKick(1.3f);
+		}
+		else if (AIGNightLoopDirector* Loop = NightLoop.Get())
 		{
 			Loop->RequestExternalCapture(Player);
 		}
@@ -748,6 +769,9 @@ void AIGNightThreatDirector::DismissEoduksini(const bool bSilently)
 	}
 	EoduksiniGrowth = 0.0f;
 	EoduksiniUnseenSeconds = 0.0f;
+	// 덮치던 중에 밤이 끝나도 다음 밤에 그 상태가 남지 않게 한다.
+	EoduksiniCaptureSeconds = -1.0;
+	bEoduksiniHarmlessLunge = false;
 	if (const UWorld* World = GetWorld())
 	{
 		EoduksiniCooldownUntil = World->GetTimeSeconds() + IGNightThreat::ManifestCooldownSeconds;
@@ -1160,6 +1184,16 @@ void AIGNightThreatDirector::BeginGuestCapture()
 	}
 	bGuestCapturing = true;
 	GuestCaptureSeconds = World->GetTimeSeconds();
+	if (!IsCaptureAllowed())
+	{
+		// 추격 없음. 코앞까지 와서 1.4초 서 있다가 흩어진다. 침대로 가지 않는다.
+		if (UIGStressComponent* Stress = Player->GetStress())
+		{
+			Stress->ApplyScare(0.6f);
+		}
+		Player->PlayScareKick(1.3f);
+		return;
+	}
 	if (AIGNightLoopDirector* Loop = NightLoop.Get())
 	{
 		Loop->RequestExternalCapture(Player);

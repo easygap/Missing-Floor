@@ -77,6 +77,8 @@ protected:
 private:
 	void Update();
 	bool IsQuietWindow() const;
+	/** 추격 없음(듣기만 하는 밤)이면 거짓이다. 그때는 아무도 잡지 않고 놀래기만 한다. */
+	bool IsCaptureAllowed() const;
 	FVector GetPlayerEye() const;
 	bool IsPlayerLookingAt(const FVector& Target, float HalfAngleDegrees, const AActor* Ignored) const;
 	bool IsTorchOn(const FVector& Target) const;
@@ -145,6 +147,8 @@ private:
 	float EoduksiniUnseenSeconds = 0.0f;
 	double EoduksiniCooldownUntil = 0.0;
 	double EoduksiniCaptureSeconds = -1.0;
+	/** 덮쳐 왔지만 잡지 않는 중이다(추격 없음). 리셋을 기다리지 않고 1.4초 뒤에 흩어진다. */
+	bool bEoduksiniHarmlessLunge = false;
 	bool bEoduksiniWarned = false;
 
 	// 손님
