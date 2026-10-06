@@ -167,7 +167,7 @@ void AIGShadowFigure::DressAsPaper()
 		Sheets.Add(Component);
 		++Index;
 	}
-	// 얼굴 자리의 배달 자석. 「문 앞에 두고 갑니다」.
+	// 얼굴 자리에는 403호 문에 붙어 있던 통닭집 자석이 붙는다.
 	if (UStaticMesh* Magnet = LoadObject<UStaticMesh>(
 			nullptr, TEXT("/Game/Meshes/SM_DoorDeliveryMagnet.SM_DoorDeliveryMagnet"), nullptr, LOAD_NoWarn))
 	{
