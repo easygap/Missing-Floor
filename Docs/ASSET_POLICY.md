@@ -37,7 +37,7 @@
 | `/Game/Meshes/SM_PocketFlashlight`, `SM_ServicePressurePanel` | 직접 제작 (gpt-image 형태 참고·바탕 그림 → Blender 모델링·베이크) | 프로젝트 소유 | 2026-10-02 | 원본 | `Content/SourceArt/AI/PocketFlashlight_20261002.png`, `PlasterPressure_20261002.png`(+JSON), `Scripts/blender/build_pocket_flashlight.py`, `build_service_pressure_panel.py` | 현관 손전등과 들뜬 보수판 |
 | `/Game/Meshes/SM_ListenerEntityCrawl, SM_AlleyCatRun, SM_MokHansooFigure, SM_FinalCavityRemains` | 직접 제작 (기준 시트 한 칸 → ComfyUI 네이티브 TRELLIS.2 형상 생성 → Blender 다듬기) | 프로젝트 소유. TRELLIS.2 가중치 MIT(Microsoft, Comfy-Org 재포장), DINOv3 Meta 제한 허가, BiRefNet MIT | 2026-09-08 | 원본 | `Content/SourceArt/Generated/<이름>/<시도>/generation.json`, `Scripts/generate_3d_comfy.py`, `Scripts/blender/refine_generated.py` | 입력은 우리 기준 시트뿐. Hunyuan3D는 한국 제외 라이선스라 쓰지 않는다 |
 | `/Game/Prototype/Textures/T_<Blender 에셋>_{D,N,ORM,E}` · `/Game/Prototype/Materials/M_IGBakedProp, MI_*` | 직접 제작 (Cycles 베이크, UE 마스터 재질 인스턴스) | 프로젝트 소유 | 2026-09-04 | 원본 | `Scripts/import_blender_assets.py` | 에셋마다 한 세트. ORM은 AO·거칠기·금속성 채널 |
-| `/Game/Prototype/Textures/T_Label* · T_Snack*` | 직접 제작 (System.Drawing) — 가상 브랜드, 실제 상표 미사용 | 프로젝트 소유 | 2026-07-25 | 원본 | `Scripts/Create-RetailGraphics.ps1`, `Scripts/Prepare-AIArt.ps1` | 제품 라벨·봉지 아트. 소주 라벨은 7월 스크립트로 그린 PNG만 인쇄 아틀라스 원본으로 남아 있다 |
+| `/Game/Prototype/Textures/T_Label*` | 직접 제작 (System.Drawing) — 가상 브랜드, 실제 상표 미사용 | 프로젝트 소유 | 2026-07-25 | 원본 | `Scripts/Create-RetailGraphics.ps1`, `Scripts/Prepare-AIArt.ps1` | 제품 라벨 아트 |
 | `Content/SourceArt/Labels/Store/CigarettePacks.png` (담뱃갑 앞면 8) | 직접 제작 (PIL) — 가상 브랜드, 실제 상표·전화번호 미사용, 담뱃갑 경고면은 글자만 | 프로젝트 소유 | 2026-09-08 | 원본 | `Scripts/create_store_product_art.py` | 담배 진열장 빌더가 담뱃갑 앞면에 붙여 굽는 입력. 게임 텍스처로 직접 쓰지 않는다 |
 | `/Game/Prototype/Textures/T_Sign* · T_Poster* · T_Note*` | 직접 제작 (System.Drawing + 시스템 폰트) | 프로젝트 소유 | 2026-07-19 | 원본 | `Scripts/Create-SignTextures.ps1` | 한글 간판·포스터 |
 | `/Game/Prototype/Textures/T_(Jangpan·Wallpaper·…)_{D,N,R}` | 직접 제작 (절차 생성) | 프로젝트 소유 | 2026-07-19 | 원본 | `Scripts/generate_surface_textures.py` | 사진 텍스처 폴백 |
@@ -60,13 +60,11 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 | 원본 | 산출 텍스처 | 내용 |
 |---|---|---|
 | `LabelWater_raw.png` | `T_LabelWater_D` | 새벽샘물 생수 라벨 (미세문구 재작성) |
-| `LabelRamyeon_raw.png` | `T_LabelRamyeon_D` | 왕라면 컵라면 라벨 |
 | `SignMain_raw.png` | `T_SignMain_D` | 새벽24 무영로점 파사드 간판 |
-| `SheetSnacks.png` | `T_SnackShrimp_D` · `T_SnackPotato_D` · `T_SnackSquid_D` · `T_SnackCorn_D` | 과자 봉지 4종 (새우빵·감자스낵·오징어칩·콘스낵) |
-| `SheetBottles.png` | `T_LabelGreenTea_D` · `T_LabelBarley_D` · `T_LabelSoda_D` · `T_LabelSoju_D` | 음료 라벨 4종 (산들녹차·구수한보리·톡소다·새벽이슬) |
+| `SheetBottles.png` | `T_LabelGreenTea_D` · `T_LabelBarley_D` · `T_LabelSoda_D` | 음료 라벨 3종 (산들녹차·구수한보리·톡소다). 넷째 칸 새벽이슬 소주 라벨은 쓰는 곳이 없어 2026-10-07에 뺐다 |
 | `SheetSigns.png` | `T_SignLaundry_D` · `T_SignHair_D` · `T_SignHof_D` · `T_SignSuper_D` · `T_SignPC_D` · `T_SignKaraoke_D` | 골목 상가 간판 6종 |
-| `SheetPosters.png` | `T_PosterSale_D` · `T_PosterRamyeon_D` · `T_PosterFlyer_D` · `T_NoticeRent_D` | 편의점·골목 인쇄물 4종 |
-| `SheetPaperNotes_v2.png` | `T_PaperClean_V2_D` · `T_PaperWet_V2_D` · `T_PaperFolded_V2_D` · `T_PaperOld_V2_D` | CH02 문서용 빈 종이 4종(깨끗함·젖음·접힘·낡음). 한국어와 영수증 정보는 런타임 텍스트로 표시 |
+| `SheetPosters.png` | `T_PosterSale_D` | 편의점 1+1 포스터. 나머지 세 칸(라면 포스터·골목 전단·월세 공지)은 쓰는 곳이 없어 2026-10-07에 뺐다 |
+| `SheetPaperNotes_v2.png` | `T_PaperClean_V2_D` · `T_PaperOld_V2_D` | 빈 종이 네 칸 가운데 깨끗한 종이와 낡은 종이 둘만 쓴다. 한국어와 영수증 정보는 런타임 텍스트로 표시 |
 | `SheetHorrorSurfaceBlends.png` | `T_DecalDampWallpaper_D` | 네 칸 가운데 젖은 벽지 얼룩 한 칸만 쓴다(`M_DecalDampWallpaper`). 마젠타 키 제거 후 RGBA 마스크드 오버레이로 사용 |
 | `SheetEvidenceProps.png` | 직접 텍스처로 사용하지 않음 | 뿔테 안경·점검봉·금 간 휴대폰·편의점 봉지를 한 장에 그린 형상·재질 기준. 지금은 금 간 휴대폰(`SM_CrackedPhone`)만 이 시트로 만든다 |
 | `SheetAlleyCatPoseReference.png` | 직접 텍스처로 사용하지 않음 | 동일한 고등어태비의 좌측 달리기·정면 3/4·정지·후면 3/4 비례 기준. `SM_AlleyCatRun` 정적 메시로 재구성 |
@@ -103,13 +101,13 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 
 ## 아틀라스·LOD·물리 배치 계약
 
-인쇄 아트 51장은 `Content/SourceArt/Atlas/`의 공유 페이지로 묶고, 절차
+인쇄 아트 25장은 `Content/SourceArt/Atlas/`의 공유 페이지로 묶고, 절차
 메시와 스캔 프롭은 등급별 삼각형 예산과 저작 LOD 체인을 받는다. 코드로
 배치한 월드 지오메트리는 물리적으로 불가능한 배치가 없는지 검사를 통과해야
 한다. 세 계약의 수치·검사·실행 순서는 `ASSET_OPTIMISATION.md`에 있다.
 
 한 번의 생성에 5분이 걸리므로 낱장 대신 **격자 시트**로 묶어 뽑고 슬라이스합니다.
-현재 134장의 파생 텍스처(기존 85장 + 없는 층 PBR·마스크·디테일 48장 + 최초 실행 보정 배경 1장)와
+현재 124장의 파생 텍스처(기존 75장 + 없는 층 PBR·마스크·디테일 48장 + 최초 실행 보정 배경 1장)와
 증거·생물·설비·인체·사고 프롭 기준 시트를 관리합니다. 2026-08-06
 추가분은 생성 실패를 그대로 채택하지 않고 슬리퍼 밑창과 빗물 때를 각각
 한 차례 수정 생성했습니다.
@@ -215,13 +213,12 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 원본 크기: 1254×1254
 - 파생 파일:
   - `Content/Prototype/Textures/T_PaperClean_V2_D.uasset`
-  - `Content/Prototype/Textures/T_PaperWet_V2_D.uasset`
-  - `Content/Prototype/Textures/T_PaperFolded_V2_D.uasset`
   - `Content/Prototype/Textures/T_PaperOld_V2_D.uasset`
-- 적용: `Scripts/Prepare-AIArt.ps1`이 2×2 시트를 네 장으로 분리하고,
+- 적용: `Scripts/Prepare-AIArt.ps1`이 2×2 시트에서 두 칸을 잘라 내고,
   `Scripts/create_textured_materials.py`가 `M_PaperClean`, `M_PaperOld`
-  머티리얼에 V2 텍스처를 연결합니다. 젖은 종이·접힌 종이 재질은 쓰는 곳이
-  없어 2026-09-30에 뺐고, 두 텍스처는 인쇄 아틀라스 자리로만 남아 있습니다.
+  머티리얼에 V2 텍스처를 연결합니다. 젖은 종이·접힌 종이는 쓰는 곳이 없어
+  머티리얼은 2026-09-30에, 텍스처는 2026-10-07에 인쇄 아틀라스를 다시 구우면서
+  뺐습니다.
 - 이전 V1 시트(`SheetPaper.png`)는 종이가 아니라 새우 과자 봉지 그림이었습니다.
   2026-09-30에 파생 텍스처와 함께 지웠습니다.
 

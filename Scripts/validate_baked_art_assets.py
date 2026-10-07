@@ -410,6 +410,10 @@ def validate_print_atlas() -> int:
             texture.get_editor_property("address_y") == unreal.TextureAddress.TA_CLAMP,
             f"Atlas page wraps in V; entries would bleed across: {path}",
         )
+        require(
+            texture.get_editor_property("never_stream"),
+            f"아틀라스 페이지가 스트리밍된다. 인쇄물 글자가 낮은 밉으로 뭉개진다: {path}",
+        )
         # Pages are only as big as their own contents need, so each one is
         # checked against its own recorded shape. An imported page that is not
         # the shape the manifest packed means the UV rects address the wrong

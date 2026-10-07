@@ -529,7 +529,6 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 			'Content\Prototype\Textures\T_Plate401_D.uasset',
 			'Content\Prototype\Textures\T_Plate402_D.uasset',
 			'Content\Prototype\Textures\T_Plate403_D.uasset',
-			'Content\Prototype\Textures\T_PlateCommon_D.uasset',
 			'Content\Prototype\Textures\T_SignAux5MonitorOnly_D.uasset',
 			'Content\Prototype\Materials\M_CaptureMercyNote.uasset',
 			'Content\Prototype\Materials\M_MercyNoteUnderDoor.uasset',
@@ -727,7 +726,7 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 			},
 			@{
 				Script = 'generate_surface_textures.py'
-				SuccessPattern = '\[IndieGame\] Imported 8 textures'
+				SuccessPattern = '\[IndieGame\] Imported 6 textures'
 				TargetEnvironment = $true
 			},
 			@{
@@ -1081,7 +1080,6 @@ $requiredAssets = @(
 	'Content\Prototype\Materials\M_SpriteMokFinalUpper.uasset',
 	'Content\Prototype\Textures\T_NoteFridge_D.uasset',
 	'Content\Prototype\Textures\T_LabelWater_D.uasset',
-	'Content\Prototype\Textures\T_LabelRamyeon_D.uasset',
 	'Content\Prototype\Materials\M_NoteFridge.uasset',
 	'Content\Prototype\Materials\M_LabelWater.uasset'
 )

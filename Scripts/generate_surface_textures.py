@@ -107,7 +107,6 @@ CORRIDOR_SIGNAGE_TEXTURE_NAMES = {
     "T_Plate401_D",
     "T_Plate402_D",
     "T_Plate403_D",
-    "T_PlateCommon_D",
     "T_SignAux5MonitorOnly_D",
 }
 PROP_RESPONSE_ONLY = os.environ.get("IG_PROP_RESPONSE_ONLY") == "1"

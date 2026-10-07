@@ -20,45 +20,25 @@
       "x": 0,
       "y": 0
     },
-    "T_Banner_D": {
-      "h": 128,
-      "page": 2,
-      "source_sha256": "13ef6f5b33f1dc25b91e2ba5aed65bfc8f64e22240ff53d790f7ec7b27f3ab50",
-      "source_size": [
-        1024,
-        128
-      ],
-      "uv_bias": [
-        0.2578125,
-        0.5673828125
-      ],
-      "uv_scale": [
-        0.5,
-        0.0625
-      ],
-      "w": 1024,
-      "x": 528,
-      "y": 1162
-    },
     "T_Calendar_D": {
       "h": 320,
-      "page": 2,
+      "page": 0,
       "source_sha256": "22249d0b62d56acea6e837d857138681deb44ed4c3cf7088ac37a32a9c307e16",
       "source_size": [
         256,
         320
       ],
       "uv_bias": [
-        0.515625,
-        0.2626953125
+        0.81640625,
+        0.609375
       ],
       "uv_scale": [
         0.125,
         0.15625
       ],
       "w": 256,
-      "x": 1056,
-      "y": 538
+      "x": 1672,
+      "y": 1248
     },
     "T_CaptureMercyNote_D": {
       "h": 640,
@@ -80,130 +60,50 @@
       "x": 0,
       "y": 0
     },
-    "T_DoorAd_D": {
-      "h": 256,
-      "page": 2,
-      "source_sha256": "a580afad4861828f0c38c08f8d91642828d498936b8ae779c7ae0c50f9dfd73f",
-      "source_size": [
-        256,
-        256
-      ],
-      "uv_bias": [
-        0.578125,
-        0.4267578125
-      ],
-      "uv_scale": [
-        0.125,
-        0.125
-      ],
-      "w": 256,
-      "x": 1184,
-      "y": 874
-    },
     "T_DoorLock_D": {
       "h": 512,
-      "page": 1,
+      "page": 0,
       "source_sha256": "4a5547cf3e21abc88f6e7dc9deae9fad925a8153a9c59b44a5a90c7a7b0065d0",
       "source_size": [
         192,
         512
       ],
       "uv_bias": [
-        0.8671875,
-        0.515625
+        0.71484375,
+        0.609375
       ],
       "uv_scale": [
         0.09375,
         0.25
       ],
       "w": 192,
-      "x": 1776,
-      "y": 1056
-    },
-    "T_ElevatorPanel_D": {
-      "h": 96,
-      "page": 1,
-      "source_sha256": "efbf2e555220069cbb1e030b56ea069647b7c9384df27c1989185fea1c74433a",
-      "source_size": [
-        128,
-        96
-      ],
-      "uv_bias": [
-        0.9296875,
-        0.953125
-      ],
-      "uv_scale": [
-        0.0625,
-        0.046875
-      ],
-      "w": 128,
-      "x": 1904,
-      "y": 1952
-    },
-    "T_FireBox_D": {
-      "h": 320,
-      "page": 2,
-      "source_sha256": "8f8ec3792d1d7768ffb5cfc7442dd4419bdc7b6fd6179a1d9733f7ec3a69d894",
-      "source_size": [
-        256,
-        320
-      ],
-      "uv_bias": [
-        0.765625,
-        0.0
-      ],
-      "uv_scale": [
-        0.125,
-        0.15625
-      ],
-      "w": 256,
-      "x": 1568,
-      "y": 0
+      "x": 1464,
+      "y": 1248
     },
     "T_Intercom_D": {
       "h": 320,
-      "page": 2,
+      "page": 0,
       "source_sha256": "971adaae1fa5d00deff60272a8cc296ed33a314c749dfa6da09c85a87b97e91c",
       "source_size": [
         256,
         320
       ],
       "uv_bias": [
-        0.765625,
-        0.1640625
+        0.81640625,
+        0.7734375
       ],
       "uv_scale": [
         0.125,
         0.15625
       ],
       "w": 256,
-      "x": 1568,
-      "y": 336
+      "x": 1672,
+      "y": 1584
     },
     "T_LabelBarley_D": {
       "h": 256,
       "page": 1,
       "source_sha256": "ad800545e19bbc92160da2c32753e7de372e09f7f7f9396dedafb75ba4d91d56",
-      "source_size": [
-        1024,
-        256
-      ],
-      "uv_bias": [
-        0.0,
-        0.8515625
-      ],
-      "uv_scale": [
-        0.5,
-        0.125
-      ],
-      "w": 1024,
-      "x": 0,
-      "y": 1744
-    },
-    "T_LabelGreenTea_D": {
-      "h": 256,
-      "page": 2,
-      "source_sha256": "2afb7f4f342c648aa40f790efe423d6ef4bc0a2c12024d08c4115ccfd707a2ae",
       "source_size": [
         1024,
         256
@@ -220,30 +120,10 @@
       "x": 0,
       "y": 1312
     },
-    "T_LabelRamyeon_D": {
-      "h": 250,
-      "page": 2,
-      "source_sha256": "2876712111be4d9df80e6214b18e55d13f26520d142905db3155fade4c1865c5",
-      "source_size": [
-        1024,
-        250
-      ],
-      "uv_bias": [
-        0.2578125,
-        0.1328125
-      ],
-      "uv_scale": [
-        0.5,
-        0.1220703125
-      ],
-      "w": 1024,
-      "x": 528,
-      "y": 272
-    },
-    "T_LabelSoda_D": {
+    "T_LabelGreenTea_D": {
       "h": 256,
-      "page": 2,
-      "source_sha256": "439f43a096d3d469e09fc965e492d19dfaa3be9ea51a6bc26eda2e94c12a3fac",
+      "page": 1,
+      "source_sha256": "2afb7f4f342c648aa40f790efe423d6ef4bc0a2c12024d08c4115ccfd707a2ae",
       "source_size": [
         1024,
         256
@@ -260,25 +140,25 @@
       "x": 0,
       "y": 1584
     },
-    "T_LabelSoju_D": {
-      "h": 416,
-      "page": 1,
-      "source_sha256": "10ab024184d359da846c6b8fe08a9d28daeae50ee72a4262f46147d782cbd8ff",
+    "T_LabelSoda_D": {
+      "h": 256,
+      "page": 2,
+      "source_sha256": "439f43a096d3d469e09fc965e492d19dfaa3be9ea51a6bc26eda2e94c12a3fac",
       "source_size": [
         1024,
-        416
+        256
       ],
       "uv_bias": [
         0.0,
-        0.640625
+        0.0
       ],
       "uv_scale": [
-        0.5,
-        0.203125
+        1.0,
+        0.25
       ],
       "w": 1024,
       "x": 0,
-      "y": 1312
+      "y": 0
     },
     "T_LabelWater_D": {
       "h": 256,
@@ -289,56 +169,16 @@
         256
       ],
       "uv_bias": [
-        0.2578125,
-        0.0
+        0.0,
+        0.265625
       ],
       "uv_scale": [
-        0.5,
-        0.125
+        1.0,
+        0.25
       ],
       "w": 1024,
-      "x": 528,
-      "y": 0
-    },
-    "T_LiftCOP_D": {
-      "h": 768,
-      "page": 1,
-      "source_sha256": "e5682256df43668386467feea28ae94d06e96573562ec501020e815391bb5be0",
-      "source_size": [
-        192,
-        768
-      ],
-      "uv_bias": [
-        0.765625,
-        0.515625
-      ],
-      "uv_scale": [
-        0.09375,
-        0.375
-      ],
-      "w": 192,
-      "x": 1568,
-      "y": 1056
-    },
-    "T_LiftHall_D": {
-      "h": 160,
-      "page": 2,
-      "source_sha256": "df455ac559f232de2f5b2917b740fa77919f0bd88e24f809b82afc9bc1727d98",
-      "source_size": [
-        256,
-        160
-      ],
-      "uv_bias": [
-        0.515625,
-        0.8408203125
-      ],
-      "uv_scale": [
-        0.125,
-        0.078125
-      ],
-      "w": 256,
-      "x": 1056,
-      "y": 1722
+      "x": 0,
+      "y": 272
     },
     "T_MercyNoteUnderDoor_D": {
       "h": 640,
@@ -370,7 +210,7 @@
       ],
       "uv_bias": [
         0.71484375,
-        0.72265625
+        0.3515625
       ],
       "uv_scale": [
         0.25,
@@ -378,218 +218,78 @@
       ],
       "w": 512,
       "x": 1464,
-      "y": 1480
-    },
-    "T_NoticeA4_D": {
-      "h": 352,
-      "page": 1,
-      "source_sha256": "9823b13fbf0a8817a745f31586bbb6c428dbe1a66f3d85bee0e708d51fd57a42",
-      "source_size": [
-        256,
-        352
-      ],
-      "uv_bias": [
-        0.8671875,
-        0.7734375
-      ],
-      "uv_scale": [
-        0.125,
-        0.171875
-      ],
-      "w": 256,
-      "x": 1776,
-      "y": 1584
-    },
-    "T_NoticeRent_D": {
-      "h": 512,
-      "page": 1,
-      "source_sha256": "e5328a8e57d69b2ed6a07422a8e6b9c0170b1789708719553c7b4acc91715ea9",
-      "source_size": [
-        384,
-        512
-      ],
-      "uv_bias": [
-        0.765625,
-        0.0
-      ],
-      "uv_scale": [
-        0.1875,
-        0.25
-      ],
-      "w": 384,
-      "x": 1568,
-      "y": 0
-    },
-    "T_PaperFolded_V2_D": {
-      "h": 724,
-      "page": 0,
-      "source_sha256": "075246c6456c7156d8811e1dbd2144273af8dc3ecd7a3c81eab029efaaae355f",
-      "source_size": [
-        512,
-        724
-      ],
-      "uv_bias": [
-        0.71484375,
-        0.0
-      ],
-      "uv_scale": [
-        0.25,
-        0.353515625
-      ],
-      "w": 512,
-      "x": 1464,
-      "y": 0
-    },
-    "T_PaperWet_V2_D": {
-      "h": 724,
-      "page": 0,
-      "source_sha256": "752e6afa61f00ba23b3abb30ddb314346fff4ce1152c607d408651a5b860abf3",
-      "source_size": [
-        512,
-        724
-      ],
-      "uv_bias": [
-        0.71484375,
-        0.361328125
-      ],
-      "uv_scale": [
-        0.25,
-        0.353515625
-      ],
-      "w": 512,
-      "x": 1464,
-      "y": 740
+      "y": 720
     },
     "T_Plate401_D": {
       "h": 64,
-      "page": 1,
+      "page": 0,
       "source_sha256": "9287c7969ae9b422e7847d3d48a0e06fa26750dfa1a685cc0b7b18f4107688e7",
       "source_size": [
         128,
         64
       ],
       "uv_bias": [
-        0.765625,
-        0.8984375
+        0.71484375,
+        0.8671875
       ],
       "uv_scale": [
         0.0625,
         0.03125
       ],
       "w": 128,
-      "x": 1568,
-      "y": 1840
+      "x": 1464,
+      "y": 1776
     },
     "T_Plate402_D": {
       "h": 64,
-      "page": 2,
+      "page": 1,
       "source_sha256": "036093078fe0b4d8cd221f5a20ffb88df144f7054d27c4f4bfe8e442fda88c30",
       "source_size": [
         128,
         64
       ],
       "uv_bias": [
-        0.6484375,
-        0.2626953125
+        0.9375,
+        0.1328125
       ],
       "uv_scale": [
         0.0625,
         0.03125
       ],
       "w": 128,
-      "x": 1328,
-      "y": 538
+      "x": 1920,
+      "y": 272
     },
     "T_Plate403_D": {
       "h": 64,
-      "page": 2,
+      "page": 1,
       "source_sha256": "92f1e3c91fd09d40acd1ecfc1f2b3c5b150cf1ce270e783fc019f00693d9e985",
       "source_size": [
         128,
         64
       ],
       "uv_bias": [
-        0.90625,
-        0.0
-      ],
-      "uv_scale": [
-        0.0625,
-        0.03125
-      ],
-      "w": 128,
-      "x": 1856,
-      "y": 0
-    },
-    "T_PlateCommon_D": {
-      "h": 64,
-      "page": 2,
-      "source_sha256": "d7c62b44e3187487f38b345e3787cc6028023c833160bd0ddbb413ff49a38825",
-      "source_size": [
-        128,
-        64
-      ],
-      "uv_bias": [
-        0.90625,
-        0.0390625
-      ],
-      "uv_scale": [
-        0.0625,
-        0.03125
-      ],
-      "w": 128,
-      "x": 1856,
-      "y": 80
-    },
-    "T_PosterFlyer_D": {
-      "h": 512,
-      "page": 1,
-      "source_sha256": "dc6900cf0265fc871c66af1cf9873e814cbf0c82c9aace4577dc5f5c648cf0b9",
-      "source_size": [
-        384,
-        512
-      ],
-      "uv_bias": [
-        0.765625,
-        0.2578125
-      ],
-      "uv_scale": [
-        0.1875,
-        0.25
-      ],
-      "w": 384,
-      "x": 1568,
-      "y": 528
-    },
-    "T_PosterRamyeon_D": {
-      "h": 352,
-      "page": 2,
-      "source_sha256": "c3c2dac814d8fb3a89cd07db792d4f570e8c669995714a763f11413a23737257",
-      "source_size": [
-        512,
-        352
-      ],
-      "uv_bias": [
-        0.2578125,
-        0.2626953125
-      ],
-      "uv_scale": [
-        0.25,
+        0.9375,
         0.171875
       ],
-      "w": 512,
-      "x": 528,
-      "y": 538
+      "uv_scale": [
+        0.0625,
+        0.03125
+      ],
+      "w": 128,
+      "x": 1920,
+      "y": 352
     },
     "T_PosterSale_D": {
       "h": 704,
-      "page": 1,
+      "page": 0,
       "source_sha256": "39734ca40638665c59c3c2a3c2bec9dde091a2497e3ad0769994a42e50a06ce7",
       "source_size": [
         512,
         704
       ],
       "uv_bias": [
-        0.5078125,
+        0.71484375,
         0.0
       ],
       "uv_scale": [
@@ -597,72 +297,52 @@
         0.34375
       ],
       "w": 512,
-      "x": 1040,
+      "x": 1464,
       "y": 0
-    },
-    "T_SignAutoDoor_D": {
-      "h": 128,
-      "page": 2,
-      "source_sha256": "24115e6b9eb8f3307fd50d3dfee78cac80a7213e378892ab6d861715acebbf9b",
-      "source_size": [
-        256,
-        128
-      ],
-      "uv_bias": [
-        0.515625,
-        0.9267578125
-      ],
-      "uv_scale": [
-        0.125,
-        0.0625
-      ],
-      "w": 256,
-      "x": 1056,
-      "y": 1898
     },
     "T_SignAux5MonitorOnly_D": {
       "h": 240,
-      "page": 2,
+      "page": 1,
       "source_sha256": "b8d13ee4405e389d741922db14cc17fd4ddcd08cee12cc51d6404807e229f845",
       "source_size": [
         640,
         240
       ],
       "uv_bias": [
-        0.2578125,
-        0.4423828125
+        0.5078125,
+        0.0
       ],
       "uv_scale": [
         0.3125,
         0.1171875
       ],
       "w": 640,
-      "x": 528,
-      "y": 906
+      "x": 1040,
+      "y": 0
     },
     "T_SignHair_D": {
       "h": 128,
-      "page": 2,
+      "page": 0,
       "source_sha256": "e0cfc579f91892b2d990248597eb23847be3fc5688bd545e76dbfb1df38dcf4c",
       "source_size": [
         512,
         128
       ],
       "uv_bias": [
-        0.6484375,
-        0.328125
+        0.71484375,
+        0.9375
       ],
       "uv_scale": [
         0.25,
         0.0625
       ],
       "w": 512,
-      "x": 1328,
-      "y": 672
+      "x": 1464,
+      "y": 1920
     },
     "T_SignHof_D": {
       "h": 128,
-      "page": 2,
+      "page": 1,
       "source_sha256": "0fadb89b603476d580cba29a57529bfbe9f9b801bd903573be4768b5f3d51143",
       "source_size": [
         512,
@@ -682,7 +362,7 @@
     },
     "T_SignKaraoke_D": {
       "h": 128,
-      "page": 2,
+      "page": 1,
       "source_sha256": "65e65b947711c7e3460c570e20e09d862860b930447fabdb5e7decd38315e994",
       "source_size": [
         512,
@@ -702,83 +382,63 @@
     },
     "T_SignLaundry_D": {
       "h": 128,
-      "page": 2,
+      "page": 1,
       "source_sha256": "f0486ecc55485202bd3921cb91a43b5766bc35465e1afc790b636925acc7f6a6",
       "source_size": [
         512,
         128
       ],
       "uv_bias": [
-        0.7109375,
-        0.3984375
+        0.515625,
+        0.125
       ],
       "uv_scale": [
         0.25,
         0.0625
       ],
       "w": 512,
-      "x": 1456,
-      "y": 816
+      "x": 1056,
+      "y": 256
     },
     "T_SignPC_D": {
       "h": 128,
-      "page": 2,
+      "page": 1,
       "source_sha256": "20afd5023f8e08589fe526a1239ccfee7450b0b49afed7105c6d1610d0e0b49f",
       "source_size": [
         512,
         128
       ],
       "uv_bias": [
-        0.7109375,
-        0.46875
+        0.515625,
+        0.1953125
       ],
       "uv_scale": [
         0.25,
         0.0625
       ],
       "w": 512,
-      "x": 1456,
-      "y": 960
+      "x": 1056,
+      "y": 400
     },
     "T_SignSuper_D": {
       "h": 128,
-      "page": 2,
+      "page": 1,
       "source_sha256": "aa1eda7493f644b33b7e39e6a9f56742af95bfcb45d6edc5957a61a4438727da",
       "source_size": [
         512,
         128
       ],
       "uv_bias": [
-        0.5078125,
-        0.6376953125
+        0.515625,
+        0.265625
       ],
       "uv_scale": [
         0.25,
         0.0625
       ],
       "w": 512,
-      "x": 1040,
-      "y": 1306
-    },
-    "T_SignToilet_D": {
-      "h": 128,
-      "page": 2,
-      "source_sha256": "2e83b031a53b572a47d4456a3e116c4710ac4da3c26758d412c2ba02d016c0f9",
-      "source_size": [
-        256,
-        128
-      ],
-      "uv_bias": [
-        0.640625,
-        0.7080078125
-      ],
-      "uv_scale": [
-        0.125,
-        0.0625
-      ],
-      "w": 256,
-      "x": 1312,
-      "y": 1450
+      "x": 1056,
+      "y": 544
     },
     "T_SignVilla_D": {
       "h": 96,
@@ -789,136 +449,56 @@
         96
       ],
       "uv_bias": [
-        0.765625,
-        0.953125
+        0.7734375,
+        0.1328125
       ],
       "uv_scale": [
         0.15625,
         0.046875
       ],
       "w": 320,
-      "x": 1568,
-      "y": 1952
-    },
-    "T_SnackCorn_D": {
-      "h": 640,
-      "page": 1,
-      "source_sha256": "d092e28a8b8be53f68124be09fda005a68ca72fa3add837c3aa057cdca65a071",
-      "source_size": [
-        512,
-        640
-      ],
-      "uv_bias": [
-        0.5078125,
-        0.3515625
-      ],
-      "uv_scale": [
-        0.25,
-        0.3125
-      ],
-      "w": 512,
-      "x": 1040,
-      "y": 720
-    },
-    "T_SnackPotato_D": {
-      "h": 640,
-      "page": 1,
-      "source_sha256": "3ba8f14401385be87b01e6cbb65e2960c44d05871d4e89a1759d94d05f124086",
-      "source_size": [
-        512,
-        640
-      ],
-      "uv_bias": [
-        0.5078125,
-        0.671875
-      ],
-      "uv_scale": [
-        0.25,
-        0.3125
-      ],
-      "w": 512,
-      "x": 1040,
-      "y": 1376
-    },
-    "T_SnackShrimp_D": {
-      "h": 640,
-      "page": 2,
-      "source_sha256": "491be579d8eb1dc9d968c067a3628d9acabc98837783e2d9c57865bb0da7de37",
-      "source_size": [
-        512,
-        640
-      ],
-      "uv_bias": [
-        0.0,
-        0.0
-      ],
-      "uv_scale": [
-        0.25,
-        0.3125
-      ],
-      "w": 512,
-      "x": 0,
-      "y": 0
-    },
-    "T_SnackSquid_D": {
-      "h": 640,
-      "page": 2,
-      "source_sha256": "096d831ba95e27c31312e23fad44307a06bb372a8756944cab6b897526e89ad4",
-      "source_size": [
-        512,
-        640
-      ],
-      "uv_bias": [
-        0.0,
-        0.3203125
-      ],
-      "uv_scale": [
-        0.25,
-        0.3125
-      ],
-      "w": 512,
-      "x": 0,
-      "y": 656
+      "x": 1584,
+      "y": 272
     },
     "T_SwitchPlate_D": {
       "h": 256,
-      "page": 2,
+      "page": 1,
       "source_sha256": "8de94e241fa7992466fb72b9194975e785cf72fd394b63b0d47783c3bd48bbd8",
       "source_size": [
         256,
         256
       ],
       "uv_bias": [
-        0.5078125,
-        0.7080078125
+        0.828125,
+        0.0
       ],
       "uv_scale": [
         0.125,
         0.125
       ],
       "w": 256,
-      "x": 1040,
-      "y": 1450
+      "x": 1696,
+      "y": 0
     },
     "T_TobaccoNotice_D": {
       "h": 64,
-      "page": 2,
+      "page": 1,
       "source_sha256": "858694111ff6c1464b2b84226ac11634b5c12bfb590a9ec55cbe53b0503d170a",
       "source_size": [
         512,
         64
       ],
       "uv_bias": [
-        0.640625,
-        0.7783203125
+        0.515625,
+        0.3359375
       ],
       "uv_scale": [
         0.25,
         0.03125
       ],
       "w": 512,
-      "x": 1312,
-      "y": 1594
+      "x": 1056,
+      "y": 688
     }
   },
   "gutter": 8,
@@ -930,7 +510,7 @@
       "file": "Content/SourceArt/Atlas/T_PrintAtlas0_D.png",
       "height": 2048,
       "index": 0,
-      "occupancy": 0.9463,
+      "occupancy": 0.9355,
       "width": 2048
     },
     {
@@ -938,16 +518,16 @@
       "file": "Content/SourceArt/Atlas/T_PrintAtlas1_D.png",
       "height": 2048,
       "index": 1,
-      "occupancy": 0.9048,
+      "occupancy": 0.5869,
       "width": 2048
     },
     {
       "asset": "T_PrintAtlas2_D",
       "file": "Content/SourceArt/Atlas/T_PrintAtlas2_D.png",
-      "height": 2048,
+      "height": 1024,
       "index": 2,
-      "occupancy": 0.7383,
-      "width": 2048
+      "occupancy": 0.5,
+      "width": 1024
     }
   ],
   "version": 2

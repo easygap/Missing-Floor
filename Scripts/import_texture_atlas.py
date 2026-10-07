@@ -128,7 +128,14 @@ def import_texture_atlas() -> int:
         _set_if_supported(texture, "num_cinematic_mip_levels", 0)
         _set_if_supported(texture, "max_texture_size", 0)
         _set_if_supported(texture, "lod_bias", 0)
-        _set_if_supported(texture, "never_stream", False)
+        # 페이지는 스트리밍하지 않는다. 스트리머는 머티리얼이 UV를 엔트리 크기로
+        # 줄여 쓴다는 걸 모르고 메시가 페이지 전체를 덮는다고 계산해서, 필요한
+        # 밉을 몇 단계 낮게 잡는다. 같은 페이지의 다른 인쇄물이 가까이 있으면
+        # 우연히 맞고, 없으면 편의점 담배 판매 안내처럼 글자가 뭉개진다.
+        # 세 장을 다 올려 둬도 12 MB 남짓이다.
+        _require_property(
+            texture, "never_stream", True,
+            "the streamer underestimates mips for atlas UV rects")
         # BC7 keeps the small Korean type on the notices legible; the pages are
         # the only textures in the project where several signs share one block.
         _require_property(

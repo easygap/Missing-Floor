@@ -258,7 +258,7 @@ Require-All $artBuild @(
 	'Content\Prototype\Textures\T_SignAux5MonitorOnly_D.uasset',
 	'Content\Prototype\Materials\M_SignAux5MonitorOnly.uasset',
 	'Content\Prototype\Materials\M_CctvChannelFive.uasset',
-	"'\[IndieGame\] Imported 8 textures'"
+	"'\[IndieGame\] Imported 6 textures'"
 ) 'targeted bake manifest'
 
 # --- 검증 경로 -------------------------------------------------------------

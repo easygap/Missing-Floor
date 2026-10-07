@@ -153,7 +153,6 @@ $requiredEasterEggSigns = @{
 	'T_Plate401_D.png' = @(128, 64)
 	'T_Plate402_D.png' = @(128, 64)
 	'T_Plate403_D.png' = @(128, 64)
-	'T_PlateCommon_D.png' = @(128, 64)
 }
 foreach ($relativePath in @($requiredRaw + $requiredDerived)) {
 	$path = Join-Path $sourceArt $relativePath
@@ -495,7 +494,6 @@ foreach ($token in @(
 	'CORRIDOR_SIGNAGE_ONLY = os.environ.get("IG_CORRIDOR_SIGNAGE_ONLY") == "1"',
 	'CORRIDOR_SIGNAGE_TEXTURE_NAMES',
 	'"T_CaptureMercyNote_D"',
-	'"T_PlateCommon_D"',
 	'"T_NoteFridge_D",',
 	'"T_CaptureMercyNote_D",',
 	'asset_name.startswith("T_Plate")'

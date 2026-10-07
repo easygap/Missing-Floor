@@ -73,8 +73,6 @@ $requiredFiles = @(
 	'Build/Windows/ApplicationIcon.png',
 	'Build/Windows/Application.ico',
 	'Content/Prototype/Textures/T_PaperClean_V2_D.uasset',
-	'Content/Prototype/Textures/T_PaperWet_V2_D.uasset',
-	'Content/Prototype/Textures/T_PaperFolded_V2_D.uasset',
 	'Content/Prototype/Textures/T_PaperOld_V2_D.uasset',
 	'Content/Prototype/Textures/T_HudDialogueFilm_D.uasset',
 	'Content/UI/Textures/T_TitleBackground_D.uasset',

@@ -193,10 +193,10 @@ Assert-ContainsAll $buildScript @(
 	'Content\Prototype\Textures\T_CaptureMercyNote_D.uasset',
 	'Content\Prototype\Materials\M_CaptureMercyNote.uasset',
 	"SuccessPattern = '\[MESHGEN\] complete: 1/1 meshes'",
-	# 8번째는 §14 CCTV 채널 5의 AUX 5 라벨이다. 이 그룹은 세계 안의 작은
-	# 글자 데칼을 함께 굽는 자리이며, 라벨만 따로 굽는 경로를 새로 만들면
-	# 그 라벨이 지시하는 화면과 다른 시점에 갱신될 수 있다.
-	"SuccessPattern = '\[IndieGame\] Imported 8 textures'"
+	# 여섯 장은 401·402·403 문패, 메모 둘, §14 CCTV 채널 5의 AUX 5 라벨이다.
+	# 이 그룹은 세계 안의 작은 글자 데칼을 함께 굽는 자리이며, 라벨만 따로
+	# 굽는 경로를 새로 만들면 그 라벨이 지시하는 화면과 다른 시점에 갱신될 수 있다.
+	"SuccessPattern = '\[IndieGame\] Imported 6 textures'"
 ) 'M6.5 targeted art build'
 
 Assert-ContainsAll $greyboxHeader @(

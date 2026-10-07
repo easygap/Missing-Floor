@@ -44,29 +44,9 @@ $patchesWater = @(
 )
 
 $plan = @(
-    [pscustomobject]@{
-        Source = 'LabelRamyeon_raw'; Target = 'T_LabelRamyeon_D.png'
-        Crop = @(0.009, 0.125, 0.986, 0.771); Size = @(1024, 250)
-    }
     # Grid sheets: one generation carries four or six designs, which is the
     # only way to get twenty textures out of a tool that takes five minutes a
     # picture. Each cell is cut out separately by the same crop machinery.
-    [pscustomobject]@{
-        Source = 'SheetSnacks'; Target = 'T_SnackShrimp_D.png'
-        Crop = @(0.092, 0.006, 0.318, 0.484); Size = @(512, 640)
-    }
-    [pscustomobject]@{
-        Source = 'SheetSnacks'; Target = 'T_SnackPotato_D.png'
-        Crop = @(0.592, 0.004, 0.303, 0.476); Size = @(512, 640)
-    }
-    [pscustomobject]@{
-        Source = 'SheetSnacks'; Target = 'T_SnackSquid_D.png'
-        Crop = @(0.086, 0.508, 0.331, 0.487); Size = @(512, 640)
-    }
-    [pscustomobject]@{
-        Source = 'SheetSnacks'; Target = 'T_SnackCorn_D.png'
-        Crop = @(0.592, 0.515, 0.335, 0.476); Size = @(512, 640)
-    }
     [pscustomobject]@{
         Source = 'SheetSigns'; Target = 'T_SignLaundry_D.png'
         Crop = @(0.019, 0.011, 0.965, 0.148); Size = @(512, 128)
@@ -95,31 +75,11 @@ $plan = @(
         Source = 'SheetPosters'; Target = 'T_PosterSale_D.png'
         Crop = @(0.082, 0.022, 0.386, 0.478); Size = @(512, 704)
     }
-    [pscustomobject]@{
-        Source = 'SheetPosters'; Target = 'T_PosterRamyeon_D.png'
-        Crop = @(0.528, 0.016, 0.387, 0.496); Size = @(512, 352)
-    }
-    [pscustomobject]@{
-        Source = 'SheetPosters'; Target = 'T_PosterFlyer_D.png'
-        Crop = @(0.074, 0.516, 0.414, 0.451); Size = @(384, 512)
-    }
-    [pscustomobject]@{
-        Source = 'SheetPosters'; Target = 'T_NoticeRent_D.png'
-        Crop = @(0.528, 0.524, 0.383, 0.435); Size = @(384, 512)
-    }
     # Blank aged paper: the base every readable note is printed onto. The
     # Korean copy is drawn on top at runtime by the HUD, never baked in.
     [pscustomobject]@{
         Source = 'SheetPaperNotes_v2'; Target = 'T_PaperClean_V2_D.png'
         Crop = @(0.091, 0.023, 0.318, 0.453); Size = @(512, 724)
-    }
-    [pscustomobject]@{
-        Source = 'SheetPaperNotes_v2'; Target = 'T_PaperWet_V2_D.png'
-        Crop = @(0.594, 0.023, 0.315, 0.453); Size = @(512, 724)
-    }
-    [pscustomobject]@{
-        Source = 'SheetPaperNotes_v2'; Target = 'T_PaperFolded_V2_D.png'
-        Crop = @(0.091, 0.522, 0.320, 0.453); Size = @(512, 724)
     }
     [pscustomobject]@{
         Source = 'SheetPaperNotes_v2'; Target = 'T_PaperOld_V2_D.png'

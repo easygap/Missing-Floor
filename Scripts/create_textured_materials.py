@@ -314,12 +314,9 @@ DECAL_MATERIALS = {
     "M_TobaccoNotice": {"tex_asset": "T_TobaccoNotice_D", "rough": 0.5},
     "M_SignPC":        {"tex_asset": "T_SignPC_D", "rough": 0.45, "emissive_scale": 0.05},
     "M_SignKaraoke":   {"tex_asset": "T_SignKaraoke_D", "rough": 0.45, "emissive_scale": 0.45},
-    # Villa fittings. The lift readouts are the only thing genuinely emitting
-    # in the shaft, so they carry a strong emissive; the rest are plastic.
+    # 빌라 설비. 플라스틱이고, 도어록 숫자판·인터폰 화면·스위치 표시등만 약하게 빛난다.
     "M_DoorLock":      {"tex_asset": "T_DoorLock_D", "rough": 0.34, "emissive_scale": 0.12},
     "M_Intercom":      {"tex_asset": "T_Intercom_D", "rough": 0.34, "emissive_scale": 0.08},
-    "M_LiftCOP":       {"tex_asset": "T_LiftCOP_D", "rough": 0.26, "emissive_scale": 0.03},
-    "M_LiftHall":      {"tex_asset": "T_LiftHall_D", "rough": 0.3, "emissive_scale": 1.4},
     "M_SwitchPlate":   {"tex_asset": "T_SwitchPlate_D", "rough": 0.4, "emissive_scale": 0.1},
     # Product labels: printed plastic film, so fairly smooth and unlit-free.
     "M_LabelWater": {
@@ -1439,13 +1436,16 @@ def _connect_print_response(material, base_sample, spec):
 
 
 def create_flat_texture_materials(
-    assets, tools, specs, emissive_only, update_in_place=False
+    assets, tools, specs, emissive_only, update_in_place=False, atlas_only=False
 ):
     created = []
     skipped = []
     atlassed = []
     retired = 0
     for name, spec in specs.items():
+        # 아틀라스만 다시 굽는 패스는 페이지를 읽는 머티리얼만 만든다.
+        if atlas_only and _atlas_binding(spec) is None:
+            continue
         # Artwork arrives in batches — a generated sheet may not have landed
         # yet. Skipping the material is right: the C++ side already falls back
         # to a flat colour for anything it cannot load, so a half-finished
@@ -2786,6 +2786,37 @@ def run():
     tools = unreal.AssetToolsHelpers.get_asset_tools()
     if assets is None or tools is None:
         raise RuntimeError("Unreal editor asset services are unavailable")
+
+    if os.environ.get("IG_PRINT_ATLAS_ONLY") == "1":
+        # 아틀라스를 다시 구우면 바뀌는 것은 인쇄물 머티리얼에 구워 둔 페이지와
+        # UV 상수뿐이다. 그 머티리얼만 전체 빌드와 같은 방식으로 새로 만들고
+        # 나머지는 다시 저장하지 않는다.
+        prints = create_flat_texture_materials(
+            assets, tools, DECAL_MATERIALS, False, atlas_only=True
+        )
+        prints += create_flat_texture_materials(
+            assets, tools, SIGN_MATERIALS, True, atlas_only=True
+        )
+        if not prints:
+            raise RuntimeError("No print material reads the atlas")
+        # 전체 빌드의 enable_instanced_product_usage와 같은 플래그. 진열대
+        # 상품 라벨은 인스턴스 메시용 셰이더가 없으면 회색 기본 머티리얼로 나온다.
+        for material in prints:
+            name = material.get_name()
+            if name in INSTANCED_PRODUCT_MATERIALS:
+                material.set_editor_property(
+                    "used_with_instanced_static_meshes", True
+                )
+                if name in WRAPPED_LABEL_MATERIALS:
+                    material.set_editor_property("two_sided", True)
+                unreal.MaterialEditingLibrary.recompile_material(material)
+        if not assets.save_loaded_assets(prints, False):
+            raise RuntimeError("Could not save print atlas materials")
+        unreal.log(
+            f"[IndieGame] Print atlas material update complete: "
+            f"{len(prints)} materials"
+        )
+        return
 
     if os.environ.get("IG_SURFACE_RESPONSE_ONLY") == "1":
         surfaces = create_textured_materials(

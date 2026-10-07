@@ -11,8 +11,8 @@ param(
     # 입주 프롤로그에서 사용하는 한글 임대차계약서만 다시 만든다.
     # 문서는 허구이며 주민등록번호는 표기하지 않는다.
     [switch]$ArrivalPrologueOnly,
-    # 현수막, 로비 공지, 담배 판매 안내만 다시 만든다. 글자가 가장자리에 닿지
-    # 않게 폭에 맞춘 뒤 인쇄 아틀라스를 다시 묶을 때 쓴다.
+    # 담배 판매 안내만 다시 만든다. 글자가 가장자리에 닿지 않게 폭에 맞춘 뒤
+    # 인쇄 아틀라스를 다시 묶을 때 쓴다.
     [switch]$PrintMarginOnly
 )
 
@@ -238,10 +238,6 @@ function Write-CorridorEntranceSigns {
             Draw-CenteredText $g "${unit}호" $malgun 36 ([System.Drawing.FontStyle]::Bold) $dark ($w * 0.5) ($h * 0.5)
         }
     }
-    New-SignBitmap -Width 128 -Height 64 -Background $nearWhite -FileName 'T_PlateCommon_D.png' -Draw {
-        param($g, $w, $h)
-        Draw-CenteredText $g '공용' $malgun 32 ([System.Drawing.FontStyle]::Bold) $dark ($w * 0.5) ($h * 0.5)
-    }
 
     # 다섯 번 포획되면 401호에서 조용한 도움을 한 번 건넨다.
     # 생성 이미지는 값싼 종이 질감에만 쓰고, 한글은 절차적으로 합성해
@@ -297,25 +293,8 @@ function Write-CorridorEntranceSigns {
     }
 }
 
-# 가장자리까지 글자가 닿던 인쇄물 셋. 폭을 정해 두고 글자를 그 안에 맞춘다.
+# 가장자리까지 글자가 닿던 담배 판매 안내. 폭을 정해 두고 글자를 그 안에 맞춘다.
 function Write-FittedPrints {
-New-SignBitmap -Width 1024 -Height 128 -Background ([System.Drawing.Color]::FromArgb(255, 250, 220, 40)) -FileName 'T_Banner_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '원룸 · 투룸 월세 문의  010-2345-6789' $malgun 58 ([System.Drawing.FontStyle]::Bold) $red ($w * 0.5) ($h * 0.5) ($w * 0.88)
-}
-New-SignBitmap -Width 256 -Height 352 -Background $nearWhite -FileName 'T_NoticeA4_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '공 지' $malgun 44 ([System.Drawing.FontStyle]::Bold) $dark ($w * 0.5) ($h * 0.12)
-    Draw-CenteredText $g '7월 관리비 납부 안내' $malgun 26 ([System.Drawing.FontStyle]::Regular) $dark ($w * 0.5) ($h * 0.28) ($w * 0.80)
-    $gray = [System.Drawing.Color]::FromArgb(255, 130, 132, 130)
-    for ($i = 0; $i -lt 6; $i++) {
-        $pen = New-Object System.Drawing.Pen($gray, 4)
-        $y = [single]($h * (0.42 + $i * 0.08))
-        $g.DrawLine($pen, [single]($w * 0.12), $y, [single]($w * 0.88), $y)
-        $pen.Dispose()
-    }
-    Draw-CenteredText $g '달빛빌라 관리사무소' $malgun 20 ([System.Drawing.FontStyle]::Regular) $dark ($w * 0.5) ($h * 0.93) ($w * 0.80)
-}
 New-SignBitmap -Width 512 -Height 64 -Background $nearWhite -FileName 'T_TobaccoNotice_D.png' -Draw {
     param($g, $w, $h)
     Draw-CenteredText $g '청소년에게 담배를 판매하지 않습니다' $malgun 28 ([System.Drawing.FontStyle]::Bold) $dark ($w * 0.5) ($h * 0.5) ($w * 0.90)
@@ -396,13 +375,6 @@ New-SignBitmap -Width 512 -Height 704 -Background $nearWhite -FileName 'T_Poster
     }
 }
 
-# --- Ramyeon shelf poster --------------------------------------------------
-New-SignBitmap -Width 512 -Height 352 -Background ([System.Drawing.Color]::FromArgb(255, 240, 200, 60)) -FileName 'T_PosterRamyeon_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '라면 특가' $malgun 96 ([System.Drawing.FontStyle]::Bold) $dark ($w * 0.5) ($h * 0.34)
-    Draw-CenteredText $g '컵라면 全품목 할인' $malgun 44 ([System.Drawing.FontStyle]::Regular) $dark ($w * 0.5) ($h * 0.68)
-}
-
 # --- Fridge note (the foreshadowing) --------------------------------------
 New-SignBitmap -Width 512 -Height 512 `
     -Background ([System.Drawing.Color]::FromArgb(255, 245, 228, 130)) `
@@ -416,52 +388,11 @@ New-SignBitmap -Width 512 -Height 512 `
 # --- 403 entrance easter egg ----------------------------------------------
 Write-CorridorEntranceSigns
 
-# --- Bathroom door plate ---------------------------------------------------
-New-SignBitmap -Width 256 -Height 128 -Background ([System.Drawing.Color]::FromArgb(255, 88, 92, 96)) -FileName 'T_SignToilet_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '화장실' $malgun 62 ([System.Drawing.FontStyle]::Bold) $white ($w * 0.5) ($h * 0.5)
-}
-
-# --- Sliding door sticker --------------------------------------------------
-New-SignBitmap -Width 256 -Height 128 -Background $white -FileName 'T_SignAutoDoor_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '자동문' $malgun 56 ([System.Drawing.FontStyle]::Bold) $mint ($w * 0.5) ($h * 0.36)
-    Draw-CenteredText $g '24시간 영업' $malgun 30 ([System.Drawing.FontStyle]::Regular) $dark ($w * 0.5) ($h * 0.74)
-}
-
 # --- Building name plate over the common entrance --------------------------
 New-SignBitmap -Width 320 -Height 96 -Background ([System.Drawing.Color]::FromArgb(255, 30, 36, 48)) -FileName 'T_SignVilla_D.png' -Draw {
     param($g, $w, $h)
     Draw-CenteredText $g '달빛빌라' $malgun 50 ([System.Drawing.FontStyle]::Bold) $white ($w * 0.39) ($h * 0.5)
     Draw-CenteredText $g '27-3' $malgun 24 ([System.Drawing.FontStyle]::Regular) ([System.Drawing.Color]::FromArgb(255, 150, 200, 190)) ($w * 0.845) ($h * 0.52)
-}
-
-# --- Elevator floor indicator ----------------------------------------------
-New-SignBitmap -Width 128 -Height 96 -Background ([System.Drawing.Color]::FromArgb(255, 16, 16, 18)) -FileName 'T_ElevatorPanel_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '4' $malgun 52 ([System.Drawing.FontStyle]::Bold) ([System.Drawing.Color]::FromArgb(255, 255, 120, 40)) ($w * 0.5) ($h * 0.34)
-    Draw-CenteredText $g '▼' $malgun 28 ([System.Drawing.FontStyle]::Regular) ([System.Drawing.Color]::FromArgb(255, 200, 90, 30)) ($w * 0.5) ($h * 0.76)
-}
-
-# --- Alley flyer wall ------------------------------------------------------
-New-SignBitmap -Width 384 -Height 512 -Background ([System.Drawing.Color]::FromArgb(255, 214, 214, 208)) -FileName 'T_PosterFlyer_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '원룸 월세' $malgun 64 ([System.Drawing.FontStyle]::Bold) $dark ($w * 0.5) ($h * 0.18)
-    Draw-CenteredText $g '보증금 상담' $malgun 44 ([System.Drawing.FontStyle]::Regular) $dark ($w * 0.5) ($h * 0.36)
-    $gray = [System.Drawing.Color]::FromArgb(255, 120, 122, 120)
-    for ($i = 0; $i -lt 4; $i++) {
-        $pen = New-Object System.Drawing.Pen($gray, 5)
-        $y = [single]($h * (0.52 + $i * 0.08))
-        $g.DrawLine($pen, [single]($w * 0.14), $y, [single]($w * 0.86), $y)
-        $pen.Dispose()
-    }
-    # Tear-off tabs along the bottom edge.
-    for ($i = 0; $i -lt 6; $i++) {
-        $pen = New-Object System.Drawing.Pen($gray, 3)
-        $x = [single]($w * (0.08 + $i * 0.15))
-        $g.DrawLine($pen, $x, [single]($h * 0.88), $x, [single]($h * 0.99))
-        $pen.Dispose()
-    }
 }
 
 # --- Closed neighborhood shop signs (dark before dawn) ----------------------
@@ -495,18 +426,7 @@ New-SignBitmap -Width 512 -Height 128 -Background ([System.Drawing.Color]::FromA
 Write-FittedPrints
 
 
-# --- Lobby notice, door ad stickers, calendar, fire box, tobacco notice -----
-New-SignBitmap -Width 256 -Height 256 -Background ([System.Drawing.Color]::FromArgb(255, 235, 235, 230)) -FileName 'T_DoorAd_D.png' -Draw {
-    param($g, $w, $h)
-    $colors = @([System.Drawing.Color]::FromArgb(255,210,60,40), [System.Drawing.Color]::FromArgb(255,40,90,190), [System.Drawing.Color]::FromArgb(255,240,150,20))
-    $labels = @('열쇠 24시', '도배 장판', '치킨 배달')
-    for ($i = 0; $i -lt 3; $i++) {
-        $brush = New-Object System.Drawing.SolidBrush($colors[$i])
-        $g.FillRectangle($brush, [single]($w*0.08), [single]($h*(0.06+$i*0.32)), [single]($w*0.84), [single]($h*0.24))
-        $brush.Dispose()
-        Draw-CenteredText $g $labels[$i] $malgun 34 ([System.Drawing.FontStyle]::Bold) $white ($w * 0.5) ($h * (0.18 + $i * 0.32))
-    }
-}
+# --- Calendar --------------------------------------------------------------
 New-SignBitmap -Width 256 -Height 320 -Background $nearWhite -FileName 'T_Calendar_D.png' -Draw {
     param($g, $w, $h)
     Draw-CenteredText $g '2024  7월' $malgun 44 ([System.Drawing.FontStyle]::Bold) $dark ($w * 0.5) ($h * 0.11)
@@ -540,10 +460,6 @@ New-SignBitmap -Width 256 -Height 320 -Background $nearWhite -FileName 'T_Calend
             }
         }
     }
-}
-New-SignBitmap -Width 256 -Height 320 -Background ([System.Drawing.Color]::FromArgb(255, 180, 30, 24)) -FileName 'T_FireBox_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '소 화 전' $malgun 58 ([System.Drawing.FontStyle]::Bold) $white ($w * 0.5) ($h * 0.5)
 }
 
 # --- Villa fittings, from the reference photos -----------------------------
@@ -587,40 +503,6 @@ New-SignBitmap -Width 256 -Height 320 -Background ([System.Drawing.Color]::FromA
     }
     Draw-CenteredText $g '통화' $malgun 20 ([System.Drawing.FontStyle]::Regular) $dark ($w * 0.5) ($h * 0.9)
     $screen.Dispose(); $btn.Dispose()
-}
-
-# Car operating panel: floor column plus the red segment readout above it.
-New-SignBitmap -Width 192 -Height 768 -Background ([System.Drawing.Color]::FromArgb(255, 176, 180, 184)) -FileName 'T_LiftCOP_D.png' -Draw {
-    param($g, $w, $h)
-    $display = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 18, 18, 20))
-    $g.FillRectangle($display, ($w * 0.14), ($h * 0.03), ($w * 0.72), ($h * 0.1))
-    Draw-CenteredText $g '4' $malgun 62 ([System.Drawing.FontStyle]::Bold) ([System.Drawing.Color]::FromArgb(255, 255, 60, 40)) ($w * 0.5) ($h * 0.08)
-    $ring = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 122, 126, 130), 3)
-    $face = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 214, 217, 220))
-    $floors = @('5','4','3','2','1','B1')
-    for ($i = 0; $i -lt $floors.Length; $i++) {
-        $cy = $h * (0.22 + 0.105 * $i)
-        $g.FillEllipse($face, ($w * 0.5 - 28), ($cy - 28), 56, 56)
-        $g.DrawEllipse($ring, ($w * 0.5 - 28), ($cy - 28), 56, 56)
-        Draw-CenteredText $g $floors[$i] $malgun 26 ([System.Drawing.FontStyle]::Bold) $dark ($w * 0.5) $cy
-    }
-    # Door open/close pair and the alarm bell at the bottom.
-    for ($i = 0; $i -lt 3; $i++) {
-        $cy = $h * (0.86 + 0.045 * $i)
-        $g.FillEllipse($face, ($w * 0.5 - 22), ($cy - 22), 44, 44)
-        $g.DrawEllipse($ring, ($w * 0.5 - 22), ($cy - 22), 44, 44)
-    }
-    Draw-CenteredText $g '열림' $malgun 16 ([System.Drawing.FontStyle]::Regular) $dark ($w * 0.5) ($h * 0.86)
-    Draw-CenteredText $g '닫힘' $malgun 16 ([System.Drawing.FontStyle]::Regular) $dark ($w * 0.5) ($h * 0.905)
-    Draw-CenteredText $g '비상' $malgun 16 ([System.Drawing.FontStyle]::Regular) $red ($w * 0.5) ($h * 0.95)
-    $ring.Dispose(); $face.Dispose(); $display.Dispose()
-}
-
-# Hall lantern above the landing doors: red digit on black.
-New-SignBitmap -Width 256 -Height 160 -Background ([System.Drawing.Color]::FromArgb(255, 12, 12, 14)) -FileName 'T_LiftHall_D.png' -Draw {
-    param($g, $w, $h)
-    Draw-CenteredText $g '▼' $malgun 44 ([System.Drawing.FontStyle]::Regular) ([System.Drawing.Color]::FromArgb(255, 255, 70, 44)) ($w * 0.26) ($h * 0.5)
-    Draw-CenteredText $g '4' $malgun 96 ([System.Drawing.FontStyle]::Bold) ([System.Drawing.Color]::FromArgb(255, 255, 70, 44)) ($w * 0.64) ($h * 0.5)
 }
 
 # Wall switch plate: two rockers, one with the pilot dot lit.

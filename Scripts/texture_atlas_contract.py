@@ -1,8 +1,8 @@
 """Shared, dependency-free contract for the printed-artwork texture atlas.
 
-Every notice, plate, label, snack bag and shop sign in the game is a separate
+Every notice, plate, label and shop sign in the game is a separate
 1-channel colour texture on its own material, and each of those is a separate
-draw call and a separate streaming entry. There are forty-nine of them, none of
+draw call and a separate streaming entry. There are twenty-five of them, none of
 them tiles, and most of them are on screen at the same time in the store and on
 the fourth-floor landing. That is exactly the set an atlas is for.
 
@@ -33,9 +33,11 @@ ATLAS_PAGE_PREFIX = "T_PrintAtlas"
 MANIFEST_VERSION = 2
 
 # 2048 is the largest page that still streams in one 8 MB BC7 block on the
-# minimum spec in PERFORMANCE.md. The current print set measures 11.82 Mpx of
-# art, which is a three-page floor; it lands on three full pages and a narrow
-# fourth, because gutters and rect shapes cost what perfect packing would not.
+# minimum spec in PERFORMANCE.md.
+#
+# 지금 인쇄물은 25장, 6.91 Mpx라 넓이만 보면 두 장에 들어간다. 그런데 폭이
+# 1024인 메모 둘과 라벨 넷은 거터 때문에 한 줄에 둘씩 설 수 없어 세로로만
+# 쌓이고, 그래서 2048 두 장 뒤에 1024 한 장이 붙는다.
 #
 # A page is only as large as its own contents need. Pages are packed at the
 # maximum and then each one is repacked into the smallest power-of-two box
@@ -75,47 +77,26 @@ PRINT_ATLAS_ENTRIES = (
     "T_Plate401_D",
     "T_Plate402_D",
     "T_Plate403_D",
-    "T_PlateCommon_D",
     "T_DoorLock_D",
     "T_Intercom_D",
     "T_SwitchPlate_D",
-    "T_FireBox_D",
-    "T_DoorAd_D",
     "T_MercyNoteUnderDoor_D",
     "T_CaptureMercyNote_D",
-    # Lobby and lift.
-    "T_LiftCOP_D",
-    "T_LiftHall_D",
-    "T_ElevatorPanel_D",
-    "T_NoticeA4_D",
-    "T_NoticeRent_D",
+    # Lobby.
     "T_SignVilla_D",
-    "T_SignToilet_D",
     "T_Calendar_D",
     # Apartment paper.
     "T_ArrivalContract_D",
     "T_NoteFridge_D",
-    "T_PaperWet_V2_D",
-    "T_PaperFolded_V2_D",
     # Store interior print.
     "T_PosterSale_D",
-    "T_PosterRamyeon_D",
-    "T_PosterFlyer_D",
     "T_TobaccoNotice_D",
-    "T_SignAutoDoor_D",
     "T_SignAux5MonitorOnly_D",
-    "T_Banner_D",
     # Product artwork.
     "T_LabelWater_D",
     "T_LabelGreenTea_D",
     "T_LabelBarley_D",
     "T_LabelSoda_D",
-    "T_LabelSoju_D",
-    "T_LabelRamyeon_D",
-    "T_SnackShrimp_D",
-    "T_SnackPotato_D",
-    "T_SnackSquid_D",
-    "T_SnackCorn_D",
     # Alley shopfronts.
     "T_SignLaundry_D",
     "T_SignHair_D",

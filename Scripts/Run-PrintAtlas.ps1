@@ -14,7 +14,8 @@
 	  1. build_texture_atlas.py            pack the pages outside the editor
 	  2. build_texture_atlas.py --preflight prove the editor run can work
 	  3. import_texture_atlas.py           import the pages as clamped BC7
-	  4. create_textured_materials.py      point the print materials at them
+	  4. create_textured_materials.py      rebuild only the print materials
+	                                       that read the atlas (IG_PRINT_ATLAS_ONLY)
 	  5. validate_baked_art_assets.py      confirm what actually landed
 
 	-WhatIf stops after the preflight, which is the part worth running before
@@ -118,7 +119,8 @@ $stages = @(
 	@{ Script = 'import_texture_atlas.py'; Success = 'PRINT_ATLAS_IMPORT PASS' },
 	@{
 		Script = 'create_textured_materials.py'
-		Success = '\[IndieGame\] Textured material pass complete: \d+ materials'
+		Success = '\[IndieGame\] Print atlas material update complete: \d+ materials'
+		Environment = 'IG_PRINT_ATLAS_ONLY'
 	},
 	@{ Script = 'validate_baked_art_assets.py'; Success = 'ART_UASSET_AUDIT PASS' }
 )
@@ -132,6 +134,10 @@ foreach ($stage in $stages) {
 	$logPath = Join-Path $logRoot $logName
 
 	Write-Host "PRINT_ATLAS running $stageName"
+	$stageEnvironment = if ($stage.ContainsKey('Environment')) { [string]$stage.Environment } else { $null }
+	if ($stageEnvironment) {
+		[Environment]::SetEnvironmentVariable($stageEnvironment, '1', 'Process')
+	}
 	& $editorCommand `
 		$projectFile `
 		-unattended `
@@ -145,6 +151,9 @@ foreach ($stage in $stages) {
 		"-abslog=$logPath" `
 		"-ExecutePythonScript=$scriptPath"
 	$editorExit = $LASTEXITCODE
+	if ($stageEnvironment) {
+		[Environment]::SetEnvironmentVariable($stageEnvironment, $null, 'Process')
+	}
 
 	$success = Select-String -LiteralPath $logPath -Pattern ([string]$stage.Success) `
 		-ErrorAction SilentlyContinue | Select-Object -Last 1
