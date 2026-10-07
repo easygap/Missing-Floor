@@ -3,6 +3,7 @@
 
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
@@ -274,7 +275,11 @@ void AIGSwingDoor::Tick(const float DeltaSeconds)
 		const float DistanceToLeaf = Pawn
 			? DoorMesh->GetDistanceToCollision(Pawn->GetActorLocation(), ClosestPoint)
 			: -1.0f;
-		if (DistanceToLeaf >= 0.0f && DistanceToLeaf < 45.0f)
+		// 몸이 문짝 궤적에 실제로 걸릴 때만 다시 연다. 45 cm로 넓게 잡으면 문 바로
+		// 안쪽에 서서는 문을 닫을 수 없었다 — 화장실에 숨어 문을 닫는 게 안 됐다.
+		const UCapsuleComponent* Capsule = Pawn ? Pawn->FindComponentByClass<UCapsuleComponent>() : nullptr;
+		const float Clearance = Capsule ? Capsule->GetScaledCapsuleRadius() + 3.0f : 45.0f;
+		if (DistanceToLeaf >= 0.0f && DistanceToLeaf < Clearance)
 		{
 			// 문이 닫힐 자리에 서 있으면 다시 연다. 회전하는 문짝은 스윕이
 			// 안 되므로 움직이는 동안 캐릭터를 밀지 않게 해 둔다.

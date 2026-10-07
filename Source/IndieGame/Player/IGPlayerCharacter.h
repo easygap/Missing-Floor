@@ -298,10 +298,11 @@ private:
 	/**
 	 * 한 번 발을 디딜 때 이동하는 거리(cm).
 	 * 위아래 흔들림은 abs(sin)이므로 한 걸음마다 반복된다.
-	 * §18.3의 걷기 주기 0.52초 × 이동 속도 300cm/s = 156cm.
+	 * §18.3의 걷기 주기 0.52초 × 걷는 속도 175cm/s = 91cm. 달리기와 숙이기는
+	 * 각자 보폭으로 센 걸음을 이 값으로 환산한다(UpdateFootsteps).
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Player|Camera", meta = (AllowPrivateAccess = "true", ClampMin = "10.0", Units = "cm"))
-	float StepDistance = 156.0f;
+	float StepDistance = 91.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Player|Camera", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float FootstepVolume = 0.34f;
@@ -363,6 +364,7 @@ private:
 	/** 마지막으로 땅을 디딘 시각과, 공중에서 미리 누른 점프가 유효한 시각. */
 	double LastGroundedSeconds = -10.0;
 	double JumpBufferedUntilSeconds = -1.0;
+	double NextMissingFlashlightThoughtAt = 0.0;
 	bool bCoyoteJumpReady = false;
 	/** 일어서라고 한 뒤에도 앉아 있던 시간. 속말은 앉을 때마다 한 번이다. */
 	float BlockedStandSeconds = 0.0f;

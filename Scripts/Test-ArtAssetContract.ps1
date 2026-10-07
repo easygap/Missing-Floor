@@ -539,7 +539,7 @@ foreach ($token in @(
 	'PropMesh(TEXT("SM_StickyNote76mm"))',
 	'FVector(-7.43f, 36.0f, 18.0f)',
 	'FVector(3.30f, 3.30f, 5.5f)',
-	'BuildCabInterior owns the sole rider COP',
+	'CabVisuals.Cop = PropMesh(TEXT("SM_ElevatorCop"));',
 	'Prop->bDisallowNanite = true;'
 )) {
 	if (-not $prologueSource.Contains($token)) {

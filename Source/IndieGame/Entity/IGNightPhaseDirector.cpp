@@ -15,6 +15,7 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "Narrative/IGStoryStateSubsystem.h"
 #include "Player/IGFlashlightComponent.h"
 #include "Player/IGHorrorHUD.h"
 #include "Player/IGPlayerCharacter.h"
@@ -147,14 +148,23 @@ void AIGNightPhaseDirector::BeginTheHour(const int32 NightIndex)
 	}
 	ApplySealedPresentation(true);
 
-	// 그 시간의 복도는 어둡다. 손전등은 이사 짐에서 꺼내 머리맡에 둔 것이고,
-	// 눈을 뜨면 손이 먼저 그것을 찾는다. 밤을 여는 모든 길(잠·되풀이·저장
-	// 복원·캡처)이 여기를 지나므로 이 한 자리에서 준다.
+	// 잠자리에 들며 방 불은 껐다. 밤에 다시 켜는 것은 그녀가 고른다.
+	if (UGameInstance* Instance = GetGameInstance())
+	{
+		if (UIGStoryStateSubsystem* Story = Instance->GetSubsystem<UIGStoryStateSubsystem>())
+		{
+			Story->RemoveState(FGameplayTag::RequestGameplayTag(TEXT("State.MissingFloor.HomeLightOn"), false));
+		}
+	}
+
+	// 현관 신발장 위에서 챙긴 손전등만 쓴다. 놓고 잤으면 밤이 대신 쥐여 주지 않는다.
+	// 집 안은 창 불빛으로 신발장까지 걸어갈 만큼은 보이고, F를 누르면 속말이 알려 준다.
+	// 밤을 여는 모든 길(잠·되풀이·저장 복원·캡처)이 여기를 지나므로 이 한 자리에서 읽는다.
 	if (AIGPlayerCharacter* PlayerCharacter = Player.Get())
 	{
 		if (UIGFlashlightComponent* Torch = PlayerCharacter->GetFlashlight())
 		{
-			Torch->SetAvailable(true);
+			Torch->RefreshOwnership();
 			Torch->SetOn(true);
 		}
 	}

@@ -90,7 +90,6 @@ private:
 		float PreviousYaw = 0.0f;
 		float BlockedSeconds = 0.0f;
 		float ParkedSeconds = 0.0f;
-		float WheelSpinDegrees = 0.0f;
 		float LastBrushTime = -100.0f;
 		bool bScreechPlayed = false;
 		bool bBlockHornPlayed = false;
@@ -243,25 +242,12 @@ private:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<USceneComponent>> ScooterRoots;
 
-	/** 저작 메시(SM_DeliveryScooter)가 있으면 그 한 장, 없으면 상자 차체. */
+	/**
+	 * 슬롯마다 메시 한 장. 기사가 타고 있는 동안은 SM_DeliveryScooterRidden이고,
+	 * 기사가 내린 뒤(세워 둔 오토바이)는 SM_DeliveryScooter로 바꿔 끼운다.
+	 */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UStaticMeshComponent>> ScooterBodies;
-
-	/** 저작 메시가 없을 때만 쓰는 배달통. */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> ScooterCargoBoxes;
-
-	/** 라이더 몸통(저작 메시가 있으면 SM_DeliveryRider 한 장). */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> ScooterRiderBodies;
-
-	/** 저작 라이더가 없을 때만 쓰는 헬멧. */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> ScooterRiderHelmets;
-
-	/** 슬롯마다 바퀴 둘(앞, 뒤). */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> ScooterWheels;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<USpotLightComponent>> ScooterHeadlights;
@@ -293,14 +279,13 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> AlleyCatMesh;
 
+	/** 세워 둔 오토바이(기사 없음, 받침대 내림). */
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> ScooterMesh;
 
+	/** 기사가 탄 채 달리는 오토바이. */
 	UPROPERTY(Transient)
-	TObjectPtr<UStaticMesh> ScooterWheelMesh;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UStaticMesh> RiderMesh;
+	TObjectPtr<UStaticMesh> RiddenScooterMesh;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> CubeMesh;
@@ -309,19 +294,10 @@ private:
 	TObjectPtr<UStaticMesh> SphereMesh;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UStaticMesh> CylinderMesh;
-
-	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> DarkMaterial;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInterface> MetalMaterial;
-
-	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> LeafMaterial;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInterface> DeliveryBoxMaterial;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> AlleyCatMaterial;

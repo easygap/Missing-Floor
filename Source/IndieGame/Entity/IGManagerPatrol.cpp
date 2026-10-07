@@ -3,8 +3,10 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Animation/AnimSequence.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/IGPrologueWorldScene.h"
@@ -16,7 +18,10 @@
 #include "Entity/IGNightLoopDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "GameFramework/Controller.h"
+#include "Engine/SkeletalMesh.h"
+#include "Interaction/IGFireDoorWedge.h"
 #include "Interaction/IGHidingSpot.h"
+#include "Interaction/IGSwingDoor.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/CommandLine.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
@@ -38,21 +43,37 @@ namespace IGManagerPatrol
 	constexpr float CaptureRestSeconds = 40.0f;
 	constexpr float KnockRestSeconds = 45.0f;
 
-	// 걸음. 슬리퍼를 끄는 노인이다. 걷는 그녀(300)보다 느리고, 쫓을 때도 달리는
-	// 그녀(460)를 못 따라잡는다. 걸어서 도망치면 잡힌다.
+	// 걸음. 슬리퍼를 끄는 노인이다. 돌 때는 걷는 그녀(300)보다 한참 느리다. 쫓을
+	// 때는 허둥지둥 뛰어 걷는 그녀보다 빠르고, 달리는 그녀(460)는 못 따라잡는다.
+	// 걸어서 도망치면 잡힌다.
 	constexpr float WalkSpeed = 105.0f;
 	constexpr float InvestigateSpeed = 140.0f;
-	constexpr float ChaseSpeed = 285.0f;
+	constexpr float ChaseSpeed = 340.0f;
 	constexpr float RetreatSpeed = 200.0f;
 	constexpr float WalkStride = 52.0f;
 	constexpr float RunStride = 74.0f;
 
-	// 손전등. 노란 구형 손전등이라 그녀의 흰 LED와 색으로 갈린다.
+	// 손전등. 노란 구형 손전등이라 그녀의 흰 LED와 색으로 갈린다. 빛은 허리 앞에
+	// 쥔 오른손의 렌즈에서 나간다(SK_MokHansooPatrol의 쥔 자세와 같은 자리).
 	constexpr float TorchIntensity = 5200.0f;
 	constexpr float TorchRange = 1600.0f;
 	constexpr float TorchInnerCone = 12.0f;
 	constexpr float TorchOuterCone = 25.0f;
-	const FVector TorchOffset(30.0f, 16.0f, 118.0f);
+	const FVector TorchOffset(40.0f, 19.0f, 96.0f);
+
+	// 리깅한 몸의 걸음 주기. Scripts/blender/rig_walker.py의 보폭과 같다.
+	/** Walk 한 주기(1.2초)에 두 걸음 46 cm씩. */
+	constexpr float WalkCycleSpeed = 0.92f * 100.0f / 1.2f;
+	/** Run 한 주기(0.8초)에 두 걸음 66 cm씩. */
+	constexpr float RunCycleSpeed = 1.32f * 100.0f / 0.8f;
+	/** 숨는 걸 보고 그 가구 앞까지 가는 데 주는 시간. 못 닿으면 놓친 것이다. */
+	constexpr double HideApproachTimeoutSeconds = 9.0;
+	/** 가구 앞에서 손이 닿는 거리. */
+	constexpr float HideReach = 95.0f;
+	/** 수색에서 더 들러 볼 점의 수와 거리. */
+	constexpr int32 SearchExtraStops = 2;
+	constexpr float SearchStopRadius = 900.0f;
+	constexpr float SearchStopDwellSeconds = 3.0f;
 
 	// 보는 것. 원뿔 안 12 m, 반각 24도. 가까울수록 빨리 알아본다.
 	constexpr float SightRange = 1200.0f;
@@ -155,8 +176,70 @@ void AIGManagerPatrol::BeginPlay()
 	{
 		HeadHands->SetMaterial(0, Pale);
 	}
+	BuildSkeletalBody();
 	ShowBody(false);
 	BuildGraph();
+}
+
+bool AIGManagerPatrol::BuildSkeletalBody()
+{
+	USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(
+		nullptr, TEXT("/Game/Meshes/SK_MokHansooPatrol.SK_MokHansooPatrol"), nullptr, LOAD_NoWarn);
+	if (!Mesh)
+	{
+		return false;
+	}
+	const auto LoadAnim = [](const TCHAR* Name) -> UAnimSequence*
+	{
+		return LoadObject<UAnimSequence>(
+			nullptr, *FString::Printf(TEXT("/Game/Meshes/A_MokHansooPatrol_%s.A_MokHansooPatrol_%s"), Name, Name),
+			nullptr, LOAD_NoWarn);
+	};
+	IdleAnim = LoadAnim(TEXT("Idle"));
+	WalkAnim = LoadAnim(TEXT("Walk"));
+	RunAnim = LoadAnim(TEXT("Run"));
+	LookAnim = LoadAnim(TEXT("Look"));
+	FreezeAnim = LoadAnim(TEXT("Freeze"));
+	GrabAnim = LoadAnim(TEXT("Grab"));
+	if (!IdleAnim || !WalkAnim)
+	{
+		// 걷지 못하는 뼈대는 서 있는 조각이다. 정적 조각이 낫다.
+		UE_LOG(LogTemp, Warning, TEXT("SK_MokHansooPatrol animations missing; static pieces kept"));
+		return false;
+	}
+	USkeletalMeshComponent* Component = NewObject<USkeletalMeshComponent>(this, TEXT("MokPatrolBody"));
+	Component->SetupAttachment(BodyPivot);
+	Component->SetMobility(EComponentMobility::Movable);
+	Component->RegisterComponent();
+	Component->SetSkeletalMesh(Mesh);
+	// 리깅한 몸은 정면이 +X, 원점이 발밑 가운데다. 액터와 그대로 맞는다.
+	Component->SetRelativeLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
+	Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Component->SetCanEverAffectNavigation(false);
+	Component->SetGenerateOverlapEvents(false);
+	Component->SetCastShadow(true);
+	// 걸음 동작이 바운드 밖으로 팔과 발을 낸다.
+	Component->SetBoundsScale(1.4f);
+	Component->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	BodySkeletal = Component;
+	Workwear->SetStaticMesh(nullptr);
+	HeadHands->SetStaticMesh(nullptr);
+	PlayBodyAnim(IdleAnim, true, 1.0f);
+	return true;
+}
+
+void AIGManagerPatrol::PlayBodyAnim(UAnimSequence* Sequence, const bool bLoop, const float Rate)
+{
+	if (!BodySkeletal || !Sequence)
+	{
+		return;
+	}
+	if (ActiveAnim != Sequence)
+	{
+		BodySkeletal->PlayAnimation(Sequence, bLoop);
+		ActiveAnim = Sequence;
+	}
+	BodySkeletal->SetPlayRate(Rate);
 }
 
 void AIGManagerPatrol::Configure(
@@ -350,8 +433,12 @@ bool AIGManagerPatrol::FindPath(const int32 From, const int32 To, TArray<int32>&
 
 int32 AIGManagerPatrol::FindNearestNode(const FVector& Feet) const
 {
+	// 벽 너머의 점은 가까워도 고르지 않는다. 바로 쫓던 길에서 노드로 돌아올 때 벽을
+	// 뚫고 그 점으로 걸어 들어갔다. 보이는 점이 하나도 없을 때만 가장 가까운 점이다.
 	int32 Best = INDEX_NONE;
 	float BestScore = TNumericLimits<float>::Max();
+	int32 BestSeen = INDEX_NONE;
+	float BestSeenScore = TNumericLimits<float>::Max();
 	for (int32 Index = 0; Index < Nodes.Num(); ++Index)
 	{
 		const FVector Delta = Nodes[Index].Feet - Feet;
@@ -362,8 +449,14 @@ int32 AIGManagerPatrol::FindNearestNode(const FVector& Feet) const
 			BestScore = Score;
 			Best = Index;
 		}
+		if (Score < BestSeenScore
+			&& HasClearLine(Feet + FVector(0.0f, 0.0f, 60.0f), Nodes[Index].Feet + FVector(0.0f, 0.0f, 60.0f)))
+		{
+			BestSeenScore = Score;
+			BestSeen = Index;
+		}
 	}
-	return Best;
+	return BestSeen != INDEX_NONE ? BestSeen : Best;
 }
 
 void AIGManagerPatrol::SetDestination(const int32 Node)
@@ -463,6 +556,12 @@ void AIGManagerPatrol::ShowBody(const bool bShow)
 	bBodyShown = bShow;
 	Workwear->SetVisibility(bShow);
 	HeadHands->SetVisibility(bShow);
+	if (BodySkeletal)
+	{
+		BodySkeletal->SetVisibility(bShow);
+		// 안쪽 방에 있는 동안은 뼈대도 쉰다.
+		BodySkeletal->bPauseAnims = !bShow;
+	}
 	Torch->SetVisibility(bShow);
 }
 
@@ -628,12 +727,51 @@ void AIGManagerPatrol::BeginSearch()
 {
 	State = EIGManagerPatrolState::Searching;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
+	bSawPlayerHide = false;
 	const FVector Target = IsForbiddenFourthFloor(LastKnownPlayerFeet)
-		? Nodes[FourthFloorDoorNode].Feet
+		? Nodes[GetFourthFloorStandNode()].Feet
 		: LastKnownPlayerFeet;
+	QueueSearchStops(Target);
 	SetDestination(FindNearestNode(Target));
 	DwellRemaining = IGManagerPatrol::SearchDwellSeconds;
 	DwellElapsed = 0.0f;
+}
+
+void AIGManagerPatrol::QueueSearchStops(const FVector& Around)
+{
+	// 놓친 자리에서 끝내지 않는다. 그 층의 방과 복도 끝을 손전등으로 한 번씩 더 훑는다.
+	// 손전등을 든 사람이 사람을 찾는 순서다 — 가까운 문간부터.
+	SearchStops.Reset();
+	SearchStopCursor = 0;
+	const int32 Start = FindNearestNode(Around);
+	if (!Nodes.IsValidIndex(Start))
+	{
+		return;
+	}
+	TArray<TPair<int32, float>> Candidates;
+	for (int32 Index = 0; Index < Nodes.Num(); ++Index)
+	{
+		if (Index == Start || Index == RestNode || Nodes[Index].bOnStair
+			|| FMath::Abs(Nodes[Index].Feet.Z - Nodes[Start].Feet.Z) > 40.0f
+			|| IsForbiddenFourthFloor(Nodes[Index].Feet))
+		{
+			continue;
+		}
+		const float Distance = FVector::Dist(Nodes[Index].Feet, Nodes[Start].Feet);
+		if (Distance > 150.0f && Distance < IGManagerPatrol::SearchStopRadius)
+		{
+			Candidates.Emplace(Index, Distance);
+		}
+	}
+	Candidates.Sort([](const TPair<int32, float>& A, const TPair<int32, float>& B) { return A.Value < B.Value; });
+	for (const TPair<int32, float>& Candidate : Candidates)
+	{
+		SearchStops.Add(Candidate.Key);
+		if (SearchStops.Num() >= IGManagerPatrol::SearchExtraStops)
+		{
+			break;
+		}
+	}
 }
 
 void AIGManagerPatrol::BeginRetreat(const float RestAfterSeconds)
@@ -654,6 +792,17 @@ void AIGManagerPatrol::BeginCatch()
 	AIGPlayerCharacter* Character = Player.Get();
 	if (!Character)
 	{
+		return;
+	}
+	PlayBodyAnim(GrabAnim ? GrabAnim.Get() : IdleAnim.Get(), false, 1.0f);
+	if (!IsCaptureAllowed())
+	{
+		// 추격 없음 난이도. 손을 대지 않는다. 손전등을 얼굴(숨었으면 가구)에 비추고
+		// 잠시 서 있다가 돌아간다.
+		if (UIGStressComponent* Stress = Character->GetStress())
+		{
+			Stress->ApplyScare(0.4f);
+		}
 		return;
 	}
 	// 숨은 자리를 열어 끌어낸다. 숨는 걸 봤을 때만 여기까지 온다.
@@ -862,6 +1011,39 @@ void AIGManagerPatrol::TickWalking(const float DeltaSeconds, const float Speed)
 	}
 }
 
+bool AIGManagerPatrol::IsFireDoorClosed() const
+{
+	if (!bFireDoorResolved)
+	{
+		AIGManagerPatrol* Self = const_cast<AIGManagerPatrol*>(this);
+		Self->bFireDoorResolved = true;
+		for (TActorIterator<AIGFireDoorWedge> It(GetWorld()); It; ++It)
+		{
+			Self->FireDoor = It->GetDoor();
+			break;
+		}
+	}
+	const AIGSwingDoor* Door = FireDoor.Get();
+	return Door && !Door->IsOpen();
+}
+
+int32 AIGManagerPatrol::GetFourthFloorStandNode() const
+{
+	// 방화문이 닫혀 있으면 그는 그 문을 열지 않는다. 문 안쪽 참에 서서 문을 비춘다.
+	// 4층 복도는 그가 피하는 곳이다. 닫힌 문은 그에게 핑계가 된다.
+	if (IsFireDoorClosed() && Nodes.IsValidIndex(FourthFloorDoorNode))
+	{
+		for (const int32 Linked : Nodes[FourthFloorDoorNode].Links)
+		{
+			if (Nodes[Linked].Feet.X < Nodes[FourthFloorDoorNode].Feet.X - 30.0f)
+			{
+				return Linked;
+			}
+		}
+	}
+	return FourthFloorDoorNode;
+}
+
 void AIGManagerPatrol::AdvanceRoute()
 {
 	RouteCursor = (RouteCursor + 1) % Route.Num();
@@ -877,7 +1059,9 @@ void AIGManagerPatrol::AdvanceRoute()
 			}
 		}
 	}
-	SetDestination(Route[RouteCursor].Node);
+	SetDestination(Route[RouteCursor].Node == FourthFloorDoorNode
+		? GetFourthFloorStandNode()
+		: Route[RouteCursor].Node);
 }
 
 void AIGManagerPatrol::TickDwell(const float DeltaSeconds)
@@ -915,6 +1099,14 @@ void AIGManagerPatrol::TickDwell(const float DeltaSeconds)
 	case EIGManagerPatrolState::Investigating:
 	case EIGManagerPatrolState::Searching:
 	{
+		// 수색이면 둘레의 다음 자리로. 다 훑었으면 그제야 돌던 길로 돌아간다.
+		if (State == EIGManagerPatrolState::Searching && SearchStops.IsValidIndex(SearchStopCursor))
+		{
+			SetDestination(SearchStops[SearchStopCursor++]);
+			DwellRemaining = IGManagerPatrol::SearchStopDwellSeconds;
+			DwellElapsed = 0.0f;
+			return;
+		}
 		// 아무것도 없었다. 원래 돌던 길의 다음 자리로 간다.
 		State = EIGManagerPatrolState::Patrolling;
 		StateStartSeconds = GetWorld()->GetTimeSeconds();
@@ -948,7 +1140,18 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 			bWasPlayerConcealed = true;
 			bSawPlayerHide = Now - LastSeenSeconds <= 1.0
 				&& FVector::Dist(GetFeet(), PlayerFeet) < 600.0f;
-			HideSpotFeet = PlayerFeet;
+			// 숨은 가구 앞. 그녀가 E를 누른 자리(2 m까지 떨어질 수 있다)도, 가구 속 몸
+			// 자리도 아니다. 거기라야 문을 열고 손을 넣는다.
+			HideSpotFeet = GetHideApproachFeet();
+			HideApproachStartSeconds = Now;
+		}
+		// 가구 앞에 끝내 닿지 못했다. 놓아 준다.
+		if (bSawPlayerHide && Now - HideApproachStartSeconds > IGManagerPatrol::HideApproachTimeoutSeconds)
+		{
+			bSawPlayerHide = false;
+			LastKnownPlayerFeet = HideSpotFeet;
+			BeginSearch();
+			return;
 		}
 		if (!bSawPlayerHide)
 		{
@@ -969,12 +1172,21 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 		return;
 	}
 
-	// 손이 닿는다.
+	// 손이 닿는다. 숨은 그녀는 가구 앞에 서면 닿는다.
 	const FVector Feet = GetFeet();
 	const float Planar = FVector::Dist2D(Feet, PlayerFeet);
-	if (Planar <= IGManagerPatrol::CatchReach
+	if (bSawPlayerHide && Character->IsConcealedInHidingSpot())
+	{
+		if (FVector::Dist2D(Feet, HideSpotFeet) <= IGManagerPatrol::HideReach
+			&& FMath::Abs(HideSpotFeet.Z - Feet.Z) <= IGManagerPatrol::CatchHeight)
+		{
+			BeginCatch();
+			return;
+		}
+	}
+	else if (Planar <= IGManagerPatrol::CatchReach
 		&& FMath::Abs(PlayerFeet.Z - Feet.Z) <= IGManagerPatrol::CatchHeight
-		&& (bSawPlayerHide || HasClearLine(Feet + FVector(0.0f, 0.0f, 120.0f), Character->GetActorLocation())))
+		&& HasClearLine(Feet + FVector(0.0f, 0.0f, 120.0f), Character->GetActorLocation()))
 	{
 		BeginCatch();
 		return;
@@ -983,7 +1195,8 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 	// 4층 복도로는 따라가지 않는다. 목에서 서서 비춘다.
 	if (IsForbiddenFourthFloor(PlayerFeet))
 	{
-		if (FVector::Dist(Feet, Nodes[FourthFloorDoorNode].Feet) < 10.0f)
+		const int32 StandNode = GetFourthFloorStandNode();
+		if (FVector::Dist(Feet, Nodes[StandNode].Feet) < 10.0f)
 		{
 			State = EIGManagerPatrolState::Staring;
 			StateStartSeconds = Now;
@@ -997,9 +1210,9 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 				NSLOCTEXT("IGMissingFloor", "YudamMokAvoidsFourth", "4층 복도로는 안 들어와."));
 			return;
 		}
-		if (Path.IsEmpty() || Path.Last() != FourthFloorDoorNode)
+		if (Path.IsEmpty() || Path.Last() != StandNode)
 		{
-			SetDestination(FourthFloorDoorNode);
+			SetDestination(StandNode);
 		}
 		TickWalking(DeltaSeconds, IGManagerPatrol::ChaseSpeed);
 		AimTorch(Character->GetActorLocation(), DeltaSeconds);
@@ -1192,6 +1405,16 @@ bool AIGManagerPatrol::HasClearLine(const FVector& From, const FVector& To) cons
 	return !World->LineTraceSingleByChannel(Hit, From, To, ECC_Visibility, Params);
 }
 
+FVector AIGManagerPatrol::GetHideApproachFeet() const
+{
+	const AIGPlayerCharacter* Character = Player.Get();
+	if (const AIGHidingSpot* Spot = Character ? Character->GetHidingSpot() : nullptr)
+	{
+		return Spot->GetApproachLocation();
+	}
+	return GetPlayerFeet();
+}
+
 FVector AIGManagerPatrol::GetPlayerFeet() const
 {
 	const AIGPlayerCharacter* Character = Player.Get();
@@ -1286,6 +1509,7 @@ void AIGManagerPatrol::HandleListenerKnock(const FVector& Where)
 	}
 	// 그도 듣는다. 열쇠 소리가 멎고, 손전등이 소리 난 쪽으로 올라간다.
 	State = EIGManagerPatrolState::Frozen;
+	PlayBodyAnim(FreezeAnim ? FreezeAnim.Get() : IdleAnim.Get(), true, 1.0f);
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
 	Exposure = 0.0f;
 	const FVector ToKnock = Where - (GetFeet() + FVector(0.0f, 0.0f, 150.0f));
@@ -1367,6 +1591,38 @@ void AIGManagerPatrol::RelaxTorch(const float DeltaSeconds)
 
 void AIGManagerPatrol::AnimateGait(const float DeltaSeconds, const float Speed)
 {
+	if (BodySkeletal)
+	{
+		// 리깅한 몸. 걸음 주기가 실제 빠르기와 맞게 재생 배율을 정한다. 서 있을 때는
+		// 하던 일에 맞는 자세다 — 노크에 굳고, 문간에서 훑고, 쉬면 숨만 쉰다.
+		BodyPivot->SetRelativeLocation(FVector::ZeroVector);
+		BodyPivot->SetRelativeRotation(FRotator::ZeroRotator);
+		if (State == EIGManagerPatrolState::Catching)
+		{
+			return;
+		}
+		if (Speed > IGManagerPatrol::InvestigateSpeed + 10.0f && RunAnim)
+		{
+			PlayBodyAnim(RunAnim, true, FMath::Clamp(Speed / IGManagerPatrol::RunCycleSpeed, 0.6f, 2.6f));
+		}
+		else if (Speed > 1.0f)
+		{
+			PlayBodyAnim(WalkAnim, true, FMath::Clamp(Speed / IGManagerPatrol::WalkCycleSpeed, 0.5f, 2.4f));
+		}
+		else if (State == EIGManagerPatrolState::Frozen && FreezeAnim)
+		{
+			PlayBodyAnim(FreezeAnim, true, 1.0f);
+		}
+		else if ((DwellRemaining > 0.0f || State == EIGManagerPatrolState::Staring) && LookAnim)
+		{
+			PlayBodyAnim(LookAnim, true, 1.0f);
+		}
+		else
+		{
+			PlayBodyAnim(IdleAnim, true, 1.0f);
+		}
+		return;
+	}
 	// 걸음마다 몸이 조금 오르내리고 좌우로 기운다. 메시에 걸음 동작이 없어서 몸통만 흔든다.
 	if (Speed > 1.0f)
 	{

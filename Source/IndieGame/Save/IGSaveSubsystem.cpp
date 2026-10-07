@@ -711,6 +711,7 @@ bool UIGSaveSubsystem::ApplyLoadedProgressInternal(
 	}
 
 	TGuardValue<bool> ApplyingGuard(bApplyingLoadedProgress, true);
+	UIGSaveGame::MigrateFlashlightOwnership(LastLoadedSave->Progress);
 	bool bApplied = false;
 	// 서사 스냅샷을 스토리 태그보다 먼저 되돌린다. RestoreStateSnapshot은 태그
 	// 변화를 그 자리에서 알리고, 밤 디렉터는 그 콜백 안에서 게이트를, 월드

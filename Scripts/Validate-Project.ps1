@@ -662,6 +662,12 @@ $reviewedTickingFiles = @(
 	'IGListenerGreyboxDirector.cpp',
 	# 전용 실행 인자에서만 생성하고 약 3초 뒤 종료한다. 실제 입력 제동 거리를 잰다.
 	'IGGameplayRealismProbe.cpp',
+	# -IGElevatorRideProbe에서만 생성한다. 승강기를 두 번 타 보고 종료한다.
+	'IGElevatorRideProbe.cpp',
+	# -IGListenerPursuitProbe에서만 생성한다. 위층 사람의 추격과 수색을 재고 종료한다.
+	'IGListenerPursuitProbe.cpp',
+	# 들뜬 보수판. 눌렸다 튀어나오는 1.6초 동안만 켜고 끝나면 끈다.
+	'IGResonantPanel.cpp',
 	# 전용 인자로만 생성한다. 실제 오디오 페이드와 충돌을 순서대로 확인한 뒤 종료한다.
 	# 일반 플레이에서는 생성하지 않으며, 후처리 Tick에서 같은 프레임의 상태를 읽는다.
 	'IGAudioPresentationProbe.cpp',
@@ -670,6 +676,8 @@ $reviewedTickingFiles = @(
 	'IGFridge.cpp',
 	'IGSwingDoor.cpp',
 	'IGSlidingDoor.cpp',
+	# 승강기. 칸이 움직이거나 문이 열려 있거나 안에 사람이 있는 동안만 켠다.
+	# 칸 등을 끄고 켜는 층 판단은 0.4초 타이머가 맡는다.
 	'IGElevator.cpp',
 	'IGNeighborhoodLifeDirector.cpp',
 	'IGListenerEntity.cpp',
@@ -683,6 +691,12 @@ $reviewedTickingFiles = @(
 	'IGHidingSpot.cpp',
 	# 어둠의 몸(어둑시니·손님). 나타나 있는 동안에만 켜고, 사라지면 끈다.
 	'IGShadowFigure.cpp',
+	# 만원. 낮의 승강기에서 한 번 일어나는 동안만 켜고, 그녀가 칸에서 내리면 끈다.
+	'IGElevatorOverloadDirector.cpp',
+	# 뒤따르는 발. 밤2 계단탑에서 한 번, 따라오는 동안만 켠다. 시작 조건은 0.2초 타이머가 본다.
+	'IGStairwellPresence.cpp',
+	# -IGStairwellProbe에서만 생성한다. 계단을 내려가며 뒤따르는 발을 겪고 종료한다.
+	'IGStairwellPresenceProbe.cpp',
 	# 밤3의 관리인. 그 시간이 밤3이고 벽의 대답을 아직 못 들었을 때만 켠다.
 	# 걸음과 손전등, 원뿔 시야가 매 프레임 일이고, 당번이 끝나면 스스로 끈다.
 	'IGManagerPatrol.cpp'
@@ -746,6 +760,8 @@ $pickupItemSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (
 	Join-Path $projectRoot 'Source/IndieGame/Interaction/IGPickupItem.cpp')
 $elevatorSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (
 	Join-Path $projectRoot 'Source/IndieGame/Interaction/IGElevator.cpp')
+$elevatorHeader = Get-Content -Raw -Encoding UTF8 -LiteralPath (
+	Join-Path $projectRoot 'Source/IndieGame/Interaction/IGElevator.h')
 $swingDoorSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (
 	Join-Path $projectRoot 'Source/IndieGame/Interaction/IGSwingDoor.cpp')
 $slidingDoorSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (
@@ -844,22 +860,22 @@ foreach ($surfaceLightingInvariant in @(
 	}
 }
 
+# 승강기는 칸이 승강로를 실제로 오르내리고, 탄 사람은 칸 바닥을 딛고 따라간다.
 foreach ($spatialContinuityInvariant in @(
-	'GetIntermediateCabBaseZ',
-	'IntermediateDoorPanels',
-	'RiderHalfHeight + FloorClearance',
-	'bIntermediateStopEnabled ? GetIntermediateCabBaseZ() : -FloorDeltaZ'
+	'PrimaryActorTick.TickGroup = TG_PrePhysics',
+	'CabRoot->SetRelativeLocation(FVector(0.0f, 0.0f, CabZ + CabOffsetZ))',
+	'static constexpr float StoreyHeight = 300.0f',
+	'IsDoorwayObstructed()'
 )) {
-	if (-not $elevatorSource.Contains($spatialContinuityInvariant)) {
+	if (-not ($elevatorSource + $elevatorHeader).Contains($spatialContinuityInvariant)) {
 		throw "Elevator spatial-continuity invariant is missing: $spatialContinuityInvariant"
 	}
 }
-if ($elevatorSource.Contains(
-	'Rider->GetActorLocation() - FVector(0, 0, FloorDeltaZ)')) {
-	throw 'Elevator must land from its visible cab floor, not a relative falling offset.'
+if ($elevatorSource -match 'TeleportTo\(|->SetActorLocation\(') {
+	throw 'Elevator must carry the rider on the moving cab floor, not teleport them.'
 }
 foreach ($worldContinuityInvariant in @(
-	'constexpr float SecondFloorZ = 300.0f',
+	'const FVector ElevatorLocation(793.0f, -305.0f, 0.0f)',
 	'FVector(-140, -214.81f, 154)',
 	'PropMesh(TEXT("SM_ApartmentCalendar2025"))',
 	'BuildStairCore();',
@@ -867,11 +883,11 @@ foreach ($worldContinuityInvariant in @(
 	'constexpr float StairRise = StairStoreyHeight / 18.0f;',
 	'constexpr float StairGoing = (StairFlightNorthY - StairFlightSouthY) / 8.0f;',
 	'FVector(-214.5f, -352, 119), FVector(251, 4, 238), Metal, false',
-	'FVector(800, -394, 620), FVector(160, 6, 1240)',
+	'FVector(800, -394, 655), FVector(160, 6, 1610)',
 	'FVector(1015, -385, 230), FVector(270, 20, 460)',
 	'TexMat(TEXT("M_StainlessUV"), FridgeBodyMaterial)',
-	'CabVisuals.DiffuserMaterial = SignWhiteMaterial',
-	'TexMat(TEXT("M_SteelDoorUV"), FridgeBodyMaterial)'
+	'TEXT("/Game/Prototype/Materials/M_ElevatorMirror.M_ElevatorMirror")',
+	'Elevator->Configure(CabVisuals);'
 )) {
 	if (-not $worldSceneSource.Contains($worldContinuityInvariant)) {
 		throw "World spatial-continuity invariant is missing: $worldContinuityInvariant"
@@ -1563,7 +1579,7 @@ if ($python) {
 	# 못 읽은 것을 통과로 세지 않으니, 이 수가 늘면 판정 못 하는 파형이 늘어난
 	# 것이다.
 	Assert-AuditBlindSpot $toneHeadroomOutput `
-		'판정을 못 하는 생성기 (?<count>\d+)개' 28 `
+		'판정을 못 하는 생성기 (?<count>\d+)개' 27 `
 		'음을 다 못 읽어서 깎임 여부를 판정 못 한 생성기'
 
 	# 설계값을 맨 숫자로 찾는 계약. 3300줄 문서에서 0.6은 열일곱 번 나오므로
@@ -1643,6 +1659,8 @@ if ($python) {
 # Test-WindowsPackageManifest.ps1은 배포 경로가 필요하므로 임시 패키지로
 # 정상 결과와 손상·누락 차단을 실행한다. 실제 배포물은 Package-Windows.ps1이 검사한다.
 & (Join-Path $PSScriptRoot 'Test-WindowsPackageManifestRegression.ps1')
+# 창을 띄우는 측정이 스위치 없이 시작되지 않는지 본다. 게임은 띄우지 않는다.
+& (Join-Path $PSScriptRoot 'Test-BackgroundLaunch.ps1')
 
 if ($python) {
     & $python.Source (Join-Path $PSScriptRoot 'test_windows_telemetry.py')

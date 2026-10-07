@@ -19,6 +19,11 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+# 창을 띄우는 측정인지는 경로를 보기 전에 가른다. 잘못 부른 실행이 폴더를 만들거나
+# 프로세스를 띄우기 전에 멈춘다.
+if ($PresentationMode -eq 'Windowed' -and -not $AllowVisibleWindow) {
+    throw 'Windowed 측정은 게임 창을 화면 앞에 띄웁니다. 창이 떠도 괜찮을 때 -AllowVisibleWindow를 함께 주세요.'
+}
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $archiveRoot = (Resolve-Path -LiteralPath $ArchiveDirectory).Path
 $evidenceRoot = [IO.Path]::GetFullPath($EvidenceDirectory)
@@ -76,6 +81,7 @@ r.DynamicRes.OperationMode=0
 r.AntiAliasingMethod=$AntiAliasing
 r.VSync=0
 t.MaxFPS=0
+au.LinearGainScalarForFinalOutut=0
 
 [Audio]
 UnfocusedVolumeMultiplier=1.0
@@ -133,7 +139,7 @@ sg.LandscapeQuality=$Quality
         & (Join-Path $PSScriptRoot 'Measure-WindowsGameTelemetry.ps1') -Launcher $launcher `
             -ShippingExecutable $shippingExecutable -GameArguments $arguments `
             -PresentMonPath $PresentMonPath -OutputDirectory $runRoot -TimeoutSeconds $TimeoutSeconds `
-            -ExpectedWindowTitle $ExpectedWindowTitle
+            -ExpectedWindowTitle $ExpectedWindowTitle -AllowVisibleWindow
     }
     else {
         $process = Start-Process -FilePath $launcher -ArgumentList $quoted -WorkingDirectory (Split-Path $launcher -Parent) -WindowStyle Hidden -PassThru
@@ -208,6 +214,8 @@ $scope = if ($PresentationMode -eq 'Windowed') {
     '현재 장비의 Shipping 창 모드 자동 밤 장면 경로. 화면 출력은 PresentMon, GPU 메모리는 Windows 카운터로 별도 확인'
 } else { '현재 장비의 Shipping 오프스크린 자동 밤 장면 경로. 실제 화면 출력 비용은 제외됨' }
 $report = [ordered]@{ scope = $scope;
+    # 엔진 CVar 이름이 실제로 Outut이다. 믹싱 비용은 그대로 재고 마지막 출력만 묵음이다.
+    audioOutput = 'post_mix_gain_zero';
     schemaVersion = 3; createdAt = [DateTime]::UtcNow.ToString('o');
     measurementCommit = $measurementCommit; measurementWorkingTreeClean = $measurementWorkingTreeClean; measurementScripts = $measurementHashes;
     commit = $packageManifest.commit; hasLocalChanges = $packageManifest.hasLocalChanges;

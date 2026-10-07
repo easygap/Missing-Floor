@@ -106,9 +106,9 @@ Assert-True ($inputConfig -notmatch 'AxisName="LookUp",Scale=-') 'no negative lo
 Assert-True ($character -notmatch 'AddControllerPitchInput\(\s*-Degrees') 'stick up looks up'
 
 Assert-ContainsAll $character @(
-	'ReferenceWalkSpeed = 300.0f',
-	'SprintSpeed = 460.0f',
-	'CrouchSpeed = 160.0f',
+	'ReferenceWalkSpeed = 175.0f',
+	'SprintSpeed = 410.0f',
+	'CrouchSpeed = 95.0f',
 	'ListenSpeed = 80.0f',
 	'WalkAcceleration = 1200.0f',
 	'CrouchAcceleration = 900.0f',

@@ -8,7 +8,10 @@ class AIGListenerEntity;
 class AIGNightLoopDirector;
 class AIGPlayerCharacter;
 class AIGPrologueWorldScene;
+class AIGSwingDoor;
+class UAnimSequence;
 class USceneComponent;
+class USkeletalMeshComponent;
 class USpotLightComponent;
 class UStaticMeshComponent;
 class UIGMissingFloorNarrativeSubsystem;
@@ -53,8 +56,9 @@ enum class EIGManagerPatrolState : uint8
  * 위층 사람이 두드리면 그 자리에서 굳고, 관리실로 서둘러 돌아간다. 벽 안의
  * 대답(T9)을 들은 뒤에는 나오지 않는다. 그 밤의 남은 길은 위층 사람의 것이다.
  *
- * 몸에는 충돌이 없다. 길은 계단탑과 복도의 빈 자리만 지나는 점 그래프이고,
- * 그 위를 미끄러지며 걸음마다 소리를 낸다.
+ * 몸에는 충돌이 없다. 길은 계단탑과 복도의 빈 자리만 지나는 점 그래프다. 몸은
+ * 리깅한 스켈레탈(SK_MokHansooPatrol)이 슬리퍼를 끌며 걷고, 쫓을 때는 허둥지둥
+ * 뛴다. 서서 훑을 때와 노크에 굳을 때, 손목을 잡을 때 동작이 따로 있다.
  */
 UCLASS(NotBlueprintable, Transient)
 class INDIEGAME_API AIGManagerPatrol : public AActor
@@ -139,6 +143,17 @@ private:
 	void AimTorch(const FVector& WorldTarget, float DeltaSeconds);
 	void RelaxTorch(float DeltaSeconds);
 	void AnimateGait(float DeltaSeconds, float Speed);
+	/** 리깅한 몸이 있으면 싣는다. 없으면 예전 정적 조각 둘로 남는다. */
+	bool BuildSkeletalBody();
+	void PlayBodyAnim(UAnimSequence* Sequence, bool bLoop, float Rate);
+	/** 4층 계단실 방화문. 닫혀 있으면 그 문을 열고 복도를 비추지 않는다. 문 앞 참에서 선다. */
+	bool IsFireDoorClosed() const;
+	/** 4층에서 서는 자리. 방화문이 닫혀 있으면 문 안쪽 참이다. */
+	int32 GetFourthFloorStandNode() const;
+	/** 놓친 자리 둘레에서 들러 볼 점들. 같은 층의 방과 복도 끝이다. */
+	void QueueSearchStops(const FVector& Around);
+	/** 숨은 그녀를 꺼내러 갈 자리. 숨은 가구 앞 바닥이다. */
+	FVector GetHideApproachFeet() const;
 	void PlayStep();
 	void PlayKeys(bool bForceCaption);
 	void Caption(const FText& Text, const FVector& Where, double& LastShown, float MinGapSeconds);
@@ -170,6 +185,30 @@ private:
 	TObjectPtr<UStaticMeshComponent> HeadHands;
 	UPROPERTY(Transient)
 	TObjectPtr<USpotLightComponent> Torch;
+	/** 리깅한 몸. 있으면 위 정적 조각 둘은 숨긴다. */
+	UPROPERTY(Transient)
+	TObjectPtr<USkeletalMeshComponent> BodySkeletal;
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> IdleAnim;
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> WalkAnim;
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> RunAnim;
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> LookAnim;
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> FreezeAnim;
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> GrabAnim;
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> ActiveAnim;
+	TWeakObjectPtr<AIGSwingDoor> FireDoor;
+	bool bFireDoorResolved = false;
+	/** 수색에서 들를 점과, 지금 몇 번째인가. */
+	TArray<int32> SearchStops;
+	int32 SearchStopCursor = 0;
+	/** 숨는 걸 보고 꺼내러 간 지 얼마나 됐나. 가구에 닿지 못하면 놓아 준다. */
+	double HideApproachStartSeconds = -100.0;
 
 	TWeakObjectPtr<AIGPrologueWorldScene> Scene;
 	TWeakObjectPtr<AIGPlayerCharacter> Player;

@@ -167,6 +167,12 @@ void AIGMissingFloorEpilogueDirector::SkipToFinalCard()
 		: static_cast<int32>(UE_ARRAY_COUNT(IGEpilogue::EndingBTimes));
 	const int32 CardIndex = CueCount - 2;
 	const int32 EndIndex = CueCount - 1;
+	// 마지막 카드에서 다시 누르면 마친다. 이미 지나온 큐는 다시 울리지 않는다.
+	if ((FiredCueMask & (1u << CardIndex)) != 0)
+	{
+		FinishEpilogue();
+		return;
+	}
 
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
 	bReplaySkipInputActive = false;
@@ -1092,5 +1098,30 @@ void AIGMissingFloorEpilogueDirector::EndPlay(
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
 	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	StopBeds();
+	// 장면 도중 불러오기나 액터 교체로 끊겨도 이동과 화면을 붙들어 두지 않는다.
+	if (bActive && EndPlayReason != EEndPlayReason::LevelTransition
+		&& EndPlayReason != EEndPlayReason::EndPlayInEditor
+		&& EndPlayReason != EEndPlayReason::Quit)
+	{
+		if (AIGPlayerCharacter* Character = Player.Get())
+		{
+			Character->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+			if (APlayerController* Controller = Cast<APlayerController>(Character->GetController()))
+			{
+				if (Controller->PlayerCameraManager)
+				{
+					Controller->PlayerCameraManager->StopCameraFade();
+				}
+				if (AIGHorrorHUD* Hud = Cast<AIGHorrorHUD>(Controller->GetHUD()))
+				{
+					Hud->EndMissingFloorEpilogue();
+				}
+			}
+		}
+	}
+	bActive = false;
+	bReplaySkipInputActive = false;
+	bReplaySkipRewinding = false;
+	UpdateSkipHud();
 	Super::EndPlay(EndPlayReason);
 }

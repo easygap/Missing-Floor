@@ -614,13 +614,11 @@ void AIGNightOneBeatDirector::RestoreSightingEntity()
 		// 공격 티어는 건드리지 않는다. 카메오는 연출이지 실패가 아니다. 순찰
 		// 처음으로 되감지도 않는다 — 밤 한가운데 먼지 흔적과 발자국이 지워지면
 		// 시간이 되감긴 것처럼 보인다. 자고 있으면 다음 밤이 제자리에 세운다.
+		// 복도로는 계단을 기어 올라 돌아간다. 예전에는 복도 첫 점으로 옮겨 놓았는데,
+		// 걸어서 오르내리는 계단에서는 내려가던 사람이 그 순간을 볼 수 있었다.
 		if (!Listener->IsDormant())
 		{
-			if (CorridorPatrolPoints.Num() > 0)
-			{
-				Listener->ParkForBeat(CorridorPatrolPoints[0], 0.0f);
-			}
-			else
+			if (CorridorPatrolPoints.Num() == 0)
 			{
 				Listener->ResetToPatrolStart(/*bRaiseAggression=*/false);
 			}

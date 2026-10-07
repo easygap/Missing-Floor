@@ -1,4 +1,5 @@
 ﻿#include "Entity/IGListenerGreyboxDirector.h"
+#include "Sequence/IGListenerPursuitProbe.h"
 
 #include "AssetCompilingManager.h"
 #include "Containers/Ticker.h"
@@ -345,6 +346,18 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 				return;
 			}
 			RequestExit(false);
+			return;
+		}
+		// 위층 사람이 층을 오가며 쫓고 뒤지는지 재는 검사. 다른 괴이와 관리인은 세워
+		// 두어 그의 걸음만 남긴다.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGListenerPursuitProbe")))
+		{
+			if (NightThreats) { NightThreats->SetActorTickEnabled(false); }
+			if (ManagerPatrol) { ManagerPatrol->SetActorTickEnabled(false); }
+			if (AIGListenerPursuitProbe* Pursuit = GetWorld()->SpawnActor<AIGListenerPursuitProbe>())
+			{
+				Pursuit->Configure(Entity, Player.Get(), NoiseSubsystem);
+			}
 			return;
 		}
 		// The capture tour, the V5 sweep and the probe are mutually exclusive

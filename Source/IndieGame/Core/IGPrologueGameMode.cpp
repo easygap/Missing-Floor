@@ -6,6 +6,8 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Player/IGHorrorHUD.h"
+#include "Sequence/IGElevatorRideProbe.h"
+#include "Sequence/IGStairwellPresenceProbe.h"
 #include "Sequence/IGGameplayRealismProbe.h"
 #include "Audio/IGAudioPresentationProbe.h"
 
@@ -44,6 +46,17 @@ void AIGPrologueGameMode::StartPlay()
 		AIGPrologueWorldScene::StaticClass(),
 		FTransform::Identity,
 		SpawnParameters);
+
+	// 실제 무대에서 승강기를 타 보는 검사. 무대가 지어지기를 기다렸다가 시작한다.
+	if (FParse::Param(FCommandLine::Get(), TEXT("IGElevatorRideProbe"))
+		|| FParse::Param(FCommandLine::Get(), TEXT("IGElevatorOverloadProbe")))
+	{
+		World->SpawnActor<AIGElevatorRideProbe>();
+	}
+	if (FParse::Param(FCommandLine::Get(), TEXT("IGStairwellProbe")))
+	{
+		World->SpawnActor<AIGStairwellPresenceProbe>();
+	}
 
 	// 프런트엔드에서 선택한 실제 게임은 "없는 층"으로 시작한다. 기존 그레이박스
 	// 플래그는 야간 장면을 바로 검수할 때만 쓰고, 패키지 사용자는 실행 인자를

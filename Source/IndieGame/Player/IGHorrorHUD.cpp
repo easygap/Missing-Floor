@@ -1960,8 +1960,8 @@ void AIGHorrorHUD::NoteCompletedInteractions(const UIGInteractionComponent* Inte
 		return;
 	}
 	SeenCompletedInteractions = Completed;
-	// 첫 조사를 끝까지 했다면 기본 조작은 이미 손에 익었다. 조작표를 내린다.
-	Guidance.FinishTutorial();
+	// 첫 물건을 조사했다고 조작표를 바로 내리지 않는다. 점프·숙이기·손전등 안내를
+	// 읽을 시간이 남아야 한다. 조작표는 실제로 떠 있던 시간이 차면 내려가고 F1로 다시 본다.
 	const AActor* Target = Interaction->GetLastCompletedTarget();
 	const bool bListen = Target && Target->ActorHasTag(FName(TEXT("MissingFloor.Verb.Listen")));
 	IGOnboardingMemory::AddPromptUse(bListen ? TEXT("Listen") : TEXT("Interact"));
@@ -2650,7 +2650,23 @@ void AIGHorrorHUD::DrawHUD()
 		}
 	}
 
-	// Focused interaction prompt and hold progress.
+	// 대사와 소리 자막의 실제 윗변을 먼저 잰다. 자막을 크게 써도 조사 안내가
+	// 그 뒤에 가려지지 않도록 같은 프레임의 배치를 나눠 쓴다.
+	float DialoguePanelTop = Canvas->ClipY;
+	const bool bDialogueVisible = DrawDialoguePanel(CurrentTime, DialoguePanelTop);
+	const float DialogueLaneGap = 14.0f * FMath::Clamp(
+		Canvas->ClipY / 1080.0f,
+		0.85f,
+		2.0f);
+	float AudioCaptionPanelTop = Canvas->ClipY;
+	const bool bAudioCaptionVisible = DrawAudioCaption(
+		CurrentTime,
+		bDialogueVisible
+			? DialoguePanelTop - DialogueLaneGap
+			: Canvas->ClipY - 54.0f,
+		&AudioCaptionPanelTop);
+
+	// 초점이 잡힌 대상의 조사 안내와 누르기 진행.
 	if (bHasFocus && !bFadedOut)
 	{
 		const FText FocusedPrompt = Interaction->GetFocusedPrompt();
@@ -2704,7 +2720,16 @@ void AIGHorrorHUD::DrawHUD()
 			const float LowerGuideReserve = ControlsAlpha > 0.01f
 				? 138.f
 				: (ContextTips.Alpha() > 0.01f ? 100.f : 54.f);
-			const float PromptBottomLimit = FMath::Max(0.f, Canvas->ClipY - LowerGuideReserve - PromptHeight);
+			float PromptBottomEdge = Canvas->ClipY - LowerGuideReserve;
+			if (bDialogueVisible)
+			{
+				PromptBottomEdge = FMath::Min(PromptBottomEdge, DialoguePanelTop - DialogueLaneGap);
+			}
+			if (bAudioCaptionVisible)
+			{
+				PromptBottomEdge = FMath::Min(PromptBottomEdge, AudioCaptionPanelTop - DialogueLaneGap);
+			}
+			const float PromptBottomLimit = FMath::Max(0.f, PromptBottomEdge - PromptHeight);
 			const float PromptTop = FMath::Clamp(FMath::Max(
 				(Canvas->ClipY * 0.5f) + 54.0f,
 				FocusBracketAlpha > 0.01f ? FocusBracketMax.Y + 14.0f : 0.0f), 0.f, PromptBottomLimit);
@@ -2719,17 +2744,6 @@ void AIGHorrorHUD::DrawHUD()
 		}
 	}
 
-	float DialoguePanelTop = Canvas->ClipY;
-	const bool bDialogueVisible = DrawDialoguePanel(CurrentTime, DialoguePanelTop);
-	const float DialogueLaneGap = 14.0f * FMath::Clamp(
-		Canvas->ClipY / 1080.0f,
-		0.85f,
-		2.0f);
-	const bool bAudioCaptionVisible = DrawAudioCaption(
-		CurrentTime,
-		bDialogueVisible
-			? DialoguePanelTop - DialogueLaneGap
-			: Canvas->ClipY - 54.0f);
 
 	// 아래쪽 줄은 대사와 소리 자막이 먼저 쓴다. 자막이 뜨면 조작 안내는 바로
 	// 비키고, 자막이 걷히면 천천히 돌아온다. 툭 튀어나오면 눈이 그리로 간다.
@@ -3187,6 +3201,8 @@ void AIGHorrorHUD::BeginMissingFloorEpilogueScene(
 	const TArray<FText>& BodyLines,
 	const FText& Footnote)
 {
+	// 장면이 바뀌면 건너뛰기 안내를 다시 보여 준다.
+	SensoryInterludeSkipShownAt = -1.0;
 	MissingFloorEpilogueScene = Scene;
 	MissingFloorEpilogueHeading = Heading;
 	MissingFloorEpilogueBodyLines = BodyLines;
@@ -3249,12 +3265,11 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 
 	if (MissingFloorEpilogueScene == EIGMissingFloorEpilogueScene::Card)
 	{
-		// 마지막 한 줄. 다른 어떤 것도 같은 화면에 두지 않는다.
+		// 마지막 한 줄. 같은 입력으로 바로 마칠 수 있으니 건너뛰기 안내만 남긴다.
 		const FText Card = MissingFloorEpilogueBodyLines.Num() > 0
 			? MissingFloorEpilogueBodyLines[0]
 			: FText::GetEmpty();
-		// 마지막 카드에는 우회 안내도 두지 않는다. 여기까지 왔으면 남은
-		// 것은 한 문장뿐이고, 그 옆에 버튼을 놓을 이유가 없다.
+		DrawSensoryInterludeSkip();
 		if (!Card.IsEmpty())
 		{
 			DrawCenteredText(
@@ -4076,8 +4091,13 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 
 bool AIGHorrorHUD::DrawAudioCaption(
 	const double /*GameTime*/,
-	const float MaximumBottomY)
+	const float MaximumBottomY,
+	float* OutPanelTop)
 {
+	if (OutPanelTop)
+	{
+		*OutPanelTop = Canvas ? Canvas->ClipY : 0.0f;
+	}
 	if (!Canvas)
 	{
 		return false;
@@ -4212,6 +4232,10 @@ bool AIGHorrorHUD::DrawAudioCaption(
 	const float PanelY = FMath::Max(
 		MinimumPanelY,
 		MaximumBottomY - PanelHeight);
+	if (OutPanelTop)
+	{
+		*OutPanelTop = PanelY;
+	}
 	const float PanelX = (Canvas->ClipX - PanelWidth) * 0.5f;
 	const float SurfaceAlpha = Settings.CaptionBackgroundOpacity * Alpha;
 	const float CornerRadius = PanelHeight * 0.22f;

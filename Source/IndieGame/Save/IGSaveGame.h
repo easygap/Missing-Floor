@@ -47,7 +47,9 @@ class INDIEGAME_API UIGSaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
-	static constexpr int32 CurrentSchemaVersion = 3;
+	static constexpr int32 CurrentSchemaVersion = 4;
+	/** 손전등을 밤마다 받던 시절의 밤 저장은 그 손전등을 가진 채로 이어 간다. */
+	static void MigrateFlashlightOwnership(FIGProgressSnapshot& Snapshot);
 
 	UIGSaveGame();
 

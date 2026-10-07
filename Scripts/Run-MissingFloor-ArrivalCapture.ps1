@@ -47,7 +47,7 @@ if ($arguments -notcontains '-RenderOffScreen' -or $arguments -notcontains '-d3d
 
 Write-Host "MISSINGFLOOR_ARRIVAL_CAPTURE running ${ResX}x${ResY} offscreen D3D12"
 $process = Start-Process -FilePath $editor -ArgumentList $arguments `
-	-PassThru -NoNewWindow
+	-PassThru -WindowStyle Hidden
 # Windows PowerShell 5.1은 핸들을 먼저 잡아 두지 않으면 ExitCode를 비워 둔다.
 $null = $process.Handle
 if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {

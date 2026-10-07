@@ -59,7 +59,7 @@ namespace IGNightFour
 	constexpr float EntityPassBaseSeconds = 3.35f;
 	constexpr float FailureCaptureSeconds = 2.15f;
 	constexpr float FailureListingDelaySeconds = 2.2f;
-	constexpr float FailureRetryDelaySeconds = 8.2f;
+	constexpr float FailureRetryDelaySeconds = 3.2f;
 
 	// Posted beside the existing fourth-floor lift notice, not on top of the
 	// 403 shipping labels. Its back face shares the established paper plane.
@@ -195,7 +195,6 @@ namespace IGNightFour
 	 * 자리에서 온다. 밤 5 슬롯이 돌려주는 것도 이 대답이다.
 	 */
 	const FVector CorridorEndKnockLocation(360.0f, 930.0f, 1390.0f);
-	constexpr float VigilSitDelaySeconds = 0.6f;
 	constexpr float VigilReplyDelaySeconds = 2.4f;
 	constexpr int32 VigilReplyLimit = 2;
 	/** 대답을 한 번도 못 받아도 새벽은 온다. 두드리지 않고 곁에 있는 것도 이 선택이다. */
@@ -996,9 +995,8 @@ void AIGMissingFloorNightFourDirector::EndPlay(
 	GetWorldTimerManager().ClearTimer(WallOpenTimer);
 	GetWorldTimerManager().ClearTimer(WallDustTimer);
 	bWallOpeningPending = false;
-	// 기다리는 도중에 사라지면 앉을 때 건 입력 잠금을 풀 사람이 없다.
+	// 기다리는 도중에 사라지면 예약된 노크와 새벽 소리도 걷는다.
 	EndEndingBVigil();
-	ReleaseVigilMoveLock();
 	if (AIGListenerEntity* ListenerActor = Listener.Get())
 	{
 		ListenerActor->OnPlayerCaptured.RemoveAll(this);
@@ -1076,10 +1074,8 @@ void AIGMissingFloorNightFourDirector::SetHourActive(const bool bHourActive)
 		bFinalRevealActive = false;
 		bMokRetreatActive = false;
 		SetMokVisible(false);
-		// 엔딩 B의 기다림은 늦어도 새벽에 끝난다. 이 새벽은 에필로그가 이동을
-		// 막은 뒤에 오므로 앉을 때 건 입력 잠금도 여기서 돌려준다.
+		// 엔딩 B의 기다림은 늦어도 새벽에 끝난다.
 		EndEndingBVigil();
-		ReleaseVigilMoveLock();
 		if (AIGListenerEntity* ListenerActor = Listener.Get())
 		{
 			ListenerActor->SetDormant(true);
@@ -2956,7 +2952,7 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyGlove",
-				"5층에 장갑 한 짝 있던데요. 오빠 손엔 두 치수 커요."),
+				"5층 장갑에 석고가 굳어 있던데요. 아저씨 거예요?"),
 		},
 		{
 			EIGMissingFloorWitness::RecorderEmptyBay,
@@ -3002,7 +2998,7 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyPills",
-				"골목에 떨어진 약봉투에 서일영 씨 이름이 있었어요."),
+				"서일영 씨 아세요? 골목에 그분 약봉투가 떨어져 있던데요."),
 		},
 	};
 
@@ -3173,7 +3169,7 @@ void AIGMissingFloorNightFourDirector::FinishEnding(const FName EndingId)
 		5.0f);
 	RefreshPresentation();
 	// B는 곁에 앉아 있는 시간을 먼저 산다. 결말은 05:30의 연결음과 함께
-	// 알린다. 기다림을 세우지 못하면(프로브 포함) 예전처럼 바로 알린다.
+	// 알린다. 기다림을 세우지 못하면(프로브 포함) 바로 알린다.
 	if (!bEndingA && BeginEndingBVigil())
 	{
 		return;
@@ -3220,18 +3216,7 @@ bool AIGMissingFloorNightFourDirector::BeginEndingBVigil()
 		AudioDirector->SetThreatState(EIGAudioThreatState::Calm);
 		AudioDirector->SetAuthoredSilence(true);
 	}
-	// 걷지는 못하게 하고 고개는 둔다. 이동 모드를 끄면 앉는 전환까지 멈춘다.
-	if (AController* Controller = PlayerCharacter->GetController())
-	{
-		Controller->SetIgnoreMoveInput(true);
-		bVigilMoveLocked = true;
-	}
-	GetWorldTimerManager().SetTimer(
-		VigilSitTimer,
-		this,
-		&AIGMissingFloorNightFourDirector::SitForVigil,
-		IGNightFour::VigilSitDelaySeconds,
-		false);
+	// 기다리는 동안에도 걸을 수 있다. 앉을지, 벽을 두드릴지는 플레이어가 정한다.
 	GetWorldTimerManager().SetTimer(
 		VigilDawnTimer,
 		this,
@@ -3241,26 +3226,19 @@ bool AIGMissingFloorNightFourDirector::BeginEndingBVigil()
 	return true;
 }
 
-void AIGMissingFloorNightFourDirector::SitForVigil()
-{
-	AIGPlayerCharacter* PlayerCharacter = VigilPlayer.Get();
-	if (!bEndingBVigilActive || !PlayerCharacter)
-	{
-		return;
-	}
-	// 도하가 마지막으로 갇혀 있던 높이까지 내려앉는다(§9 B).
-	if (!PlayerCharacter->IsCrouched())
-	{
-		PlayerCharacter->Crouch();
-		PlayerCharacter->SetCameraMotionEnabled(true);
-	}
-}
-
 bool AIGMissingFloorNightFourDirector::RegisterVigilKnock()
 {
 	UWorld* World = GetWorld();
 	if (!bEndingBVigilActive || !World)
 	{
+		return false;
+	}
+	const AIGPlayerCharacter* Character = VigilPlayer.Get();
+	// 다른 곳에서 친 노크가 멀리 떨어진 공동 벽을 두드리지는 않는다.
+	if (!Character || FVector::DistSquared(Character->GetActorLocation(),
+		IGNightFour::VigilKnockLocation) > FMath::Square(180.0f))
+	{
+		VigilTapTimes.Reset();
 		return false;
 	}
 	const double Now = World->GetTimeSeconds();
@@ -3457,7 +3435,7 @@ void AIGMissingFloorNightFourDirector::PlayVigilRingback()
 		IGNightFour::EndingPhoneRest);
 	EndEndingBVigil();
 	// 결말은 여기서 알린다. 그레이박스는 연결음이 이어지는 3.4초를 기다렸다가
-	// 에필로그를 연다. 이동 잠금은 에필로그가 넘겨받은 뒤 새벽에 푼다.
+	// 에필로그를 연다. 연결음이 울리는 동안에도 이동할 수 있다.
 	if (!bResolvedBroadcast)
 	{
 		bResolvedBroadcast = true;
@@ -3473,31 +3451,8 @@ void AIGMissingFloorNightFourDirector::EndEndingBVigil()
 	}
 	bEndingBVigilActive = false;
 	VigilTapTimes.Reset();
-	GetWorldTimerManager().ClearTimer(VigilSitTimer);
 	GetWorldTimerManager().ClearTimer(VigilReplyTimer);
 	GetWorldTimerManager().ClearTimer(VigilDawnTimer);
-}
-
-void AIGMissingFloorNightFourDirector::ReleaseVigilMoveLock()
-{
-	if (!bVigilMoveLocked)
-	{
-		return;
-	}
-	bVigilMoveLocked = false;
-	AIGPlayerCharacter* PlayerCharacter = VigilPlayer.Get();
-	AController* Controller = PlayerCharacter
-		? PlayerCharacter->GetController()
-		: nullptr;
-	if (!Controller && GetWorld())
-	{
-		Controller = GetWorld()->GetFirstPlayerController();
-	}
-	if (Controller)
-	{
-		Controller->SetIgnoreMoveInput(false);
-	}
-	VigilPlayer.Reset();
 }
 
 bool AIGMissingFloorNightFourDirector::ResolveFailureEnding()

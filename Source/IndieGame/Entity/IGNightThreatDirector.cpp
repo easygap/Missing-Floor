@@ -1639,10 +1639,10 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		const FVector PlayerFloor(Player->GetActorLocation().X, Player->GetActorLocation().Y, BodyLocation.Z);
 		const float Distance = FVector::Dist2D(PlayerFloor, BodyLocation);
 		Body->SetTargetYaw((PlayerFloor - BodyLocation).Rotation().Yaw);
-		const bool bHidden = Player->IsConcealedInHidingSpot();
+		const bool bPlayerConcealed = Player->IsConcealedInHidingSpot();
 		// 숨는 것을 봤으면 그 자리로 간다. 못 봤으면 소리로만 찾는다.
-		const bool bSawHide = bHidden && !bPlayerHiddenWhenOpened && Distance < 400.0f;
-		if (!bHidden || bSawHide || bGuestHeardPlayer)
+		const bool bSawHide = bPlayerConcealed && !bPlayerHiddenWhenOpened && Distance < 400.0f;
+		if (!bPlayerConcealed || bSawHide || bGuestHeardPlayer)
 		{
 			Body->SetTargetLocation(PlayerFloor, PursueSpeed);
 			if (Distance <= GuestReach)
@@ -1650,7 +1650,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 				BeginGuestCapture();
 				return;
 			}
-			if (!bHidden && Distance > GiveUpDistance)
+			if (!bPlayerConcealed && Distance > GiveUpDistance)
 			{
 				EndGuest(true);
 			}

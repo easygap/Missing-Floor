@@ -119,7 +119,7 @@ void AIGGameplayRealismProbe::Tick(const float DeltaSeconds)
 	}
 	else if (Phase == 2 && Seconds > 1.3f)
 	{
-		Check(Player->GetVelocity().Size2D() > 440.0f, TEXT("sprint_key_reaches_speed"));
+		Check(Player->GetVelocity().Size2D() > 390.0f, TEXT("sprint_key_reaches_speed"));
 		BrakeStart = Player->GetActorLocation();
 		SendKey(EKeys::W, false);
 		Phase = 3; Seconds = 0;
@@ -305,7 +305,8 @@ void AIGGameplayRealismProbe::CheckPresentationTiming()
 	Stress->Stress = 0.f;
 	Player->TraveledDistanceAccum = 0.f;
 	Player->LastStepIndex = 0;
-	Player->GetCharacterMovement()->Velocity = FVector(300, 0, 0);
+	// 걷기 속도(175 cm/s)와 걷기 보폭(91 cm)이면 0.52초에 한 걸음이다.
+	Player->GetCharacterMovement()->Velocity = FVector(175, 0, 0);
 	for (int32 Frame = 0; Frame < 312; ++Frame) { Player->UpdateFootsteps(1.f / 60.f); }
 	UE_LOG(LogIndieGame, Display, TEXT("REALISM_FOOTSTEPS walk_seconds=5.2 steps=%d"), Player->LastStepIndex);
 	Check(Player->LastStepIndex >= 9 && Player->LastStepIndex <= 11,

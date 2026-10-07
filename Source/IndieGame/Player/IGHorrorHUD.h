@@ -587,7 +587,7 @@ private:
 		float Alpha) const;
 	bool DrawDialoguePanel(double CurrentTime, float& OutPanelTop);
 	/** 자막은 넘겨받은 게임 시간 대신 자막 시계(AdvanceAudioCaptionClock)로 잰다. */
-	bool DrawAudioCaption(double CurrentTime, float MaximumBottomY);
+	bool DrawAudioCaption(double CurrentTime, float MaximumBottomY, float* OutPanelTop = nullptr);
 	/**
 	 * 자막 시계를 지금까지 흘리고 그 값을 돌려준다. 일시정지에는 멈추지만
 	 * 타이틀(밤 5 포함)이 떠 있으면 흐른다 — 타이틀은 월드를 멈춘 채로 소리를 낸다.

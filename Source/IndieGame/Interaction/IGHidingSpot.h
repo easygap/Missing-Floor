@@ -66,6 +66,14 @@ public:
 	 */
 	FVector GetPeekLocation() const;
 	EIGHidingView GetView() const { return View; }
+	/**
+	 * 가구 앞 바닥. 숨은 사람이 나와 서는 자리이고, 찾는 쪽이 귀를 대러 오는
+	 * 자리다. 높이는 이 자리가 놓인 바닥이다.
+	 */
+	FVector GetApproachLocation() const
+	{
+		return GetActorTransform().TransformPosition(FVector(ExitLocal.X, ExitLocal.Y, 0.0f));
+	}
 
 	/** 가림막의 짙기(0~1). 드나드는 동안 차오르고 빠진다. */
 	float GetMaskAlpha() const;

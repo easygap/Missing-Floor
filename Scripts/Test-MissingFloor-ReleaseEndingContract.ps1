@@ -155,7 +155,7 @@ if ($endingCSnapAt -le $endingCStart -or $endingCSnapAt -ge $endingCReveal) {
 Assert-ContainsAll $nightFourSource @(
 	'FailureCaptureSeconds = 2.15f',
 	'FailureListingDelaySeconds = 2.2f',
-	'FailureRetryDelaySeconds = 8.2f',
+	'FailureRetryDelaySeconds = 3.2f',
 	'AudioDirector->SetAuthoredSilence(false)',
 	'AudioDirector->SetThreatState(EIGAudioThreatState::Calm)',
 	'It->SuspendForFailureEnding()',

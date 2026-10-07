@@ -11,6 +11,7 @@ class AIGFridge;
 class AIGInspectable;
 class AIGNeighborhoodLifeDirector;
 class AIGPickupItem;
+class AIGFlashlightPickup;
 class AIGSlidingDoor;
 class AIGSwingDoor;
 class AIGZoneTrigger;
@@ -622,7 +623,8 @@ private:
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> CorridorLightDiscs;
 	UPROPERTY(Transient) TArray<TObjectPtr<UPointLightComponent>> LobbyLights;
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> LobbyLightDiscs;
-	UPROPERTY(Transient) TObjectPtr<AIGPickupItem> Flashlight;
+	UPROPERTY(Transient) TObjectPtr<AIGFlashlightPickup> Flashlight;
+	UPROPERTY(Transient) TObjectPtr<UPointLightComponent> HomeCeilingLight;
 	/**
 	 * 없는 층: 필로티 주차장 거리 쪽에 내려오는 셔터. 계단탑 1층 출입구와
 	 * 연결통로가 셔터 안쪽에 남아 그 시간에도 1층 로비와 관리실까지 걸어갈 수

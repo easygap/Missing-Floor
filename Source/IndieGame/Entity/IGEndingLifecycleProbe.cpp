@@ -176,7 +176,8 @@ void AIGListenerGreyboxDirector::AdvanceEndingLifecycleProbe()
 			bEndingVigilObserved = true;
 			EndingVigilSeconds = Now - EndingChoiceStartedAt;
 			if (EndingVigilSeconds >= 7.0 && !Narrative->WasSecondReportMade()
-				&& !Epilogue->IsActive() && Controller->IsMoveInputIgnored())
+				&& !Epilogue->IsActive() && !Controller->IsMoveInputIgnored()
+				&& !Controller->IsLookInputIgnored())
 			{
 				bEndingSevenSecondsObserved = true;
 			}

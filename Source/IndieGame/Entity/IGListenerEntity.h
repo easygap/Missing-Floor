@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "Entity/IGBuildingNav.h"
 #include "Entity/IGListenerTuning.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "IGListenerEntity.generated.h"
@@ -33,7 +34,11 @@ enum class EIGListenerState : uint8
 	Holding,
 	/** Burst pursuit toward the last sound. */
 	Chasing,
-	/** Lost the sound; short local sweep before giving up. */
+	/**
+	 * 소리를 놓쳤다. 놓친 자리 둘레의 문 앞과 숨을 자리, 그녀가 가던 쪽을 차례로
+	 * 들러 귀를 댄다. 한 바퀴를 다 돌아야 순찰로 돌아가고, 돌아간 뒤에도 한동안은
+	 * 더 오래, 더 낮게 듣는다.
+	 */
 	Searching,
 	/** Frozen by an answer knock. Hope, while it lasts. */
 	Waiting,
@@ -379,6 +384,34 @@ private:
 	// -- locomotion ---------------------------------------------------------
 	/** Sweeps toward Target; returns true on arrival (or when wedged). */
 	bool CrawlTowards(const FVector& Target, float Speed, float DeltaSeconds);
+	/**
+	 * 어디든 간다. 같은 층에서 곧게 닿으면 기존 걸음(CrawlTowards)이고, 벽이나
+	 * 층이 가로막으면 건물 길(BuildingNav)을 따라 계단탑으로 돌아간다. 계단에서는
+	 * 디딤판 윗면을 따라 몸을 기울여 오르내린다. 닿으면 true.
+	 */
+	bool MoveTowardGoal(const FVector& Goal, float Speed, float DeltaSeconds);
+	/** Goal까지 건물 길을 다시 짠다. 길이 없으면 false. */
+	bool PlanNavPath(const FVector& Goal);
+	/** 계단 띠와 반 층 참 위의 한 걸음. 쓸지 않고 디딤판 위 점을 잇는 선을 따른다. */
+	bool StepAlongStair(const FVector& TargetFeet, float Speed, float DeltaSeconds);
+	/** 같은 층에서 몸이 벽에 걸리지 않고 곧게 닿는가. */
+	bool CanCrawlStraightTo(const FVector& Goal) const;
+	/** 두 바닥점 사이를 몸과 같은 캡슐로 쓸어 본다. 막혔으면 막은 액터를 준다. */
+	bool IsCrawlLineClear(const FVector& FromFeet, const FVector& ToFeet, const AActor** OutBlocker = nullptr) const;
+	/** 캡슐 아래 바닥 높이. 액터 높이에서 캡슐 반 높이와 띄운 2 cm를 뺀다. */
+	FVector GetFeetLocation() const;
+	/** 계단 위에서는 몸이 경사를 따라 눕는다. 평지에 내려서면 천천히 편다. */
+	void UpdateStairPitch(float DeltaSeconds);
+	/**
+	 * 4층 계단실 방화문(§4). 닫혀 있으면 그 문을 지나는 길은 막힌다. 문 앞까지 와서
+	 * 두드리고 듣는다 — 403호 현관문과 같은 문법이다.
+	 */
+	bool LegCrossesClosedFireDoor(const FVector& FromFeet, const FVector& ToFeet);
+	/**
+	 * 닫힌 문(방화문, 관리실 문)에 막혔다. 그는 문을 열지도 부수지도 않는다. 문에 대고
+	 * 세 번 두드리고, 귀를 대고 듣는다. 12초 안에 다시 막히면 듣기만 한다.
+	 */
+	void ArriveAtClosedDoor();
 	/** 몸 밑 한 뼘 안에 바닥이 있는가. 계단 가장자리를 넘지 않게 걸음마다 본다. */
 	bool HasFloorBeneath(const FVector& Location) const;
 	/**
@@ -386,7 +419,7 @@ private:
 	 * 같은 주기가 매끈하게 돌면 몇 번 보고 나서 익숙해진다. 추격에는 쓰지 않는다.
 	 */
 	float AdvanceGait(float DeltaSeconds);
-	void FaceDirection(const FVector& Direction, float DeltaSeconds);
+	void FaceDirection(const FVector& Direction, float DeltaSeconds, float TurnDegreesPerSecond = 160.0f);
 	const FVector* CurrentPatrolTarget() const;
 
 	/**
@@ -403,6 +436,21 @@ private:
 	 * quiet building is the dangerous one.
 	 */
 	bool TryBeginAmbush();
+
+	// -- 놓친 뒤 ---------------------------------------------------------------
+	/** 그녀가 낸 소리의 자리와 시각을 몇 개 기억한다. 어느 쪽으로 갔는지 읽는다. */
+	void NotePlayerTrail(const FVector& Location, double Seconds);
+	/**
+	 * 마지막으로 들은 두 소리를 이어 그녀가 가던 쪽 몇 미터 앞의 건물 길 점을 고른다.
+	 * 계단 쪽으로 가던 소리면 계단으로 이어진다. 읽을 만한 흔적이 없으면 false.
+	 */
+	bool PredictPlayerHeading(FVector& OutPoint) const;
+	/** 수색에 들를 자리를 고른다. 놓친 자리에서 가까운 문 앞, 방, 숨을 자리 순이다. */
+	void BuildSearchPlan();
+	/** 한 번 놓쳤을 때 찾아다니는 시간. 밤이 갈수록, 화가 날수록 길다. */
+	float SearchSecondsForNight() const;
+	/** 수색을 마치고 돌아간 뒤 한동안은 더 천천히 기고 더 오래 듣는다. */
+	bool IsAlert() const;
 
 	// -- presentation -------------------------------------------------------
 	void BuildGreyboxBody();
@@ -652,6 +700,54 @@ private:
 	bool bDustTrailSeeded = false;
 	/** True while the crawl bed is the 장판 variant rather than tile. */
 	bool bDragSurfaceIsVinyl = false;
+	/** 계단 철판 위. 손바닥과 무릎이 디딜 때마다 철판이 운다. */
+	bool bDragSurfaceIsMetalStair = false;
+
+	// -- 층을 오가는 길 -------------------------------------------------------
+	FIGBuildingNav BuildingNav;
+	/** 지금 따라가는 길. 끝 점은 목표 자리 그 자체다. */
+	TArray<FVector> NavPath;
+	/** NavPath의 점 중 계단 위(디딤판을 따라야 하는) 점. */
+	TArray<bool> NavPathOnStair;
+	int32 NavPathIndex = 0;
+	FVector NavGoal = FVector::ZeroVector;
+	double NavPlannedSeconds = -1000.0;
+	/** 이번 걸음이 계단 위였다. 몸을 경사대로 눕힌다. */
+	bool bOnStairLeg = false;
+	float StairPitchTarget = 0.0f;
+	float StairBodyPitch = 0.0f;
+
+	// -- 놓친 뒤 ---------------------------------------------------------------
+	struct FHeardMark
+	{
+		FVector Location = FVector::ZeroVector;
+		double Seconds = -1000.0;
+	};
+	/** 그녀가 낸 소리. 마지막 넷만. */
+	TArray<FHeardMark> PlayerTrail;
+	/** 소리가 끊긴 뒤 그녀가 가던 쪽으로 몇 미터 더 따라가 보는 자리. */
+	FVector ChaseMomentumTarget = FVector::ZeroVector;
+	bool bHasMomentumTarget = false;
+	bool bMomentumTried = false;
+	TArray<FVector> SearchSpots;
+	/** 들러서 귀를 댈 방향. 숨을 자리면 그 가구를 향한다. */
+	TArray<FVector> SearchFacings;
+	TArray<bool> SearchSpotIsHiding;
+	int32 SearchSpotIndex = 0;
+	float SearchPauseLeft = 0.0f;
+	bool bSearchPausing = false;
+	float SearchBudgetSeconds = 0.0f;
+	/** 수색을 마치고 돌아가는 동안의 경계. 이 시각까지 더 천천히 기고 더 오래 듣는다. */
+	double AlertUntilSeconds = -1000.0;
+	/** 4층 계단실 방화문. 처음 길을 짤 때 찾아 둔다. */
+	TWeakObjectPtr<AIGSwingDoor> StairFireDoor;
+	bool bStairFireDoorResolved = false;
+	/** 이번 걸음이 닫힌 문(403호 현관문 말고)에 막혔다. */
+	bool bBlockedByClosedDoor = false;
+	/** 막은 문. 두드릴 방향을 잰다. */
+	TWeakObjectPtr<AActor> BlockingDoor;
+	/** 닫힌 문 노크는 12초에 한 번. 그 사이에는 문 앞에서 듣기만 한다. */
+	double LastClosedDoorKnockSeconds = -1000.0;
 
 	/** 그의 숨. 상태와 거리로 볼륨이 정해진다. 자는 동안은 0. */
 	UPROPERTY(Transient)

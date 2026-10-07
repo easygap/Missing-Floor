@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
+#include "GameplayTagContainer.h"
 #include "IGFlashlightComponent.generated.h"
 
 class USpotLightComponent;
@@ -9,7 +10,8 @@ class UIGAccessibilitySubsystem;
 class UIGBeamDustComponent;
 
 /**
- * The handheld light the player carries from chapter two on.
+ * 현관 신발장 위에서 챙긴 뒤 가지고 다니는 손전등. 챙긴 기록(State.MissingFloor.HasFlashlight)이
+ * 저장되고, 밤이 손전등을 몰래 쥐여 주지 않는다.
  *
  * It is deliberately a poor light: a warm, narrow, slightly uneven beam from
  * a cheap convenience-store torch. Three things make it feel handheld rather
@@ -29,6 +31,10 @@ public:
 	UIGFlashlightComponent();
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	static FGameplayTag GetOwnershipTag();
+	/** 저장된 소유 기록을 읽어 쓸 수 있는지 정한다. 켜는 소리는 내지 않는다. */
+	void RefreshOwnership();
 	virtual void TickComponent(
 		float DeltaSeconds,
 		ELevelTick TickType,
@@ -105,6 +111,8 @@ protected:
 
 private:
 	friend class AIGGameplayRealismProbe;
+	UFUNCTION()
+	void HandleStoryStateChanged(FGameplayTag StateTag, bool bAdded);
 	void UpdateSway(float DeltaSeconds);
 	float SampleFlicker(float DeltaSeconds);
 

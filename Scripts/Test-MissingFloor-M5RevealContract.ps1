@@ -186,7 +186,7 @@ Assert-ContainsAll $nightFourSource @(
 	'&& bFinalConfrontationComplete',
 	'BeginFailureListing()',
 	'CreateWallpaperSeamRoller(this)',
-	'FailureRetryDelaySeconds = 8.2f',
+	'FailureRetryDelaySeconds = 3.2f',
 	'ResetAfterFailureEnding()',
 	'TEXT("M_SpriteFinalCavity")',
 	'TEXT("M_SpriteMokFinalUpper")',

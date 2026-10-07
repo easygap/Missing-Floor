@@ -16,6 +16,8 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Environment/IGDustSubsystem.h"
+#include "Interaction/IGFireDoorWedge.h"
+#include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -68,6 +70,8 @@ namespace IGListener
 	constexpr float DragSurfacePollInterval = 0.30f;
 	/** Sheet vinyl, tagged by the world scene for the §21.2 footstep matrix. */
 	const FName VinylSurfaceTag(TEXT("Footstep.Vinyl"));
+	/** 계단탑의 철판 디딤판. 씬이 같은 발소리 표로 붙인다. */
+	const FName MetalStairSurfaceTag(TEXT("Footstep.MetalStair"));
 
 	/**
 	 * 연출이 세워 둔 그를 깨우는 크기. 걷기 0.15와 웅크린 걸음 0.05, 천천히 여는
@@ -127,6 +131,45 @@ namespace IGListener
 	constexpr float ApproachCueCentimeters = 600.0f;
 	constexpr double ApproachCueIntervalSeconds = 1.5;
 	constexpr double ChaseApproachCueIntervalSeconds = 0.75;
+
+	// -- 놓친 뒤 -----------------------------------------------------------------
+	// 소리가 끊겼다고 바로 멈추지 않는다. 마지막 소리 자리에 닿고도 조용하면 그녀가
+	// 가던 쪽으로 몇 미터 더 따라가 본다. 그래도 없으면 둘레를 뒤진다.
+	constexpr double ChaseMomentumAfterSeconds = 1.2;
+	/** 이보다 오래 떨어진 두 소리는 이어서 방향을 읽지 않는다. */
+	constexpr double TrailLinkSeconds = 4.0;
+	constexpr int32 TrailCapacity = 4;
+	/** 가던 쪽으로 따라가 보는 거리(건물 길). */
+	constexpr float MomentumMinDistance = 250.0f;
+	constexpr float MomentumMaxDistance = 800.0f;
+	/** 수색에 들르는 자리 수와, 놓친 자리에서 그 자리들까지의 길 거리. */
+	constexpr int32 SearchSpotCount = 5;
+	constexpr float SearchReach = 950.0f;
+	/** 숨을 자리는 놓친 자리에서 이만큼 안이면 들른다. */
+	constexpr float SearchHidingReach = 1000.0f;
+	/** 한 자리에 귀를 대는 시간. 숨을 자리 앞에서는 더 오래, 더 가까이 듣는다. */
+	constexpr float SearchPauseSeconds = 2.1f;
+	constexpr float SearchHidingPauseSeconds = 3.6f;
+	/** 찾아다니는 걸음. 조사보다 느리고 순찰보다 빠르다. 소리를 내지 않으려는 걸음이다. */
+	constexpr float SearchSpeedScale = 0.62f;
+	/** 수색이 끝나고 돌아간 뒤의 경계. 더 천천히 기고 더 오래, 더 멀리 듣는다. */
+	constexpr double AlertSeconds = 45.0;
+	constexpr float AlertCrawlScale = 0.8f;
+	constexpr float AlertHearingGain = 1.2f;
+	constexpr float AlertListenScale = 1.3f;
+	/** 걸음 사이 수색 중의 귀. 멈춰 듣는 동안은 제자리 청취와 같다. */
+	constexpr float SearchMovingGain = 1.15f;
+
+	// -- 계단 ------------------------------------------------------------------
+	// 네 발로 디딤판을 짚고 오른다. 오를 때는 조금 느리고 내려갈 때는 거의 그대로다.
+	constexpr float StairClimbSpeedScale = 0.82f;
+	constexpr float StairDescendSpeedScale = 0.92f;
+	/** 몸이 경사를 따라 눕는 한계. 한 층 열여덟 단이 34도쯤이다. */
+	constexpr float StairPitchLimit = 38.0f;
+	/** 쫓는 동안 길을 다시 짜는 간격. 그녀가 계단을 오르내리면 길도 따라 바뀐다. */
+	constexpr double ChaseReplanSeconds = 0.8;
+	/** 다른 목표면 길을 새로 짠다. */
+	constexpr float ReplanGoalShift = 140.0f;
 }
 
 AIGListenerEntity::AIGListenerEntity()
@@ -135,7 +178,9 @@ AIGListenerEntity::AIGListenerEntity()
 
 	Body = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Body"));
 	// Low and wide: an upper body on elbows with the legs trailing behind.
-	Body->InitCapsuleSize(42.0f, 58.0f);
+	// 반지름은 어깨 폭이다. 팔꿈치는 그보다 넓게 벌어지지만, 90 cm 문틀과 계단
+	// 띠(105 cm)를 지나야 하는 몸이라 벽에 닿는 것은 팔이지 몸통이 아니다.
+	Body->InitCapsuleSize(34.0f, 58.0f);
 	Body->SetCollisionProfileName(TEXT("Pawn"));
 	Body->SetCanEverAffectNavigation(false);
 	SetRootComponent(Body);
@@ -152,6 +197,8 @@ void AIGListenerEntity::BeginPlay()
 	SpawnLocation = GetActorLocation();
 	SearchAnchor = SpawnLocation;
 	BuildGreyboxBody();
+	// 층을 오가는 길. 계단 치수는 씬이 든 정적 값이라 씬이 서기 전에도 짤 수 있다.
+	BuildingNav.Build();
 
 	if (UWorld* World = GetWorld())
 	{
@@ -263,6 +310,7 @@ void AIGListenerEntity::Tick(const float DeltaSeconds)
 		}
 	}
 	UpdatePresentationLayer();
+	UpdateStairPitch(DeltaSeconds);
 	UpdatePresentationPose(LastMoveSpeed, DeltaSeconds);
 	UpdateDragLoop(LastMoveSpeed);
 	// Only while he is actually moving, and only a few times a second: a trace
@@ -339,6 +387,8 @@ void AIGListenerEntity::EnterState(const EIGListenerState NewState)
 		{
 			ListenerSkeletal->SetRelativeLocationAndRotation(FVector(0, 0, -58), FRotator::ZeroRotator);
 		}
+		StairBodyPitch = 0.0f;
+		StairPitchTarget = 0.0f;
 	}
 
 	if (UWorld* World = GetWorld())
@@ -459,17 +509,21 @@ void AIGListenerEntity::EnterState(const EIGListenerState NewState)
 				PlayerCharacter->PlayScareKick(0.8f + 1.2f * Near);
 			}
 		}
-		else if (PreviousState == EIGListenerState::Chasing
-			&& (NewState == EIGListenerState::Searching
-				|| NewState == EIGListenerState::Waiting))
+		else if ((PreviousState == EIGListenerState::Chasing
+				&& NewState == EIGListenerState::Waiting)
+			|| (PreviousState == EIGListenerState::Searching
+				&& NewState == EIGListenerState::Patrolling))
 		{
-			// 놓쳤다. 추격의 끝은 음악이 4초에 걸쳐 빠지는 것으로만 알 수 있었는데,
-			// 그건 세계의 신호지 몸의 신호가 아니다. 그가 멈추는 순간 그녀가
-			// 숨을 내쉰다 — 대답 노크에 얼어붙은 것도 같은 순간이다.
+			// 대답 노크에 얼어붙은 순간, 그리고 그가 뒤지기를 그만두고 돌아서는 순간에
+			// 그녀가 숨을 내쉰다. 소리를 놓친 순간에는 아니다 — 그때부터 그는 둘레를
+			// 뒤진다. 멀리 있던 그녀는 그가 돌아선 줄 모른다.
 			if (AIGPlayerCharacter* PlayerCharacter =
 				Cast<AIGPlayerCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
 			{
-				if (UIGStressComponent* Stress = PlayerCharacter->GetStress())
+				const bool bNear = NewState == EIGListenerState::Waiting
+					|| FVector::Dist(PlayerCharacter->GetActorLocation(), GetActorLocation()) <= 1800.0f;
+				if (UIGStressComponent* Stress = PlayerCharacter->GetStress();
+					Stress && bNear)
 				{
 					Stress->PlayReliefExhale();
 				}
@@ -518,13 +572,22 @@ void AIGListenerEntity::EnterState(const EIGListenerState NewState)
 		break;
 
 	case EIGListenerState::Searching:
-		SearchAnchor = GetActorLocation();
+		// 놓친 자리는 그가 선 자리가 아니라 마지막으로 들은 자리다.
+		SearchAnchor = LastHeardLocation;
 		SearchTarget = SearchAnchor;
 		SearchRetargetSeconds = 0.0f;
+		BuildSearchPlan();
 		break;
 
 	case EIGListenerState::Patrolling:
 		bReactingToSound = false;
+		NavPath.Reset();
+		NavPathOnStair.Reset();
+		break;
+
+	case EIGListenerState::Chasing:
+		bHasMomentumTarget = false;
+		bMomentumTried = false;
 		break;
 
 	case EIGListenerState::Waiting:
@@ -558,7 +621,10 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 			EnterState(EIGListenerState::Banging);
 			break;
 		}
-		if (CrawlTowards(*Target, CrawlSpeed * AdvanceGait(DeltaSeconds), DeltaSeconds))
+		// 수색을 마치고 돌아가는 길이면 다른 층에서 계단을 타고 올라온다. 돌아간 뒤에도
+		// 한동안은 더 천천히 긴다.
+		const float PatrolSpeed = CrawlSpeed * (IsAlert() ? IGListener::AlertCrawlScale : 1.0f);
+		if (MoveTowardGoal(*Target, PatrolSpeed * AdvanceGait(DeltaSeconds), DeltaSeconds))
 		{
 			// 밤2 문 앞의 그는 대본의 노크 사이에 제 노크를 끼워 넣지 않는다.
 			if (bBeatHold)
@@ -665,12 +731,16 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		}
 		// 들은 것 없이 가는 걸음은 순찰과 같은 빠르기다. 끌림과 걸음이 평소처럼
 		// 들려야 매복이 조사와 갈린다.
-		if (CrawlTowards(
+		if (MoveTowardGoal(
 				LastHeardLocation,
 				bSilentApproach ? CrawlSpeed : InvestigateSpeed,
 				DeltaSeconds))
 		{
-			if (bCallFromAbove)
+			if (bBlockedByClosedDoor)
+			{
+				ArriveAtClosedDoor();
+			}
+			else if (bCallFromAbove)
 			{
 				ArriveBelowUpperSound();
 			}
@@ -743,7 +813,22 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		}
 		else
 		{
-			CrawlTowards(LastHeardLocation, ChaseSpeed, DeltaSeconds);
+			// 소리가 끊겨도 바로 서지 않는다. 마지막 소리 자리에 닿았는데 조용하면 그녀가
+			// 가던 쪽으로 몇 미터 더 간다. 계단 쪽으로 가던 소리면 계단을 탄다.
+			const double Quiet = GetWorld()->GetTimeSeconds() - LastHeardTime;
+			const FVector Goal = bHasMomentumTarget ? ChaseMomentumTarget : LastHeardLocation;
+			const bool bArrived = MoveTowardGoal(Goal, ChaseSpeed, DeltaSeconds);
+			if (bArrived && bBlockedByClosedDoor)
+			{
+				// 문 너머로 달아났다. 문을 부수지 않는다. 두드리고 듣는다.
+				ArriveAtClosedDoor();
+				break;
+			}
+			if (bArrived && !bMomentumTried && Quiet >= IGListener::ChaseMomentumAfterSeconds)
+			{
+				bMomentumTried = true;
+				bHasMomentumTarget = PredictPlayerHeading(ChaseMomentumTarget);
+			}
 		}
 		// 소음 이벤트와 같은 게임 시간이다. 일시정지 중에는 둘 다 멈춘다.
 		const double SilenceSeconds =
@@ -756,27 +841,81 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 	}
 
 	case EIGListenerState::Searching:
-		SearchRetargetSeconds -= DeltaSeconds;
-		if (SearchRetargetSeconds <= 0.0f)
+	{
+		// 놓친 자리 둘레를 차례로 들른다. 가던 쪽의 길목, 숨을 만한 가구, 문 앞과 빈방.
+		// 닿으면 멈춰서 귀를 대고, 숨을 자리 앞에서는 더 오래 듣는다. 그 사이에 무엇이든
+		// 들리면 다시 조사와 추격이다(HandleNoise). 다 돌았거나 시간이 다하면 그제야
+		// 순찰로 돌아가는데, 돌아가는 동안에도 한동안은 더 낮게 기고 더 오래 듣는다.
+		// 시간은 놓친 자리 둘레에 닿고부터 잰다. 다른 층에서 내려오는 동안 다 써 버리면
+		// 도착하자마자 돌아선다.
+		if (FIGBuildingNav::FloorOfFeet(GetFeetLocation().Z)
+				== FIGBuildingNav::FloorOfFeet(SearchAnchor.Z - 60.0f)
+			&& FVector::Dist2D(GetActorLocation(), SearchAnchor) < 1500.0f)
 		{
-			// Short blind sweeps around where the trail went cold. The
-			// wobble is deterministic so replays and captures line up.
-			const uint32 Hash =
-				static_cast<uint32>(StateSeconds * 977.0f) * 2654435761u;
-			const float Angle =
-				2.0f * PI * ((Hash >> 8) & 0xFFFF) / 65536.0f;
-			SearchTarget = SearchAnchor
-				+ FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.0f)
-				* IGListener::SearchRadius;
-			SearchRetargetSeconds = 3.0f;
+			SearchBudgetSeconds -= DeltaSeconds;
 		}
-		CrawlTowards(SearchTarget, CrawlSpeed * AdvanceGait(DeltaSeconds), DeltaSeconds);
-		if (StateSeconds >= IGListener::SearchSeconds)
+		UIGMissingFloorAudioSubsystem* AudioDirector = GetWorld()
+			? GetWorld()->GetSubsystem<UIGMissingFloorAudioSubsystem>()
+			: nullptr;
+		if (!SearchSpots.IsValidIndex(SearchSpotIndex) || SearchBudgetSeconds <= 0.0f)
 		{
+			if (bSearchPausing && AudioDirector)
+			{
+				AudioDirector->SetEntityListening(false);
+			}
+			bSearchPausing = false;
 			bReactingToSound = false;
+			AlertUntilSeconds = GetWorld()->GetTimeSeconds() + IGListener::AlertSeconds;
 			EnterState(EIGListenerState::Patrolling);
+			break;
+		}
+		if (bSearchPausing)
+		{
+			AttentionDirection = SearchFacings[SearchSpotIndex];
+			FaceDirection(AttentionDirection, DeltaSeconds);
+			SearchPauseLeft -= DeltaSeconds;
+			if (SearchPauseLeft <= 0.0f)
+			{
+				bSearchPausing = false;
+				++SearchSpotIndex;
+				if (AudioDirector)
+				{
+					AudioDirector->SetEntityListening(false);
+				}
+			}
+			break;
+		}
+		if (MoveTowardGoal(
+				SearchSpots[SearchSpotIndex],
+				InvestigateSpeed * IGListener::SearchSpeedScale,
+				DeltaSeconds))
+		{
+			// 닫힌 문 앞이면 그 문에 귀를 댄다. 문 너머 숨을 자리는 거기서 듣는다.
+			if (bBlockedByClosedDoor)
+			{
+				bBlockedByClosedDoor = false;
+				if (const AActor* Door = BlockingDoor.Get())
+				{
+					const FVector ToDoor = Door->GetComponentsBoundingBox().GetCenter() - GetActorLocation();
+					SearchFacings[SearchSpotIndex] = FVector(ToDoor.X, ToDoor.Y, 0.0f).GetSafeNormal();
+				}
+			}
+			bSearchPausing = true;
+			// 같은 길이로 멈추면 박자를 외운다. 들른 순서로 조금씩 흔든다.
+			const uint32 PauseHash = static_cast<uint32>(SearchSpotIndex + 1 + KnockSerial * 7) * 2654435761u;
+			const float Sway = 0.85f + 0.3f * ((PauseHash >> 8) & 0xFF) / 255.0f;
+			SearchPauseLeft = (SearchSpotIsHiding[SearchSpotIndex]
+				? IGListener::SearchHidingPauseSeconds
+				: IGListener::SearchPauseSeconds) * Sway;
+			PlayPlantSettle(SearchSpotIsHiding[SearchSpotIndex] ? 0.32f : 0.45f);
+			if (AudioDirector)
+			{
+				// 그가 멈춰 듣는 동안 건물도 숨을 참는다(청취 창의 −6dB).
+				AudioDirector->SetEntityListening(true);
+			}
 		}
 		break;
+	}
 
 	case EIGListenerState::Waiting:
 	{
@@ -1003,17 +1142,29 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 		&& Event.Instigator->IsA<AIGPlayerCharacter>())
 	{
 		CachedPlayer = Cast<APawn>(Event.Instigator.Get());
+		NotePlayerTrail(Event.Location, Now);
 	}
+	// 새 소리가 들렸다. 가던 쪽을 짐작해 따라가던 걸음은 거기서 접고 소리로 간다.
+	bHasMomentumTarget = false;
+	bMomentumTried = false;
 
 	// 위에서 난 소리. 그는 계단을 기어오르지 못하고(CrawlTowards는 Z를 버린다)
 	// 자기가 갇혔던 층에는 올라가지 않는다(§8 3-3, §13). 닿을 수 없는 추격을
 	// 거는 대신 계단 아래까지 와서 듣고, 두 번 들렸으면 위를 향해 두드린다.
 	// 쫓던 그녀가 계단을 올라가 버린 경우도 같다. 아래층 소리(밤2 1층의
 	// 붕괴)는 지금처럼 추격이 된다.
-	if (Event.Location.Z - GetActorLocation().Z > FloorHeightThreshold)
+	//
+	// 1~4층은 이제 계단탑으로 이어져 있다. 그 사이의 소리에는 계단을 타고 간다
+	// (MoveTowardGoal). 이 갈래는 옥상과 5층의 소리만이다.
+	const bool bUnreachableAbove =
+		Event.Location.Z - GetActorLocation().Z > FloorHeightThreshold
+		&& (!BuildingNav.IsBuilt()
+			|| FIGBuildingNav::FloorOfFeet(Event.Location.Z - 60.0f) >= 4);
+	if (bUnreachableAbove)
 	{
 		const FVector Below = bHasStairFoot ? StairFoot : Event.Location;
-		LastHeardLocation = FVector(Below.X, Below.Y, GetActorLocation().Z);
+		// 계단 아래 자리는 4층 복도다. 그가 다른 층에 있으면 계단을 타고 거기까지 온다.
+		LastHeardLocation = bHasStairFoot ? StairFoot : FVector(Below.X, Below.Y, GetActorLocation().Z);
 		UpperSoundLocation = Event.Location;
 		const bool bKnockUp = bSecondSound
 			|| State == EIGListenerState::Chasing
@@ -1098,6 +1249,11 @@ float AIGListenerEntity::HearingMultiplier() const
 		return IGListener::ListeningGain;
 	case EIGListenerState::Holding:
 		return IGListener::HoldingGain;
+	case EIGListenerState::Searching:
+		// 멈춰서 귀를 대는 동안은 제자리 청취와 같고, 옮겨 가는 동안에도 평소보다 예민하다.
+		return bSearchPausing ? IGListener::HoldingGain : IGListener::SearchMovingGain;
+	case EIGListenerState::Patrolling:
+		return IsAlert() ? IGListener::AlertHearingGain : 1.0f;
 	default:
 		return 1.0f;
 	}
@@ -1106,8 +1262,9 @@ float AIGListenerEntity::HearingMultiplier() const
 float AIGListenerEntity::ListenSecondsForTier() const
 {
 	// §20.2 gives the night base and §4.3-7 the tier axis; the tuning table has
-	// already multiplied them, so there is one number left to obey.
-	return Tuning.ListenWindowSeconds;
+	// already multiplied them, so there is one number left to obey. 수색을 마치고
+	// 돌아가는 동안에는 칸마다 더 오래 듣는다.
+	return Tuning.ListenWindowSeconds * (IsAlert() ? IGListener::AlertListenScale : 1.0f);
 }
 
 float AIGListenerEntity::WaitSecondsForTier() const
@@ -1658,6 +1815,12 @@ void AIGListenerEntity::ParkForBeat(const FVector& Where, const float Yaw)
 	TeleportTo(Parked, FRotator(0.0f, Yaw, 0.0f), false, true);
 	SetActorEnableCollision(true);
 	PatrolIndex = 0;
+	// 연출이 세운 자리에서 새로 시작한다. 쫓던 길과 놓친 흔적, 경계를 남기면 카메오가
+	// 시작하자마자 엉뚱한 층으로 기어간다.
+	NavPath.Reset();
+	NavPathOnStair.Reset();
+	PlayerTrail.Reset();
+	AlertUntilSeconds = -1000.0;
 	// 이 한 줄이 카메오를 성립시킨다. 남겨 두면 그는 조사 중인 상태로 서 있다가
 	// 아까 들은 자리로 기어간다.
 	bReactingToSound = false;
@@ -1675,6 +1838,12 @@ void AIGListenerEntity::ResetToPatrolStart(const bool bRaiseAggression)
 	TeleportTo(SpawnLocation, GetActorRotation(), false, true);
 	SetActorEnableCollision(true);
 	PatrolIndex = 0;
+	NavPath.Reset();
+	NavPathOnStair.Reset();
+	PlayerTrail.Reset();
+	AlertUntilSeconds = -1000.0;
+	StairPitchTarget = 0.0f;
+	StairBodyPitch = 0.0f;
 	FinaleRoutePoints.Reset();
 	FinaleRouteIndex = 0;
 	FinaleSpeedOverride = -1.0f;
@@ -1797,10 +1966,11 @@ bool AIGListenerEntity::NoteAnswerLocation(const FVector& Location)
 {
 	// 위에서 온 대답. 대답한 자리 바로 아래로 기어가면 엉뚱한 벽에 끼인다 — 5층
 	// 공동 벽 아래는 403호 현관 앞이다. 위층 소리에 늘 가는 자리, 계단 아래로 간다.
-	if (Location.Z - GetActorLocation().Z > FloorHeightThreshold)
+	if (Location.Z - GetActorLocation().Z > FloorHeightThreshold
+		&& (!BuildingNav.IsBuilt() || FIGBuildingNav::FloorOfFeet(Location.Z - 60.0f) >= 4))
 	{
 		const FVector Below = bHasStairFoot ? StairFoot : Location;
-		LastHeardLocation = FVector(Below.X, Below.Y, GetActorLocation().Z);
+		LastHeardLocation = bHasStairFoot ? StairFoot : FVector(Below.X, Below.Y, GetActorLocation().Z);
 		UpperSoundLocation = Location;
 		return true;
 	}
@@ -1992,6 +2162,12 @@ bool AIGListenerEntity::CrawlTowards(
 	bBlockedByHomeDoor = SweepHit.bBlockingHit
 		&& HomeDoor.IsValid()
 		&& SweepHit.GetActor() == HomeDoor.Get();
+	// 다른 문(관리실 문, 계단실 방화문)에 막혔다. 문짝에 대고 미끄러지지 않는다.
+	if (SweepHit.bBlockingHit && !bBlockedByHomeDoor && Cast<AIGSwingDoor>(SweepHit.GetActor()))
+	{
+		bBlockedByClosedDoor = true;
+		BlockingDoor = SweepHit.GetActor();
+	}
 	const float Moved =
 		FVector::Dist2D(Before, GetActorLocation());
 	LastMoveSpeed = DeltaSeconds > 0.0f ? Moved / DeltaSeconds : 0.0f;
@@ -2003,6 +2179,9 @@ bool AIGListenerEntity::CrawlTowards(
 		StuckSeconds += DeltaSeconds;
 		if (StuckSeconds >= 1.5f)
 		{
+			UE_LOG(LogIndieGame, Verbose, TEXT("LISTENER_WEDGED at=%s toward=%s blocker=%s"),
+				*GetActorLocation().ToCompactString(), *Target.ToCompactString(),
+				SweepHit.GetComponent() ? *SweepHit.GetComponent()->GetReadableName() : TEXT("floor-edge"));
 			StuckSeconds = 0.0f;
 			return true;
 		}
@@ -2135,7 +2314,8 @@ bool AIGListenerEntity::TryBeginAmbush()
 
 void AIGListenerEntity::FaceDirection(
 	const FVector& Direction,
-	const float DeltaSeconds)
+	const float DeltaSeconds,
+	const float TurnDegreesPerSecond)
 {
 	if (Direction.IsNearlyZero())
 	{
@@ -2145,9 +2325,668 @@ void AIGListenerEntity::FaceDirection(
 	const FRotator Desired = Direction.Rotation();
 	const FRotator Next(
 		0.0f,
-		FMath::FixedTurn(Current.Yaw, Desired.Yaw, 160.0f * DeltaSeconds),
+		FMath::FixedTurn(Current.Yaw, Desired.Yaw, TurnDegreesPerSecond * DeltaSeconds),
 		0.0f);
 	SetActorRotation(Next);
+}
+
+// -- 층을 오가는 길 -------------------------------------------------------------
+
+namespace
+{
+	/**
+	 * 목표 자리 밑의 바닥. 소리 자리는 그녀의 몸 가운데 높이이고 순찰 점은 그의 몸
+	 * 가운데 높이라, 그대로는 어느 층인지 가를 수 없다. 내려 그어 바닥을 찾는다.
+	 */
+	FVector ResolveFloorBelow(
+		const UWorld* World,
+		const FVector& Point,
+		const AActor* Self,
+		const AActor* Player)
+	{
+		if (World)
+		{
+			FCollisionQueryParams Params(SCENE_QUERY_STAT(IGListenerGoalFloor), false, Self);
+			if (Player)
+			{
+				Params.AddIgnoredActor(Player);
+			}
+			FHitResult Hit;
+			if (World->LineTraceSingleByChannel(
+					Hit,
+					Point + FVector(0.0f, 0.0f, 20.0f),
+					Point - FVector(0.0f, 0.0f, 260.0f),
+					ECC_Visibility,
+					Params))
+			{
+				return FVector(Point.X, Point.Y, Hit.ImpactPoint.Z);
+			}
+		}
+		return FVector(Point.X, Point.Y, Point.Z - 96.0f);
+	}
+}
+
+FVector AIGListenerEntity::GetFeetLocation() const
+{
+	const float HalfHeight = Body ? Body->GetScaledCapsuleHalfHeight() : 58.0f;
+	return GetActorLocation() - FVector(0.0f, 0.0f, HalfHeight + 2.0f);
+}
+
+bool AIGListenerEntity::CanCrawlStraightTo(const FVector& GoalFeet) const
+{
+	const FVector Feet = GetFeetLocation();
+	if (FIGBuildingNav::FloorOfFeet(GoalFeet.Z) != FIGBuildingNav::FloorOfFeet(Feet.Z)
+		|| FMath::Abs(GoalFeet.Z - Feet.Z) > 30.0f)
+	{
+		return false;
+	}
+	// 계단탑을 드나드는 걸음은 늘 길로 간다. 층 참 끝에서 곧게 가면 계단 위 허공으로
+	// 나가고, 두 띠 사이 벽을 사이에 둔 자리는 곧게 닿지 않는다.
+	const bool bFeetInCore = FIGBuildingNav::IsInStairCore(Feet);
+	if (bFeetInCore != FIGBuildingNav::IsInStairCore(GoalFeet)
+		|| (bFeetInCore
+			&& (AIGPrologueWorldScene::IsOnStairFlight(GoalFeet)
+				|| AIGPrologueWorldScene::IsOnStairFlight(Feet))))
+	{
+		return false;
+	}
+	const AActor* Blocker = nullptr;
+	if (IsCrawlLineClear(Feet, GoalFeet, &Blocker))
+	{
+		return true;
+	}
+	// 닫힌 403호 문짝에 막히는 것은 곧은 길이다. 문 앞에서 두드리는 일은 문이 맡는다.
+	return HomeDoor.IsValid() && Blocker == HomeDoor.Get();
+}
+
+bool AIGListenerEntity::IsCrawlLineClear(
+	const FVector& FromFeet,
+	const FVector& ToFeet,
+	const AActor** OutBlocker) const
+{
+	const UWorld* World = GetWorld();
+	if (!World || !Body)
+	{
+		return true;
+	}
+	// 실제로 기어 가는 몸과 같은 캡슐로 쓸어 본다. 가는 선으로 재면 문틀 모서리를
+	// 스치는 길도 곧은 길이 되어, 몸이 그 모서리에 걸려 선다. 바닥 이음매에 걸리지
+	// 않게 아래쪽만 조금 띄운다.
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGListenerStraight), false, this);
+	if (const APawn* Player = CachedPlayer.Get())
+	{
+		Params.AddIgnoredActor(Player);
+	}
+	const float Radius = Body->GetScaledCapsuleRadius() + 1.0f;
+	const float HalfHeight = FMath::Max(Body->GetScaledCapsuleHalfHeight() - 4.0f, Radius);
+	const FVector Lift(0.0f, 0.0f, Body->GetScaledCapsuleHalfHeight() + 6.0f);
+	FHitResult Hit;
+	if (!World->SweepSingleByChannel(
+			Hit,
+			FromFeet + Lift,
+			ToFeet + Lift,
+			FQuat::Identity,
+			ECC_Pawn,
+			FCollisionShape::MakeCapsule(Radius, HalfHeight),
+			Params))
+	{
+		return true;
+	}
+	if (OutBlocker)
+	{
+		*OutBlocker = Hit.GetActor();
+	}
+	return false;
+}
+
+bool AIGListenerEntity::PlanNavPath(const FVector& GoalFeet)
+{
+	NavPath.Reset();
+	NavPathOnStair.Reset();
+	NavPathIndex = 0;
+	UWorld* World = GetWorld();
+	if (!World || !BuildingNav.IsBuilt())
+	{
+		return false;
+	}
+	const FVector Feet = GetFeetLocation();
+	const int32 From = BuildingNav.FindNearest(World, Feet, this);
+	const int32 To = BuildingNav.FindNearest(World, GoalFeet, this);
+	TArray<int32> Route;
+	if (From == INDEX_NONE || To == INDEX_NONE || !BuildingNav.FindPath(From, To, Route))
+	{
+		return false;
+	}
+	const TArray<FIGBuildingNavNode>& Nodes = BuildingNav.GetNodes();
+	// 이미 첫 점을 지나 둘째 점 쪽에 있으면 첫 점으로 되돌아가지 않는다. 벽을 사이에
+	// 두고 있으면 지름길이 아니라 벽 뚫기라 되돌아간다.
+	if (Route.Num() >= 2)
+	{
+		const FVector First = Nodes[Route[0]].Feet;
+		const FVector Second = Nodes[Route[1]].Feet;
+		// 계단 위는 디딤판을 따라 움직이므로 같은 띠 위에서만 건너뛴다.
+		const bool bStairSkip = Nodes[Route[0]].bOnStair && Nodes[Route[1]].bOnStair;
+		if (FVector::Dist(Feet, Second) < FVector::Dist(First, Second) + 10.0f
+			&& (bStairSkip
+				|| (FMath::Abs(Second.Z - Feet.Z) < 20.0f && IsCrawlLineClear(Feet, Second))))
+		{
+			Route.RemoveAt(0);
+		}
+	}
+	for (const int32 Node : Route)
+	{
+		NavPath.Add(Nodes[Node].Feet);
+		NavPathOnStair.Add(Nodes[Node].bOnStair);
+	}
+	// 끝 점은 목표 그 자체다. 계단 위 목표는 가까운 디딤판 점까지만 간다.
+	if (!FIGBuildingNav::IsInStairCore(GoalFeet)
+		&& FVector::DistSquared(GoalFeet, NavPath.Last()) > FMath::Square(30.0f))
+	{
+		NavPath.Add(GoalFeet);
+		NavPathOnStair.Add(false);
+	}
+	NavGoal = GoalFeet;
+	NavPlannedSeconds = World->GetTimeSeconds();
+	return NavPath.Num() > 0;
+}
+
+bool AIGListenerEntity::LegCrossesClosedFireDoor(const FVector& FromFeet, const FVector& ToFeet)
+{
+	if (!bStairFireDoorResolved)
+	{
+		bStairFireDoorResolved = true;
+		for (TActorIterator<AIGFireDoorWedge> It(GetWorld()); It; ++It)
+		{
+			StairFireDoor = It->GetDoor();
+			break;
+		}
+	}
+	const AIGSwingDoor* Door = StairFireDoor.Get();
+	if (!Door || Door->IsOpen())
+	{
+		return false;
+	}
+	// 문짝은 경첩에서 액터의 +Y로 120 cm 뻗는다. 닫히면 X가 경첩과 같은 평면이다.
+	const FVector Hinge = Door->GetActorLocation();
+	if (FMath::Abs(FromFeet.Z - Hinge.Z) > 150.0f && FMath::Abs(ToFeet.Z - Hinge.Z) > 150.0f)
+	{
+		return false;
+	}
+	const float FromSide = FromFeet.X - Hinge.X;
+	const float ToSide = ToFeet.X - Hinge.X;
+	if (FromSide * ToSide > 0.0f || FMath::IsNearlyEqual(FromSide, ToSide))
+	{
+		return false;
+	}
+	const float Alpha = FromSide / (FromSide - ToSide);
+	const float CrossY = FMath::Lerp(FromFeet.Y, ToFeet.Y, Alpha);
+	return CrossY > Hinge.Y - 20.0f && CrossY < Hinge.Y + 140.0f;
+}
+
+void AIGListenerEntity::ArriveAtClosedDoor()
+{
+	bBlockedByClosedDoor = false;
+	if (const AActor* Door = BlockingDoor.Get())
+	{
+		const FVector ToDoor = Door->GetComponentsBoundingBox().GetCenter() - GetActorLocation();
+		AttentionDirection = FVector(ToDoor.X, ToDoor.Y, 0.0f).GetSafeNormal();
+	}
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	bKnockingUp = false;
+	bCadenceEarsUp = false;
+	bAtHomeDoor = false;
+	if (Now - LastClosedDoorKnockSeconds >= IGListener::CeilingKnockIntervalSeconds)
+	{
+		// §3.1 닫힌 방화문 너머에서 소리가 났다. 세 번 두드리고, 문에 귀를 대고 듣는다.
+		LastClosedDoorKnockSeconds = Now;
+		EnterState(EIGListenerState::Banging);
+	}
+	else
+	{
+		EnterState(EIGListenerState::Holding);
+	}
+}
+
+bool AIGListenerEntity::StepAlongStair(
+	const FVector& TargetFeet,
+	const float Speed,
+	const float DeltaSeconds)
+{
+	const FVector Feet = GetFeetLocation();
+	const FVector Delta = TargetFeet - Feet;
+	const float Distance = Delta.Size();
+	bOnStairLeg = true;
+	const float HalfHeight = Body ? Body->GetScaledCapsuleHalfHeight() : 58.0f;
+	if (Distance <= 6.0f)
+	{
+		// 점에 닿으면 높이를 그 점에 맞춘다. 다음 칸이 평지면 쓸며 가는 걸음이 이어받는다.
+		SetActorLocation(TargetFeet + FVector(0.0f, 0.0f, HalfHeight + 2.0f));
+		return true;
+	}
+	// 네 발로 디딤판을 짚는다. 오를 때가 조금 더 느리다.
+	const float Scale = Delta.Z > 2.0f
+		? IGListener::StairClimbSpeedScale
+		: IGListener::StairDescendSpeedScale;
+	const float Step = FMath::Min(Speed * Scale * DeltaSeconds, Distance);
+	SetActorLocation(Feet + Delta / Distance * Step + FVector(0.0f, 0.0f, HalfHeight + 2.0f));
+	const FVector Flat(Delta.X, Delta.Y, 0.0f);
+	if (!Flat.IsNearlyZero())
+	{
+		// 반 층 참에서 몸을 돌려 다음 띠로 꺾는다. 평지보다 빨리 돌아야 몸이 옆으로
+		// 미끄러지지 않는다.
+		FaceDirection(Flat.GetSafeNormal(), DeltaSeconds, 330.0f);
+		StairPitchTarget = FMath::Clamp(
+			FMath::RadiansToDegrees(FMath::Atan2(Delta.Z, Flat.Size())),
+			-IGListener::StairPitchLimit,
+			IGListener::StairPitchLimit);
+	}
+	LastMoveSpeed = DeltaSeconds > 0.0f ? Step / DeltaSeconds : 0.0f;
+	StuckSeconds = 0.0f;
+	if (Distance - Step <= 6.0f)
+	{
+		SetActorLocation(TargetFeet + FVector(0.0f, 0.0f, HalfHeight + 2.0f));
+		return true;
+	}
+	return false;
+}
+
+bool AIGListenerEntity::MoveTowardGoal(
+	const FVector& Goal,
+	const float Speed,
+	const float DeltaSeconds)
+{
+	bBlockedByClosedDoor = false;
+	UWorld* World = GetWorld();
+	if (!World || !BuildingNav.IsBuilt())
+	{
+		return CrawlTowards(Goal, Speed, DeltaSeconds);
+	}
+	const FVector GoalFeet = ResolveFloorBelow(World, Goal, this, CachedPlayer.Get());
+	if (CanCrawlStraightTo(GoalFeet))
+	{
+		NavPath.Reset();
+		NavPathOnStair.Reset();
+		NavPathIndex = 0;
+		const bool bArrived = CrawlTowards(Goal, Speed, DeltaSeconds);
+		return bArrived || bBlockedByClosedDoor;
+	}
+	const double Now = World->GetTimeSeconds();
+	const bool bReplan = !NavPath.IsValidIndex(NavPathIndex)
+		|| FVector::DistSquared(GoalFeet, NavGoal) > FMath::Square(IGListener::ReplanGoalShift)
+		|| (State == EIGListenerState::Chasing
+			&& Now - NavPlannedSeconds >= IGListener::ChaseReplanSeconds);
+	if (bReplan && !PlanNavPath(GoalFeet))
+	{
+		// 이어지는 길이 없다. 예전처럼 같은 층을 기어 간다.
+		return CrawlTowards(Goal, Speed, DeltaSeconds);
+	}
+	const FVector Feet = GetFeetLocation();
+	const FVector Target = NavPath[NavPathIndex];
+	if (LegCrossesClosedFireDoor(Feet, Target))
+	{
+		// 닫힌 방화문 앞. 문을 뚫고 지나가지 않는다.
+		bBlockedByClosedDoor = true;
+		BlockingDoor = StairFireDoor.Get();
+		NavPath.Reset();
+		NavPathOnStair.Reset();
+		NavPathIndex = 0;
+		return true;
+	}
+	// 계단탑 안은 미리 고른 길(띠 가운데, 층 참 가운데)만 지나므로 쓸지 않고 따라간다.
+	// 디딤판 경사에서 층 참으로 올라선 몸은 참 바닥보다 몇 cm 낮아서, 쓸며 가면 참
+	// 끝에 걸린다.
+	const bool bStairLeg = NavPathOnStair[NavPathIndex]
+		|| (NavPathIndex > 0 && NavPathOnStair[NavPathIndex - 1])
+		|| FMath::Abs(Target.Z - Feet.Z) > 1.0f
+		|| (FIGBuildingNav::IsInStairCore(Feet) && FIGBuildingNav::IsInStairCore(Target));
+	bool bReached = false;
+	if (bStairLeg)
+	{
+		bReached = StepAlongStair(Target, Speed, DeltaSeconds);
+	}
+	else
+	{
+		// 평지 칸은 원래 걸음 그대로 쓸며 간다. 끝 점(목표 자체)은 목표의 높이를 써야
+		// 문 앞 판정이 맞는다.
+		const bool bLast = NavPathIndex == NavPath.Num() - 1;
+		const FVector FlatTarget = bLast
+			? Goal
+			: FVector(Target.X, Target.Y, GetActorLocation().Z);
+		bReached = CrawlTowards(FlatTarget, Speed, DeltaSeconds);
+		if (bBlockedByClosedDoor)
+		{
+			// 닫힌 문. 밀고 들어가지 않는다. 부르는 쪽이 문 앞에서 두드릴지 정한다.
+			NavPath.Reset();
+			NavPathOnStair.Reset();
+			NavPathIndex = 0;
+			return true;
+		}
+	}
+	if (!bReached)
+	{
+		return false;
+	}
+	++NavPathIndex;
+	if (NavPathIndex >= NavPath.Num())
+	{
+		NavPath.Reset();
+		NavPathOnStair.Reset();
+		NavPathIndex = 0;
+		return true;
+	}
+	return false;
+}
+
+void AIGListenerEntity::UpdateStairPitch(const float DeltaSeconds)
+{
+	if (!bOnStairLeg)
+	{
+		StairPitchTarget = 0.0f;
+	}
+	bOnStairLeg = false;
+	if (!ListenerSkeletal || State == EIGListenerState::CaptureHold)
+	{
+		return;
+	}
+	const float Previous = StairBodyPitch;
+	StairBodyPitch = FMath::FInterpTo(StairBodyPitch, StairPitchTarget, DeltaSeconds, 7.0f);
+	if (FMath::Abs(StairBodyPitch) < 0.05f && FMath::Abs(StairPitchTarget) < 0.05f)
+	{
+		StairBodyPitch = 0.0f;
+	}
+	if (!FMath::IsNearlyEqual(Previous, StairBodyPitch, 0.01f))
+	{
+		// 메시 원점은 몸 가운데 바닥이다. 그 점을 축으로 눕히면 손은 윗단, 발은 아랫단에 닿는다.
+		ListenerSkeletal->SetRelativeRotation(FRotator(StairBodyPitch, 0.0f, 0.0f));
+	}
+}
+
+// -- 놓친 뒤 -------------------------------------------------------------------
+
+void AIGListenerEntity::NotePlayerTrail(const FVector& Location, const double Seconds)
+{
+	// 같은 순간 같은 자리의 소리(한 소리가 두 번 보고된 것)는 한 번만 적는다.
+	if (PlayerTrail.Num() > 0
+		&& FMath::Abs(PlayerTrail.Last().Seconds - Seconds) < 0.05
+		&& FVector::DistSquared(PlayerTrail.Last().Location, Location) < FMath::Square(20.0f))
+	{
+		return;
+	}
+	FHeardMark& Mark = PlayerTrail.AddDefaulted_GetRef();
+	Mark.Location = Location;
+	Mark.Seconds = Seconds;
+	while (PlayerTrail.Num() > IGListener::TrailCapacity)
+	{
+		PlayerTrail.RemoveAt(0);
+	}
+}
+
+bool AIGListenerEntity::PredictPlayerHeading(FVector& OutPoint) const
+{
+	const UWorld* World = GetWorld();
+	if (!World || !BuildingNav.IsBuilt() || PlayerTrail.Num() < 2)
+	{
+		return false;
+	}
+	// 가장 최근 소리와, 이어 볼 만한 것 중 가장 먼저 난 소리를 잇는다. 연달은 발소리
+	// 둘은 너무 가까워서 방향이 흔들린다.
+	const FHeardMark& Last = PlayerTrail.Last();
+	const FHeardMark* Earlier = nullptr;
+	for (int32 Index = PlayerTrail.Num() - 2; Index >= 0; --Index)
+	{
+		if (Last.Seconds - PlayerTrail[Index].Seconds > IGListener::TrailLinkSeconds)
+		{
+			break;
+		}
+		Earlier = &PlayerTrail[Index];
+	}
+	if (!Earlier)
+	{
+		return false;
+	}
+	const FVector Heading = Last.Location - Earlier->Location;
+	const FVector Flat(Heading.X, Heading.Y, 0.0f);
+	if (Flat.Size() < 40.0f && FMath::Abs(Heading.Z) < 60.0f)
+	{
+		return false;
+	}
+	const FVector FlatDirection = Flat.GetSafeNormal();
+	const float Rising = FMath::Abs(Heading.Z) >= 60.0f ? FMath::Sign(Heading.Z) : 0.0f;
+	const FVector LastFeet = ResolveFloorBelow(World, Last.Location, this, CachedPlayer.Get());
+	const int32 Start = BuildingNav.FindNearest(World, LastFeet, this);
+	if (Start == INDEX_NONE)
+	{
+		return false;
+	}
+	TArray<TPair<int32, float>> Reach;
+	BuildingNav.GatherWithin(Start, IGListener::MomentumMaxDistance, Reach);
+	const TArray<FIGBuildingNavNode>& Nodes = BuildingNav.GetNodes();
+	float BestScore = 0.35f;
+	int32 Best = INDEX_NONE;
+	for (const TPair<int32, float>& Entry : Reach)
+	{
+		if (Entry.Value < IGListener::MomentumMinDistance)
+		{
+			continue;
+		}
+		const FVector ToNode = Nodes[Entry.Key].Feet - LastFeet;
+		const FVector ToNodeFlat(ToNode.X, ToNode.Y, 0.0f);
+		float Score = FlatDirection.IsNearlyZero() || ToNodeFlat.IsNearlyZero()
+			? 0.0f
+			: FVector::DotProduct(ToNodeFlat.GetSafeNormal(), FlatDirection);
+		// 계단을 오르내리던 소리면 같은 쪽 층으로 이어지는 점이 앞선다.
+		if (Rising != 0.0f && FMath::Abs(ToNode.Z) > 60.0f)
+		{
+			Score += FMath::Sign(ToNode.Z) == Rising ? 0.8f : -0.8f;
+		}
+		Score -= Entry.Value / IGListener::MomentumMaxDistance * 0.15f;
+		if (Score > BestScore)
+		{
+			BestScore = Score;
+			Best = Entry.Key;
+		}
+	}
+	if (Best == INDEX_NONE)
+	{
+		return false;
+	}
+	const float HalfHeight = Body ? Body->GetScaledCapsuleHalfHeight() : 58.0f;
+	OutPoint = Nodes[Best].Feet + FVector(0.0f, 0.0f, HalfHeight + 2.0f);
+	return true;
+}
+
+void AIGListenerEntity::BuildSearchPlan()
+{
+	SearchSpots.Reset();
+	SearchFacings.Reset();
+	SearchSpotIsHiding.Reset();
+	SearchSpotIndex = 0;
+	bSearchPausing = false;
+	SearchPauseLeft = 0.0f;
+	SearchBudgetSeconds = SearchSecondsForNight();
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	const float HalfHeight = Body ? Body->GetScaledCapsuleHalfHeight() + 2.0f : 60.0f;
+	const FVector AnchorFeet = ResolveFloorBelow(World, SearchAnchor, this, CachedPlayer.Get());
+	const int32 AnchorFloor = FIGBuildingNav::FloorOfFeet(AnchorFeet.Z);
+
+	struct FCandidate
+	{
+		FVector Spot;
+		FVector Facing;
+		bool bHiding;
+		float Score;
+	};
+	TArray<FCandidate> Candidates;
+
+	// 숨을 만한 가구. 놓친 자리 가까이, 그녀의 마지막 소리 가까이일수록 먼저 들른다.
+	for (TActorIterator<AIGHidingSpot> It(World); It; ++It)
+	{
+		const AIGHidingSpot* Spot = *It;
+		const FVector Approach = Spot->GetApproachLocation();
+		if (FIGBuildingNav::FloorOfFeet(Approach.Z) != AnchorFloor)
+		{
+			continue;
+		}
+		// 닫힌 403호 안은 뒤지지 않는다. 그 문 앞에서는 두드리고 기다렸다 떠난다(§4.5).
+		if (IsInsideHome(Approach) && HomeDoor.IsValid() && !HomeDoor->IsOpen())
+		{
+			continue;
+		}
+		const float Distance = FVector::Dist(Approach, AnchorFeet);
+		if (Distance > IGListener::SearchHidingReach)
+		{
+			continue;
+		}
+		float Score = 1.25f - Distance / 1500.0f;
+		for (const FHeardMark& Mark : PlayerTrail)
+		{
+			if (FVector::Dist2D(Mark.Location, Approach) < 400.0f)
+			{
+				Score += 0.6f;
+				break;
+			}
+		}
+		FVector Facing = Spot->GetActorLocation() - Approach;
+		Facing.Z = 0.0f;
+		Candidates.Add({Approach + FVector(0.0f, 0.0f, HalfHeight), Facing.GetSafeNormal(), true, Score});
+	}
+
+	// 문 앞, 빈방, 복도 끝.
+	const int32 Start = BuildingNav.IsBuilt()
+		? BuildingNav.FindNearest(World, AnchorFeet, this)
+		: INDEX_NONE;
+	if (Start != INDEX_NONE)
+	{
+		TArray<TPair<int32, float>> Reach;
+		BuildingNav.GatherWithin(Start, IGListener::SearchReach, Reach);
+		const TArray<FIGBuildingNavNode>& Nodes = BuildingNav.GetNodes();
+		for (const TPair<int32, float>& Entry : Reach)
+		{
+			const FIGBuildingNavNode& Node = Nodes[Entry.Key];
+			if (!Node.bLookout || Node.bOnStair)
+			{
+				continue;
+			}
+			FVector Facing = Node.Feet - AnchorFeet;
+			Facing.Z = 0.0f;
+			// 복도의 문 앞이면 문을 본다. 귀를 문짝에 댄다.
+			if (Node.Feet.Y > -290.0f && Node.Feet.Y < -240.0f)
+			{
+				Facing = FVector(0.0f, 1.0f, 0.0f);
+			}
+			Candidates.Add({
+				Node.Feet + FVector(0.0f, 0.0f, HalfHeight),
+				Facing.GetSafeNormal(),
+				false,
+				1.0f - Entry.Value / IGListener::SearchReach});
+		}
+	}
+
+	Candidates.Sort([](const FCandidate& A, const FCandidate& B) { return A.Score > B.Score; });
+	TArray<FCandidate> Chosen;
+	for (const FCandidate& Candidate : Candidates)
+	{
+		bool bDuplicate = false;
+		for (const FCandidate& Taken : Chosen)
+		{
+			if (FVector::DistSquared(Taken.Spot, Candidate.Spot) < FMath::Square(120.0f))
+			{
+				bDuplicate = true;
+				break;
+			}
+		}
+		if (!bDuplicate)
+		{
+			Chosen.Add(Candidate);
+		}
+		if (Chosen.Num() >= IGListener::SearchSpotCount)
+		{
+			break;
+		}
+	}
+
+	// 순서: 그녀가 가던 쪽을 먼저, 나머지는 가까운 것부터 이어서.
+	FVector From = GetActorLocation();
+	FVector Heading = FVector::ZeroVector;
+	if (PredictPlayerHeading(Heading))
+	{
+		SearchSpots.Add(Heading);
+		const FVector Toward = Heading - SearchAnchor;
+		SearchFacings.Add(FVector(Toward.X, Toward.Y, 0.0f).GetSafeNormal());
+		SearchSpotIsHiding.Add(false);
+		From = Heading;
+	}
+	while (Chosen.Num() > 0)
+	{
+		int32 Nearest = 0;
+		for (int32 Index = 1; Index < Chosen.Num(); ++Index)
+		{
+			if (FVector::DistSquared(Chosen[Index].Spot, From)
+				< FVector::DistSquared(Chosen[Nearest].Spot, From))
+			{
+				Nearest = Index;
+			}
+		}
+		SearchSpots.Add(Chosen[Nearest].Spot);
+		SearchFacings.Add(Chosen[Nearest].Facing.IsNearlyZero()
+			? GetActorForwardVector()
+			: Chosen[Nearest].Facing);
+		SearchSpotIsHiding.Add(Chosen[Nearest].bHiding);
+		From = Chosen[Nearest].Spot;
+		Chosen.RemoveAtSwap(Nearest);
+	}
+	// 갈 자리가 하나도 없으면(건물 길 밖) 놓친 자리에라도 가서 듣는다.
+	if (SearchSpots.Num() == 0)
+	{
+		SearchSpots.Add(SearchAnchor);
+		SearchFacings.Add(GetActorForwardVector());
+		SearchSpotIsHiding.Add(false);
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("LISTENER_SEARCH spots=%d budget=%.1f anchor=%s"),
+		SearchSpots.Num(), SearchBudgetSeconds, *SearchAnchor.ToCompactString());
+	for (int32 Index = 0; Index < SearchSpots.Num(); ++Index)
+	{
+		UE_LOG(LogIndieGame, Verbose, TEXT("LISTENER_SEARCH_SPOT %d at=%s hiding=%d"),
+			Index, *SearchSpots[Index].ToCompactString(), SearchSpotIsHiding[Index] ? 1 : 0);
+	}
+}
+
+float AIGListenerEntity::SearchSecondsForNight() const
+{
+	int32 Night = 1;
+	if (const UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (const UIGMissingFloorNarrativeSubsystem* Narrative =
+				GameInstance->GetSubsystem<UIGMissingFloorNarrativeSubsystem>())
+		{
+			Night = FMath::Clamp(Narrative->GetNightIndex(), 1, 4);
+		}
+	}
+	// 첫 밤은 규칙을 배우는 밤이라 짧게, 갈수록 집요하게. 잡힐수록(티어) 더 오래 뒤진다.
+	float Seconds = 24.0f;
+	switch (Night)
+	{
+	case 2: Seconds = 32.0f; break;
+	case 3: Seconds = 38.0f; break;
+	case 4: Seconds = 44.0f; break;
+	default: break;
+	}
+	Seconds += 3.0f * FMath::Clamp(AggressionTier, 0, 3);
+	if (Difficulty == EIGNightDifficulty::Quiet)
+	{
+		Seconds *= 0.75f;
+	}
+	return Seconds;
+}
+
+bool AIGListenerEntity::IsAlert() const
+{
+	const UWorld* World = GetWorld();
+	return World && World->GetTimeSeconds() < AlertUntilSeconds;
 }
 
 const FVector* AIGListenerEntity::CurrentPatrolTarget() const
@@ -2597,6 +3436,22 @@ void AIGListenerEntity::UpdatePresentationPose(
 				200.0f,
 				2200.0f,
 				EIGAudioBus::Entity);
+			// 계단 철판을 짚는 손바닥과 무릎. 사람 발소리보다 낮고 둔하게, 계단실을 타고
+			// 위아래 층까지 울린다. 문 너머로 들리는 이 소리가 그가 계단에 있다는 신호다.
+			if (bDragSurfaceIsMetalStair)
+			{
+				IGAudio::SpawnExpendableOneShotAt(
+					this,
+					IGAudio::SampleVariantOr(
+						TEXT("Foot_MetalStair"), 5, StepHash >> 5,
+						[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateSurfaceFootstep(this, EIGFootstepSurface::MetalStair, 0.72f, 0.9f); }),
+					StepAt,
+					0.5f + 0.45f * SpeedAlpha,
+					Pitch * 0.74f,
+					260.0f,
+					3200.0f,
+					EIGAudioBus::Entity);
+			}
 			// §19.8 「존재의 노크·접근」. 6m 안에서 기는 걸음만 대체 채널에 보낸다.
 			// 자막은 붙이지 않는다 — 기본값이 켜짐이라 밤새 글이 뜨고 위치를 거저 준다.
 			const double StepNow = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
@@ -3035,6 +3890,7 @@ void AIGListenerEntity::RefreshDragSurface()
 		false,
 		this);
 	bool bVinyl = false;
+	bool bMetalStair = false;
 	if (World->LineTraceSingleByChannel(
 		Hit,
 		Origin + FVector(0.0f, 0.0f, 12.0f),
@@ -3045,8 +3901,11 @@ void AIGListenerEntity::RefreshDragSurface()
 		if (const UPrimitiveComponent* Component = Hit.GetComponent())
 		{
 			bVinyl = Component->ComponentHasTag(IGListener::VinylSurfaceTag);
+			bMetalStair = Component->ComponentHasTag(IGListener::MetalStairSurfaceTag);
 		}
 	}
+	// 계단 철판은 끌림 루프를 바꾸지 않는다. 짚을 때마다 철판이 우는 소리를 걸음에 얹는다.
+	bDragSurfaceIsMetalStair = bMetalStair;
 	if (bVinyl == bDragSurfaceIsVinyl)
 	{
 		return;

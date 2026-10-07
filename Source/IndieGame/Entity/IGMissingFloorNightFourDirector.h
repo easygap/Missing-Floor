@@ -136,6 +136,7 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+	friend class AIGGameplayRealismProbe;
 	void HandleEvictionNotice(AIGMissingFloorEvidence* Evidence);
 	void HandleCleaningDrain(AIGMissingFloorEvidence* Evidence);
 	void HandleFloatBypass(AIGMissingFloorEvidence* Evidence);
@@ -208,13 +209,11 @@ private:
 	 * 신고 연결음이 나면 그때 결말을 알린다. 프로브는 기다리지 않는다.
 	 */
 	bool BeginEndingBVigil();
-	void SitForVigil();
 	void PlayVigilReply();
 	void BeginVigilDawn();
 	void PlayVigilLatch();
 	void PlayVigilRingback();
 	void EndEndingBVigil();
-	void ReleaseVigilMoveLock();
 	/** 5타 뒤 잠깐. 손전등이 죽었다 살아나는 사이에 판이 내려앉는다. */
 	void OpenWallAfterFinalStrike();
 	void SettleWallDust();
@@ -357,13 +356,11 @@ private:
 	/** 엔딩 B의 기다림. 선택한 순간부터 신고 연결음까지. */
 	bool bEndingBVigilActive = false;
 	bool bVigilDawnReached = false;
-	bool bVigilMoveLocked = false;
 	int32 VigilReplyCount = 0;
 	TArray<double> VigilTapTimes;
 	/** 탭마다 석고 녹음을 돌려 친다. 1.2초 안의 세 탭이 한 녹음이면 손이 아니라 기계다. */
 	uint32 VigilTapSerial = 0;
 	TWeakObjectPtr<class AIGPlayerCharacter> VigilPlayer;
-	FTimerHandle VigilSitTimer;
 	FTimerHandle VigilReplyTimer;
 	FTimerHandle VigilDawnTimer;
 

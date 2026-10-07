@@ -35,8 +35,6 @@ namespace IGNeighborhoodLife
 	// 125cc 배달 스쿠터와 라이더. 차체 중심에서 앞뒤 끝까지, 옆면까지(cm).
 	constexpr float ScooterHalfLength = 95.0f;
 	constexpr float ScooterHalfWidth = 36.0f;
-	constexpr float ScooterWheelOffset = 64.0f;
-	constexpr float ScooterWheelRadius = 27.0f;
 	// 몸과 차체 사이에 남기는 여유. 이보다 가까우면 지나갈 수 없다고 본다.
 	constexpr float PassMargin = 10.0f;
 	// 첫 외출의 스침. 몸 중심에서 차체 중심까지 92 cm면 어깨에서 손 한 뼘이다.
@@ -198,30 +196,23 @@ void AIGNeighborhoodLifeDirector::InitializePools()
 
 	CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	SphereMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-	CylinderMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	AlleyCatMesh = LoadObject<UStaticMesh>(
 		nullptr, TEXT("/Game/Meshes/SM_AlleyCatRun.SM_AlleyCatRun"));
-	// Blender 저작 메시(Scripts/blender/build_delivery_scooter.py). 반입 전에는 없고,
-	// 그동안은 아래 상자 차체가 같은 치수로 대신 선다.
+	// 생성 메시 두 장(DeliveryScooter_20261002·DeliveryScooterParked_20261007을
+	// TRELLIS.2로 뽑아 Blender에서 다듬었다). 기사와 배달통이 메시에 들어 있다.
 	ScooterMesh = LoadObject<UStaticMesh>(
-		nullptr, TEXT("/Game/Meshes/SM_DeliveryScooter.SM_DeliveryScooter"), nullptr, LOAD_NoWarn);
-	ScooterWheelMesh = LoadObject<UStaticMesh>(
-		nullptr, TEXT("/Game/Meshes/SM_DeliveryScooterWheel.SM_DeliveryScooterWheel"), nullptr, LOAD_NoWarn);
-	RiderMesh = LoadObject<UStaticMesh>(
-		nullptr, TEXT("/Game/Meshes/SM_DeliveryRider.SM_DeliveryRider"), nullptr, LOAD_NoWarn);
+		nullptr, TEXT("/Game/Meshes/SM_DeliveryScooter.SM_DeliveryScooter"));
+	RiddenScooterMesh = LoadObject<UStaticMesh>(
+		nullptr, TEXT("/Game/Meshes/SM_DeliveryScooterRidden.SM_DeliveryScooterRidden"));
 	DarkMaterial = LoadObject<UMaterialInterface>(
 		nullptr, TEXT("/Game/Prototype/Materials/M_PlasticDark.M_PlasticDark"));
-	MetalMaterial = LoadObject<UMaterialInterface>(
-		nullptr, TEXT("/Game/Prototype/Materials/M_MetalUV.M_MetalUV"));
 	LeafMaterial = LoadObject<UMaterialInterface>(
 		nullptr, TEXT("/Game/Prototype/Materials/M_Cardboard.M_Cardboard"));
-	DeliveryBoxMaterial = LoadObject<UMaterialInterface>(
-		nullptr, TEXT("/Game/Prototype/Materials/M_NeighborhoodDelivery.M_NeighborhoodDelivery"));
 	AlleyCatMaterial = LoadObject<UMaterialInterface>(
 		nullptr,
 		TEXT("/Game/Prototype/Materials/M_AlleyCatTabbyUV.M_AlleyCatTabbyUV"));
 
-	if (!CubeMesh || !SphereMesh || !CylinderMesh)
+	if (!CubeMesh || !SphereMesh)
 	{
 		return;
 	}
@@ -256,78 +247,12 @@ void AIGNeighborhoodLifeDirector::InitializePools()
 		Root->RegisterComponent();
 		ScooterRoots.Add(Root);
 
-		// 뿌리는 바퀴가 닿는 바닥 한가운데, 앞이 +X다. 저작 메시도 같은 원점이다.
+		// 뿌리는 바퀴가 닿는 바닥 한가운데, 앞이 +X다. 두 메시도 같은 원점이다.
+		// 달리는 동안은 기사가 탄 메시, 내린 뒤에는 세워 둔 메시로 바꿔 끼운다(SetScooterVisible).
 		UStaticMeshComponent* Body = NewObject<UStaticMeshComponent>(
 			this, *FString::Printf(TEXT("ScooterBody_%d"), SlotIndex));
-		UStaticMeshComponent* Cargo = NewObject<UStaticMeshComponent>(
-			this, *FString::Printf(TEXT("ScooterCargo_%d"), SlotIndex));
-		if (ScooterMesh)
-		{
-			ConfigureVisual(Body, Root, ScooterMesh, nullptr);
-			// 배달통은 저작 메시에 붙어 있다. 자리만 지켜 두고 그리지 않는다.
-			ConfigureVisual(Cargo, Root, nullptr, nullptr);
-		}
-		else
-		{
-			// physics-audit: intentional 저작 메시가 없을 때만 짓는 폴백이다. 위 if와 배타적이라 화면에 함께 없다.
-			ConfigureVisual(Body, Root, CubeMesh, MetalMaterial);
-			Body->SetRelativeLocation(FVector(4.0f, 0.0f, 48.0f));
-			Body->SetRelativeScale3D(FVector(1.40f, 0.52f, 0.36f));
-			ConfigureVisual(Cargo, Root, CubeMesh, DeliveryBoxMaterial ? DeliveryBoxMaterial.Get() : LeafMaterial.Get());
-			Cargo->SetRelativeLocation(FVector(-52.0f, 0.0f, 98.0f));
-			Cargo->SetRelativeScale3D(FVector(0.46f, 0.44f, 0.42f));
-		}
+		ConfigureVisual(Body, Root, RiddenScooterMesh, nullptr);
 		ScooterBodies.Add(Body);
-		ScooterCargoBoxes.Add(Cargo);
-
-		UStaticMeshComponent* RiderBody = NewObject<UStaticMeshComponent>(
-			this, *FString::Printf(TEXT("ScooterRider_%d"), SlotIndex));
-		UStaticMeshComponent* Helmet = NewObject<UStaticMeshComponent>(
-			this, *FString::Printf(TEXT("ScooterRiderHelmet_%d"), SlotIndex));
-		if (RiderMesh)
-		{
-			ConfigureVisual(RiderBody, Root, RiderMesh, nullptr);
-			// 헬멧도 저작 메시에 있다. 자리만 지켜 둔다.
-			ConfigureVisual(Helmet, Root, nullptr, nullptr);
-		}
-		else
-		{
-			// physics-audit: intentional 저작 메시가 없을 때만 짓는 폴백이다. 위 if와 배타적이라 화면에 함께 없다.
-			ConfigureVisual(RiderBody, Root, CubeMesh, DarkMaterial);
-			RiderBody->SetRelativeLocation(FVector(-6.0f, 0.0f, 112.0f));
-			RiderBody->SetRelativeRotation(FRotator(-14.0f, 0.0f, 0.0f));
-			RiderBody->SetRelativeScale3D(FVector(0.30f, 0.42f, 0.58f));
-			ConfigureVisual(Helmet, Root, SphereMesh, DarkMaterial);
-			Helmet->SetRelativeLocation(FVector(6.0f, 0.0f, 156.0f));
-			Helmet->SetRelativeScale3D(FVector(0.27f, 0.25f, 0.27f));
-		}
-		ScooterRiderBodies.Add(RiderBody);
-		ScooterRiderHelmets.Add(Helmet);
-
-		for (int32 WheelIndex = 0; WheelIndex < 2; ++WheelIndex)
-		{
-			UStaticMeshComponent* Wheel = NewObject<UStaticMeshComponent>(
-				this, *FString::Printf(TEXT("ScooterWheel_%d_%d"), SlotIndex, WheelIndex));
-			const FVector WheelLocation(
-				WheelIndex == 0 ? IGNeighborhoodLife::ScooterWheelOffset : -IGNeighborhoodLife::ScooterWheelOffset,
-				0.0f,
-				IGNeighborhoodLife::ScooterWheelRadius);
-			if (ScooterWheelMesh)
-			{
-				ConfigureVisual(Wheel, Root, ScooterWheelMesh, nullptr);
-				Wheel->SetRelativeLocation(WheelLocation);
-			}
-			else
-			{
-				// physics-audit: intentional 저작 메시가 없을 때만 짓는 폴백이다. 위 if와 배타적이라 화면에 함께 없다.
-				ConfigureVisual(Wheel, Root, CylinderMesh, DarkMaterial);
-				Wheel->SetRelativeLocation(WheelLocation);
-				// 원통 축(Z)을 차체 옆(Y)으로 눕힌다.
-				Wheel->SetRelativeRotation(FRotator(0.0f, 0.0f, 90.0f));
-				Wheel->SetRelativeScale3D(FVector(0.54f, 0.54f, 0.12f));
-			}
-			ScooterWheels.Add(Wheel);
-		}
 
 		// 전조등. 샛길에서 나오기 전에 빛이 먼저 맞은편 벽을 쓸고 지나간다.
 		USpotLightComponent* Headlight = NewObject<USpotLightComponent>(
@@ -1256,11 +1181,11 @@ void AIGNeighborhoodLifeDirector::UpdateScooters(
 		if (Runtime.bParked)
 		{
 			Runtime.ParkedSeconds += DeltaSeconds;
-			if (ScooterRiderBodies.IsValidIndex(SlotIndex)
-				&& ScooterRiderBodies[SlotIndex]->IsVisible()
+			const UStaticMeshComponent* Body = ScooterBodies.IsValidIndex(SlotIndex)
+				? ScooterBodies[SlotIndex].Get() : nullptr;
+			if (Body && Body->IsVisible() && Body->GetStaticMesh() == RiddenScooterMesh
 				&& (Runtime.ParkedSeconds > 6.0f
-					|| (Runtime.ParkedSeconds > 2.0f
-						&& !ScooterRiderBodies[SlotIndex]->WasRecentlyRendered(0.2f))))
+					|| (Runtime.ParkedSeconds > 2.0f && !Body->WasRecentlyRendered(0.2f))))
 			{
 				SetScooterVisible(SlotIndex, true, false);
 			}
@@ -1716,10 +1641,6 @@ void AIGNeighborhoodLifeDirector::ApplyScooterTransform(const int32 SlotIndex, c
 			-34.0f,
 			34.0f);
 		Runtime.Lean = FMath::FInterpTo(Runtime.Lean, TargetLean, DeltaSeconds, 7.0f);
-		Runtime.WheelSpinDegrees = FMath::Fmod(
-			Runtime.WheelSpinDegrees
-				+ FMath::RadiansToDegrees(Runtime.Speed * DeltaSeconds / ScooterWheelRadius),
-			360.0f);
 	}
 	Runtime.PreviousYaw = Yaw;
 
@@ -1727,18 +1648,6 @@ void AIGNeighborhoodLifeDirector::ApplyScooterTransform(const int32 SlotIndex, c
 	Root->SetWorldLocationAndRotation(
 		FVector(Runtime.Location.X, Runtime.Location.Y, RoadStart.Z + 5.0f),
 		FRotator(0.0f, Yaw, Runtime.Lean));
-	for (int32 WheelIndex = 0; WheelIndex < 2; ++WheelIndex)
-	{
-		const int32 Flat = SlotIndex * 2 + WheelIndex;
-		if (!ScooterWheels.IsValidIndex(Flat))
-		{
-			continue;
-		}
-		// 바퀴는 차체 옆 축(Y)으로 돈다. 상자 폴백은 원통을 눕힌 롤 90을 먼저 건다.
-		const FRotator Base = ScooterWheelMesh ? FRotator::ZeroRotator : FRotator(0.0f, 0.0f, 90.0f);
-		const FQuat Spin(FVector::RightVector, FMath::DegreesToRadians(-Runtime.WheelSpinDegrees));
-		ScooterWheels[Flat]->SetRelativeRotation(Spin * Base.Quaternion());
-	}
 }
 
 void AIGNeighborhoodLifeDirector::ParkScooter(const int32 SlotIndex)
@@ -1818,29 +1727,15 @@ void AIGNeighborhoodLifeDirector::SetScooterVisible(
 			Component->SetHiddenInGame(!bOn);
 		}
 	};
-	const bool bAuthoredBody = ScooterMesh != nullptr;
 	if (ScooterBodies.IsValidIndex(SlotIndex))
 	{
-		Show(ScooterBodies[SlotIndex], true);
-	}
-	if (ScooterCargoBoxes.IsValidIndex(SlotIndex))
-	{
-		Show(ScooterCargoBoxes[SlotIndex], !bAuthoredBody);
-	}
-	if (ScooterRiderBodies.IsValidIndex(SlotIndex))
-	{
-		Show(ScooterRiderBodies[SlotIndex], bWithRider);
-	}
-	if (ScooterRiderHelmets.IsValidIndex(SlotIndex))
-	{
-		Show(ScooterRiderHelmets[SlotIndex], bWithRider && RiderMesh == nullptr);
-	}
-	for (int32 WheelIndex = 0; WheelIndex < 2; ++WheelIndex)
-	{
-		if (ScooterWheels.IsValidIndex(SlotIndex * 2 + WheelIndex))
+		UStaticMeshComponent* Body = ScooterBodies[SlotIndex];
+		UStaticMesh* Wanted = bWithRider ? RiddenScooterMesh.Get() : ScooterMesh.Get();
+		if (Body && Body->GetStaticMesh() != Wanted)
 		{
-			Show(ScooterWheels[SlotIndex * 2 + WheelIndex], true);
+			Body->SetStaticMesh(Wanted);
 		}
+		Show(Body, Wanted != nullptr);
 	}
 	// 불은 달리는 동안만 켠다. 세워 둔 오토바이는 시동이 꺼져 있다.
 	const bool bLights = bVisible && bWithRider;

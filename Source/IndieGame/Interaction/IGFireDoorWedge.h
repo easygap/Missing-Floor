@@ -41,6 +41,8 @@ public:
 	void SetStairwellCenter(const FVector& InStairwellCenter) { StairwellCenter = InStairwellCenter; }
 
 	bool IsWedged() const { return bWedged; }
+	/** 괸 문. 위층 사람이 닫힌 문 앞에서 길을 접는지 보려고 읽는다. */
+	AIGSwingDoor* GetDoor() const { return Door.Get(); }
 
 	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
 	virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;

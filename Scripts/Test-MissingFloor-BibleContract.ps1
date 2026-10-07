@@ -663,7 +663,7 @@ if ($story -notmatch '무엇을 놓쳤는지 알려 주지 않는다') {
 # 발견의 보상은 문장이다. 문서가 인용한 줄이 실제로 나가는 줄이어야 한다.
 $rewardRow = [regex]::Match(
 	$story,
-	'약봉투를 봤다면 밤4의\s*\r?\n?\s*대치에서 유담이 한 줄을 더 말한다: "(?<line>[^"]+)"')
+	'약봉투를 봤다면 밤4의\s*\r?\n?\s*대치에서 유담이 한 줄을 더 (?:말한다|묻는다): "(?<line>[^"]+)"')
 $assertionCount++
 if (-not $rewardRow.Success) {
 	throw 'The §22.3 reward line could not be read.'

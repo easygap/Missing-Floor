@@ -46,14 +46,19 @@
 namespace IGPlayerNoise
 {
 	/**
-	 * The project's ordinary walk speed. Footstep loudness is measured against
-	 * this fixed reference rather than the movement component's current cap, so
-	 * a chapter that slows the player also makes them quieter — which is what
-	 * moving carefully should mean.
+	 * 평소 걷는 속도. 발소리 크기는 이동 컴포넌트의 현재 상한이 아니라 이 값에 대어 잰다.
+	 * 장면이 걸음을 늦추면 소리도 작아져야 조심해서 걷는다는 말이 맞는다.
+	 * 300은 시속 10.8 km로 걷는 게 아니라 뛰는 속도였다. 좁은 복도에서는 한 걸음씩
+	 * 살필 수 있어야 하고, 달리기는 도망칠 때 고르는 분명한 선택이어야 한다.
 	 */
-	constexpr float ReferenceWalkSpeed = 300.0f;
-	constexpr float SprintSpeed = 460.0f;
-	constexpr float CrouchSpeed = 160.0f;
+	constexpr float ReferenceWalkSpeed = 175.0f;
+	constexpr float SprintSpeed = 410.0f;
+	constexpr float CrouchSpeed = 95.0f;
+	// 자세마다 보폭이 다르다. 걷기 주기 0.52초는 StepDistance(91 cm)가 맡고, 달리기와
+	// 숙이기는 각자 보폭으로 박자를 센다. 한 보폭으로 다 세면 달릴 때 발소리가 자글자글
+	// 구르고 숙이면 발이 끌린다.
+	constexpr float SprintStepDistance = 150.0f;
+	constexpr float CrouchStepDistance = 70.0f;
 	constexpr float ListenSpeed = 80.0f;
 	constexpr float SprintBreathThresholdSeconds = 3.5f;
 	constexpr float ListenCommitSeconds = 0.8f;
@@ -78,6 +83,9 @@ namespace IGPlayerNoise
 	// 여유. 둘 다 사람 손이 한 박자 늦거나 이른 만큼이다.
 	constexpr float CoyoteSeconds = 0.12f;
 	constexpr float JumpBufferSeconds = 0.12f;
+	// 앉은 자세에서 일어서는 동안 점프를 붙잡아 두는 시간. 캡슐은 한 프레임이면 서고,
+	// 낮은 천장 밑에서는 이 안에 못 서니 그냥 버린다.
+	constexpr float UncrouchJumpBufferSeconds = 0.25f;
 	// 숨을 내쉰 뒤 다시 참기까지. 놓은 반동을 연타로 지우지 못한다.
 	constexpr float BreathHoldCooldownSeconds = 0.8f;
 	// 앞으로 이만큼(약 50도 안쪽) 향해야 달린다. 옆걸음·뒷걸음은 걷는 속도다.
@@ -174,7 +182,7 @@ AIGPlayerCharacter::AIGPlayerCharacter()
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	MovementComponent->bOrientRotationToMovement = false;
 	MovementComponent->bUseControllerDesiredRotation = true;
-	MovementComponent->MaxWalkSpeed = 300.0f;
+	MovementComponent->MaxWalkSpeed = IGPlayerNoise::ReferenceWalkSpeed;
 	MovementComponent->MaxWalkSpeedCrouched = IGPlayerNoise::CrouchSpeed;
 	MovementComponent->MaxAcceleration = IGPlayerNoise::WalkAcceleration;
 	MovementComponent->BrakingDecelerationWalking = IGPlayerNoise::WalkBraking;
@@ -440,9 +448,16 @@ void AIGPlayerCharacter::ToggleFlashlight()
 {
 	if (!Flashlight || !Flashlight->IsAvailable())
 	{
-		// 아직 손전등이 없다. 주머니를 더듬는 만큼만 고개가 숙는다.
+		// 아직 손전등이 없다. 주머니를 더듬는 만큼만 고개가 숙고, 어디 두었는지 떠올린다.
+		// 연타해도 같은 속말을 쌓지 않는다.
 		InteractPunch = FMath::Max(InteractPunch, 0.3f);
 		SetCameraMotionEnabled(true);
+		if (const UWorld* World = GetWorld(); World && World->GetTimeSeconds() >= NextMissingFlashlightThoughtAt)
+		{
+			NextMissingFlashlightThoughtAt = World->GetTimeSeconds() + 8.0;
+			AIGHorrorHUD::PushThought(this,
+				NSLOCTEXT("IGFlashlight", "NotCarried", "손전등… 현관 신발장 위에 두고 왔지."), 2.6f);
+		}
 		return;
 	}
 
@@ -598,6 +613,16 @@ void AIGPlayerCharacter::PlayCaptureFeedback(const float DurationSeconds, const 
 	// 깨어난 뒤 4초를 저절로 참다가 터지는 소리를 내지 않는다.
 	bHoldBreathInputHeld = false;
 	FinishHoldBreath(false);
+	// 달리기·점프·듣기·조사 홀드도 같은 이유로 여기서 놓는다. Shift를 쥔 채 잡혔다가
+	// 암전 중에 떼면 깨어난 뒤에도 달리기가 풀리지 않았다.
+	EndSprint();
+	EndJump();
+	EndListen();
+	EndInteraction();
+	if (InteractionComponent)
+	{
+		InteractionComponent->CancelInteraction();
+	}
 	// 침대 밑에서 끌려 나온 몸은 앉은 채다. 세워 두지 않으면 선 높이의 기상 자리로
 	// 옮겨진 짧은 캡슐이 떨어지며 착지 소리를 낸다.
 	UnCrouch();
@@ -817,8 +842,18 @@ void AIGPlayerCharacter::UpdateJumpAssist()
 	{
 		return;
 	}
+	if (bIsCrouched)
+	{
+		// 앉은 채 누른 점프는 몸이 다 선 다음 프레임까지 기다린다. 머리 위가 막혀
+		// 다시 앉기로 돌아갔으면 버린다.
+		if (MovementComponent->bWantsToCrouch)
+		{
+			JumpBufferedUntilSeconds = -1.0;
+		}
+		return;
+	}
 	JumpBufferedUntilSeconds = -1.0;
-	if (bIsCrouched || AIGReadableNote::GetOpenNote())
+	if (AIGReadableNote::GetOpenNote())
 	{
 		return;
 	}
@@ -1005,7 +1040,11 @@ void AIGPlayerCharacter::UpdateFootsteps(const float DeltaSeconds)
 		return;
 	}
 
-	TraveledDistanceAccum += GroundSpeed * DeltaSeconds;
+	// 누적 거리를 걷기 보폭으로 환산한다. 자세를 바꿔도 밟던 발의 위상은 이어지고,
+	// 시점 흔들림(UpdateCameraMotion)도 같은 누적값을 읽어 박자가 맞는다.
+	const float Stride = bIsCrouched ? IGPlayerNoise::CrouchStepDistance
+		: (bSprinting ? IGPlayerNoise::SprintStepDistance : StepDistance);
+	TraveledDistanceAccum += GroundSpeed * DeltaSeconds * StepDistance / FMath::Max(Stride, 1.0f);
 	const int32 StepIndex = FMath::FloorToInt32(TraveledDistanceAccum / StepDistance);
 	if (StepIndex == LastStepIndex)
 	{
@@ -1209,6 +1248,9 @@ void AIGPlayerCharacter::PlayFootstep(const float SpeedScale)
 		0.42f,
 		1.0f,
 		FMath::Clamp(LastFootstepNoiseLoudness / 0.72f, 0.0f, 1.0f));
+	// 들리는 크기(소음 버스)는 자세별 표가 정한다. 여기는 귀에 들리는 녹음 크기다.
+	// 같은 녹음이라도 뛰는 발은 또렷하고 숙인 발은 작아야 선택의 위험을 귀로 안다.
+	const float StanceGain = bIsCrouched ? 0.55f : (bSprinting ? 1.15f : 0.80f);
 	// 녹음이 있으면 녹음. 표면마다 셋~다섯 벌을 걸음 해시로 고른다. 합성기는
 	// 피치를 안에서 걸고, 녹음은 재생 피치로 건다.
 	int32 SampleCount = 5;
@@ -1229,7 +1271,7 @@ void AIGPlayerCharacter::PlayFootstep(const float SpeedScale)
 				PitchVariation,
 				1.0f)),
 		GetActorLocation() - FVector(0.0f, 0.0f, FootstepDrop),
-		FootstepVolume * AudibleLevel * (0.72f + 0.28f * SpeedScale),
+		FootstepVolume * AudibleLevel * StanceGain * (0.72f + 0.28f * FMath::Min(SpeedScale, 1.0f)),
 		FootSample ? PitchVariation : 1.0f,
 		120.0f,
 		900.0f,
@@ -1723,12 +1765,14 @@ void AIGPlayerCharacter::BeginJump()
 	{
 		return;
 	}
-	// 앉은 채로는 뛰지 않는다. 점프 키는 먼저 일어서는 데 쓴다. 머리 위가 막혔으면
-	// 일어서기만 걸어 두고, 엔진이 자리가 나는 대로 세운다.
+	// 앉은 채 누른 점프는 일어선 다음에 뛴다. 같은 프레임에 Jump를 부르면 캡슐이
+	// 아직 앉아 있어 입력이 사라진다(「앉은 뒤 점프가 씹힌다」). 머리 위가 막혔으면
+	// 일어서기만 걸어 두고, 엔진이 자리가 나는 대로 세운다. 그 사이 기다림은 짧다.
 	if (bIsCrouched || MovementComponent->bWantsToCrouch)
 	{
 		bSprinting = false;
 		CrouchTransitionRemaining = IGPlayerNoise::CrouchTransitionSeconds;
+		JumpBufferedUntilSeconds = World->GetTimeSeconds() + IGPlayerNoise::UncrouchJumpBufferSeconds;
 		UnCrouch();
 		SetCameraMotionEnabled(true);
 		ApplyContextMovementSpeed();

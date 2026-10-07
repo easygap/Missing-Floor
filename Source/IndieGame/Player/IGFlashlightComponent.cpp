@@ -8,6 +8,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Player/IGBeamDustComponent.h"
+#include "Narrative/IGStoryStateSubsystem.h"
 #include "Player/IGHorrorHUD.h"
 
 namespace IGFlashlight
@@ -86,8 +87,48 @@ void UIGFlashlightComponent::BeginPlay()
 		{
 			AccessibilitySubsystem =
 				GameInstance->GetSubsystem<UIGAccessibilitySubsystem>();
+			if (UIGStoryStateSubsystem* Story = GameInstance->GetSubsystem<UIGStoryStateSubsystem>())
+			{
+				Story->OnStoryStateTagChanged.AddUniqueDynamic(this, &ThisClass::HandleStoryStateChanged);
+			}
 		}
 	}
+	RefreshOwnership();
+}
+
+FGameplayTag UIGFlashlightComponent::GetOwnershipTag()
+{
+	return FGameplayTag::RequestGameplayTag(TEXT("State.MissingFloor.HasFlashlight"), false);
+}
+
+void UIGFlashlightComponent::RefreshOwnership()
+{
+	const UGameInstance* Instance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	const UIGStoryStateSubsystem* Story = Instance ? Instance->GetSubsystem<UIGStoryStateSubsystem>() : nullptr;
+	SetAvailable(Story && Story->HasState(GetOwnershipTag()));
+}
+
+void UIGFlashlightComponent::HandleStoryStateChanged(FGameplayTag StateTag, bool bAdded)
+{
+	if (StateTag == GetOwnershipTag())
+	{
+		RefreshOwnership();
+	}
+}
+
+void UIGFlashlightComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (const UWorld* World = GetWorld())
+	{
+		if (UGameInstance* Instance = World->GetGameInstance())
+		{
+			if (UIGStoryStateSubsystem* Story = Instance->GetSubsystem<UIGStoryStateSubsystem>())
+			{
+				Story->OnStoryStateTagChanged.RemoveDynamic(this, &ThisClass::HandleStoryStateChanged);
+			}
+		}
+	}
+	Super::EndPlay(EndPlayReason);
 }
 
 bool UIGFlashlightComponent::Toggle()
