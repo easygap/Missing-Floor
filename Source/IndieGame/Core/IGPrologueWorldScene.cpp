@@ -94,7 +94,7 @@ namespace IGPrologueWorld
 	/**
 	 * 서쪽 계단탑. 1층 필로티 옆에서 4층 복도 끝까지 한 줄로 이어진 꺾인
 	 * 계단이고, 층마다 남쪽 참이 층 바닥 높이에서 동쪽 복도로 열린다. 북쪽 참은
-	 * 반 층이다. 서쪽 띠는 층에서 북쪽으로 반 층 참까지 오르고, 동쪽 띠는 그
+	 * 반 층이다. 서쪽 계단은 층에서 북쪽으로 반 층 참까지 오르고, 동쪽 계단은 그
 	 * 참에서 남쪽으로 올라 다음 층에 닿는다. 순찰하는 관리인도 이 숫자로 걷는다.
 	 */
 	constexpr float StairCoreWestX = -590.0f;
@@ -105,7 +105,7 @@ namespace IGPrologueWorld
 	constexpr float StairInnerEastX = -355.0f;
 	constexpr float StairInnerSouthY = -375.0f;
 	constexpr float StairInnerNorthY = 105.0f;
-	// 두 띠 사이는 10 cm 벽이다. 서쪽 띠는 -575..-470, 동쪽 띠는 -460..-355.
+	// 두 계단 사이는 10 cm 벽이다. 서쪽 계단은 -575..-470, 동쪽 계단은 -460..-355.
 	constexpr float StairWestBandEastX = -470.0f;
 	constexpr float StairEastBandWestX = -460.0f;
 	// 남쪽 참은 Y -375..-235, 계단은 -235..-35, 북쪽 참은 -35..105.
@@ -2995,7 +2995,7 @@ void AIGPrologueWorldScene::BuildCorridor()
 		CorridorCeil);
 
 	// 서쪽 끝 목 너머는 계단탑이다(BuildStairCore). 1층까지 실제 계단이 이어지고,
-	// 4층에서는 동쪽 띠가 북쪽으로 내려가며 서쪽 띠 위는 난간 너머로 뚫려 있다.
+	// 4층에서는 동쪽 계단이 북쪽으로 내려가고, 서쪽 계단 위는 난간 너머로 뚫려 있다.
 	// A tired green exit lamp glows at the stair throat, screwed to the head
 	// of the stair opening rather than hanging a centimetre clear of it.
 	CreateBlock(FVector(-313, -305, 220), FVector(14, 8, 10),
@@ -3102,7 +3102,7 @@ void AIGPrologueWorldScene::GetStairClimbFeet(const int32 FromFloor, TArray<FVec
 		(IGPrologueWorld::StairEastBandWestX + IGPrologueWorld::StairInnerEastX) * 0.5f;
 	const float SouthY = IGPrologueWorld::StairFlightSouthY;
 	const float NorthY = IGPrologueWorld::StairFlightNorthY;
-	// 반 층 참에서는 띠 폭의 반쯤 들어가서 꺾는다.
+	// 반 층 참에서는 계단 폭의 반쯤 들어가서 꺾는다.
 	const float TurnY = NorthY + 55.0f;
 	OutFeet.Add(GetStairDoorwayFeet(Floor));
 	OutFeet.Add(FVector(WestX, SouthY - 30.0f, FloorZ));
@@ -3122,8 +3122,8 @@ void AIGPrologueWorldScene::BuildStairCore()
 	// 전에는 1층 발치 다섯 단과 4층 목 네 단만 있고, 그 사이를 0.12초 암전으로
 	// 건너뛰었다. 2·3층이 생기면서 그 사이가 진짜 계단이 됐다.
 	//
-	// 서쪽 띠는 층에서 북쪽으로 반 층 참까지 오르고, 동쪽 띠는 그 참에서 남쪽으로
-	// 올라 다음 층에 닿는다. 두 띠 사이는 벽이라, 아래에서 오는 발소리는 들려도
+	// 서쪽 계단은 층에서 북쪽으로 반 층 참까지 오르고, 동쪽 계단은 그 참에서 남쪽으로
+	// 올라 다음 층에 닿는다. 두 계단 사이는 벽이라, 아래에서 오는 발소리는 들려도
 	// 몸은 꺾이는 참에 가서야 보인다.
 	//
 	// 좌표는 월드 cm 그대로다. 기하 감사가 숫자를 읽을 수 있게 프레임을 바꾸지 않는다.
@@ -3184,7 +3184,7 @@ void AIGPrologueWorldScene::BuildStairCore()
 		FVector(OuterEastX - OuterWestX - 10.0f, 10, 1180.0f), VillaBrickX);
 	CreateBlock(
 		FVector(-540.0f, OuterNorthY - 5.0f, 1210.0f), FVector(80, 10, 60), VillaBrickX);
-	// 안쪽 미장. 남쪽과 북쪽은 띠 폭만큼, 서쪽은 남북 벽 사이를 채운다.
+	// 안쪽 미장. 남쪽과 북쪽은 계단 폭만큼, 서쪽은 남북 벽 사이를 채운다.
 	CreateBlock(
 		FVector(CoreCenterX, SouthY - 5.0f, CeilingZ * 0.5f),
 		FVector(CoreWidth, 10, CeilingZ), CoreWallX);
@@ -3215,7 +3215,7 @@ void AIGPrologueWorldScene::BuildStairCore()
 	CreateBlock(
 		FVector((EastX + OuterEastX) * 0.5f, (SouthY + FlightSouthY) * 0.5f, 1150.0f),
 		FVector(OuterEastX - EastX, FlightSouthY - SouthY, 20), CoreWallY);
-	// 두 띠 사이의 벽.
+	// 두 계단 사이의 벽.
 	CreateBlock(
 		FVector((WestBandEastX + EastBandWestX) * 0.5f, (FlightSouthY + FlightNorthY) * 0.5f, CeilingZ * 0.5f),
 		FVector(EastBandWestX - WestBandEastX, FlightNorthY - FlightSouthY, CeilingZ), CoreWallY);
@@ -3306,7 +3306,7 @@ void AIGPrologueWorldScene::BuildStairCore()
 
 	// --- 2층부터 4층까지 ---------------------------------------------------
 	// 디딤판 상자의 밑면이 아랫단 윗면보다 8 cm 낮아 단과 단 사이가 비지 않는다.
-	// 같은 띠의 바로 아래 계단과는 2.75 m가 떨어져 머리가 닿지 않는다.
+	// 같은 쪽 바로 아래 계단과는 2.75 m가 떨어져 머리가 닿지 않는다.
 	for (int32 Level = 1; Level < 3; ++Level)
 	{
 		const float FloorZ = Storey * Level;
@@ -3328,7 +3328,7 @@ void AIGPrologueWorldScene::BuildStairCore()
 			IGPrologueWorld::FootstepMetalStairTag);
 	}
 
-	// 4층 참 북쪽 가장자리. 서쪽 띠 위로는 계단이 없어 3층까지 뚫려 있다. 한국
+	// 4층 참 북쪽 가장자리. 서쪽 계단 위로는 올라가는 계단이 없어 3층까지 뚫려 있다. 한국
 	// 빌라 계단의 검은 철제 난간이다. 살 사이 9 cm라 몸이 빠지지 않는다.
 	CreateBlock(
 		FVector(WestBandX, FlightSouthY - 2.5f, 995.0f),

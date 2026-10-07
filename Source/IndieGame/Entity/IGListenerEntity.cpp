@@ -178,8 +178,8 @@ AIGListenerEntity::AIGListenerEntity()
 
 	Body = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Body"));
 	// Low and wide: an upper body on elbows with the legs trailing behind.
-	// 반지름은 어깨 폭이다. 팔꿈치는 그보다 넓게 벌어지지만, 90 cm 문틀과 계단
-	// 띠(105 cm)를 지나야 하는 몸이라 벽에 닿는 것은 팔이지 몸통이 아니다.
+	// 반지름은 어깨 폭이다. 팔꿈치는 그보다 넓게 벌어지지만, 90 cm 문틀과 폭 105 cm
+	// 계단을 지나야 하는 몸이라 벽에 닿는 것은 팔이지 몸통이 아니다.
 	Body->InitCapsuleSize(34.0f, 58.0f);
 	Body->SetCollisionProfileName(TEXT("Pawn"));
 	Body->SetCanEverAffectNavigation(false);
@@ -2381,7 +2381,7 @@ bool AIGListenerEntity::CanCrawlStraightTo(const FVector& GoalFeet) const
 		return false;
 	}
 	// 계단탑을 드나드는 걸음은 늘 길로 간다. 층 참 끝에서 곧게 가면 계단 위 허공으로
-	// 나가고, 두 띠 사이 벽을 사이에 둔 자리는 곧게 닿지 않는다.
+	// 나가고, 두 계단 사이 벽을 사이에 둔 자리는 곧게 닿지 않는다.
 	const bool bFeetInCore = FIGBuildingNav::IsInStairCore(Feet);
 	if (bFeetInCore != FIGBuildingNav::IsInStairCore(GoalFeet)
 		|| (bFeetInCore
@@ -2464,7 +2464,7 @@ bool AIGListenerEntity::PlanNavPath(const FVector& GoalFeet)
 	{
 		const FVector First = Nodes[Route[0]].Feet;
 		const FVector Second = Nodes[Route[1]].Feet;
-		// 계단 위는 디딤판을 따라 움직이므로 같은 띠 위에서만 건너뛴다.
+		// 계단 위는 디딤판을 따라 움직이므로 같은 계단 위에서만 건너뛴다.
 		const bool bStairSkip = Nodes[Route[0]].bOnStair && Nodes[Route[1]].bOnStair;
 		if (FVector::Dist(Feet, Second) < FVector::Dist(First, Second) + 10.0f
 			&& (bStairSkip
@@ -2572,7 +2572,7 @@ bool AIGListenerEntity::StepAlongStair(
 	const FVector Flat(Delta.X, Delta.Y, 0.0f);
 	if (!Flat.IsNearlyZero())
 	{
-		// 반 층 참에서 몸을 돌려 다음 띠로 꺾는다. 평지보다 빨리 돌아야 몸이 옆으로
+		// 반 층 참에서 몸을 돌려 다음 계단으로 꺾는다. 평지보다 빨리 돌아야 몸이 옆으로
 		// 미끄러지지 않는다.
 		FaceDirection(Flat.GetSafeNormal(), DeltaSeconds, 330.0f);
 		StairPitchTarget = FMath::Clamp(
@@ -2632,7 +2632,7 @@ bool AIGListenerEntity::MoveTowardGoal(
 		NavPathIndex = 0;
 		return true;
 	}
-	// 계단탑 안은 미리 고른 길(띠 가운데, 층 참 가운데)만 지나므로 쓸지 않고 따라간다.
+	// 계단탑 안은 미리 고른 길(계단 가운데, 층 참 가운데)만 지나므로 쓸지 않고 따라간다.
 	// 디딤판 경사에서 층 참으로 올라선 몸은 참 바닥보다 몇 cm 낮아서, 쓸며 가면 참
 	// 끝에 걸린다.
 	const bool bStairLeg = NavPathOnStair[NavPathIndex]

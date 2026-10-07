@@ -15,8 +15,8 @@ class USkeletalMeshComponent;
 /**
  * 뒤따르는 발. 밤2에 한 번, 계단탑에서 그녀보다 한 층 반 뒤에서 걷는 발소리다.
  *
- * 그녀가 계단을 오르내리면 같은 걸음으로 한 띠 뒤에서 철판을 밟는 소리가 난다.
- * 멈추면 한 발이 더 난다. 두 띠 사이가 벽이라 몸은 꺾이는 참에 가서야 보인다.
+ * 그녀가 계단을 오르내리면 반 층 뒤에서 같은 걸음으로 철판을 밟는 소리가 난다.
+ * 멈추면 한 발이 더 난다. 두 계단 사이가 벽이라 몸은 꺾이는 참에 가서야 보인다.
  * 돌아보면 허리가 꺾인 사람이 고개를 숙이고 서 있다. 보는 동안은 움직이지 않고,
  * 오래 보면 경련하다 고개를 든다. 얼굴이 없다. 눈을 돌리면 없다. 그 자리에는
  * 젖은 작업화 자국 한 켤레가 남고, 다음 낮까지 마르지 않는다.
@@ -37,7 +37,7 @@ public:
 	void Configure(const TArray<FVector>& InRoute);
 	/**
 	 * 4층 출입구에서 1층 출입구까지 내려가는 길. 중간 층에서는 복도 쪽 출입구로
-	 * 나가지 않고 층 참을 지나 다음 띠로 꺾는다.
+	 * 나가지 않고 층 참을 지나 다음 계단으로 꺾는다.
 	 */
 	static void BuildDescentRoute(TArray<FVector>& OutRoute);
 	bool IsEncounterActive() const { return Stage == EStage::Following || Stage == EStage::Watched || Stage == EStage::Withdrawing; }
@@ -78,12 +78,12 @@ private:
 	void Finish();
 	void PlayStep(bool bExtra);
 	void PlaceFigure();
-	/** 디딤판 윗면. 길은 띠의 기울기를 따라 그은 선이라 단 사이에 뜬다. */
+	/** 디딤판 윗면. 길은 계단 기울기를 따라 그은 선이라 단 사이에 뜬다. */
 	bool FindTreadTop(const FVector& Near, FVector& OutTop) const;
 	void LeavePrints();
 	bool IsFigureVisible() const;
 	bool IsPointOnScreen(const FVector& Point, float MinDot) const;
-	/** 길 위의 거리(4층 출입구에서 cm). 발 높이가 맞는 띠만 본다. INDEX_NONE이면 계단 밖. */
+	/** 길 위의 거리(4층 출입구에서 cm). 발 높이가 맞는 계단만 본다. 음수면 계단 밖. */
 	float ProjectOntoRoute(const FVector& Feet) const;
 	FVector RoutePoint(float Distance, FVector* OutForward = nullptr) const;
 	void SaveEncounter() const;
@@ -120,7 +120,7 @@ private:
 	float LastRouteDistance = 0.0f;
 	/**
 	 * 따라오는 쪽. 시작할 때 그녀가 내려가고 있었으면 +1(그는 위에 있다), 오르고 있었으면
-	 * -1이다. 그녀가 돌아서 다가와도 그는 앞질러 건너오지 않고 한 띠 떨어진 채 물러선다.
+	 * -1이다. 그녀가 돌아서 다가와도 그는 앞질러 건너오지 않고 반 층 떨어진 채 물러선다.
 	 */
 	float FollowSign = 1.0f;
 	float FollowerDistance = 0.0f;

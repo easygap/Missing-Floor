@@ -17,8 +17,8 @@ namespace IGBuildingNav
 	constexpr float WestUnitDoorX = -150.0f;
 	constexpr float MiddleUnitDoorX = -30.0f;
 	/**
-	 * 계단탑 층 참의 가운데. 두 띠 사이 벽(X -470..-460)이 층 참 바로 위(Y -235)에서
-	 * 끝나서, 띠 끝 점끼리 곧게 오가면 몸이 벽 끝에 걸린다. 띠와 출입구 사이는 이
+	 * 계단탑 층 참의 가운데. 두 계단 사이 벽(X -470..-460)이 층 참 바로 위(Y -235)에서
+	 * 끝나서, 계단 끝 점끼리 곧게 오가면 몸이 벽 끝에 걸린다. 계단과 출입구 사이는 이
 	 * 점을 지난다.
 	 */
 	constexpr float LandingCenterX = -465.0f;
@@ -59,7 +59,7 @@ void FIGBuildingNav::Build()
 	using namespace IGBuildingNav;
 	Nodes.Reset();
 
-	// 계단탑. 층마다 출입구와 층 참 가운데 점을 두고, 띠 끝 점은 그 가운데 점에 잇는다.
+	// 계단탑. 층마다 출입구와 층 참 가운데 점을 두고, 계단 끝 점은 그 가운데 점에 잇는다.
 	int32 Doorways[4] = {INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE};
 	int32 Landings[4] = {INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE};
 	for (int32 Floor = 0; Floor < 4; ++Floor)
@@ -73,7 +73,7 @@ void FIGBuildingNav::Build()
 	{
 		TArray<FVector> Climb;
 		AIGPrologueWorldScene::GetStairClimbFeet(Floor, Climb);
-		// 0과 마지막은 출입구, 1과 끝에서 둘째는 층 참 위 띠 끝이다. 그 사이가 띠와 반 층 참이다.
+		// 0과 마지막은 출입구, 1과 끝에서 둘째는 층 참 위 계단 끝이다. 그 사이가 계단과 반 층 참이다.
 		int32 Previous = Landings[Floor];
 		for (int32 Index = 1; Index + 1 < Climb.Num(); ++Index)
 		{
@@ -180,7 +180,7 @@ int32 FIGBuildingNav::FindNearest(const UWorld* World, const FVector& Feet, cons
 	{
 		const FIGBuildingNavNode& Node = Nodes[Index];
 		// 계단탑 밖에서는 같은 층의 점만, 안에서는 계단 점도 본다. 높이가 1 m 넘게
-		// 다른 계단 점은 위아래 띠라 벽 너머다.
+		// 다른 계단 점은 위아래 계단이라 벽 너머다.
 		if (bInCore)
 		{
 			if (FMath::Abs(Node.Feet.Z - Feet.Z) > 100.0f)

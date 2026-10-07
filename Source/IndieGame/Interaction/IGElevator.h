@@ -87,7 +87,7 @@ public:
 		UStaticMesh* IndicatorMesh = nullptr;
 		/** 문 위 「만원」 표시등(SM_ElevatorFullLamp). */
 		UStaticMesh* FullLamp = nullptr;
-		/** 거울 캡처를 보여 주는 무광원 재질(M_ElevatorMirror). 없으면 그냥 스테인리스다. */
+		/** 거울 캡처를 보여 주는 언릿 머티리얼(M_ElevatorMirror). 없으면 그냥 스테인리스다. */
 		UMaterialInterface* MirrorMaterial = nullptr;
 		/** 캡처가 쉬는 동안 거울 판에 씌우는 광택 스테인리스. */
 		UMaterialInterface* BackPanelMaterial = nullptr;

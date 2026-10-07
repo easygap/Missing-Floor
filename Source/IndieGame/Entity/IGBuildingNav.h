@@ -11,7 +11,7 @@ struct INDIEGAME_API FIGBuildingNavNode
 	FVector Feet = FVector::ZeroVector;
 	/** 0이 1층, 3이 4층. 반 층 참은 아래층으로 친다. */
 	int32 Floor = 0;
-	/** 계단 띠나 반 층 참 위. 여기서는 바닥을 쓸며 기지 않고 디딤판을 따라 오르내린다. */
+	/** 계단이나 반 층 참 위. 여기서는 바닥을 쓸며 기지 않고 디딤판을 따라 오르내린다. */
 	bool bOnStair = false;
 	/** 문 앞과 방 안, 복도 끝. 놓친 소리를 찾을 때 들러서 귀를 대 볼 만한 자리다. */
 	bool bLookout = false;
@@ -34,7 +34,7 @@ public:
 
 	/** 발 높이로 층을 정한다. 0~3은 1~4층이고, 옥상·5층은 4다. */
 	static int32 FloorOfFeet(float FeetZ);
-	/** 계단탑 안(층 참, 반 층 참, 계단 띠)인가. */
+	/** 계단탑 안(층 참, 반 층 참, 계단)인가. */
 	static bool IsInStairCore(const FVector& Feet);
 
 	/**

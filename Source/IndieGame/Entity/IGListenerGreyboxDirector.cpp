@@ -2899,7 +2899,7 @@ void AIGListenerGreyboxDirector::PlayArrivalBaselineEvent()
 	case 0:
 	{
 		// 누가 3층에서 계단을 내려간다. 다섯 걸음, 한참 뒤 1층 공동현관.
-		// 3층 참에서 동쪽 띠를 따라 북쪽으로 내려가는 디딤판 위다.
+		// 3층 참에서 동쪽 계단을 따라 북쪽으로 내려가는 디딤판 위다.
 		auto StepAt = [](const int32 Step)
 		{
 			return FVector(-407.5f, -215.0f + 40.0f * static_cast<float>(Step),
@@ -6469,7 +6469,7 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 				AIGNightOneBeatDirector::GetSightingStagePoint()) <= 250.0f;
 		if (bStaged && bOnLanding)
 		{
-			// 그를 지나 서쪽 띠로 내려선다.
+			// 그를 지나 서쪽 계단으로 내려선다.
 			if (AIGPlayerCharacter* PlayerCharacter = Player.Get())
 			{
 				PlayerCharacter->TeleportTo(

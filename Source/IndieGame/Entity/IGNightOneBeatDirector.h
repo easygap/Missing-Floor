@@ -15,7 +15,7 @@ class UIGNoiseSubsystem;
  * 밤1의 두 스크립트 비트 (STORY_BIBLE_MISSING_FLOOR.md §8 밤1).
  *
  * 1-4 첫 목격 — 계단 입구 존이 그를 3.5층 참 북서쪽 구석에 올린다. 북쪽 벽에
- * 귀를 대고 등을 보인다. 4층에서 내려오는 사람은 두 띠 사이 벽 때문에 참에
+ * 귀를 대고 등을 보인다. 4층에서 내려오는 사람은 두 계단 사이 벽 때문에 참에
  * 내려서야 그를 보고, 계속 내려가려면 팔 길이 안을 지나야 한다. 그동안 그는
  * 쫓기 전에는 닿기만으로 잡지 않는다 — 소리 없이 지나가면 모른다는 것이 이
  * 비트가 가르치는 규칙이다.
@@ -38,7 +38,7 @@ public:
 	static FVector GetSightingZoneCenter();
 	static FVector GetSightingStagePoint();
 	static FVector GetSightingShufflePoint();
-	/** 그를 지나 서쪽 띠로 두 단 내려선 자리. 프로브가 「지나갔다」를 만들 때 쓴다. */
+	/** 그를 지나 서쪽 계단으로 두 단 내려선 자리. 프로브가 「지나갔다」를 만들 때 쓴다. */
 	static FVector GetSightingPassPoint();
 	AIGNightOneBeatDirector();
 

@@ -34,7 +34,7 @@ const FName AIGStairwellPresence::DayPrintsBeat(TEXT("Day.StairWetPrints"));
 
 namespace IGStairwell
 {
-	/** 그녀보다 이만큼 뒤에서 걷는다. 한 띠와 꺾이는 참 하나다(cm, 길을 따라). */
+	/** 그녀보다 이만큼 뒤에서 걷는다. 반 층 계단 하나와 꺾이는 참 하나다(cm, 길을 따라). */
 	constexpr float FollowLag = 330.0f;
 	/** 그녀가 이만큼 걸을 때마다 한 걸음. 철판 계단의 보폭이다. */
 	constexpr float StrideLength = 75.0f;
@@ -48,7 +48,7 @@ namespace IGStairwell
 	constexpr float SceneLimitSeconds = 24.0f;
 	constexpr float TwitchAfterSeconds = 1.0f;
 	constexpr float LiftAfterSeconds = 2.4f;
-	/** 발이 이 높이 안에 있는 띠만 같은 자리로 본다. 위아래 띠는 같은 XY에 겹친다. */
+	/** 발이 이 높이 안에 있는 계단만 같은 자리로 본다. 위아래 계단은 XY가 겹친다. */
 	constexpr float RouteHeightTolerance = 45.0f;
 	constexpr float RouteWidthTolerance = 85.0f;
 }
@@ -628,7 +628,7 @@ void AIGStairwellPresence::Tick(const float DeltaSeconds)
 			StepDelay = -1.0f;
 			break;
 		}
-		// 보이지 않는 동안 한 띠 뒤로 따라붙는다. 그녀가 돌아서 오면 그만큼 물러선다.
+		// 보이지 않는 동안 반 층 뒤로 따라붙는다. 그녀가 돌아서 오면 그만큼 물러선다.
 		const float Target = FMath::Clamp(PlayerRouteDistance - FollowSign * FollowLag, 0.0f, RouteDistance.Last());
 		if (!bVisible)
 		{

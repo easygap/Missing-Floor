@@ -148,7 +148,7 @@ public:
 	static void GetStairClimbFeet(int32 FromFloor, TArray<FVector>& OutFeet);
 	/** 계단탑 안쪽(벽 안)인가. 높이는 보지 않는다. */
 	static bool IsInsideStairCore(const FVector& Location);
-	/** 계단 띠 위인가(층 참과 반 층 참은 아니다). 높이는 보지 않는다. */
+	/** 계단 위인가(층 참과 반 층 참은 아니다). 높이는 보지 않는다. */
 	static bool IsOnStairFlight(const FVector& Location);
 
 	/**

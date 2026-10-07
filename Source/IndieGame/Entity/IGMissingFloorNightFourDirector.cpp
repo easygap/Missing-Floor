@@ -121,7 +121,7 @@ namespace IGNightFour
 	/** 별채 천장 등. 전원이 끊기는 순간 안정기가 한 번 튄다. */
 	const FVector AnnexCeilingLampLocation(0.0f, 700.0f, 1420.0f);
 	/**
-	 * 내린 사람이 내려가는 길. 5층 계단 첫 단, 4층 복도 끝, 계단탑 동쪽 띠의
+	 * 내린 사람이 내려가는 길. 5층 계단 첫 단, 4층 복도 끝, 계단탑 동쪽 계단의
 	 * 첫 단과 그 아래 셋째 단. 철판·콘크리트·철판·철판이다.
 	 */
 	const FVector PowerCutStepLocations[] =

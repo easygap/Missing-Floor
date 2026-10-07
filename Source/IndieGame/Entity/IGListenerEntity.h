@@ -392,7 +392,7 @@ private:
 	bool MoveTowardGoal(const FVector& Goal, float Speed, float DeltaSeconds);
 	/** Goal까지 건물 길을 다시 짠다. 길이 없으면 false. */
 	bool PlanNavPath(const FVector& Goal);
-	/** 계단 띠와 반 층 참 위의 한 걸음. 쓸지 않고 디딤판 위 점을 잇는 선을 따른다. */
+	/** 계단과 반 층 참 위의 한 걸음. 쓸지 않고 디딤판 위 점을 잇는 선을 따른다. */
 	bool StepAlongStair(const FVector& TargetFeet, float Speed, float DeltaSeconds);
 	/** 같은 층에서 몸이 벽에 걸리지 않고 곧게 닿는가. */
 	bool CanCrawlStraightTo(const FVector& Goal) const;
