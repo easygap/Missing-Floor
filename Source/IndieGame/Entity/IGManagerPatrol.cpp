@@ -43,8 +43,8 @@ namespace IGManagerPatrol
 	constexpr float CaptureRestSeconds = 40.0f;
 	constexpr float KnockRestSeconds = 45.0f;
 
-	// 걸음. 슬리퍼를 끄는 노인이다. 돌 때는 걷는 그녀(300)보다 한참 느리다. 쫓을
-	// 때는 허둥지둥 뛰어 걷는 그녀보다 빠르고, 달리는 그녀(460)는 못 따라잡는다.
+	// 걸음. 슬리퍼를 끄는 노인이다. 돌 때는 걷는 그녀(175)보다 느리다. 쫓을 때는
+	// 허둥지둥 뛰어 걷는 그녀보다 빠르고, 달리는 그녀(410)는 못 따라잡는다.
 	// 걸어서 도망치면 잡힌다.
 	constexpr float WalkSpeed = 105.0f;
 	constexpr float InvestigateSpeed = 140.0f;
