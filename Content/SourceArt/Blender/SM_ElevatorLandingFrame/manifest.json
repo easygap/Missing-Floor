@@ -1,0 +1,30 @@
+{
+  "name": "SM_ElevatorLandingFrame",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorLandingFrame.fbx",
+  "textures": {
+    "D": "SM_ElevatorLandingFrame_D.png",
+    "N": "SM_ElevatorLandingFrame_N.png",
+    "ORM": "SM_ElevatorLandingFrame_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 416,
+  "bounds_m": {
+    "min": [
+      -0.56,
+      -0.024,
+      -0.018
+    ],
+    "max": [
+      0.56,
+      0.16,
+      2.4
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "승강장 문틀(벽 구멍 110 cm, 문 75 cm). 원점 바닥 높이 벽 면 가운데. 원본 ElevatorLandingConcept_20261006, 판 ElevatorStainlessPanel_20261006."
+}

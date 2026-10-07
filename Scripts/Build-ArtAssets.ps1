@@ -475,7 +475,6 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 			'M_StuccoCeil',
 			'M_StuccoDado_X',
 			'M_GraniteTile_XY',
-			'M_MarbleFloor_XY',
 			'M_CounterStoneUV',
 			'M_StainlessUV',
 			'M_SteelDoorUV',
@@ -518,7 +517,6 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 			'Content\Prototype\Textures\T_KoreanVillaStucco_A.uasset',
 			'Content\Prototype\Materials\M_VillaStucco_X.uasset',
 			'Content\Prototype\Materials\M_VillaStucco_Y.uasset',
-			'Content\Prototype\Materials\M_MarbleFloor_XY.uasset',
 			'Content\Prototype\Materials\M_StainlessUV.uasset',
 			'Content\Prototype\Materials\M_SteelDoorUV.uasset'
 		)

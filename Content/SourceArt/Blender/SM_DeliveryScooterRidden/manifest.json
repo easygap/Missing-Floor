@@ -1,0 +1,32 @@
+{
+  "name": "SM_DeliveryScooterRidden",
+  "mesh_class": "hero",
+  "fbx": "SM_DeliveryScooterRidden.fbx",
+  "textures": {
+    "D": "SM_DeliveryScooterRidden_D.png",
+    "N": "SM_DeliveryScooterRidden_N.png",
+    "ORM": "SM_DeliveryScooterRidden_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 12000,
+  "bounds_m": {
+    "min": [
+      -0.9232,
+      -0.3779,
+      -0.0069
+    ],
+    "max": [
+      0.8961,
+      0.3721,
+      1.5862
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "골목을 달려 지나가는 배달 오토바이(기사 탑승). 원본 DeliveryScooter_20261002, TRELLIS.2. 앞 +X, 원점 바퀴 접지 가운데.",
+  "generated_from": "../Generated/DeliveryScooterRidden/trellis1024-s56/raw/pbr_00001_.glb",
+  "vertex_ao": false
+}

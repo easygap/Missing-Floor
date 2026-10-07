@@ -1,0 +1,560 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "DeliveryScooterRidden-84c9472a6dfb.png"
+    }
+  },
+  "2": {
+    "class_type": "LoadBackgroundRemovalModel",
+    "inputs": {
+      "bg_removal_name": "birefnet.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "RemoveBackground",
+    "inputs": {
+      "bg_removal_model": [
+        "2",
+        0
+      ],
+      "image": [
+        "1",
+        0
+      ]
+    }
+  },
+  "4": {
+    "class_type": "ImageCropToMask",
+    "inputs": {
+      "images": [
+        "1",
+        0
+      ],
+      "masks": [
+        "3",
+        0
+      ],
+      "width": 1024,
+      "height": 1024,
+      "pad_factor": 1.0,
+      "grow_mask": 0,
+      "background": "#000000"
+    }
+  },
+  "5": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "4",
+        0
+      ],
+      "filename_prefix": "ig3d/DeliveryScooterRidden/trellis1024-s56/conditioning"
+    }
+  },
+  "6": {
+    "class_type": "CLIPVisionLoader",
+    "inputs": {
+      "clip_name": "dino_v3_L_naf_fp32.safetensors"
+    }
+  },
+  "10": {
+    "class_type": "Trellis2Conditioning",
+    "inputs": {
+      "clip_vision_model": [
+        "6",
+        0
+      ],
+      "image": [
+        "4",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "trellis_2_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "12": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "trellis_2_shape_vae_bf16.safetensors"
+    }
+  },
+  "13": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "trellis_2_texture_vae_bf16.safetensors"
+    }
+  },
+  "14": {
+    "class_type": "EmptyTrellis2LatentStructure",
+    "inputs": {
+      "batch_size": 1
+    }
+  },
+  "15": {
+    "class_type": "CFGOverride",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "cfg": 1,
+      "start_percent": 0.667,
+      "end_percent": 1
+    }
+  },
+  "16": {
+    "class_type": "RescaleCFG",
+    "inputs": {
+      "model": [
+        "15",
+        0
+      ],
+      "multiplier": 0.7
+    }
+  },
+  "17": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "16",
+        0
+      ],
+      "shift": 5
+    }
+  },
+  "18": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "17",
+        0
+      ],
+      "positive": [
+        "10",
+        0
+      ],
+      "negative": [
+        "10",
+        1
+      ],
+      "latent_image": [
+        "14",
+        0
+      ],
+      "seed": 56,
+      "steps": 12,
+      "cfg": 7.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1
+    }
+  },
+  "19": {
+    "class_type": "VaeDecodeStructureTrellis2",
+    "inputs": {
+      "samples": [
+        "18",
+        0
+      ],
+      "vae": [
+        "12",
+        0
+      ],
+      "resolution": "32"
+    }
+  },
+  "20": {
+    "class_type": "Trellis2ShapeStage",
+    "inputs": {
+      "positive": [
+        "10",
+        0
+      ],
+      "negative": [
+        "10",
+        1
+      ],
+      "voxel": [
+        "19",
+        0
+      ]
+    }
+  },
+  "21": {
+    "class_type": "CFGOverride",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "cfg": 1,
+      "start_percent": 0.769,
+      "end_percent": 1
+    }
+  },
+  "22": {
+    "class_type": "RescaleCFG",
+    "inputs": {
+      "model": [
+        "21",
+        0
+      ],
+      "multiplier": 0.5
+    }
+  },
+  "23": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "22",
+        0
+      ],
+      "positive": [
+        "20",
+        0
+      ],
+      "negative": [
+        "20",
+        1
+      ],
+      "latent_image": [
+        "20",
+        2
+      ],
+      "seed": 42,
+      "steps": 20,
+      "cfg": 7.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1
+    }
+  },
+  "24": {
+    "class_type": "Trellis2UpsampleStage",
+    "inputs": {
+      "positive": [
+        "20",
+        0
+      ],
+      "negative": [
+        "20",
+        1
+      ],
+      "shape_latent": [
+        "23",
+        0
+      ],
+      "vae": [
+        "12",
+        0
+      ],
+      "target_resolution": 1024
+    }
+  },
+  "25": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "22",
+        0
+      ],
+      "positive": [
+        "24",
+        0
+      ],
+      "negative": [
+        "24",
+        1
+      ],
+      "latent_image": [
+        "24",
+        2
+      ],
+      "seed": 42,
+      "steps": 12,
+      "cfg": 7.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1
+    }
+  },
+  "26": {
+    "class_type": "VaeDecodeShapeTrellis",
+    "inputs": {
+      "samples": [
+        "25",
+        0
+      ],
+      "vae": [
+        "12",
+        0
+      ]
+    }
+  },
+  "27": {
+    "class_type": "MeshSmoothNormals",
+    "inputs": {
+      "mesh": [
+        "26",
+        0
+      ],
+      "crease_angle": 180
+    }
+  },
+  "28": {
+    "class_type": "SaveGLB",
+    "inputs": {
+      "mesh": [
+        "27",
+        0
+      ],
+      "filename_prefix": "ig3d/DeliveryScooterRidden/trellis1024-s56/shape"
+    }
+  },
+  "29": {
+    "class_type": "Trellis2TextureStage",
+    "inputs": {
+      "positive": [
+        "10",
+        0
+      ],
+      "negative": [
+        "10",
+        1
+      ],
+      "shape_latent": [
+        "25",
+        0
+      ]
+    }
+  },
+  "30": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "positive": [
+        "29",
+        0
+      ],
+      "negative": [
+        "29",
+        1
+      ],
+      "latent_image": [
+        "29",
+        2
+      ],
+      "seed": 43,
+      "steps": 12,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1
+    }
+  },
+  "31": {
+    "class_type": "VaeDecodeTextureTrellis",
+    "inputs": {
+      "samples": [
+        "30",
+        0
+      ],
+      "vae": [
+        "13",
+        0
+      ],
+      "shape_subdivides": [
+        "26",
+        1
+      ]
+    }
+  },
+  "32": {
+    "class_type": "PaintMesh",
+    "inputs": {
+      "mesh": [
+        "27",
+        0
+      ],
+      "voxel_colors": [
+        "31",
+        0
+      ]
+    }
+  },
+  "33": {
+    "class_type": "SaveGLB",
+    "inputs": {
+      "mesh": [
+        "32",
+        0
+      ],
+      "filename_prefix": "ig3d/DeliveryScooterRidden/trellis1024-s56/colored"
+    }
+  },
+  "34": {
+    "class_type": "RemeshMesh",
+    "inputs": {
+      "mesh": [
+        "26",
+        0
+      ],
+      "resolution": 512,
+      "sign_mode": "udf",
+      "band": 1.0,
+      "project_back": 0.0,
+      "fix_poles": false,
+      "smooth_iters": 3,
+      "drop_small_components": 0.0001,
+      "precluster_max_verts": 2000000,
+      "sign_mode.qef": false,
+      "sign_mode.drop_inverted_components": false,
+      "sign_mode.drop_enclosed_components": false
+    }
+  },
+  "35": {
+    "class_type": "DecimateMesh",
+    "inputs": {
+      "mesh": [
+        "34",
+        0
+      ],
+      "target_face_count": 200000,
+      "placement_mode": "midpoint"
+    }
+  },
+  "36": {
+    "class_type": "MeshSmoothNormals",
+    "inputs": {
+      "mesh": [
+        "35",
+        0
+      ],
+      "crease_angle": 180
+    }
+  },
+  "37": {
+    "class_type": "PaintMesh",
+    "inputs": {
+      "mesh": [
+        "36",
+        0
+      ],
+      "voxel_colors": [
+        "31",
+        0
+      ]
+    }
+  },
+  "38": {
+    "class_type": "SaveGLB",
+    "inputs": {
+      "mesh": [
+        "37",
+        0
+      ],
+      "filename_prefix": "ig3d/DeliveryScooterRidden/trellis1024-s56/cleaned-colored"
+    }
+  },
+  "39": {
+    "class_type": "UnwrapMesh",
+    "inputs": {
+      "mesh": [
+        "36",
+        0
+      ],
+      "segmenter": "pec",
+      "resolution": 2048,
+      "padding": 2,
+      "weld_distance": 0.0002
+    }
+  },
+  "40": {
+    "class_type": "BakeTextureFromVoxel",
+    "inputs": {
+      "mesh": [
+        "39",
+        0
+      ],
+      "voxel_colors": [
+        "31",
+        0
+      ],
+      "reference_mesh": [
+        "26",
+        0
+      ],
+      "texture_size": 2048
+    }
+  },
+  "41": {
+    "class_type": "ApplyTextureToMesh",
+    "inputs": {
+      "mesh": [
+        "39",
+        0
+      ],
+      "base_color": [
+        "40",
+        0
+      ],
+      "metallic": [
+        "40",
+        1
+      ],
+      "roughness": [
+        "40",
+        2
+      ]
+    }
+  },
+  "42": {
+    "class_type": "SaveGLB",
+    "inputs": {
+      "mesh": [
+        "41",
+        0
+      ],
+      "filename_prefix": "ig3d/DeliveryScooterRidden/trellis1024-s56/pbr"
+    }
+  },
+  "43": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "40",
+        0
+      ],
+      "filename_prefix": "ig3d/DeliveryScooterRidden/trellis1024-s56/base-color"
+    }
+  },
+  "44": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "40",
+        1
+      ],
+      "filename_prefix": "ig3d/DeliveryScooterRidden/trellis1024-s56/metallic"
+    }
+  },
+  "45": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "40",
+        2
+      ],
+      "filename_prefix": "ig3d/DeliveryScooterRidden/trellis1024-s56/roughness"
+    }
+  }
+}

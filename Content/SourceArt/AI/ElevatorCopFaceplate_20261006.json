@@ -1,0 +1,7 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-06",
+  "prompt": "Straight-on orthographic scan of the faceplate of a vertical elevator car operating panel from an aging 1990s Korean apartment elevator, centred on a plain flat mid-grey background with an even margin all round. The plate is tall and narrow, about one to five, hairline-brushed stainless steel with softly rounded corners and four small countersunk screws near the corners. From top to bottom: a small rectangular black acrylic display window, unlit and empty; a single column of six round push buttons with thin chrome rings and flat off-white faces engraved in black with 5, 4, 3, 2, 1 and B1, each with a tiny raised braille dot group to its left; a gap; two round buttons engraved in black with the standard door-open symbol and the standard door-close symbol (triangles and a vertical bar, no words); one round yellow alarm button engraved with a small black bell; a small round key switch; a round speaker grille made of a few short horizontal slots. Even, flat, shadowless copy-stand lighting, no reflections of the room or the photographer, no perspective distortion. Clean, smooth tonal gradients like a sharp modern digital photograph. Absolutely no film grain, no noise, no dithering, no halftone dots, no stippled or speckled texture. No other text, no logos, no watermark.",
+  "sha256": "FF9E94D69371B01E0C8BCFD9B17ADAC99126701FA7D50AEB2E02FE60DD7E23DF",
+  "usage": "승강기 칸 조작반 앞판 albedo. 버튼 숫자(5·4·3·2·1·B1)는 받은 뒤 한 글자씩 확인했다. 표시창은 비워 두고 층 숫자는 런타임 글자가 맡는다."
+}

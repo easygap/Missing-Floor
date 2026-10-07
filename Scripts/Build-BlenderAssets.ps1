@@ -50,6 +50,7 @@ $builders = [ordered]@{
 	'booth_pump_pipework' = @('SM_BoothPumpPipework')
 	'entrance_camera' = @('SM_EntranceCamera')
 	'lift_call_plate' = @('SM_LiftCallPlate')
+	'elevator' = @('SM_ElevatorCabSides', 'SM_ElevatorCabFront', 'SM_ElevatorCabBack', 'SM_ElevatorBackPanel', 'SM_ElevatorCabCeiling', 'SM_ElevatorCabFloor', 'SM_ElevatorDoorPanel', 'SM_ElevatorLandingFrame', 'SM_ElevatorCop', 'SM_ElevatorCctvDome', 'SM_ElevatorFullLamp', 'SM_ElevatorButtonLed')
 	'utility_fixtures' = @('SM_InductionMeter', 'SM_MeterRotor', 'SM_MeterCabinetFive', 'SM_BoothMonitor', 'SM_BoothRecorder', 'SM_BoothKeyring')
 	'retail_refresh' = @('SM_RetailPOS', 'SM_ServiceBell', 'SM_RetailPotato', 'SM_RetailShrimp', 'SM_RetailCorn', 'SM_RetailCupBeef', 'SM_RetailCupKimchi', 'SM_RetailBiscuit', 'SM_WaterBottle')
 	'unit_door' = @('SM_UnitDoorLeaf', 'SM_UnitDoorHardware', 'SM_UnitDoorFrame', 'SM_UnitDoorLeafWideL', 'SM_UnitDoorHardwareWideL', 'SM_UnitDoorFrameWide')
@@ -71,7 +72,6 @@ $builders = [ordered]@{
 	'apartment_fixtures' = @('SM_ApartmentWindow', 'SM_VenetianBlind', 'SM_WallSwitch', 'SM_ShoeCabinet')
 	'villa_window' = @('SM_VillaWindow')
 	'store_products' = @('SM_TobaccoCabinet', 'SM_WindowBar', 'SM_HotWaterDispenser', 'SM_TrashBin')
-	'delivery_scooter' = @('SM_DeliveryScooter', 'SM_DeliveryScooterWheel', 'SM_DeliveryRider')
 }
 
 $selected = @()

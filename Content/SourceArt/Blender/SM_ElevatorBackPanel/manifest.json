@@ -1,0 +1,26 @@
+{
+  "name": "SM_ElevatorBackPanel",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorBackPanel.fbx",
+  "textures": {},
+  "slots": [
+    "Mirror"
+  ],
+  "triangles": 12,
+  "bounds_m": {
+    "min": [
+      -0.45,
+      0.599,
+      0.1
+    ],
+    "max": [
+      0.45,
+      0.605,
+      2.15
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 뒷벽 가운데 거울 판 90 x 205 cm. UV0을 화면 좌표 대신 판 좌표로 둔다."
+}

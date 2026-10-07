@@ -1,0 +1,30 @@
+{
+  "name": "SM_ElevatorCctvDome",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorCctvDome.fbx",
+  "textures": {
+    "D": "SM_ElevatorCctvDome_D.png",
+    "N": "SM_ElevatorCctvDome_N.png",
+    "ORM": "SM_ElevatorCctvDome_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 1024,
+  "bounds_m": {
+    "min": [
+      -0.058,
+      -0.058,
+      -0.072
+    ],
+    "max": [
+      0.058,
+      0.058,
+      0.0
+    ]
+  },
+  "origin": "top-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 천장 모서리 CCTV 돔 지름 11.6 cm. 참조 ElevatorCctvDomeReference_20261006.json. 원점 천장 접면 가운데."
+}

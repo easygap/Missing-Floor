@@ -1,0 +1,10 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-06",
+  "prompt": "Use the attached screenshot from our game only for the corridor's wall finishes, dado colour, terrazzo floor, black trim and lighting mood. Create a photorealistic straight-on view, at standing eye level from about three metres away, of the closed elevator entrance that ends this fourth-floor corridor of an aging 1990s Korean brick villa. Two-panel side-opening hairline-brushed stainless steel landing doors, 80 cm clear opening and 210 cm high, framed by a flat 10 cm wide stainless steel jamb, with a worn brushed aluminium sill flush with the floor. Above the frame, a narrow stainless transom panel with a small black rectangular indicator window, unlit and empty. On the wall to the right of the frame at hand height, a small vertical stainless call plate with two round buttons. The doors show faint vertical hairline grain, smudged fingerprints along the meeting edge and a few kick scuffs at the bottom. Ordinary and slightly dim, nobody present, nothing supernatural. Clean, smooth tonal gradients like a sharp modern digital photograph. Absolutely no film grain, no noise, no dithering, no halftone dots, no stippled or speckled texture. No readable text, no numbers, no logos, no watermark.",
+  "sha256": "4C758F5DB96AD09F2C33CF368482C7A7EC95F31D8E607FAEEFF4587A88D03523",
+  "usage": "승강장 문·문틀·층 표시창·호출판 시안. 4층 복도 캡처를 마감 참고로 붙였다. 모델링 기준이며 게임에 그대로 넣지 않는다.",
+  "references": [
+    "Docs/Media/game-corridor-day.png (게임 캡처, 벽 마감과 조명만 참고)"
+  ]
+}

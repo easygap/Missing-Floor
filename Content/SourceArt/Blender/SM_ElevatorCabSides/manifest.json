@@ -1,0 +1,30 @@
+{
+  "name": "SM_ElevatorCabSides",
+  "mesh_class": "large",
+  "fbx": "SM_ElevatorCabSides.fbx",
+  "textures": {
+    "D": "SM_ElevatorCabSides_D.png",
+    "N": "SM_ElevatorCabSides_N.png",
+    "ORM": "SM_ElevatorCabSides_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 464,
+  "bounds_m": {
+    "min": [
+      -0.782,
+      -0.6,
+      0.0
+    ],
+    "max": [
+      0.782,
+      0.6,
+      2.25
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 옆벽 둘(안쪽 X ±75 cm). 판 셋과 홈, 걸레판. 원본 ElevatorStainlessPanel_20261006. 원점 칸 바닥 가운데, 앞 -Y."
+}

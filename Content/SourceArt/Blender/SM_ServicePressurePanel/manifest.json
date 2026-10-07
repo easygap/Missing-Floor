@@ -1,0 +1,51 @@
+{
+  "name": "SM_ServicePressurePanel",
+  "mesh_class": "prop",
+  "fbx": "SM_ServicePressurePanel.fbx",
+  "textures": {
+    "D": "SM_ServicePressurePanel_D.png",
+    "N": "SM_ServicePressurePanel_N.png",
+    "ORM": "SM_ServicePressurePanel_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 464,
+  "bounds_m": {
+    "min": [
+      -0.25,
+      -0.006,
+      -0.25
+    ],
+    "max": [
+      0.25,
+      0.006,
+      0.25
+    ]
+  },
+  "origin": "center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "50×50cm 석고 점검 패널, 최대 두께 1.2cm. 앞 -Y, 원점 중앙. 생성 원본 PlasterPressure_20261002.png를 앞면에만 배치. 가장자리 0.9mm 휨과 0.65mm 베벨. 512px D/N/ORM, 재질 1개, 충돌 없음. 별도 Visibility 조사 영역은 배치 액터가 담당한다.",
+  "lod_plan": [
+    {
+      "level": 1,
+      "triangle_ratio": 0.45,
+      "screen_size": 0.2
+    },
+    {
+      "level": 2,
+      "triangle_ratio": 0.18,
+      "screen_size": 0.06
+    },
+    {
+      "level": 3,
+      "triangle_ratio": 0.07,
+      "screen_size": 0.015
+    }
+  ],
+  "texture_size": 512,
+  "collision_hulls": 0,
+  "source_image": "Content/SourceArt/AI/PlasterPressure_20261002.png",
+  "source_sha256": "aedd0d5994785f87d00fe47a167d2dc3cbd54e497472f58847df7c0c0c1dc0bb"
+}

@@ -1,0 +1,64 @@
+{
+  "name": "SK_MokHansooPatrol",
+  "mesh_class": "hero",
+  "fbx": "SK_MokHansooPatrol.fbx",
+  "textures": {
+    "D": "SK_MokHansooPatrol_D.png",
+    "N": "SK_MokHansooPatrol_N.png",
+    "ORM": "SK_MokHansooPatrol_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 14000,
+  "bounds_m": {
+    "min": [
+      -0.1982,
+      -0.3822,
+      0.0
+    ],
+    "max": [
+      0.1978,
+      0.3823,
+      1.7199
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "생성 GLB pbr_00001_.glb에서 두 발 리깅",
+  "skeletal": true,
+  "animations": {
+    "Idle": {
+      "frames": 90,
+      "fps": 30,
+      "loop": true
+    },
+    "Walk": {
+      "frames": 36,
+      "fps": 30,
+      "loop": true
+    },
+    "Run": {
+      "frames": 24,
+      "fps": 30,
+      "loop": true
+    },
+    "Look": {
+      "frames": 90,
+      "fps": 30,
+      "loop": true
+    },
+    "Freeze": {
+      "frames": 60,
+      "fps": 30,
+      "loop": true
+    },
+    "Grab": {
+      "frames": 20,
+      "fps": 30,
+      "loop": false
+    }
+  },
+  "generated_from": "../Generated/MokHansooPatrol/trellis1024-s56/raw/pbr_00001_.glb"
+}

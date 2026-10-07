@@ -1,0 +1,31 @@
+{
+  "name": "SM_ElevatorCabCeiling",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorCabCeiling.fbx",
+  "textures": {
+    "D": "SM_ElevatorCabCeiling_D.png",
+    "N": "SM_ElevatorCabCeiling_N.png",
+    "ORM": "SM_ElevatorCabCeiling_ORM.png",
+    "E": "SM_ElevatorCabCeiling_E.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 24,
+  "bounds_m": {
+    "min": [
+      -0.75,
+      -0.6,
+      2.246
+    ],
+    "max": [
+      0.75,
+      0.6,
+      2.27
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 3.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 천장(높이 225 cm). 원본 ElevatorCeilingPanel_20261006. 확산판만 발광."
+}

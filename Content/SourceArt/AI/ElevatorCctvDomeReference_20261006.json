@@ -1,0 +1,7 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-06",
+  "prompt": "Clean photorealistic industrial product reference sheet on a plain white background with generous gaps, for low-poly 3D modeling. One small unbranded ceiling-corner CCTV dome camera of the kind fitted in old Korean apartment elevators: a smoked dark grey acrylic half-dome about 9 cm across seated in a slightly yellowed white plastic base ring with two small screws, a faint dark camera lens shape visible through the dome. Show exactly the same unit three times: from the front at eye level, from directly below, and from the side. Orthographic views without wide-angle distortion, neutral studio lighting so seams and shapes are clear. Clean, smooth tonal gradients like a sharp modern digital photograph. Absolutely no film grain, no noise, no dithering, no halftone dots, no stippled or speckled texture. No text, no captions, no dimensions, no logos, no watermark.",
+  "sha256": "BEAF4404644C696C13D83C023EB0E9996BE17E5C49C9855F50B983305DA88E37",
+  "usage": "승강기 칸 천장 모서리 CCTV 돔 모델링 기준(정면·아래·옆)."
+}

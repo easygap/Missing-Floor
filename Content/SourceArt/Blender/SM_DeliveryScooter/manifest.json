@@ -1,0 +1,32 @@
+{
+  "name": "SM_DeliveryScooter",
+  "mesh_class": "large",
+  "fbx": "SM_DeliveryScooter.fbx",
+  "textures": {
+    "D": "SM_DeliveryScooter_D.png",
+    "N": "SM_DeliveryScooter_N.png",
+    "ORM": "SM_DeliveryScooter_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 9000,
+  "bounds_m": {
+    "min": [
+      -0.9073,
+      -0.3219,
+      -0.0168
+    ],
+    "max": [
+      0.8986,
+      0.3191,
+      1.2341
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "공동현관 앞에 세워 둔 배달 오토바이. 원본 DeliveryScooterParked_20261007, TRELLIS.2. 앞 +X, 원점 바퀴 접지 가운데.",
+  "generated_from": "../Generated/DeliveryScooterParked/trellis1024-s56/raw/pbr_00001_.glb",
+  "vertex_ao": false
+}

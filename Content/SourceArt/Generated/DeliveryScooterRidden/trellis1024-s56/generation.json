@@ -1,0 +1,142 @@
+{
+  "name": "DeliveryScooterRidden",
+  "trial": "trellis1024-s56",
+  "status": "Generated",
+  "source": "Content/SourceArt/AI/DeliveryScooter_20261002.png",
+  "sourceSha256": "84c9472a6dfb8b749db60fc0da32b07479196edabec5826f42e5418ca338e333",
+  "route": "trellis",
+  "resolution": 1024,
+  "seed": 56,
+  "postprocess": "pbr",
+  "decimateFaces": 200000,
+  "textureSize": 2048,
+  "server": {
+    "url": "http://127.0.0.1:8199",
+    "version": "0.34.6",
+    "device": "cuda:0 NVIDIA GeForce RTX 3060 : cudaMallocAsync"
+  },
+  "startedAt": "2026-10-07T00:32:11.819348+00:00",
+  "license": "TRELLIS.2 / Pixal3D weights: Comfy-Org repackage, MIT/permissive; DINOv3, MoGe, BiRefNet: see lunia_z SourceArt/Manifests/ComfyNative.20260908.json",
+  "runtimeReady": false,
+  "promptId": "9954fe93-042d-4c80-82be-6d2afb2993b9",
+  "elapsedSeconds": 291.9,
+  "finishedAt": "2026-10-07T00:37:03.777939+00:00",
+  "files": [
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterRidden/trellis1024-s56/raw/base-color_00001_.png",
+      "bytes": 4241643,
+      "sha256": "4351305928439a43bf6cdc4e13c98913dfa41026bffb822e657450646e59678a"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterRidden/trellis1024-s56/raw/cleaned-colored_00001_.glb",
+      "bytes": 5972068,
+      "sha256": "2015926cb74d86b2ad2add34ba4a47ad5c04268b4ffc696446948d98d2a1679d"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterRidden/trellis1024-s56/raw/colored_00001_.glb",
+      "bytes": 366510052,
+      "sha256": "38c0d42f84fac5ce4cb9661e2bbc506f42cf1a2941a2aabbe4b5204eb54baea2",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterRidden/trellis1024-s56/raw/conditioning_00001_.png",
+      "bytes": 767017,
+      "sha256": "bf405eeb95a87e761eef2673edd2fbfdf56204e16f2f93e289bcd30eab158435"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterRidden/trellis1024-s56/raw/metallic_00001_.png",
+      "bytes": 1788085,
+      "sha256": "fed65e5f0a55be8bec67311b51acd4b687efedba365ba6a00199cea93b51bf3c"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterRidden/trellis1024-s56/raw/pbr_00001_.glb",
+      "bytes": 13291116,
+      "sha256": "e0f0dedea7bddf2cf17137f862b99672c70782da81682c6f98aa5e102ea567ac"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterRidden/trellis1024-s56/raw/roughness_00001_.png",
+      "bytes": 2625988,
+      "sha256": "718f01638e74e5afbec0871a36e6ac138802d218f86d4e5056fa31e57091ebf8"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterRidden/trellis1024-s56/raw/shape_00001_.glb",
+      "bytes": 293649080,
+      "sha256": "87d1d8091e876b3bb1309a752940183cf38783499188d7264b232903fa4d8974",
+      "pruned": true
+    }
+  ],
+  "outputs": {
+    "5": {
+      "images": [
+        {
+          "filename": "conditioning_00001_.png",
+          "subfolder": "ig3d\\DeliveryScooterRidden\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "28": {
+      "3d": [
+        {
+          "filename": "shape_00001_.glb",
+          "subfolder": "ig3d\\DeliveryScooterRidden\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "33": {
+      "3d": [
+        {
+          "filename": "colored_00001_.glb",
+          "subfolder": "ig3d\\DeliveryScooterRidden\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "38": {
+      "3d": [
+        {
+          "filename": "cleaned-colored_00001_.glb",
+          "subfolder": "ig3d\\DeliveryScooterRidden\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "43": {
+      "images": [
+        {
+          "filename": "base-color_00001_.png",
+          "subfolder": "ig3d\\DeliveryScooterRidden\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "44": {
+      "images": [
+        {
+          "filename": "metallic_00001_.png",
+          "subfolder": "ig3d\\DeliveryScooterRidden\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "45": {
+      "images": [
+        {
+          "filename": "roughness_00001_.png",
+          "subfolder": "ig3d\\DeliveryScooterRidden\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "42": {
+      "3d": [
+        {
+          "filename": "pbr_00001_.glb",
+          "subfolder": "ig3d\\DeliveryScooterRidden\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    }
+  }
+}

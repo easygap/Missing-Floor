@@ -1,0 +1,10 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), DeliveryScooter_20261002를 편집",
+  "date": "2026-10-07",
+  "prompt": "Keep exactly the same delivery scooter, the same orange delivery box, the same colours, wear, camera angle, scale and neutral grey studio backdrop. Remove the rider completely, including helmet, gloves and boots, so the empty scooter stands parked on its side stand with the handlebars turned very slightly. Nothing else in the image. Clean, smooth tonal gradients like a sharp modern digital photograph. Absolutely no film grain, no noise, no dithering, no halftone dots, no stippled or speckled texture. No text, no logos, no watermark.",
+  "references": [
+    "DeliveryScooter_20261002.png (편집 대상)"
+  ],
+  "usage": "기사가 내린 뒤 연석에 세워 둔 오토바이. TRELLIS로 SM_DeliveryScooter를 뽑는다.",
+  "sha256": "26066321F01D59AAA9AB75CC478541CE786FE35C10FBD61E996E48A9DC8F1455"
+}

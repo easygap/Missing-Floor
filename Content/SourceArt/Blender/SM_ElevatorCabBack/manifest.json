@@ -1,0 +1,30 @@
+{
+  "name": "SM_ElevatorCabBack",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorCabBack.fbx",
+  "textures": {
+    "D": "SM_ElevatorCabBack_D.png",
+    "N": "SM_ElevatorCabBack_N.png",
+    "ORM": "SM_ElevatorCabBack_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 812,
+  "bounds_m": {
+    "min": [
+      -0.75,
+      0.531,
+      0.0
+    ],
+    "max": [
+      0.75,
+      0.624,
+      2.25
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 뒷벽 테두리(안쪽 Y +60 cm)와 손잡이(높이 90 cm). 거울 판 자리는 비어 있다."
+}

@@ -1,0 +1,49 @@
+{
+  "name": "SK_YudamReflection",
+  "mesh_class": "hero",
+  "fbx": "SK_YudamReflection.fbx",
+  "textures": {
+    "D": "SK_YudamReflection_D.png",
+    "N": "SK_YudamReflection_N.png",
+    "ORM": "SK_YudamReflection_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 14000,
+  "bounds_m": {
+    "min": [
+      -0.1604,
+      -0.286,
+      0.0
+    ],
+    "max": [
+      0.1607,
+      0.2861,
+      1.6202
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "승강기 거울에만 비치는 유담. gpt-image 정면 원본 YudamFrontReference_20261006 → TRELLIS → 두 발 리깅(빈손).",
+  "skeletal": true,
+  "animations": {
+    "Idle": {
+      "frames": 120,
+      "fps": 30,
+      "loop": true
+    },
+    "Walk": {
+      "frames": 32,
+      "fps": 30,
+      "loop": true
+    },
+    "LookBack": {
+      "frames": 75,
+      "fps": 30,
+      "loop": false
+    }
+  },
+  "generated_from": "../Generated/YudamReflection/trellis1024-s56/raw/pbr_00001_.glb"
+}

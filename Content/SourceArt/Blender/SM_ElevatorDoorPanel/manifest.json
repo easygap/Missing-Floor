@@ -1,0 +1,30 @@
+{
+  "name": "SM_ElevatorDoorPanel",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorDoorPanel.fbx",
+  "textures": {
+    "D": "SM_ElevatorDoorPanel_D.png",
+    "N": "SM_ElevatorDoorPanel_N.png",
+    "ORM": "SM_ElevatorDoorPanel_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 44,
+  "bounds_m": {
+    "min": [
+      -0.1875,
+      -0.015,
+      0.0
+    ],
+    "max": [
+      0.1875,
+      0.015,
+      2.1
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "승강기 문짝 37.5 x 210 x 3 cm. 원점 아래 가운데. 칸·승강장 공용."
+}

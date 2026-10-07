@@ -1,0 +1,10 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-07",
+  "prompt": "Keep exactly the same indicator plate, bezel, letters, framing and background, but switched off: the smoked dark acrylic is unlit, and the letters 만원 are only faintly visible as dim dark red shapes with no glow at all. Clean, smooth tonal gradients like a sharp modern digital photograph. Absolutely no film grain, no noise, no dithering, no halftone dots, no stippled or speckled texture. No other text.",
+  "sha256": "2D0E9A4FFBC4DC8CE484F54191E99317FA23E0A69E3388E080D0ECBA87756FB5",
+  "usage": "같은 표시등의 꺼진 그림. SM_ElevatorFullLamp의 바탕색.",
+  "references": [
+    "ElevatorFullLampLit_20261007.png (편집 대상)"
+  ]
+}

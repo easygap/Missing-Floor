@@ -1,0 +1,30 @@
+{
+  "name": "SM_ElevatorCabFront",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorCabFront.fbx",
+  "textures": {
+    "D": "SM_ElevatorCabFront_D.png",
+    "N": "SM_ElevatorCabFront_N.png",
+    "ORM": "SM_ElevatorCabFront_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 240,
+  "bounds_m": {
+    "min": [
+      -0.75,
+      -0.66,
+      0.0
+    ],
+    "max": [
+      0.75,
+      -0.596,
+      2.25
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 앞벽(안쪽 Y -60 cm), 문 너비 75 cm·높이 210 cm. 층 표시창은 검은 판이고 숫자는 씬 글자."
+}

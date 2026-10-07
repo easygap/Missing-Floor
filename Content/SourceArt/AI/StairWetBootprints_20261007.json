@@ -1,0 +1,7 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-07",
+  "prompt": "Top-down orthographic view of one pair of wet work-boot footprints on a pure black background, drawn as a clean grayscale mask. The two prints are solid soft-white shapes with a lugged rubber sole pattern (chevron lugs across the forefoot, a separate heel block), toe edges slightly smeared as if the boots had just come out of a puddle, the left print a little behind and to the left of the right print, both pointing up. Smooth clean edges, flat fill, no noise, no grain, no stipple, no halftone dots, no speckles, no paper texture, nothing outside the prints, no text, no border. Square image, the pair filling the middle seventy percent.",
+  "usage": "계단참의 젖은 작업화 자국. 회색조로 줄여 T_StairWetBootprints_M(데칼 마스크)으로 쓴다.",
+  "sha256": "CC2508343CBCED016413028562AD352E6FE130B7C7991B7C4C0D3D01BE3EA9D7"
+}

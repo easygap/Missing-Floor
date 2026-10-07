@@ -1,0 +1,31 @@
+{
+  "name": "SM_ElevatorFullLamp",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorFullLamp.fbx",
+  "textures": {
+    "D": "SM_ElevatorFullLamp_D.png",
+    "N": "SM_ElevatorFullLamp_N.png",
+    "ORM": "SM_ElevatorFullLamp_ORM.png",
+    "E": "SM_ElevatorFullLamp_E.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 44,
+  "bounds_m": {
+    "min": [
+      -0.065,
+      -0.004,
+      0.0
+    ],
+    "max": [
+      0.065,
+      0.0,
+      0.0575
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 6.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 「만원」 표시등. 바탕 ElevatorFullLampOff_20261007, 발광 ElevatorFullLampLit_20261007. 씬이 EmissiveStrength로 켜고 끈다. 원점 판 뒷면 아래 가운데, 앞 -Y."
+}

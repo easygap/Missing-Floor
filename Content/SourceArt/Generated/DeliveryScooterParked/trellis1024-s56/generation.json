@@ -1,0 +1,142 @@
+{
+  "name": "DeliveryScooterParked",
+  "trial": "trellis1024-s56",
+  "status": "Generated",
+  "source": "Content/SourceArt/AI/DeliveryScooterParked_20261007.png",
+  "sourceSha256": "26066321f01d59aaa9ab75cc478541ce786fe35c10fbd61e996e48a9dc8f1455",
+  "route": "trellis",
+  "resolution": 1024,
+  "seed": 56,
+  "postprocess": "pbr",
+  "decimateFaces": 200000,
+  "textureSize": 2048,
+  "server": {
+    "url": "http://127.0.0.1:8199",
+    "version": "0.34.6",
+    "device": "cuda:0 NVIDIA GeForce RTX 3060 : cudaMallocAsync"
+  },
+  "startedAt": "2026-10-07T00:37:06.022184+00:00",
+  "license": "TRELLIS.2 / Pixal3D weights: Comfy-Org repackage, MIT/permissive; DINOv3, MoGe, BiRefNet: see lunia_z SourceArt/Manifests/ComfyNative.20260908.json",
+  "runtimeReady": false,
+  "promptId": "2c22282a-fee4-44e1-a2ae-82aa83b00140",
+  "elapsedSeconds": 196.3,
+  "finishedAt": "2026-10-07T00:40:22.403936+00:00",
+  "files": [
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterParked/trellis1024-s56/raw/base-color_00001_.png",
+      "bytes": 3825299,
+      "sha256": "cfeba08430a9e07f1c0c32fe8e9e66dc0366c524343181142bdc318de1ece5a5"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterParked/trellis1024-s56/raw/cleaned-colored_00001_.glb",
+      "bytes": 5979100,
+      "sha256": "6b9e6d75e59d2035d6219ce3cce04cf4c595d28c747e1ab7f3628a91e0225ce6"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterParked/trellis1024-s56/raw/colored_00001_.glb",
+      "bytes": 253630044,
+      "sha256": "b112ac7b767c8fc6eec27d24185c589dacf3adc77264a20174e765afdeb78f18",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterParked/trellis1024-s56/raw/conditioning_00001_.png",
+      "bytes": 572935,
+      "sha256": "d101d3fc908ecc32d6e1d4b7bb313630d4befd16c5517f586f9eb5cf9ab1389b"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterParked/trellis1024-s56/raw/metallic_00001_.png",
+      "bytes": 2210683,
+      "sha256": "fc3c147cb93dcff5f35ba786da33ae47d5fc0a493874488f52ca47cd479f67df"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterParked/trellis1024-s56/raw/pbr_00001_.glb",
+      "bytes": 13111936,
+      "sha256": "386a2236699ac32e499845f356afc6240c25aa3fe2dd3b96d4de603a69e21cc2"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterParked/trellis1024-s56/raw/roughness_00001_.png",
+      "bytes": 2693322,
+      "sha256": "14b8432b6e9e4873272c03f8c87e947dedd4dd9863deb4653cedc500aa8bee08"
+    },
+    {
+      "path": "Content/SourceArt/Generated/DeliveryScooterParked/trellis1024-s56/raw/shape_00001_.glb",
+      "bytes": 203137424,
+      "sha256": "08cb1926d99f47b44b0435093c9116e9d01202e57ec6ab4b96e6377aaf533fb3",
+      "pruned": true
+    }
+  ],
+  "outputs": {
+    "5": {
+      "images": [
+        {
+          "filename": "conditioning_00001_.png",
+          "subfolder": "ig3d\\DeliveryScooterParked\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "28": {
+      "3d": [
+        {
+          "filename": "shape_00001_.glb",
+          "subfolder": "ig3d\\DeliveryScooterParked\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "33": {
+      "3d": [
+        {
+          "filename": "colored_00001_.glb",
+          "subfolder": "ig3d\\DeliveryScooterParked\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "38": {
+      "3d": [
+        {
+          "filename": "cleaned-colored_00001_.glb",
+          "subfolder": "ig3d\\DeliveryScooterParked\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "43": {
+      "images": [
+        {
+          "filename": "base-color_00001_.png",
+          "subfolder": "ig3d\\DeliveryScooterParked\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "44": {
+      "images": [
+        {
+          "filename": "metallic_00001_.png",
+          "subfolder": "ig3d\\DeliveryScooterParked\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "45": {
+      "images": [
+        {
+          "filename": "roughness_00001_.png",
+          "subfolder": "ig3d\\DeliveryScooterParked\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "42": {
+      "3d": [
+        {
+          "filename": "pbr_00001_.glb",
+          "subfolder": "ig3d\\DeliveryScooterParked\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    }
+  }
+}

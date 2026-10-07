@@ -206,9 +206,6 @@ TEXTURED_MATERIALS = {
     "M_StuccoDado_X": {"tex": "Stucco", "mapping": "DOMINANT", "tile": 180., "retail_finish": "landing_dado"},
     # 포천석 사진에서 새로 만든 원본과 600mm 줄눈. 테라초를 화강석으로 위장하지 않는다.
     "M_GraniteTile_XY": {"tex": "GraniteTile", "mapping": "DOMINANT", "tile": 60.0, "retail_finish": "granite"},
-    "M_MarbleFloor_XY": {"tex": "MarbleFloor", "mapping": "XY", "tile": 130.0,
-                         "desaturate": 0.55, "tint": (1.35, 1.35, 1.32),
-                         "force_rough": 0.34},
     # Worktops need UV mapping, not world mapping: a world-XY stone smears
     # into stripes the moment it wraps a vertical edge or a splashback.
     "M_CounterStoneUV": {"tex": "MarbleFloor", "mapping": "UV", "tile": 1.3,
@@ -2839,7 +2836,6 @@ def run():
         names = (
             "M_VillaStucco_X",
             "M_VillaStucco_Y",
-            "M_MarbleFloor_XY",
             "M_StainlessUV",
             "M_SteelDoorUV",
         )

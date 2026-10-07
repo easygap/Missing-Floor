@@ -1,0 +1,142 @@
+{
+  "name": "StairFoldedFigure",
+  "trial": "trellis1024-s56",
+  "status": "Generated",
+  "source": "Content/SourceArt/AI/StairwellFoldedFigure_20261002.png",
+  "sourceSha256": "75880c86f6262a79156572afee1b5e9cba3bc8924bd1a8de5f0a2cd2cc42bfef",
+  "route": "trellis",
+  "resolution": 1024,
+  "seed": 56,
+  "postprocess": "pbr",
+  "decimateFaces": 200000,
+  "textureSize": 2048,
+  "server": {
+    "url": "http://127.0.0.1:8199",
+    "version": "0.34.6",
+    "device": "cuda:0 NVIDIA GeForce RTX 3060 : cudaMallocAsync"
+  },
+  "startedAt": "2026-10-06T08:32:31.538538+00:00",
+  "license": "TRELLIS.2 / Pixal3D weights: Comfy-Org repackage, MIT/permissive; DINOv3, MoGe, BiRefNet: see lunia_z SourceArt/Manifests/ComfyNative.20260908.json",
+  "runtimeReady": false,
+  "promptId": "cf93d515-26b0-40fd-a03d-69d97b77bcb7",
+  "elapsedSeconds": 130.3,
+  "finishedAt": "2026-10-06T08:34:41.852424+00:00",
+  "files": [
+    {
+      "path": "Content/SourceArt/Generated/StairFoldedFigure/trellis1024-s56/raw/base-color_00001_.png",
+      "bytes": 3869011,
+      "sha256": "fd123fff20a533b388aa6d47e51fd37b5af81fdbcb47b087f76a94e3b2119741"
+    },
+    {
+      "path": "Content/SourceArt/Generated/StairFoldedFigure/trellis1024-s56/raw/cleaned-colored_00001_.glb",
+      "bytes": 6003556,
+      "sha256": "06baa8475bad4b40034505591c87fbc5098d2f67a696dc4a9d1bf3d47b7ba6fa"
+    },
+    {
+      "path": "Content/SourceArt/Generated/StairFoldedFigure/trellis1024-s56/raw/colored_00001_.glb",
+      "bytes": 142898768,
+      "sha256": "2472bf8e61fdc4b0d848455cb8a4cb837b6dc091408641fd7e5a28eae093482b",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/StairFoldedFigure/trellis1024-s56/raw/conditioning_00001_.png",
+      "bytes": 492674,
+      "sha256": "a3e575151071cdc2ec98e2c389faf9ec030f86ea523c4561a5d60f4d724441b2"
+    },
+    {
+      "path": "Content/SourceArt/Generated/StairFoldedFigure/trellis1024-s56/raw/metallic_00001_.png",
+      "bytes": 1565829,
+      "sha256": "9f091f049f0c00d30f5563d561e6ae6ad4a55270452509cbf5c995a742e30114"
+    },
+    {
+      "path": "Content/SourceArt/Generated/StairFoldedFigure/trellis1024-s56/raw/pbr_00001_.glb",
+      "bytes": 11535380,
+      "sha256": "8fceb8c179a2e26d8d95b7db677c4392063b2752b42a54c14032fdc17dce3a89"
+    },
+    {
+      "path": "Content/SourceArt/Generated/StairFoldedFigure/trellis1024-s56/raw/roughness_00001_.png",
+      "bytes": 1720469,
+      "sha256": "f53736d5ab864cf3da798cf55056ce7c518f8c21954855562b2b9ecf0fb4d835"
+    },
+    {
+      "path": "Content/SourceArt/Generated/StairFoldedFigure/trellis1024-s56/raw/shape_00001_.glb",
+      "bytes": 114329704,
+      "sha256": "d48d6eb986778ce950ce02872c0f788d523b5c91fa56a982260b02deefb10208",
+      "pruned": true
+    }
+  ],
+  "outputs": {
+    "5": {
+      "images": [
+        {
+          "filename": "conditioning_00001_.png",
+          "subfolder": "ig3d\\StairFoldedFigure\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "28": {
+      "3d": [
+        {
+          "filename": "shape_00001_.glb",
+          "subfolder": "ig3d\\StairFoldedFigure\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "33": {
+      "3d": [
+        {
+          "filename": "colored_00001_.glb",
+          "subfolder": "ig3d\\StairFoldedFigure\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "38": {
+      "3d": [
+        {
+          "filename": "cleaned-colored_00001_.glb",
+          "subfolder": "ig3d\\StairFoldedFigure\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "45": {
+      "images": [
+        {
+          "filename": "roughness_00001_.png",
+          "subfolder": "ig3d\\StairFoldedFigure\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "44": {
+      "images": [
+        {
+          "filename": "metallic_00001_.png",
+          "subfolder": "ig3d\\StairFoldedFigure\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "43": {
+      "images": [
+        {
+          "filename": "base-color_00001_.png",
+          "subfolder": "ig3d\\StairFoldedFigure\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "42": {
+      "3d": [
+        {
+          "filename": "pbr_00001_.glb",
+          "subfolder": "ig3d\\StairFoldedFigure\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    }
+  }
+}

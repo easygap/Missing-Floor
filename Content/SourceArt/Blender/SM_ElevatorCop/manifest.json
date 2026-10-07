@@ -1,0 +1,30 @@
+{
+  "name": "SM_ElevatorCop",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorCop.fbx",
+  "textures": {
+    "D": "SM_ElevatorCop_D.png",
+    "N": "SM_ElevatorCop_N.png",
+    "ORM": "SM_ElevatorCop_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3096,
+  "bounds_m": {
+    "min": [
+      -0.09,
+      -0.01,
+      0.0
+    ],
+    "max": [
+      0.09,
+      0.006,
+      0.92
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 조작반 18 x 92 cm. 원본 ElevatorCopFaceplate_20261006. 위에서부터 5·4·3·2·1·B1, 열림·닫힘·비상. 표시창 숫자는 씬 글자. 원점 판 아래 가운데, 앞 -Y."
+}

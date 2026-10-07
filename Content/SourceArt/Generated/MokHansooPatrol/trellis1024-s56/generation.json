@@ -1,0 +1,142 @@
+{
+  "name": "MokHansooPatrol",
+  "trial": "trellis1024-s56",
+  "status": "Generated",
+  "source": "Content/SourceArt/Generated/MokHansooPatrol/source-front.png",
+  "sourceSha256": "5c9522ad8408472a1a1777d77dc483c33619fae8091155fc0202542ea9b91fe6",
+  "route": "trellis",
+  "resolution": 1024,
+  "seed": 56,
+  "postprocess": "pbr",
+  "decimateFaces": 200000,
+  "textureSize": 2048,
+  "server": {
+    "url": "http://127.0.0.1:8199",
+    "version": "0.34.6",
+    "device": "cuda:0 NVIDIA GeForce RTX 3060 : cudaMallocAsync"
+  },
+  "startedAt": "2026-10-06T07:07:37.260106+00:00",
+  "license": "TRELLIS.2 / Pixal3D weights: Comfy-Org repackage, MIT/permissive; DINOv3, MoGe, BiRefNet: see lunia_z SourceArt/Manifests/ComfyNative.20260908.json",
+  "runtimeReady": false,
+  "promptId": "ad2d890b-dace-48cf-8651-838920c0ce01",
+  "elapsedSeconds": 90.2,
+  "finishedAt": "2026-10-06T07:09:07.490561+00:00",
+  "files": [
+    {
+      "path": "Content/SourceArt/Generated/MokHansooPatrol/trellis1024-s56/raw/base-color_00001_.png",
+      "bytes": 3844651,
+      "sha256": "8e3f47cc657d8cc259de1bd2169bcfddcba1cea2505ee84994d54d1ac8f3ebeb"
+    },
+    {
+      "path": "Content/SourceArt/Generated/MokHansooPatrol/trellis1024-s56/raw/cleaned-colored_00001_.glb",
+      "bytes": 5996528,
+      "sha256": "e5ba28f7f1e53dfcdde9f2771ce6ca3d9e0ea11184e077418be28c3cfe16df7e"
+    },
+    {
+      "path": "Content/SourceArt/Generated/MokHansooPatrol/trellis1024-s56/raw/colored_00001_.glb",
+      "bytes": 89177548,
+      "sha256": "38cb75ec4f334d8346f0d2bf046dc90cf522904607b9eabdd329a79dad035788",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/MokHansooPatrol/trellis1024-s56/raw/conditioning_00001_.png",
+      "bytes": 464022,
+      "sha256": "242097091de23eab4e0a4f93548c8eb5698d1bc8dbaf8603d244fa95cf73de10"
+    },
+    {
+      "path": "Content/SourceArt/Generated/MokHansooPatrol/trellis1024-s56/raw/metallic_00001_.png",
+      "bytes": 60516,
+      "sha256": "ff78e35c35624031b355a41916c919b68440209001877bb5df3d4a13f77ce8e8"
+    },
+    {
+      "path": "Content/SourceArt/Generated/MokHansooPatrol/trellis1024-s56/raw/pbr_00001_.glb",
+      "bytes": 9243240,
+      "sha256": "177bac7e03479d4253f183257b0d8a595bab292174fdf86b195a03db5aed74eb"
+    },
+    {
+      "path": "Content/SourceArt/Generated/MokHansooPatrol/trellis1024-s56/raw/roughness_00001_.png",
+      "bytes": 428929,
+      "sha256": "c5c9e452078e8c547f77f006acabdbeae9277b324e70711810809ba829b3f899"
+    },
+    {
+      "path": "Content/SourceArt/Generated/MokHansooPatrol/trellis1024-s56/raw/shape_00001_.glb",
+      "bytes": 71389368,
+      "sha256": "6d4bd0a4b373199a1ebb00bd983c3dda6b1778a7158a83055ff54e2a8fb975a2",
+      "pruned": true
+    }
+  ],
+  "outputs": {
+    "5": {
+      "images": [
+        {
+          "filename": "conditioning_00001_.png",
+          "subfolder": "ig3d\\MokHansooPatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "28": {
+      "3d": [
+        {
+          "filename": "shape_00001_.glb",
+          "subfolder": "ig3d\\MokHansooPatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "33": {
+      "3d": [
+        {
+          "filename": "colored_00001_.glb",
+          "subfolder": "ig3d\\MokHansooPatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "38": {
+      "3d": [
+        {
+          "filename": "cleaned-colored_00001_.glb",
+          "subfolder": "ig3d\\MokHansooPatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "45": {
+      "images": [
+        {
+          "filename": "roughness_00001_.png",
+          "subfolder": "ig3d\\MokHansooPatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "44": {
+      "images": [
+        {
+          "filename": "metallic_00001_.png",
+          "subfolder": "ig3d\\MokHansooPatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "43": {
+      "images": [
+        {
+          "filename": "base-color_00001_.png",
+          "subfolder": "ig3d\\MokHansooPatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "42": {
+      "3d": [
+        {
+          "filename": "pbr_00001_.glb",
+          "subfolder": "ig3d\\MokHansooPatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    }
+  }
+}

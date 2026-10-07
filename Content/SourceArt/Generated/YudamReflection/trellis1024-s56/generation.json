@@ -1,0 +1,142 @@
+{
+  "name": "YudamReflection",
+  "trial": "trellis1024-s56",
+  "status": "Generated",
+  "source": "Content/SourceArt/AI/YudamFrontReference_20261006.png",
+  "sourceSha256": "d6866a0c248f5ab78cb3757ea63e209bc4247487d9108cdbb2d98178fd0633f0",
+  "route": "trellis",
+  "resolution": 1024,
+  "seed": 56,
+  "postprocess": "pbr",
+  "decimateFaces": 200000,
+  "textureSize": 2048,
+  "server": {
+    "url": "http://127.0.0.1:8199",
+    "version": "0.34.6",
+    "device": "cuda:0 NVIDIA GeForce RTX 3060 : cudaMallocAsync"
+  },
+  "startedAt": "2026-10-06T08:31:09.975931+00:00",
+  "license": "TRELLIS.2 / Pixal3D weights: Comfy-Org repackage, MIT/permissive; DINOv3, MoGe, BiRefNet: see lunia_z SourceArt/Manifests/ComfyNative.20260908.json",
+  "runtimeReady": false,
+  "promptId": "4573f095-2a6e-4202-9050-7907b9bd2ec8",
+  "elapsedSeconds": 80.6,
+  "finishedAt": "2026-10-06T08:32:30.611332+00:00",
+  "files": [
+    {
+      "path": "Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/base-color_00001_.png",
+      "bytes": 3202728,
+      "sha256": "a0a560cd9941861cdf1fe532119c7ee192a74f6d2e3fe9e04a89735a335ac454"
+    },
+    {
+      "path": "Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/cleaned-colored_00001_.glb",
+      "bytes": 6006688,
+      "sha256": "f2d5f579660db5827974199f9c71f32028cb66c0415f919396576c3de5c8c316"
+    },
+    {
+      "path": "Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/colored_00001_.glb",
+      "bytes": 70953784,
+      "sha256": "5b975a30f3650a91380466c69808087a27d22d0b34024fe11f902138b3cf5fae",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/conditioning_00001_.png",
+      "bytes": 366749,
+      "sha256": "7719d621ab25b4be5c3688c9fe270bb5aea18f67a5e610579e35e89edc4b2e7a"
+    },
+    {
+      "path": "Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/metallic_00001_.png",
+      "bytes": 18134,
+      "sha256": "def468c004d57bfecaccab0922b1bc35d5e8c63d0ba8820a4caefd801699e51b"
+    },
+    {
+      "path": "Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/pbr_00001_.glb",
+      "bytes": 8298116,
+      "sha256": "c892e68b861b2619b58a6a929e83f389f71af8518b52d701ae2dcda142a4ddca"
+    },
+    {
+      "path": "Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/roughness_00001_.png",
+      "bytes": 310289,
+      "sha256": "1bafef24e5a1f5a72ec2810b92ce4b08671ec08b8f21e3a7d21b944c66f6de2c"
+    },
+    {
+      "path": "Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/shape_00001_.glb",
+      "bytes": 56758152,
+      "sha256": "d6627afce331d822ece5394becd8912b010ea6133c4d3927d6afc772091b8805",
+      "pruned": true
+    }
+  ],
+  "outputs": {
+    "5": {
+      "images": [
+        {
+          "filename": "conditioning_00001_.png",
+          "subfolder": "ig3d\\YudamReflection\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "28": {
+      "3d": [
+        {
+          "filename": "shape_00001_.glb",
+          "subfolder": "ig3d\\YudamReflection\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "33": {
+      "3d": [
+        {
+          "filename": "colored_00001_.glb",
+          "subfolder": "ig3d\\YudamReflection\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "38": {
+      "3d": [
+        {
+          "filename": "cleaned-colored_00001_.glb",
+          "subfolder": "ig3d\\YudamReflection\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "45": {
+      "images": [
+        {
+          "filename": "roughness_00001_.png",
+          "subfolder": "ig3d\\YudamReflection\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "44": {
+      "images": [
+        {
+          "filename": "metallic_00001_.png",
+          "subfolder": "ig3d\\YudamReflection\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "43": {
+      "images": [
+        {
+          "filename": "base-color_00001_.png",
+          "subfolder": "ig3d\\YudamReflection\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "42": {
+      "3d": [
+        {
+          "filename": "pbr_00001_.glb",
+          "subfolder": "ig3d\\YudamReflection\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    }
+  }
+}

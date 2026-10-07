@@ -1,0 +1,7 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-02",
+  "prompt": "Use case: product-mockup. Asset type: visual modeling reference for a modest household flashlight in a grounded first-person Korean apartment horror game. A single ordinary inexpensive 17 cm handheld flashlight with a slightly wider 4 cm silver metal reflector head, matte charcoal plastic ribbed grip, one worn muted orange rectangular thumb switch, screwed rear cap and short fabric wrist loop resting naturally. Plausible assembled consumer object, gently used with fine edge scuffs, no military/tactical design. Show the whole flashlight lying horizontally on a neutral warm grey studio tabletop, left front three-quarter view clearly showing the recessed round reflector lens, body profile, top switch and rear cap. Restrained realistic materials and soft neutral product lighting; no dramatic horror effects. No text, no logos, no typography, no labels, no collage, no extra objects, no hands, no beam of light. This is a reference for economical 3D reconstruction, so clear shape and readable mechanical joins matter.",
+  "usage": "403호 현관 손전등(SM_PocketFlashlight)의 형태 참고. Blender에서 다시 모델링했다(build_pocket_flashlight.py).",
+  "sha256": "C59D5E4AD688345D57FC19FC5A50E0EA7C7D8E84C009C76E398680BF6CB2D8FF"
+}

@@ -1,0 +1,7 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-06",
+  "prompt": "Straight-up orthographic scan of the whole ceiling of a small passenger elevator car, filling the frame edge to edge, 140 cm wide by 110 cm deep, landscape. Flat hairline-brushed stainless ceiling with a large rectangular milky frosted acrylic light diffuser in a thin stainless frame in the middle, glowing an even soft white from behind, and one small round ventilation grille with a few short slots near one corner; small countersunk screws along the frame. Even, flat, shadowless lighting, no perspective. Clean, smooth tonal gradients like a sharp modern digital photograph. Absolutely no film grain, no noise, no dithering, no halftone dots, no stippled or speckled texture. No text, no numbers, no logos, no watermark.",
+  "sha256": "A5DAC54DD19DFBD62C9D7EE0F5F96F98B4055ED37484F79F56B5D76CF9431094",
+  "usage": "칸 천장 한 장(140 x 110 cm). 가운데 아크릴 확산판은 발광 마스크로 따로 뽑는다."
+}

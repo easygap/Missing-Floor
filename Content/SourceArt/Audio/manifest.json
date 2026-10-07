@@ -466,9 +466,9 @@
       "seconds": 3.448,
       "sources": [
         "oga_owlish/Impacts/shouldergrab.wav",
-        "oga_owlish/Human/freakedbreath.wav"
+        "oga_owlish/Human/breath-female2.wav"
       ],
-      "note": "덮침. 붙잡는 손과 거친 숨"
+      "note": "덮침. 붙잡는 손과 끊기는 유담의 숨(여성 호흡 녹음)"
     },
     {
       "name": "Stinger_CloseCall",
@@ -627,21 +627,21 @@
       "name": "Player_Breath_Scared",
       "file": "Player_Breath_Scared.wav",
       "loop": true,
-      "seconds": 5.0,
+      "seconds": 8.0,
       "sources": [
-        "oga_owlish/Human/scared-breathing.wav"
+        "oga_owlish/Human/breath-female.wav"
       ],
-      "note": "숨 참기 직전, 심장 위에"
+      "note": "유담의 호흡. 여성 호흡 녹음, 원래 음높이와 속도 유지. Owlish Media / CC0"
     },
     {
       "name": "Player_Gasp",
       "file": "Player_Gasp.wav",
       "loop": false,
-      "seconds": 5.039,
+      "seconds": 0.48,
       "sources": [
-        "oga_owlish/Human/gasp1.wav"
+        "oga_owlish/Human/breath-female2.wav"
       ],
-      "note": ""
+      "note": "유담이 짧게 숨을 들이킨다. 여성 호흡의 첫 숨만 사용, 피치 변경 없음"
     }
   ]
 }

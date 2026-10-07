@@ -1,0 +1,49 @@
+{
+  "name": "SK_StairFoldedFigure",
+  "mesh_class": "hero",
+  "fbx": "SK_StairFoldedFigure.fbx",
+  "textures": {
+    "D": "SK_StairFoldedFigure_D.png",
+    "N": "SK_StairFoldedFigure_N.png",
+    "ORM": "SK_StairFoldedFigure_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 12000,
+  "bounds_m": {
+    "min": [
+      -0.3378,
+      -0.2755,
+      0.0003
+    ],
+    "max": [
+      0.3385,
+      0.2755,
+      1.3787
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "계단의 접힌 사람. 원본 StairwellFoldedFigure_20261002(gpt-image) → TRELLIS → 등뼈·목만 리깅.",
+  "skeletal": true,
+  "animations": {
+    "Idle": {
+      "frames": 150,
+      "fps": 30,
+      "loop": true
+    },
+    "Lift": {
+      "frames": 90,
+      "fps": 30,
+      "loop": false
+    },
+    "Twitch": {
+      "frames": 18,
+      "fps": 30,
+      "loop": false
+    }
+  },
+  "generated_from": "../Generated/StairFoldedFigure/trellis1024-s56/raw/pbr_00001_.glb"
+}

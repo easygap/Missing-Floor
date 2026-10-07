@@ -1,0 +1,52 @@
+{
+  "name": "SM_PocketFlashlight",
+  "mesh_class": "prop",
+  "fbx": "SM_PocketFlashlight.fbx",
+  "textures": {
+    "D": "SM_PocketFlashlight_D.png",
+    "N": "SM_PocketFlashlight_N.png",
+    "ORM": "SM_PocketFlashlight_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 1252,
+  "bounds_m": {
+    "min": [
+      -0.0857,
+      -0.0225,
+      0.0
+    ],
+    "max": [
+      0.0857,
+      0.0225,
+      0.0461
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "생성 참고 이미지를 보고 메시와 절차 재질로 재구성한 생활용 손전등. 약 17cm 길이, 헤드 지름 4.5cm. +X 렌즈, +Z 스위치, 상판에 누운 자세, 바닥 원점. 실제 그립 돌기·오목한 반사판·주황 스위치. 512px D/N/ORM, 재질 1개, UCX 1개.",
+  "lod_plan": [
+    {
+      "level": 1,
+      "triangle_ratio": 0.45,
+      "screen_size": 0.2
+    },
+    {
+      "level": 2,
+      "triangle_ratio": 0.18,
+      "screen_size": 0.06
+    },
+    {
+      "level": 3,
+      "triangle_ratio": 0.07,
+      "screen_size": 0.015
+    }
+  ],
+  "texture_size": 512,
+  "collision_hulls": 1,
+  "source_image": "Content/SourceArt/AI/PocketFlashlight_20261002.png",
+  "source_usage": "형태와 색 참고. 원본 이미지를 텍스처로 사용하지 않음.",
+  "source_sha256": "c59d5e4ad688345d57fc19fc5a50e0ea7c7d8e84c009c76e398680bf6cb2d8ff"
+}

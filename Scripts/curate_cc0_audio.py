@@ -254,16 +254,18 @@ def spec(packs: str):
     add("Entity_Breath_Loop", [one(OW, "breath-male.wav")],
         lambda x: normalize(loop_seamless(lowpass(pitch(x, 0.86), 4000.0), 6.0, 1.0), 0.6), loop=True,
         note="숨. 남자 숨을 낮춰서")
-    # 유담의 헐떡임(Player_Gasp)과 같은 원본이다. 첫 들숨 하나만 남기고 그의 숨 루프처럼
-    # 어둡게 깎아, 같은 녹음이 두 사람 입에서 나오지 않게 한다. 재생 쪽이 피치 0.9를
-    # 한 번 더 걸므로 실제로는 0.72배로 들린다.
+    # 괴물 전용 들숨이다. 유담의 숨과 원본을 공유하지 않는다.
+    # 재생 쪽이 피치 0.9를 한 번 더 걸므로 실제로는 0.72배로 들린다.
     add("Entity_Alert", [one(OW, "gasp1.wav")],
         lambda x: normalize(room(lowpass(fade(pitch(trim_silence(x)[:int(0.5 * SR)], 0.8), 0.0, 0.1), 3500.0),
                                  0.02, 0.3, 0.3), 0.8),
         note="소리를 들었다. 첫 들숨 하나만, 낮고 어둡게")
-    add("Entity_Grab", [one(OW, "shouldergrab.wav"), one(OW, "freakedbreath.wav")],
-        lambda a, b: normalize(mix([(trim_silence(a), 0.0, 1.0), (pitch(trim_silence(b), 0.9), 0.15, 0.7)]), 0.95),
-        note="덮침. 붙잡는 손과 거친 숨")
+    # 붙잡힌 순간 끊기는 숨은 유담의 것이다. 예전에는 남자 녹음(freakedbreath)이었다.
+    add("Entity_Grab", [one(OW, "shouldergrab.wav"), one(OW, "breath-female2.wav")],
+        lambda a, b: normalize(mix([(trim_silence(a), 0.0, 1.0),
+                                    (fade(highpass(b[int(0.08 * SR):int(0.62 * SR)], 90.0), 0.01, 0.12), 0.15, 0.75)]),
+                               0.95),
+        note="덮침. 붙잡는 손과 끊기는 유담의 숨(여성 호흡 녹음)")
 
     # --- 놀람. 앰비언트보다 14dB 위, 0.5~2초, 뒤는 침묵. -------------------------
     add("Stinger_CloseCall", [one(OW, "hit.wav"), one(OW, "blackhole1.wav")],
@@ -303,11 +305,14 @@ def spec(packs: str):
     add("Hammer_Hit_1", [one(WM, "hammer_03.ogg")], lambda x: normalize(room(trim_silence(x), 0.018, 0.4, 0.4), 0.95))
     add("Settle_Creak_0", [one(WM, "wood_cracking_01.ogg")], lambda x: normalize(lowpass(pitch(trim_silence(x), 0.8), 3000.0), 0.55), note="건물이 뒤틀린다")
     add("Settle_Creak_1", [one(WM, "wood_cracking_03.ogg")], lambda x: normalize(lowpass(pitch(trim_silence(x), 0.75), 3000.0), 0.55))
-    # 둘 다 남자 녹음이다. main()이 끝에서 feminize_player_voice로 유담의 음역에 옮기고,
-    # 덮칠 때 숨(Entity_Grab)도 옮긴 숨으로 다시 짠다.
-    add("Player_Breath_Scared", [one(OW, "scared-breathing.wav")],
-        lambda x: normalize(loop_seamless(x, 5.0, 0.8), 0.55), loop=True, note="숨 참기 직전, 심장 위에")
-    add("Player_Gasp", [one(OW, "gasp1.wav")], lambda x: normalize(trim_silence(x), 0.7))
+    # Owlish Media가 여성 호흡으로 배포한 실제 녹음. 피치와 재생 속도는 바꾸지 않는다.
+    # https://freesound.org/people/OwlStorm/sounds/151206/ (CC0)
+    add("Player_Breath_Scared", [one(OW, "breath-female.wav")],
+        lambda x: normalize(loop_seamless(highpass(x, 90.0), 8.0, 0.25), 0.50), loop=True,
+        note="유담의 호흡. 여성 호흡 녹음, 원래 음높이와 속도 유지. Owlish Media / CC0")
+    add("Player_Gasp", [one(OW, "breath-female2.wav")],
+        lambda x: normalize(fade(highpass(x[int(0.08 * SR):int(0.56 * SR)], 90.0), 0.015, 0.10), 0.60),
+        note="유담이 짧게 숨을 들이킨다. 여성 호흡의 첫 숨만 사용, 피치 변경 없음")
     return items
 
 
@@ -316,12 +321,24 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--packs", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--only", nargs="+", help="지정한 샘플만 다시 만들고 나머지 산출물은 유지한다")
     args = parser.parse_args()
     FFMPEG = find_ffmpeg()
     out_dir = os.path.abspath(args.out)
     os.makedirs(out_dir, exist_ok=True)
     manifest = {"sample_rate": SR, "license": "CC0 1.0 (OpenGameArt rubberduck, Kenney, Owlish Media)", "sounds": []}
-    for item in spec(os.path.abspath(args.packs)):
+    items = spec(os.path.abspath(args.packs))
+    only = set(args.only or [])
+    unknown = only - {item["name"] for item in items}
+    if unknown:
+        raise ValueError(f"목록에 없는 샘플: {sorted(unknown)}")
+    manifest_path = os.path.join(out_dir, "manifest.json")
+    if only:
+        with open(manifest_path, "r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+    for item in items:
+        if only and item["name"] not in only:
+            continue
         decoded = [decode(src) for src in item["sources"]]
         try:
             result = item["build"](*decoded)
@@ -332,23 +349,24 @@ def main():
             result = fade(result, 0.002, 0.02)
         path = os.path.join(out_dir, f"{item['name']}.wav")
         write_wav(path, result)
-        manifest["sounds"].append({
+        entry = {
             "name": item["name"],
             "file": os.path.basename(path),
             "loop": item["loop"],
             "seconds": round(len(result) / SR, 3),
             "sources": [os.path.relpath(s, os.path.abspath(args.packs)).replace("\\", "/") for s in item["sources"]],
             "note": item["note"],
-        })
+        }
+        existing = next((i for i, old in enumerate(manifest["sounds"]) if old["name"] == item["name"]), None)
+        if existing is None:
+            manifest["sounds"].append(entry)
+        else:
+            manifest["sounds"][existing] = entry
         print(f"[audio] {item['name']}: {len(result) / SR:.2f}s from {[os.path.basename(s) for s in item['sources']]}")
-    with open(os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8") as handle:
+    with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2, ensure_ascii=False)
         handle.write("\n")
     print(f"[audio] {len(manifest['sounds'])} sounds -> {out_dir}")
-    # 유담의 숨과 헐떡임은 남자 녹음이라 마지막에 여성 음역으로 옮긴다.
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import feminize_player_voice
-    feminize_player_voice.apply(out_dir)
 
 
 if __name__ == "__main__":

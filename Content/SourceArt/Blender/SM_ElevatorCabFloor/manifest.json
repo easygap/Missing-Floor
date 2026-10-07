@@ -1,0 +1,30 @@
+{
+  "name": "SM_ElevatorCabFloor",
+  "mesh_class": "prop",
+  "fbx": "SM_ElevatorCabFloor.fbx",
+  "textures": {
+    "D": "SM_ElevatorCabFloor_D.png",
+    "N": "SM_ElevatorCabFloor_N.png",
+    "ORM": "SM_ElevatorCabFloor_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 56,
+  "bounds_m": {
+    "min": [
+      -0.75,
+      -0.75,
+      -0.1
+    ],
+    "max": [
+      0.75,
+      0.6,
+      0.0
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "칸 바닥(윗면 Z 0)과 문턱. 원본 ElevatorFloorVinyl_20261006(30 cm 타일 4 x 4)."
+}

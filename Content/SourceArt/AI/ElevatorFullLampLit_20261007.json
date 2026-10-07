@@ -1,0 +1,7 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-07",
+  "prompt": "Straight-on flat scan of one small rectangular backlit indicator window from an old Korean apartment elevator car operating panel: a smoked dark red translucent acrylic plate set in a thin brushed stainless bezel, with the Korean word 만원 in clean bold sans-serif letters glowing red-orange as if lit from behind. Front view, no perspective, centered on a plain mid-grey background with an even margin. Clean, smooth tonal gradients like a sharp modern digital photograph. Absolutely no film grain, no noise, no dithering, no halftone dots, no stippled or speckled texture. No other text, no logos, no watermark.",
+  "sha256": "A98AFE5A8137B20169B20E6B49BF15088C9A39678AEC5DA0DF3975AF175AFAC3",
+  "usage": "승강기 「만원」 표시등의 켜진 그림. SM_ElevatorFullLamp의 발광 맵. 글자 두 자는 받은 뒤 확인했다."
+}

@@ -1,0 +1,7 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-02",
+  "prompt": "Use case: stylized-concept. Asset type: production reference sheet for a small grounded Korean 3D horror game. Create one clean orthographic side view of an ordinary dark charcoal step-through delivery motor scooter with a seated adult courier, facing right, neutral grey backdrop and flat studio light. The scooter has small wheels, exposed front fork, rounded front apron, headlamp, short mirrors, black saddle, rear red tail lamp, and a muted orange insulated delivery box strapped behind the saddle. Rider wears a dark grey rain jacket, dark trousers, boots on the footboard, gloves on both handlebar grips, and a closed plain black full-face helmet. Anatomically plausible adult seated riding posture, hips on saddle, bent knees, elbows slightly bent, no floating body parts. Entire combined silhouette visible, tyres touching one horizontal ground line. Useful proportions: bike length about 1.8m, width about 0.58m, top of seated helmet about 1.6m above the ground. Modest wear, contemporary everyday Korean neighborhood, no branding, no lettering, no logos, no dramatic effects, no scenery, no extra views or panels. Realistic restrained object design that can be rebuilt as a compact game mesh.",
+  "usage": "골목 배달 오토바이(기사 탑승). TRELLIS로 SM_DeliveryScooterRidden을 뽑는다.",
+  "sha256": "84C9472A6DFB8B749DB60FC0DA32B07479196EDABEC5826F42E5418CA338E333"
+}
