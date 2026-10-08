@@ -10,7 +10,8 @@
 	게임은 첫 실행 때 미리 컴파일한다.
 
 	기록 장면은 타이틀·설정, 입주 낮, README 장면 경로, 밤 경로(High·Low),
-	결말, 다섯째 밤이다. 장면을 새로 만들면 이 스크립트를 다시 돌린다.
+	결말, 다섯째 밤, 계단 센서등, 밤4 망치질과 정전, 낮 장면, 403호 욕실, 에필로그다.
+	장면을 새로 만들면 여기에 더하고 이 스크립트를 다시 돌린다.
 
 .NOTES
 	Shipping은 PSO를 기록하지 않고, 설치형 엔진은 Test 구성을 빌드하지 못해 Development로
@@ -84,7 +85,12 @@ $sessions = @(
 	@{ Name = 'NightHigh'; Quality = 2; Args = @('-IGListenerGreybox', '-IGNightCapture', '-IGCaptureMetricsOnly', '-IGSkipFrontend') },
 	@{ Name = 'NightLow'; Quality = 1; Args = @('-IGListenerGreybox', '-IGNightCapture', '-IGCaptureMetricsOnly', '-IGSkipFrontend') },
 	@{ Name = 'Endings'; Quality = 2; Args = @('-IGListenerGreybox', '-IGListenerGreyboxProbe', '-IGMissingFloor', '-IGSkipFrontend', '-IGEndingCheckpointWrite') },
-	@{ Name = 'NightFive'; Quality = 2; Args = @('-IGNightFiveProbe', '-IGCulture=ko') }
+	@{ Name = 'NightFive'; Quality = 2; Args = @('-IGNightFiveProbe', '-IGCulture=ko') },
+	@{ Name = 'StairSensor'; Quality = 2; Args = @('-IGListenerGreybox', '-IGStairSensorProbe', '-IGStairSensorShots', '-IGSkipFrontend') },
+	@{ Name = 'NightFourHammer'; Quality = 2; Args = @('-IGListenerGreybox', '-IGNightFourHammerProbe', '-IGNightFourHammerShots', '-IGSkipFrontend') },
+	@{ Name = 'DayScenes'; Quality = 2; Args = @('-IGListenerGreybox', '-IGDayScenesProbe', '-IGDayScenesShots', '-IGSkipFrontend') },
+	@{ Name = 'Bathroom'; Quality = 2; Args = @('-IGListenerGreybox', '-IGBathroomProbe', '-IGBathroomShots', '-IGSkipFrontend') },
+	@{ Name = 'Epilogue'; Quality = 2; Args = @('-IGListenerGreybox', '-IGEpiloguePreview=A', '-IGSkipFrontend') }
 )
 $records = [Collections.Generic.List[string]]::new()
 foreach ($session in $sessions) {
