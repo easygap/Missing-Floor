@@ -84,6 +84,12 @@ def parse_args():
     parser.add_argument("--no-bake", action="store_true")
     parser.add_argument("--notes", default="")
     parser.add_argument("--profile", choices=["patrol", "resident"], default="patrol")
+    parser.add_argument("--tint-box", action="append", default=[],
+                        help="xmin,xmax,zmin,zmax,색상(도),채도 배율,명도 배율. 앞이 +X인 저작 좌표(m)에서 "
+                             "이 상자 안의 색만 굽기 전에 바꾼다. 시안에 없던 뒷면을 생성기가 지어낸 색을 고칠 때")
+    parser.add_argument("--cage", type=float, default=0.0,
+                        help="굽기 케이지 두께(m). 0이면 복셀 크기의 두 배(최소 6 mm). 스무딩으로 가는 팔이 "
+                             "원본보다 안으로 들어가 광선이 옆 몸통을 맞히면 늘린다")
     return parser.parse_args(argv)
 
 
@@ -307,6 +313,10 @@ def region_bones(co, marks):
     if co.z > 0.83 * height and abs(co.y) < 0.14:
         return ("head", "neck", "spine_03")
     shoulder, elbow, wrist, tip = marks["arms"][side]
+    # 등에 멘 가방은 겨드랑이 옆까지 넓어 팔 틈 바깥에 걸린다. 팔을 따라가면 걸을 때마다
+    # 옆판이 겨드랑이에서 부풀어 나온다(303호). 등판에서 9 cm 넘게 뒤에 있는 것은 몸통이다.
+    if PROFILE == "resident" and co.x < marks["spine_03"].x - 0.09 and 0.47 * height < co.z < 0.84 * height:
+        return TORSO_BONES
     reach = tip + (tip - wrist).normalized() * 0.12
     near_arm = min(_segment_distance(co, shoulder, elbow), _segment_distance(co, elbow, wrist),
                    _segment_distance(co, wrist, reach))
@@ -678,11 +688,15 @@ def main():
 
     ig.mirror_y(low)
     ig.mirror_y(high)
+    # Y가 뒤집힌 뒤라도 X(앞뒤)와 Z(높이)는 그대로다. 상자는 Y 전체를 덮는다.
+    for spec in args.tint_box:
+        xmin, xmax, zmin, zmax, hue_deg, sat_mul, val_mul = (float(v) for v in spec.split(","))
+        ig.tint_box(high, (xmin, -1.0e4, zmin), (xmax, 1.0e4, zmax), hue_deg, sat_mul, val_mul)
 
     textures = {}
     if not args.no_bake:
         ig.uv_smart(low, margin=0.003)
-        extrusion = max(args.voxel_remesh * 2.0, 0.006)
+        extrusion = args.cage if args.cage > 0.0 else max(args.voxel_remesh * 2.0, 0.006)
         textures = ig.bake_from_high(low, high, name, out_dir, size=args.texture_size,
                                      cage_extrusion=extrusion, max_ray_distance=extrusion * 3.0)
     high_mesh = high.data

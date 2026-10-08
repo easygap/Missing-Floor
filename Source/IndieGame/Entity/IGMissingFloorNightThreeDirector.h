@@ -5,6 +5,7 @@
 #include "Narrative/IGMissingFloorNarrativeTypes.h"
 #include "IGMissingFloorNightThreeDirector.generated.h"
 
+class AIGDoorLatch;
 class AIGListenerEntity;
 class AIGMissingFloorEvidence;
 class AIGPlayerCharacter;
@@ -77,6 +78,15 @@ public:
 	AIGMissingFloorNightThreeDirector();
 
 	/**
+	 * 벽 안에서 돌아오는 둘, 쉬고, 하나. 밤3의 대답(T9)과 밤4 망치질 사이의 대답이 같은
+	 * 손이라 한곳에서 낸다. 셋째 노크는 Owner의 타이머로 늦게 오고, OutTimers(둘)가 있으면
+	 * 그 핸들을 쥐여 준다. 녹음 샘플이 없으면 합성 패턴 하나로 대신한다.
+	 */
+	static void PlayWallAnswerKnocks(AActor* Owner, FTimerHandle* OutTimers = nullptr);
+	/** 그 소리가 나는 자리. 벽 가운데 칸, 스터드 너머다. */
+	static FVector GetWallAnswerLocation();
+
+	/**
 	 * Spawns the gate, the annex contents and the day papers.
 	 *
 	 * Also takes the pursuer, the pawn and the corridor route, because §8 비트
@@ -141,6 +151,8 @@ public:
 	bool ValidateFixtures() const;
 	AIGSwingDoor* GetStairGate() const { return StairGate; }
 	AIGSwingDoor* GetAnnexGate() const { return AnnexGate; }
+	/** 5층 철문 안쪽 빗장. 손님이 열쇠를 돌려도 이게 걸려 있으면 문이 걸린다. */
+	AIGDoorLatch* GetAnnexBolt() const { return AnnexBolt; }
 	AIGMissingFloorEvidence* GetKeyring() const { return Keyring; }
 	AIGReadableNote* GetTunerNotebook() const { return TunerNotebook; }
 	AIGMissingFloorEvidence* GetRiserValve() const { return RiserValve; }
@@ -278,6 +290,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<AIGSwingDoor> AnnexGate;
+
+	UPROPERTY(Transient)
+	TObjectPtr<AIGDoorLatch> AnnexBolt;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AIGMissingFloorEvidence> Keyring;

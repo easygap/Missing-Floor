@@ -63,6 +63,9 @@ def parse_args():
                         help="균일 배율 뒤 축별 배율 x,y,z. 생성물이 기준보다 늘어진 축을 누를 때")
     parser.add_argument("--rot-x", type=float, default=0.0, help="X축 회전(도). yaw보다 먼저 건다. 누운 생성물을 세울 때")
     parser.add_argument("--rot-y", type=float, default=0.0, help="Y축 회전(도). yaw보다 먼저 건다")
+    parser.add_argument("--recolor-above", default="",
+                        help="z(m),색상(도),채도 배율,명도 배율. 다듬은 좌표에서 이 높이 위의 색만 굽기 전에 바꾼다. "
+                             "같은 물건을 따로 뽑은 두 생성물의 색을 맞출 때(세워 둔 오토바이 배달통)")
     parser.add_argument("--views", action="store_true",
                         help="회전·배율 전 원본을 정면(-Y)·측면(-X)·위에서 세 장 찍고 끝낸다")
     parser.add_argument("--probe", action="store_true",
@@ -87,6 +90,12 @@ def probe(high):
     ig.log(f"PROBE size(m)={[round(v, 3) for v in (hi - lo)]} principal_xy_yaw={yaw_now:.1f}deg "
            f"(+end mean z={head_end[:, 2].mean():.3f}, -end mean z={tail_end[:, 2].mean():.3f})")
     ig.log(f"PROBE 긴 축을 +X로 돌리려면 --yaw {-yaw_now:.1f} (또는 {180 - yaw_now:.1f} 로 끝을 바꿈)")
+
+
+def recolor_above(ob, spec):
+    """이 높이 위만 굽기 전에 색을 바꾼다. Z만 보므로 굽기 전 Y 반전과 상관없다."""
+    z, hue_deg, sat_mul, val_mul = (float(v) for v in spec.split(","))
+    ig.tint_box(ob, (-1.0e4, -1.0e4, z), (1.0e4, 1.0e4, 1.0e4), hue_deg, sat_mul, val_mul)
 
 
 def clip_plane(ob, axis, value, keep_below):
@@ -126,6 +135,18 @@ def import_glb(path):
     for o in list(bpy.context.scene.objects):
         if o.type != "MESH":
             bpy.data.objects.remove(o, do_unlink=True)
+    # glTF는 UV 이음매마다 정점을 갈라 둔다. 배달 오토바이 원본은 조각이 4969개였고,
+    # 붙이지 않고 줄이면 조각마다 따로 줄어서 틈과 가시가 옷 전체에 생긴다.
+    # UV는 면 모서리마다 따로 있으니 정점을 붙여도 원본 텍스처 좌표는 그대로다.
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(joined.data)
+    before = len(bm.verts)
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=0.00002)
+    bm.to_mesh(joined.data)
+    bm.free()
+    joined.data.update()
+    ig.log(f"  weld seams {before} -> {len(joined.data.vertices)} verts")
     # glTF 임포터의 Color Attribute 노드는 layer_name이 비어 있어 활성 속성을
     # 읽는다. 결합 뒤에도 정점색을 읽도록 이름을 박아 둔다.
     color_names = [a.name for a in joined.data.color_attributes]
@@ -212,6 +233,8 @@ def main():
     high.data.update()
     if args.organic:
         ig.prepare_organic_source(high)
+    if args.recolor_above:
+        recolor_above(high, args.recolor_above)
     if args.front_photo:
         from project_character_face import apply
         apply(high, os.path.abspath(args.front_photo))

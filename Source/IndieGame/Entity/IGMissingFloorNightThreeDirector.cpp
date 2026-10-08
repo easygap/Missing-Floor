@@ -18,6 +18,7 @@
 #include "Entity/IGNightPhaseDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "GameFramework/PlayerController.h"
+#include "Interaction/IGDoorLatch.h"
 #include "Interaction/IGReadableNote.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Interaction/IGZoneTrigger.h"
@@ -37,6 +38,14 @@ namespace IGNightThree
 	// centers is 407.5 + 232.5 = 640 cm and is built by the world scene.
 	const FVector StairGateHinge(-320.0f, 220.0f, 1200.0f);
 	const FVector AnnexGateHinge(85.0f, 452.5f, 1200.0f);
+	// 두 문짝의 크기(두께, 폭, 높이). 5층 문짝은 개구부보다 2 cm 좁아 손잡이 쪽에 빗장
+	// 받이쇠가 들어갈 틈이 남는다.
+	const FVector RoofLeafSize(4.5f, 85.0f, 203.5f);
+	const FVector AnnexLeafSize(4.5f, 88.0f, 203.5f);
+	// 5층 철문 안쪽 빗장. 몸통 끝이 문짝 끝에서 3 cm, 문 면에서 0.5 mm, 바닥에서 1.32 m.
+	// 막대가 4.5 cm 나가면 문설주 옆면(X 175)의 받이쇠(씬)에 들어간다.
+	const FVector AnnexBoltLocation(164.0f, 454.8f, 1332.0f);
+	constexpr float AnnexBoltTravelCm = 4.5f;
 
 	// 12.5T 판재 15장의 윗면은 Z=1231.17이다. 사라진 받침대 높이에
 	// 남아 있던 수첩과 렌치도 이 면에 내려놓는다. 좌우로 나눠 서로 겹치지 않는다.
@@ -339,8 +348,19 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 	{
 		return false;
 	}
-	StairGate->ConfigurePrototypeVisuals(
-		CubeMesh, DoorMaterial, HandleMaterial, FVector(6.0f, 85.0f, 205.0f));
+	// 두 철문은 시안을 보고 Blender에서 만든 문짝이다. 메시가 없으면 예전 상자 문으로 둔다.
+	if (UStaticMesh* RoofLeaf = LoadObject<UStaticMesh>(
+			nullptr, TEXT("/Game/Meshes/SM_RooftopDoorLeaf.SM_RooftopDoorLeaf")))
+	{
+		StairGate->ConfigureAuthoredLeaf(RoofLeaf, nullptr, IGNightThree::RoofLeafSize);
+		StairGate->AddLeafDressing(LoadObject<UStaticMesh>(
+			nullptr, TEXT("/Game/Meshes/SM_RooftopDoorSign.SM_RooftopDoorSign")));
+	}
+	else
+	{
+		StairGate->ConfigurePrototypeVisuals(
+			CubeMesh, DoorMaterial, HandleMaterial, FVector(6.0f, 85.0f, 205.0f));
+	}
 	StairGate->SetOpenYaw(-95.0f);
 	{
 		TArray<FIGDoorRequirement> GateRequirements;
@@ -365,8 +385,16 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 	{
 		return false;
 	}
-	AnnexGate->ConfigurePrototypeVisuals(
-		CubeMesh, DoorMaterial, HandleMaterial, FVector(6.0f, 90.0f, 205.0f));
+	if (UStaticMesh* AnnexLeaf = LoadObject<UStaticMesh>(
+			nullptr, TEXT("/Game/Meshes/SM_AnnexDoorLeaf.SM_AnnexDoorLeaf")))
+	{
+		AnnexGate->ConfigureAuthoredLeaf(AnnexLeaf, nullptr, IGNightThree::AnnexLeafSize);
+	}
+	else
+	{
+		AnnexGate->ConfigurePrototypeVisuals(
+			CubeMesh, DoorMaterial, HandleMaterial, FVector(6.0f, 90.0f, 205.0f));
+	}
 	AnnexGate->SetOpenYaw(95.0f);
 	{
 		TArray<FIGDoorRequirement> GateRequirements;
@@ -378,6 +406,26 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		KeyLock.LockedThought = NSLOCTEXT(
 			"IGMissingFloor", "AnnexGateThought", "창고 열쇠가 있어야 열 수 있겠다.");
 		AnnexGate->SetRequirements(MoveTemp(GateRequirements));
+	}
+	// 안쪽 빗장. 밤4에 손님이 오빠 열쇠로 자물쇠를 돌려도 이게 걸려 있으면 문이 걸린다.
+	if (UStaticMesh* BoltHousing = LoadObject<UStaticMesh>(
+			nullptr, TEXT("/Game/Meshes/SM_DoorBarrelBolt.SM_DoorBarrelBolt")))
+	{
+		SpawnParameters.Name = TEXT("MissingFloorAnnexBolt");
+		AnnexBolt = World->SpawnActor<AIGDoorLatch>(
+			AIGDoorLatch::StaticClass(),
+			FTransform(FRotator::ZeroRotator, IGNightThree::AnnexBoltLocation),
+			SpawnParameters);
+		if (AnnexBolt)
+		{
+			AnnexBolt->ConfigureAuthored(
+				AnnexGate,
+				BoltHousing,
+				LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Meshes/SM_DoorBarrelBoltPin.SM_DoorBarrelBoltPin")),
+				IGNightThree::AnnexBoltTravelCm,
+				NSLOCTEXT("IGMissingFloor", "AnnexBoltClosePrompt", "빗장 걸기"),
+				NSLOCTEXT("IGMissingFloor", "AnnexBoltOpenPrompt", "빗장 풀기"));
+		}
 	}
 	float RouteLengthCentimeters = 0.0f;
 	int32 UpperStepCount = 0;
@@ -2007,24 +2055,33 @@ void AIGMissingFloorNightThreeDirector::HandleAnswerKnock(
 		false);
 }
 
-void AIGMissingFloorNightThreeDirector::DeliverWallAnswer()
+FVector AIGMissingFloorNightThreeDirector::GetWallAnswerLocation()
 {
-	bAnswerPending = false;
-	bAnswerDelivered = true;
+	return FVector(278.0f, IGNightThree::WallBayYs[IGNightThree::CavityBayIndex], 1290.0f);
+}
 
+void AIGMissingFloorNightThreeDirector::PlayWallAnswerKnocks(AActor* Owner, FTimerHandle* OutTimers)
+{
+	if (!Owner || !Owner->GetWorld())
+	{
+		return;
+	}
 	// From inside the studs: the same rhythm, muffled by gypsum.
-	const FVector InsideWall(
-		278.0f,
-		IGNightThree::WallBayYs[IGNightThree::CavityBayIndex],
-		1290.0f);
+	const FVector InsideWall = GetWallAnswerLocation();
 	if (IGAudio::Sample(TEXT("Knock_Plaster_0")))
 	{
 		// 사흘 밤 복도에서 들은 그 손이다(AnswerHitStartSeconds 주석). 셋째는
 		// 내려놓는 한 번이라 조금 여리다.
-		const auto Hit = [this, InsideWall](const int32 HitIndex)
+		TWeakObjectPtr<AActor> WeakOwner(Owner);
+		const auto Hit = [WeakOwner, InsideWall](const int32 HitIndex)
 		{
+			AActor* Source = WeakOwner.Get();
+			if (!Source)
+			{
+				return;
+			}
 			if (UAudioComponent* Knock = IGAudio::SpawnOneShotAt(
-				this,
+				Source,
 				IGAudio::SampleVariant(
 					TEXT("Knock_Plaster"),
 					3,
@@ -2045,9 +2102,10 @@ void AIGMissingFloorNightThreeDirector::DeliverWallAnswer()
 		Hit(0);
 		for (int32 HitIndex = 1; HitIndex < 3; ++HitIndex)
 		{
-			GetWorldTimerManager().SetTimer(
-				AnswerHitTimers[HitIndex - 1],
-				FTimerDelegate::CreateWeakLambda(this, [Hit, HitIndex]()
+			FTimerHandle LocalTimer;
+			Owner->GetWorldTimerManager().SetTimer(
+				OutTimers ? OutTimers[HitIndex - 1] : LocalTimer,
+				FTimerDelegate::CreateWeakLambda(Owner, [Hit, HitIndex]()
 				{
 					Hit(HitIndex);
 				}),
@@ -2058,8 +2116,8 @@ void AIGMissingFloorNightThreeDirector::DeliverWallAnswer()
 	else
 	{
 		IGAudio::SpawnOneShotAt(
-			this,
-			UIGToneSequenceSoundWave::CreateAnswerKnockPattern(this, 1.0f),
+			Owner,
+			UIGToneSequenceSoundWave::CreateAnswerKnockPattern(Owner, 1.0f),
 			InsideWall,
 			0.85f,
 			0.92f,
@@ -2067,6 +2125,13 @@ void AIGMissingFloorNightThreeDirector::DeliverWallAnswer()
 			1200.0f,
 			EIGAudioBus::Entity);
 	}
+}
+
+void AIGMissingFloorNightThreeDirector::DeliverWallAnswer()
+{
+	bAnswerPending = false;
+	bAnswerDelivered = true;
+	PlayWallAnswerKnocks(this, AnswerHitTimers);
 
 	// T9와 P4는 첫 노크와 함께 확정한다. 여기서 미루면 그 사이에 05:30이 왔을
 	// 때 대답은 들었는데 T9가 없는 밤이 된다. 늦추는 것은 들리는 것과 글뿐이다.

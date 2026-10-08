@@ -1,8 +1,12 @@
 ﻿#include "Entity/IGShadowFigure.h"
 
+#include "AnimationRuntime.h"
+#include "Components/PoseableMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "IndieGame.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -19,6 +23,25 @@ namespace IGShadow
 	// 보는 동안의 떨림. 크게 자랄수록 커진다.
 	constexpr float TrembleDegrees = 1.6f;
 	constexpr float TrembleHz = 7.0f;
+	// 어둑시니의 빚은 몸(rig_eoduksini.py). 허리에서 숙이는 spine과 어깨에 매달린 두 팔.
+	const TCHAR* const SculptedBodyPath = TEXT("/Game/Meshes/SK_Eoduksini.SK_Eoduksini");
+	// 숙이는 동안 늘어진 팔이 앞으로 나오는 비율. 다 숙이면 손끝이 6도쯤 앞으로 온다.
+	constexpr float ArmReachRatio = 0.2f;
+	// 다 숙이면 머리가 쉬는 자세의 경계 상자보다 50 cm 앞으로 나간다. 상자를 그만큼
+	// 키워 둬야 숙인 머리만 화면에 걸릴 때 몸이 통째로 컬링되지 않는다.
+	constexpr float SculptedBoundsScale = 2.8f;
+
+	FName SpineBone()
+	{
+		static const FName Name(TEXT("spine"));
+		return Name;
+	}
+
+	FName ArmBone(const int32 Side)
+	{
+		static const FName Names[2] = {FName(TEXT("arm_l")), FName(TEXT("arm_r"))};
+		return Names[Side];
+	}
 }
 
 AIGShadowFigure::AIGShadowFigure()
@@ -208,6 +231,58 @@ void AIGShadowFigure::DressAsPaper()
 	SetActorHiddenInGame(!bManifested);
 }
 
+void AIGShadowFigure::DressAsEoduksini()
+{
+	if (SculptedBody || bPaper)
+	{
+		return;
+	}
+	USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, IGShadow::SculptedBodyPath, nullptr, LOAD_NoWarn);
+	if (!Mesh)
+	{
+		UE_LOG(LogIndieGame, Warning, TEXT("SK_Eoduksini missing; eoduksini keeps the primitive outline"));
+		return;
+	}
+	const FReferenceSkeleton& Skeleton = Mesh->GetRefSkeleton();
+	const int32 SpineIndex = Skeleton.FindBoneIndex(IGShadow::SpineBone());
+	const int32 ArmIndex[2] = {Skeleton.FindBoneIndex(IGShadow::ArmBone(0)), Skeleton.FindBoneIndex(IGShadow::ArmBone(1))};
+	if (SpineIndex == INDEX_NONE || ArmIndex[0] == INDEX_NONE || ArmIndex[1] == INDEX_NONE)
+	{
+		UE_LOG(LogIndieGame, Warning, TEXT("SK_Eoduksini lacks spine/arm bones; eoduksini keeps the primitive outline"));
+		return;
+	}
+	SpineRest = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, SpineIndex);
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		ArmRest[Side] = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, ArmIndex[Side]);
+	}
+
+	UPoseableMeshComponent* Body = NewObject<UPoseableMeshComponent>(this, TEXT("SculptedBody"));
+	Body->SetupAttachment(FigureRoot.Get());
+	Body->SetSkinnedAssetAndUpdate(Mesh);
+	Body->SetMobility(EComponentMobility::Movable);
+	Body->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+	Body->SetGenerateOverlapEvents(false);
+	Body->SetCanEverAffectNavigation(false);
+	Body->SetCastShadow(true);
+	Body->SetBoundsScale(IGShadow::SculptedBoundsScale);
+	Body->RegisterComponent();
+	// 배우 틱이 자세를 정한 다음에 뼈가 갱신되어야 한 프레임 늦지 않는다.
+	Body->PrimaryComponentTick.AddPrerequisite(this, PrimaryActorTick);
+	Body->SetComponentTickEnabled(bManifested);
+	SculptedBody = Body;
+	// 도형 윤곽은 숨긴다. 시선과 숨소리는 배우 자리 기준이라 그대로 맞는다.
+	for (UStaticMeshComponent* Part : Parts)
+	{
+		if (Part)
+		{
+			Part->SetVisibility(false);
+		}
+	}
+	ApplyPose();
+	SetActorHiddenInGame(!bManifested);
+}
+
 void AIGShadowFigure::Manifest(const FVector& Location, const float YawDegrees, const float Growth)
 {
 	if (!ShadowMaterial)
@@ -233,6 +308,10 @@ void AIGShadowFigure::Manifest(const FVector& Location, const float YawDegrees, 
 	ApplyPose();
 	SetActorHiddenInGame(false);
 	SetActorTickEnabled(true);
+	if (SculptedBody)
+	{
+		SculptedBody->SetComponentTickEnabled(true);
+	}
 }
 
 void AIGShadowFigure::Vanish()
@@ -241,6 +320,10 @@ void AIGShadowFigure::Vanish()
 	bTrembling = false;
 	SetActorHiddenInGame(true);
 	SetActorTickEnabled(false);
+	if (SculptedBody)
+	{
+		SculptedBody->SetComponentTickEnabled(false);
+	}
 }
 
 void AIGShadowFigure::SetTargetLocation(const FVector& Location, const float SpeedCmPerSecond)
@@ -286,4 +369,28 @@ void AIGShadowFigure::ApplyPose()
 		? IGShadow::TrembleDegrees * CurrentGrowth * FMath::Sin(TremblePhase)
 		: 0.0f;
 	Spine->SetRelativeRotation(FRotator(-IGShadow::MaxLeanDegrees * CurrentGrowth, 0.0f, Tremble));
+	if (SculptedBody)
+	{
+		PoseSculptedBody(IGShadow::MaxLeanDegrees * CurrentGrowth, Tremble);
+	}
+}
+
+void AIGShadowFigure::PoseSculptedBody(const float LeanDegrees, const float TrembleDegrees)
+{
+	// 허리 뼈의 머리를 축으로 상체를 앞(+X)으로 숙인다. 도형 몸의 Spine과 같은 회전이다.
+	const FQuat Lean(FRotator(-LeanDegrees, 0.0f, TrembleDegrees));
+	const FVector Pivot = SpineRest.GetLocation();
+	FTransform Waist = SpineRest;
+	Waist.SetRotation(Lean * SpineRest.GetRotation());
+	SculptedBody->SetBoneTransformByName(IGShadow::SpineBone(), Waist, EBoneSpaces::ComponentSpace);
+	// 팔은 숙인 어깨를 따라 나오되 상체만큼 돌지 않고 아래로 늘어진다. 손끝만 조금 앞으로 온다.
+	// 아래로 향한 팔은 피치를 올려야 손끝이 앞으로 나온다.
+	const FQuat Reach(FRotator(LeanDegrees * IGShadow::ArmReachRatio, 0.0f, TrembleDegrees));
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		FTransform Arm = ArmRest[Side];
+		Arm.SetLocation(Pivot + Lean.RotateVector(ArmRest[Side].GetLocation() - Pivot));
+		Arm.SetRotation(Reach * ArmRest[Side].GetRotation());
+		SculptedBody->SetBoneTransformByName(IGShadow::ArmBone(Side), Arm, EBoneSpaces::ComponentSpace);
+	}
 }

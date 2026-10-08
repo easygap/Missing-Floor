@@ -506,7 +506,7 @@ void AIGHorrorHUD::InitializeFrontendMenuTextures()
 			TEXT("Title key art is unavailable; front end will use its safe fallback."));
 	}
 
-	// §9 에필로그의 세 정지 화면. 없으면 그 장면은 글자만 남는다.
+	// §9 에필로그의 네 정지 화면. 없으면 그 장면은 글자만 남는다.
 	EpilogueWorkshopTexture = LoadObject<UTexture2D>(
 		nullptr,
 		TEXT("/Game/UI/Textures/T_EpilogueWorkshop_D.T_EpilogueWorkshop_D"));
@@ -516,8 +516,13 @@ void AIGHorrorHUD::InitializeFrontendMenuTextures()
 	EpilogueServiceBayTexture = LoadObject<UTexture2D>(
 		nullptr,
 		TEXT("/Game/UI/Textures/T_EpilogueServiceBay_D.T_EpilogueServiceBay_D"));
+	// 403호 문은 게임 안에서 찍은 그림이다(Run-EpilogueDoorStill.ps1). 쪽지 글씨는
+	// 읽히지 않는 거리에서 찍었고, 쪽지의 말은 장면 본문이 한다.
+	EpilogueDoorNoteTexture = LoadObject<UTexture2D>(
+		nullptr,
+		TEXT("/Game/UI/Textures/T_EpilogueDoorNote_D.T_EpilogueDoorNote_D"));
 	if (!EpilogueWorkshopTexture || !EpilogueAutumnTexture
-		|| !EpilogueServiceBayTexture)
+		|| !EpilogueServiceBayTexture || !EpilogueDoorNoteTexture)
 	{
 		UE_LOG(
 			LogIndieGame,
@@ -3302,6 +3307,9 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 		break;
 	case EIGMissingFloorEpilogueScene::ServiceBay:
 		SceneTexture = EpilogueServiceBayTexture;
+		break;
+	case EIGMissingFloorEpilogueScene::DoorNote:
+		SceneTexture = EpilogueDoorNoteTexture;
 		break;
 	default:
 		break;
@@ -8330,6 +8338,20 @@ void AIGHorrorHUD::DrawPhoneNotificationPanel(const AIGReadableNote& Note)
 	const float TextLeft = NotificationX + 16.0f;
 	const float TextWidth = NotificationWidth - 32.0f;
 
+	// 첫 장은 쪽지의 제목과 본문이고, 그 뒤로 넘겨 볼 글이 붙는다(동네장터의 「동네 이야기」).
+	// 쪽 넘기기 입력은 종이 쪽지와 같은 자리(MoveNotePage)로 온다.
+	const TArray<FIGPhonePage>& ExtraPages = Note.GetExtraPhonePages();
+	if (ReadingLayoutNote.Get() != &Note || ReadingLayoutRevision != Note.GetPresentationRevision())
+	{
+		ReadingLayoutNote = const_cast<AIGReadableNote*>(&Note);
+		ReadingLayoutRevision = Note.GetPresentationRevision();
+		NotePageIndex = 0;
+	}
+	NotePageCount = 1 + ExtraPages.Num();
+	NotePageIndex = FMath::Clamp(NotePageIndex, 0, NotePageCount - 1);
+	const FIGPhonePage* ExtraPage = NotePageIndex > 0 ? &ExtraPages[NotePageIndex - 1] : nullptr;
+	const FText& PageTitle = ExtraPage ? ExtraPage->Title : Note.GetTitle();
+
 	// 본문은 폰 화면 폭에서 줄을 바꾼다. 한국어도 한 줄에 다 들어가지 않는다.
 	// 빈 줄은 문단 사이를 반 줄 띄운다. 마지막 줄은 거래 상태다.
 	constexpr float BodyScale = 0.8f;
@@ -8337,18 +8359,45 @@ void AIGHorrorHUD::DrawPhoneNotificationPanel(const AIGReadableNote& Note)
 	float SampleHeight = 20.0f;
 	Canvas->StrLen(BodyFont, *GetLineHeightSample(), SampleWidth, SampleHeight, true);
 	const float BodyLineHeight = SampleHeight * BodyScale * 1.18f;
+	// 동네 이야기 글 제목은 「무영로 빌라 사시는 분? …」처럼 한 줄을 넘는다. 줄여서 한 줄에
+	// 욱여넣으면 번역에서 폰 밖으로 나가므로 세 줄까지 접는다. 한 줄이면 예전 자리 그대로다.
+	constexpr float TitleScale = 0.86f;
+	const float TitleLineHeight = SampleHeight * TitleScale * 1.12f;
+	TArray<FString> TitleLines;
+	FString TitleRemainder;
+	WrapHudText(PageTitle.ToString(), BodyFont, TitleScale, TextWidth, 3, TitleLines, TitleRemainder);
+	if (!TitleRemainder.IsEmpty() && TitleLines.Num() > 0)
+	{
+		TitleLines.Last() += TEXT("…");
+	}
+	// 글은 댓글까지 읽혀야 하니 쪽지 첫 장보다 길게 접는다.
+	const int32 MaximumWrappedLines = ExtraPage ? 6 : 3;
 	struct FPhoneLine
 	{
 		FString Text;
 		bool bStatus = false;
+		float Scale = BodyScale;
 	};
 	TArray<FPhoneLine> BodyLines;
-	const TArray<FText>& Lines = Note.GetBodyLines();
+	const TArray<FText>& Lines = ExtraPage ? ExtraPage->BodyLines : Note.GetBodyLines();
 	for (int32 LineIndex = 0; LineIndex < Lines.Num(); ++LineIndex)
 	{
 		if (Lines[LineIndex].IsEmpty())
 		{
 			BodyLines.Add(FPhoneLine());
+			continue;
+		}
+		// 마지막 줄(거래 상태, 글쓴이와 댓글 수)은 한 줄짜리다. 「5 / comments」처럼 갈리느니
+		// 조금 줄여서 한 줄에 둔다.
+		const bool bStatusLine = LineIndex == Lines.Num() - 1;
+		const float StatusRawWidth = bStatusLine ? MeasureTextWidth(Lines[LineIndex].ToString(), BodyFont, 1.0f) : 0.0f;
+		if (bStatusLine && StatusRawWidth * BodyScale > TextWidth && StatusRawWidth * BodyScale * 0.8f <= TextWidth)
+		{
+			FPhoneLine Status;
+			Status.Text = Lines[LineIndex].ToString();
+			Status.bStatus = true;
+			Status.Scale = TextWidth / StatusRawWidth;
+			BodyLines.Add(MoveTemp(Status));
 			continue;
 		}
 		TArray<FString> Wrapped;
@@ -8358,9 +8407,13 @@ void AIGHorrorHUD::DrawPhoneNotificationPanel(const AIGReadableNote& Note)
 			BodyFont,
 			BodyScale,
 			TextWidth,
-			3,
+			MaximumWrappedLines,
 			Wrapped,
 			Remainder);
+		if (!Remainder.IsEmpty() && Wrapped.Num() > 0)
+		{
+			Wrapped.Last() += TEXT("…");
+		}
 		for (FString& Piece : Wrapped)
 		{
 			FPhoneLine Wrap;
@@ -8374,7 +8427,8 @@ void AIGHorrorHUD::DrawPhoneNotificationPanel(const AIGReadableNote& Note)
 	{
 		BodyHeight += Line.Text.IsEmpty() ? BodyLineHeight * 0.5f : BodyLineHeight;
 	}
-	const float BodyTop = NotificationY + 98.0f;
+	const float TitleTop = NotificationY + 63.0f;
+	const float BodyTop = TitleTop + 35.0f + TitleLineHeight * FMath::Max(0, TitleLines.Num() - 1);
 	const float NotificationHeight = FMath::Clamp(
 		BodyTop + BodyHeight + 18.0f - NotificationY,
 		FMath::Min(250.0f, InnerHeight * 0.47f),
@@ -8407,8 +8461,9 @@ void AIGHorrorHUD::DrawPhoneNotificationPanel(const AIGReadableNote& Note)
 		NotificationY + 10.0f,
 		PrimaryText,
 		FitPhoneScale(AppName, MetaFont, 1.0f, HeaderTextWidth));
-	const FText SearchLabel =
-		NSLOCTEXT("IGHUD", "PhoneMarketSearch", "‘조율 공구’ 관련 글");
+	const FText SearchLabel = ExtraPage
+		? ExtraPage->Subtitle
+		: NSLOCTEXT("IGHUD", "PhoneMarketSearch", "‘조율 공구’ 관련 글");
 	DrawPhoneText(
 		SearchLabel,
 		MetaFont,
@@ -8417,13 +8472,17 @@ void AIGHorrorHUD::DrawPhoneNotificationPanel(const AIGReadableNote& Note)
 		SecondaryText,
 		FitPhoneScale(SearchLabel, MetaFont, 1.0f, HeaderTextWidth));
 
-	DrawPhoneText(
-		Note.GetTitle(),
-		BodyFont,
-		TextLeft,
-		NotificationY + 63.0f,
-		PrimaryText,
-		FitPhoneScale(Note.GetTitle(), BodyFont, 0.94f, TextWidth));
+	for (int32 TitleIndex = 0; TitleIndex < TitleLines.Num(); ++TitleIndex)
+	{
+		const FText TitleLine = FText::FromString(TitleLines[TitleIndex]);
+		DrawPhoneText(
+			TitleLine,
+			BodyFont,
+			TextLeft,
+			TitleTop + TitleLineHeight * TitleIndex,
+			PrimaryText,
+			TitleLines.Num() == 1 ? FitPhoneScale(TitleLine, BodyFont, 0.94f, TextWidth) : TitleScale);
+	}
 	float PenY = BodyTop;
 	for (const FPhoneLine& Line : BodyLines)
 	{
@@ -8438,13 +8497,24 @@ void AIGHorrorHUD::DrawPhoneNotificationPanel(const AIGReadableNote& Note)
 			TextLeft,
 			PenY,
 			Line.bStatus ? Accent : PrimaryText,
-			BodyScale);
+			Line.Scale);
 		PenY += BodyLineHeight;
 	}
 	PopTextAuditContainer();
-	const FText Hint = FText::Format(
+	FText Hint = FText::Format(
 		NSLOCTEXT("IGHUD", "PhoneCloseFormat", "[ {0} ]  휴대폰 내려놓기"),
 		GetBoundKeyLabel(EIGBindableAction::Interact, bUsingGamepad));
+	if (NotePageCount > 1)
+	{
+		const FText Navigation = bUsingGamepad
+			? NSLOCTEXT("IGHUD", "NoteNavigationGamepad", "방향 패드 좌우")
+			: NSLOCTEXT("IGHUD", "NoteNavigationKeyboard", "← → / 휠");
+		Hint = FText::FromString(FText::Format(
+			NSLOCTEXT("IGHUD", "NotePageFormat", "[ {0} ]  {1} / {2}"),
+			Navigation,
+			FText::AsNumber(NotePageIndex + 1),
+			FText::AsNumber(NotePageCount)).ToString() + TEXT("    ") + Hint.ToString());
+	}
 	DrawCenteredText(
 		Hint,
 		FMath::Min(ScreenHeight - 26.0f, PhoneOrigin.Y + PhoneHeight + 16.0f),

@@ -37,6 +37,10 @@ public:
 	AIGListenerGreyboxDirector();
 	virtual void Tick(float DeltaSeconds) override;
 
+	/** 검사용. 셋째 낮의 신고 문자를 건너뛰고 303호를 바로 올려 보낸다. 셋째 낮이어야 한다. */
+	void StartStairNeighborForTesting();
+	class AIGStairNeighbor* GetStairNeighborForTesting() const { return StairNeighbor.Get(); }
+
 	virtual FText GetObjectiveText() const override;
 	virtual float GetObjectiveProgress() const override;
 
@@ -241,6 +245,36 @@ private:
 	/** 탁자 위 폰(중고 거래 앱 화면)을 보일지 다시 정한다. 폰은 한 대다. */
 	void RefreshTablePhone();
 
+	/**
+	 * 303호가 403호 현관문 바깥에 붙이는 쪽지(EXPANSION_PLAN §2.3). 입주 날 한 장이 붙어 있고,
+	 * 첫째 낮과 둘째 낮이 오는 새벽에 한 장씩 더 붙는다. 문짝에 붙어 같이 돈다.
+	 */
+	void SpawnDoor403Notes();
+	void RefreshDoor403Notes();
+	/** 쪽지가 붙은 새벽. 403호 안에서 문이 닫혀 있으면 종이 붙이는 소리와 멀어지는 발소리가 난다. */
+	void PlayDoor403NotePosted();
+
+	/**
+	 * 202호 정우(EXPANSION_PLAN §2.4). 첫째·둘째 낮에 공동현관 옆 연석의 오토바이에 앉아 콜을
+	 * 기다린다. 말을 걸면 첫째 낮에는 골목 일을 사과하며 이름을 대고, 둘째 낮에는 새벽에 엄마
+	 * 목소리로 문을 두드린 것 이야기를 한다.
+	 */
+	void SpawnJeongwooTalk(UStaticMesh* CubeMesh);
+	void RefreshJeongwoo();
+	void HandleJeongwooTalk(class AIGMissingFloorEvidence* Evidence);
+	/** 탁자 위 폰의 동네장터 「동네 이야기」 글(EXPANSION_PLAN §2.5). 낮이 지날수록 늘어난다. */
+	void RefreshPhonePosts();
+
+	/**
+	 * 303호(EXPANSION_PLAN §2.3 셋째 낮). 신고 문자의 마지막 속말 몇 초 뒤, 출근하는 길에
+	 * 계단을 올라와 4층 계단 목에 선다. 마주치면 세 줄을 나누고 내려간다. 내려가는 뒤에
+	 * 유담이 속으로 한 줄 되뇐다. 밤이 오면 그 자리에서 없앤다.
+	 */
+	bool SpawnStairNeighbor();
+	void ScheduleStairNeighbor(float DelaySeconds);
+	void RefreshStairNeighbor();
+	void HandleStairNeighborMet(class AIGStairNeighbor* Neighbor);
+
 	UPROPERTY(Transient)
 	TObjectPtr<AIGListenerEntity> Entity;
 
@@ -380,6 +414,30 @@ private:
 	TObjectPtr<class AIGMissingFloorEvidence> ArrivalUnit402Note;
 	UPROPERTY(Transient)
 	TObjectPtr<class AIGMissingFloorEvidence> ArrivalRoofLock;
+
+	/** 403호 문 바깥의 303호 쪽지. 0이 입주 날 것, 1과 2가 첫째·둘째 낮에 붙는 것이다. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<class AIGReadableNote>> Door403Notes;
+	FTimerHandle Door403NoteTimer;
+	FTimerHandle Door403NoteStepTimer;
+	int32 Door403NoteStep = 0;
+
+	/** 오토바이에 앉은 정우와 말하는 판정. 보이지 않는 상자이고 정우가 앉아 있을 때만 켠다. */
+	UPROPERTY(Transient)
+	TObjectPtr<class AIGMissingFloorEvidence> JeongwooTalk;
+	FTimerHandle JeongwooPollTimer;
+	/** 말을 건 뒤 다시 받기까지. 연달아 누르면 같은 말이 줄을 서지 않게 한다. */
+	double JeongwooTalkReadyAt = 0.0;
+
+	/** 셋째 낮의 303호. 처음 부를 때 세운다. 몸을 못 불러오면 그날은 나오지 않는다. */
+	UPROPERTY(Transient)
+	TObjectPtr<class AIGStairNeighbor> StairNeighbor;
+	FTimerHandle StairNeighborTimer;
+	/** 303호 문을 나설 때. 음수면 아직 정하지 않았다. */
+	double StairNeighborDueAt = -1.0;
+	/** 내려가는 그녀 뒤에 유담이 속말을 할 때. 음수면 할 말이 없다. */
+	double StairNeighborThoughtAt = -1.0;
+	bool bStairNeighborUnavailable = false;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AIGPlayerCharacter> Player;
@@ -540,7 +598,7 @@ private:
 		NightFourFailureRetryContract,
 		NightFourWallContract,
 		NightFourEndingContract,
-		/** §35: 선택 뒤의 87초와, 진행을 잠그지 않는 목격 넷. */
+		/** §35: 선택 뒤의 99초와, 진행을 잠그지 않는 목격 넷. */
 		EpilogueContract,
 		Done
 	};

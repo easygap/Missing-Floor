@@ -132,6 +132,12 @@ public:
 
 	FIGNightFourResolvedSignature OnResolved;
 
+	/**
+	 * 가면 구간에 어둑시니나 철문 밖의 손님에게 잡혔고 공격성이 3에 닿았다. 위층 사람에게
+	 * 잡힌 것과 같은 결말 C다. 밤 루프 감독이 부른다.
+	 */
+	void HandleMaskExternalCapture(APawn* Player) { HandleNightFourCapture(Player); }
+
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -225,6 +231,13 @@ private:
 	void CutAnnexPower();
 	/** 내린 사람이 계단을 내려간다. 발소리 넷이 멀어진다. */
 	void PlayPowerCutStep();
+	/**
+	 * 넷째 타 뒤 잠깐(EXPANSION_PLAN §2.3 넷째 밤). 5층 철문 밖에서 오빠 목소리가 부른다.
+	 * 괴이 감독의 손님이 맡는다. 부름이 왔든 못 왔든 벽 안의 대답 시각을 잡는다.
+	 */
+	void BeginHammerCallAtDoor();
+	/** 벽 안에서 둘, 쉬고, 하나. 밤3의 대답과 같은 손이다. 이때 망치를 다시 든다. */
+	void PlayWallAnswerBetweenStrikes();
 	/** 인터록이 선 동안 배관이 잦아드는 소리. 세 번 울고 조용해진다. */
 	void PlayControlSettleKnock();
 	/** P5가 연 물길. 물 베드가 켜지고 꺼지는 자리마다 같이 부른다. */
@@ -377,6 +390,11 @@ private:
 	int32 PowerCutStepIndex = 0;
 	/** 4타에 401호가 답하기까지. 망치 꼬리가 걷힌 뒤에 온다. */
 	FTimerHandle Unit401ReplyTimer;
+	/** 넷째 타 뒤 손이 저려 잠깐 못 친다. 그 사이 철문 밖의 부름과 벽 안의 대답이 온다. */
+	bool bHammerHeldForCall = false;
+	FTimerHandle HammerCallTimer;
+	FTimerHandle WallAnswerTimer;
+	FTimerHandle WallAnswerHitTimers[2];
 	/** 인터록이 선 배관. 틀린 손잡이가 있던 자리에서 잦아든다. */
 	FTimerHandle ControlSettleTimer;
 	int32 ControlSettleIndex = 0;

@@ -244,6 +244,98 @@ void AIGSwingDoor::ConfigureAuthoredLeaf(
 	HandleMesh->SetVisibility(HardwareMesh != nullptr, true);
 }
 
+UStaticMeshComponent* AIGSwingDoor::AddLeafDressing(UStaticMesh* Mesh)
+{
+	if (!Mesh)
+	{
+		return nullptr;
+	}
+	UStaticMeshComponent* Dressing = NewObject<UStaticMeshComponent>(this);
+	Dressing->SetupAttachment(DoorPivot);
+	Dressing->SetStaticMesh(Mesh);
+	Dressing->SetRelativeLocation(DoorMesh->GetRelativeLocation());
+	Dressing->SetRelativeRotation(DoorMesh->GetRelativeRotation());
+	Dressing->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+	Dressing->SetGenerateOverlapEvents(false);
+	Dressing->SetCanEverAffectNavigation(false);
+	Dressing->SetCastShadow(false);
+	Dressing->SetMobility(EComponentMobility::Movable);
+	Dressing->RegisterComponent();
+	return Dressing;
+}
+
+void AIGSwingDoor::SetCloserArms(
+	UStaticMesh* ArmMesh,
+	UStaticMesh* RodMesh,
+	const FVector& PinionClosed,
+	const FVector& ShoeLocation,
+	const float ArmLength,
+	const float RodLength)
+{
+	if (!ArmMesh || !RodMesh)
+	{
+		return;
+	}
+	CloserPinion = PinionClosed;
+	CloserShoe = ShoeLocation;
+	CloserArmLength = ArmLength;
+	CloserRodLength = RodLength;
+	CloserElbowSide = 0.0f;
+	const auto MakePart = [this](UStaticMesh* Mesh)
+	{
+		UStaticMeshComponent* Part = NewObject<UStaticMeshComponent>(this);
+		// 문짝이 아니라 액터에 단다. 팔꿈치는 문과 같이 돌지 않는다.
+		Part->SetupAttachment(HingeRoot);
+		Part->SetStaticMesh(Mesh);
+		Part->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+		Part->SetGenerateOverlapEvents(false);
+		Part->SetCanEverAffectNavigation(false);
+		Part->SetMobility(EComponentMobility::Movable);
+		Part->RegisterComponent();
+		return Part;
+	};
+	CloserArm = MakePart(ArmMesh);
+	CloserRod = MakePart(RodMesh);
+	UpdateCloserArms();
+}
+
+void AIGSwingDoor::UpdateCloserArms()
+{
+	if (!CloserArm || !CloserRod)
+	{
+		return;
+	}
+	// 피니언은 문짝과 같이 경첩 축을 돈다. 팔과 막대는 수평으로만 움직인다.
+	const FVector Pinion = DoorPivot->GetRelativeRotation().RotateVector(CloserPinion);
+	const FVector2D PinionXY(Pinion.X, Pinion.Y);
+	const FVector2D ShoeXY(CloserShoe.X, CloserShoe.Y);
+	const FVector2D Delta = ShoeXY - PinionXY;
+	const float Reach = FMath::Clamp(
+		Delta.Size(),
+		FMath::Abs(CloserArmLength - CloserRodLength) + 0.1f,
+		CloserArmLength + CloserRodLength - 0.1f);
+	const FVector2D Along = Delta.GetSafeNormal();
+	const FVector2D Across(-Along.Y, Along.X);
+	const float Base = (FMath::Square(CloserArmLength) - FMath::Square(CloserRodLength) + FMath::Square(Reach))
+		/ (2.0f * Reach);
+	const float Height = FMath::Sqrt(FMath::Max(0.0f, FMath::Square(CloserArmLength) - FMath::Square(Base)));
+	if (CloserElbowSide == 0.0f)
+	{
+		// 처음 맞출 때 계단 쪽(-X)으로 꺾이는 해를 고른다. 그 뒤로는 같은 쪽을 지킨다.
+		CloserElbowSide = (PinionXY + Along * Base + Across * Height).X
+			<= (PinionXY + Along * Base - Across * Height).X ? 1.0f : -1.0f;
+	}
+	const FVector2D Elbow = PinionXY + Along * Base + Across * Height * CloserElbowSide;
+	const FVector2D ArmDirection = Elbow - PinionXY;
+	const FVector2D RodDirection = Elbow - ShoeXY;
+	CloserArm->SetRelativeLocationAndRotation(
+		FVector(PinionXY, CloserPinion.Z),
+		FRotator(0.0f, FMath::RadiansToDegrees(FMath::Atan2(ArmDirection.Y, ArmDirection.X)), 0.0f));
+	CloserRod->SetRelativeLocationAndRotation(
+		CloserShoe,
+		FRotator(0.0f, FMath::RadiansToDegrees(FMath::Atan2(RodDirection.Y, RodDirection.X)), 0.0f));
+}
+
 void AIGSwingDoor::SetRequirements(TArray<FIGDoorRequirement>&& InRequirements)
 {
 	Requirements = MoveTemp(InRequirements);
@@ -265,6 +357,7 @@ void AIGSwingDoor::Tick(const float DeltaSeconds)
 
 	const bool bFinished = DoorAnimation.Advance(DeltaSeconds);
 	DoorPivot->SetRelativeRotation(FRotator(0.0f, DoorAnimation.CurrentValue, 0.0f));
+	UpdateCloserArms();
 
 	if (!bOpen)
 	{
@@ -476,6 +569,19 @@ FVector AIGSwingDoor::GetHingeSoundLocation() const
 		FVector(0.0f, 8.0f, LeafSize.Z * 0.8f));
 }
 
+FVector AIGSwingDoor::GetKnockPoint(const FVector& From) const
+{
+	// 문짝은 피벗 좌표에서 두께가 X, 경첩에서 손잡이 쪽이 +Y, 바닥에서 위가 +Z다.
+	// 가장자리와 문틀 사이는 치지 않는다.
+	const FTransform& Pivot = DoorPivot->GetComponentTransform();
+	const FVector Local = Pivot.InverseTransformPosition(From);
+	const float Face = (Local.X >= 0.0f ? 1.0f : -1.0f) * (LeafSize.X * 0.5f + 1.0f);
+	return Pivot.TransformPosition(FVector(
+		Face,
+		FMath::Clamp(Local.Y, 12.0f, FMath::Max(12.0f, LeafSize.Y - 12.0f)),
+		FMath::Clamp(Local.Z, 25.0f, FMath::Max(25.0f, LeafSize.Z - 25.0f))));
+}
+
 FVector AIGSwingDoor::GetStrikeSoundLocation() const
 {
 	return DoorPivot->GetComponentTransform().TransformPosition(
@@ -508,6 +614,7 @@ void AIGSwingDoor::ForceOpenState(const bool bInOpen)
 	bSuppressNextCloseThud = false;
 	UpdateLeafCollision();
 	DoorPivot->SetRelativeRotation(FRotator(0.0f, bOpen ? OpenYaw : 0.0f, 0.0f));
+	UpdateCloserArms();
 	SetActorTickEnabled(false);
 }
 
@@ -564,6 +671,35 @@ void AIGSwingDoor::SetLatched(const bool bInLatched, const bool bPlaySound)
 		90.0f,
 		700.0f);
 	ReportSwingNoise(0.05f);
+}
+
+void AIGSwingDoor::PlayHandleRattle()
+{
+	for (int32 Rattle = 0; Rattle < 2; ++Rattle)
+	{
+		FTimerHandle RattleTimer;
+		GetWorldTimerManager().SetTimer(
+			RattleTimer,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				IGAudio::SpawnOneShotFromActorAt(
+					this,
+					IGAudio::SampleOr(
+						TEXT("Lock_Rattle"),
+						[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateLockedRattle(this); }),
+					GetLatchSoundLocation(),
+					0.8f,
+					GetDoorVoice() * FMath::FRandRange(0.96f, 1.06f));
+			}),
+			0.05f + 0.5f * Rattle,
+			false);
+	}
+	AIGHorrorHUD::PushAudioCaptionAt(
+		this,
+		NSLOCTEXT("IGMissingFloor", "CaptionHandleRattle", "[문손잡이가 덜컥거린다]"),
+		2.0f,
+		GetLatchSoundLocation());
+	ReportSwingNoise(0.3f);
 }
 
 void AIGSwingDoor::ReleaseLatchForOpening()

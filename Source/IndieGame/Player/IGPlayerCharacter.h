@@ -151,8 +151,14 @@ public:
 	void LeaveHidingSpotImmediately();
 	/** 몸의 원점에서 눈(카메라)까지. 숨어서 내린 카메라도 들어 있다. */
 	FVector GetEyeOffsetFromActor() const;
-	/** 숨는 자리 안에 있다(드나드는 0.45초 포함). 앉기를 기다리는 동안은 아니다. */
+	/**
+	 * 숨는 자리 안에 있다(드나드는 0.45초 포함). 앉기를 기다리는 동안은 아니다. 문을
+	 * 닫고 잠근 욕실 안도 숨은 것으로 친다. 그때 GetHidingSpot은 nullptr다.
+	 */
 	bool IsConcealedInHidingSpot() const;
+	/** 문을 닫고 잠근 욕실 안이다(§4). AIGBathroomRefuge가 정한다. */
+	void SetLockedRoomConcealed(bool bConcealed) { bLockedRoomConcealed = bConcealed; }
+	bool IsInLockedRoom() const { return bLockedRoomConcealed; }
 	/**
 	 * 숨어 있는 동안 카메라만 내린다(cm, 아래가 음수). 몸은 가구 바닥 높이에 그대로
 	 * 서 있어서, 위치로 재는 판정(집 안인지, 어느 층인지)이 흔들리지 않는다.
@@ -371,6 +377,7 @@ private:
 	bool bBlockedStandThoughtShown = false;
 	bool bSprintDirectionAllowed = true;
 	TWeakObjectPtr<class AIGHidingSpot> HidingSpot;
+	bool bLockedRoomConcealed = false;
 	bool bInteractionRedirectedToListen = false;
 	bool bInteractionRedirectedToInterludeListen = false;
 	/** 패드 엿듣기 키를 밤3 벽이 아닌 엿듣기 판정에서 눌러 상호작용 홀드로 넘긴 중. */

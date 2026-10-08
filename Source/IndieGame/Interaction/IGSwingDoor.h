@@ -36,6 +36,17 @@ struct INDIEGAME_API FIGDoorRequirement
 	bool bHeldShut = false;
 };
 
+/** 두드리면 나는 결. 위층 사람이 닫힌 문 앞에서 이걸 보고 친다. */
+enum class EIGDoorKnockSurface : uint8
+{
+	/** 세대문·방화문·관리실 문·5층 철문. 기본이다. */
+	Steel,
+	/** 속이 빈 ABS 문짝. 403호 욕실 문이다. */
+	Hollow,
+	/** 알루미늄 틀의 유리문. 공동현관이다. */
+	Glass
+};
+
 class AIGSwingDoor;
 /** 조건이 안 맞는 문을 당겼다. 문 밖에서 이어 받을 반응이 있을 때 묶는다. */
 DECLARE_MULTICAST_DELEGATE_OneParam(FIGSwingDoorLockedAttempt, AIGSwingDoor*);
@@ -82,6 +93,21 @@ public:
 	/** Rotating leaf pivot; dressing attached here follows the swing. */
 	USceneComponent* GetDoorPivot() const { return DoorPivot; }
 
+	/** 속이 빈 가벼운 문짝(욕실 ABS 문)으로 둔다. 두드리는 소리가 철문과 다르다. */
+	void SetHollowLeaf(const bool bInHollow) { bHollowLeaf = bInHollow; }
+	EIGDoorKnockSurface GetKnockSurface() const
+	{
+		return bFramedGlass ? EIGDoorKnockSurface::Glass
+			: bHollowLeaf ? EIGDoorKnockSurface::Hollow
+			: EIGDoorKnockSurface::Steel;
+	}
+
+	/**
+	 * 문짝에서 From에 가장 가까운 자리, From 쪽 겉면. 높이는 From의 높이를 문짝 안으로
+	 * 당긴다. 문 너머에서 두드리는 소리를 그 문에서 내게 할 때 쓴다.
+	 */
+	FVector GetKnockPoint(const FVector& From) const;
+
 	/**
 	 * Swaps the box handle for an authored lever mesh (rose plate + swept
 	 * lever, modelled in centimeters with the rose facing +Z).
@@ -99,11 +125,35 @@ public:
 	void ConfigureAuthoredLeaf(
 		UStaticMesh* LeafMesh, UStaticMesh* HardwareMesh, const FVector& PanelSize);
 
+	/**
+	 * 문짝과 같이 도는 장식 메시를 하나 단다. 원점과 축이 문짝 메시와 같아야 한다(방화문
+	 * 양면 스티커). 충돌과 그림자는 없다. ConfigureAuthoredLeaf 뒤에 부른다.
+	 */
+	UStaticMeshComponent* AddLeafDressing(UStaticMesh* Mesh);
+
+	/**
+	 * 도어클로저 팔 두 마디(방화문). 클로저 몸통은 문짝 메시에 붙어 있고, 팔은 문짝의
+	 * 피니언에서, 막대는 문틀 머리 밑의 슈에서 나와 팔꿈치에서 만난다. 문이 돌 때마다 두
+	 * 원의 교점으로 팔꿈치를 다시 찾는다. 좌표는 이 액터 기준이고(경첩 축이 원점, 닫힌
+	 * 문짝은 +Y), PinionClosed는 문이 닫혔을 때의 피니언 자리다. 두 메시 모두 원점이
+	 * 회전축이고 +X로 뻗는다. 팔꿈치는 닫힌 문짝의 -X 쪽(계단 쪽)으로 꺾인다.
+	 */
+	void SetCloserArms(
+		UStaticMesh* ArmMesh,
+		UStaticMesh* RodMesh,
+		const FVector& PinionClosed,
+		const FVector& ShoeLocation,
+		float ArmLength,
+		float RodLength);
+
 	UFUNCTION(BlueprintPure, Category = "Door")
 	bool IsOpen() const { return bOpen; }
 
 	/** 닫힌 채 멈춰 있다. 열리기 시작하면 bOpen이 먼저 바뀌므로 닫히는 도중도 제외한다. */
 	bool IsFullyClosed() const { return !bOpen && !DoorAnimation.bActive; }
+
+	/** 문짝이 아직 돌고 있다. 지나가려는 몸은 다 열릴 때까지 기다린다. */
+	bool IsSwinging() const { return DoorAnimation.bActive; }
 
 	/**
 	 * 걸쇠 자리. 손잡이 쪽 문선, 문짝 두께 한가운데, 손잡이 높이다. 저작 문짝은
@@ -143,6 +193,8 @@ public:
 	 * 안에서 여는 사람에게는 걸리지 않는다. 문을 여는 순간 같이 풀린다.
 	 */
 	void SetLatched(bool bInLatched, bool bPlaySound = true);
+	/** 잠긴 손잡이를 밖에서 돌려 본다. 두 번 덜컥거리고 그 소리가 건물에 들린다(손님, 욕실). */
+	void PlayHandleRattle();
 	bool IsLatched() const { return bLatched; }
 	/** 걸쇠가 걸리거나 풀렸다. 걸쇠 모양을 그리는 쪽이 듣는다. */
 	FSimpleMulticastDelegate OnLatchChanged;
@@ -235,6 +287,24 @@ private:
 	bool bEverOpened = false;
 	/** 유리문. 걸쇠·자물쇠 녹음은 강철 세대문의 것이라 여기서는 안 낸다. */
 	bool bFramedGlass = false;
+	/** 속이 빈 ABS 문짝. 두드리면 철문보다 가볍고 높게 운다. */
+	bool bHollowLeaf = false;
 	/** 문짝 치수(두께, 폭, 높이). 문 소리가 날 자리를 여기서 잰다. */
 	FVector LeafSize = FVector(6.0f, 84.0f, 204.0f);
+
+	/** 문이 돌았으면 클로저 팔을 다시 맞춘다. 팔이 없는 문에서는 아무것도 안 한다. */
+	void UpdateCloserArms();
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> CloserArm;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> CloserRod;
+
+	FVector CloserPinion = FVector::ZeroVector;
+	FVector CloserShoe = FVector::ZeroVector;
+	float CloserArmLength = 0.0f;
+	float CloserRodLength = 0.0f;
+	/** 팔꿈치가 꺾이는 쪽. 처음 맞출 때 정하고, 문이 도는 동안 뒤집히지 않는다. */
+	float CloserElbowSide = 0.0f;
 };

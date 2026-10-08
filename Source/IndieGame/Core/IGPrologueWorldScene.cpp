@@ -32,6 +32,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Environment/IGNeighborhoodLifeDirector.h"
+#include "Environment/IGStairSensorLights.h"
 #include "Entity/IGListenerEntity.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -44,6 +45,7 @@
 #include "Interaction/IGElevatorButton.h"
 #include "Entity/IGElevatorOverloadDirector.h"
 #include "Entity/IGStairwellPresence.h"
+#include "Interaction/IGBathroomRefuge.h"
 #include "Interaction/IGFireDoorWedge.h"
 #include "Interaction/IGFridge.h"
 #include "Interaction/IGHidingSpot.h"
@@ -55,6 +57,7 @@
 #include "Interaction/IGResonantPanel.h"
 #include "Interaction/IGRoomLightSwitch.h"
 #include "Interaction/IGReadableNote.h"
+#include "Components/BoxComponent.h"
 #include "Interaction/IGSlidingDoor.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Interaction/IGZoneTrigger.h"
@@ -795,13 +798,17 @@ void AIGPrologueWorldScene::SetCommonInspectionLightsEnabled(const bool bEnabled
 	for (int32 Index = 0; Index < LobbyLights.Num(); ++Index) SetFixtureLive(Index, true, false);
 	for (int32 Index = 0; Index < CorridorLights.Num(); ++Index) SetFixtureLive(Index, true, true);
 	ApplyServiceLights();
+	if (StairSensorLights)
+	{
+		StairSensorLights->ApplyPower();
+	}
 }
 
 bool AIGPrologueWorldScene::AreCommonInspectionLightsOff() const
 {
 	for (const UPointLightComponent* Light : LobbyLights) if (Light && Light->Intensity > 0.f) return false;
 	for (const UPointLightComponent* Light : CorridorLights) if (Light && Light->Intensity > 0.f) return false;
-	for (const UPointLightComponent* Light : StairCoreLights) if (Light && Light->Intensity > 0.f) return false;
+	if (StairSensorLights && StairSensorLights->IsAnyLampOn()) return false;
 	for (const UPointLightComponent* Light : LowerFloorLights) if (Light && Light->Intensity > 0.f) return false;
 	for (const UStaticMeshComponent* Disc : LobbyLightDiscs) if (Disc && Disc->GetMaterial(0) == LightPanelMaterial) return false;
 	for (const UStaticMeshComponent* Disc : CorridorLightDiscs) if (Disc && Disc->GetMaterial(0) == LightPanelMaterial) return false;
@@ -810,9 +817,9 @@ bool AIGPrologueWorldScene::AreCommonInspectionLightsOff() const
 
 void AIGPrologueWorldScene::ApplyServiceLights()
 {
-	// 계단탑과 2·3층의 등. 낮에는 켜져 있고 그 시간에는 비상구 등만 남는다.
-	// 1층 공용 차단기가 내려가면 복도 등과 함께 꺼진다.
-	const bool bLit = bCommonInspectionLightsEnabled && !bTheHourSealed;
+	// 2·3층 복도의 등. 낮에는 켜져 있고 그 시간에는 꺼진다. 1층 공용 차단기나 넷째 밤
+	// 차단기가 내려가면 4층 복도 등과 함께 꺼진다. 계단탑은 센서등이라 여기서 다루지 않는다.
+	const bool bLit = bCommonInspectionLightsEnabled && bMissingFloorAnnexPowered && !bTheHourSealed;
 	const auto Apply = [this, bLit](
 		const TArray<TObjectPtr<UPointLightComponent>>& Lights,
 		const TArray<float>& Intensities,
@@ -834,7 +841,6 @@ void AIGPrologueWorldScene::ApplyServiceLights()
 			}
 		}
 	};
-	Apply(StairCoreLights, StairCoreLightIntensities, StairCoreLightDiscs);
 	Apply(LowerFloorLights, LowerFloorLightIntensities, LowerFloorLightDiscs);
 }
 
@@ -1062,6 +1068,8 @@ void AIGPrologueWorldScene::LoadTexturedMaterials()
 		TEXT("M_DoorLock"),
 		TEXT("M_Intercom"),
 		TEXT("M_SwitchPlate"),
+		// 403호 욕실의 벽·바닥 타일(Scripts/import_bathroom_surfaces.py).
+		TEXT("M_BathroomWallTile_X"), TEXT("M_BathroomWallTile_Y"), TEXT("M_BathroomFloorTile_XY"),
 		// 「없는 층」 dry-plaster architecture and authored residue layers.
 		TEXT("M_MissingFloorPlaster_X"), TEXT("M_MissingFloorPlaster_Y"),
 		TEXT("M_MissingFloorPlaster_XY"), TEXT("M_MissingFloorHandprints"),
@@ -1599,6 +1607,7 @@ void AIGPrologueWorldScene::InitializePrologue()
 	// 끄는 UpdateLightZones가 이 표를 쓴다.
 	BuildingLightZone = EIGLightZone::HomeInterior;
 	BuildApartment();
+	BuildBathroom();
 	BuildingLightZone = EIGLightZone::FourthFloor;
 	BuildCorridor();
 	BuildingLightZone = EIGLightZone::StairCore;
@@ -1710,7 +1719,10 @@ void AIGPrologueWorldScene::BuildApartment()
 		IGPrologueWorld::FootstepVinylTag);
 	CreateBlock(FVector(0, 0, 240), FVector(440, 490, 20), CeilHome);
 	CreateBlock(FVector(-200, 0, 115), FVector(20, 490, 230), WallY);
-	CreateBlock(FVector(200, 0, 115), FVector(20, 490, 230), WallY);
+	// 동쪽 벽. 현관 바로 오른쪽(Y -173..-97)에 욕실 문을 낸다(BuildBathroom).
+	CreateBlock(FVector(200, -209, 115), FVector(20, 72, 230), WallY);
+	CreateBlock(FVector(200, 74, 115), FVector(20, 342, 230), WallY);
+	CreateBlock(FVector(200, -135, 217.5f), FVector(20, 76, 25), WallY);
 	// The east wall projects ten centimetres past the south wall into the
 	// corridor. Its exposed end is a Y-facing surface, so the wall's X-facing
 	// material stretched into dense horizontal bands at the authored corridor
@@ -2295,6 +2307,9 @@ void AIGPrologueWorldScene::BuildApartment()
 		FLinearColor(1.0f, 0.92f, 0.79f), true, 18.0f, nullptr, true);
 	HomeCeilingLight->SetVolumetricScatteringIntensity(0.0f);
 	UnderCabinet->SetVolumetricScatteringIntensity(0.2f);
+	UnitPoweredLights.Add(BedsideLamp);
+	UnitPoweredLights.Add(UnderCabinet);
+	UnitPoweredLights.Add(HomeCeilingLight);
 
 	// Window frame and cross bars turn the glow plane into a real window.
 	// 창틀·블라인드·인터폰·스위치·신발장은 Blender 메시
@@ -2399,7 +2414,8 @@ void AIGPrologueWorldScene::BuildApartment()
 	// Baseboard trim along the interior walls.
 	CreateBlock(FVector(0, 213, 5), FVector(378, 4, 10), Furniture, false);
 	CreateBlock(FVector(-188, 0, 5), FVector(4, 428, 10), Furniture, false);
-	CreateBlock(FVector(188, 0, 5), FVector(4, 428, 10), Furniture, false);
+	CreateBlock(FVector(188, -193.5f, 5), FVector(4, 41, 10), Furniture, false);
+	CreateBlock(FVector(188, 58.5f, 5), FVector(4, 311, 10), Furniture, false);
 	CreateBlock(FVector(-58, -213, 5), FVector(262, 4, 10), Furniture, false);
 
 	// 벗어 둔 실내화는 침대 옆에 둔다. 현관 단차 위에 물리 소품을 놓으면
@@ -2996,10 +3012,19 @@ void AIGPrologueWorldScene::BuildCorridor()
 
 	// 서쪽 끝 목 너머는 계단탑이다(BuildStairCore). 1층까지 실제 계단이 이어지고,
 	// 4층에서는 동쪽 계단이 북쪽으로 내려가고, 서쪽 계단 위는 난간 너머로 뚫려 있다.
-	// A tired green exit lamp glows at the stair throat, screwed to the head
-	// of the stair opening rather than hanging a centimetre clear of it.
-	CreateBlock(FVector(-313, -305, 220), FVector(14, 8, 10),
-		ScreenGlowMaterial, false);
+	// 계단 목 머리에 붙은 소형 피난구 유도등. 녹색 아크릴에 문으로 달려 나가는 사람과
+	// 「비상구」가 비친다(시안 → Blender, build_stair_fire_door.py). 앞면이 복도(+X)를 본다.
+	if (UStaticMesh* ExitSignMesh = PropMesh(TEXT("SM_ExitSignLamp")))
+	{
+		CreateBlock(FVector(-320, -305, 225), FVector(100, 100, 100),
+			nullptr, false, ExitSignMesh, FRotator(0, 90, 0));
+	}
+	else
+	{
+		// physics-audit: intentional 저작 메시가 없을 때만 짓는 폴백이다. 위 if와 배타적이라 화면에 함께 없다.
+		CreateBlock(FVector(-313, -305, 220), FVector(14, 8, 10),
+			ScreenGlowMaterial, false);
+	}
 	// 비상구 등은 실제 빛이다. 밤에 복도 등이 죽으면 계단 입구를 가리키는
 	// 유일한 표지가 되고, 그 초록이 서쪽 벽에 남는다.
 	UPointLightComponent* ExitLamp = CreateLight(
@@ -3263,6 +3288,11 @@ void AIGPrologueWorldScene::BuildStairCore()
 			FVector((WestX - 330.0f) * 0.5f, (SouthY + FlightSouthY) * 0.5f, FloorZ - 10.0f),
 			FVector(-330.0f - WestX, FlightSouthY - SouthY, 20), LandingFloor),
 			IGPrologueWorld::FootstepConcreteTag);
+		// 아래층 참의 천장. 바닥판 밑면이 화강석 그대로 보이지 않게 미장을 한 겹 댄다.
+		// 센서등이 바로 밑에서 비추는 자리다.
+		CreateBlock(
+			FVector(CoreCenterX, (SouthY + FlightSouthY) * 0.5f, FloorZ - 20.5f),
+			FVector(CoreWidth, FlightSouthY - SouthY, 1), CoreCeil, false);
 	}
 
 	// --- 1층에서 2층까지 ---------------------------------------------------
@@ -3363,31 +3393,99 @@ void AIGPrologueWorldScene::BuildStairCore()
 	PaintFloorNumber(600.0f, TEXT("3F"));
 	PaintFloorNumber(900.0f, TEXT("4F"));
 
-	// 층 참마다 천장 등 하나. 그림자를 드리워 벽 너머 골목에 새지 않는다. 4층 참은
-	// 켜지 않는다 — 복도 끝 죽어 가는 등 너머로 계단이 어둠 속에 내려가야 한다.
+	// 층 참마다 센서등 하나(1~4층). 관리실은 밤 12시부터 새벽 5시까지 복도 등을 끄지만
+	// 계단은 사람이 지나갈 때만 켜지는 센서등이라 그대로 둔다. 켜고 끄는 일은
+	// AIGStairSensorLights가 한다. 처음에는 꺼져 있고, 꺼진 등은 세기 0이라 그리지 않는다.
+	// 그림자를 드리워 벽 너머 골목과 복도에 새지 않는다. 4층 참은 출입구 안으로 들어서야
+	// 켜진다 — 복도에서는 죽어 가는 등 너머로 계단이 어둠 속에 내려가 있다.
+	UStaticMesh* SensorLampMesh = PropMesh(TEXT("SM_StairSensorLight"));
+	StairSensorLightComponents.Reset();
+	StairSensorLamps.Reset();
+	for (const float LampZ : {279.0f, 579.0f, 879.0f, 1140.0f})
+	{
+		UStaticMeshComponent* SensorLamp = nullptr;
+		if (SensorLampMesh)
+		{
+			SensorLamp = CreateBlock(
+				FVector(-465.0f, -305.0f, LampZ), FVector(100, 100, 100),
+				nullptr, false, SensorLampMesh, FRotator::ZeroRotator);
+		}
+		StairSensorLamps.Add(SensorLamp);
+		UPointLightComponent* SensorLight = CreateLight(
+			FVector(-465.0f, -305.0f, LampZ - 12.0f), 0.0f, 520.0f,
+			FLinearColor(0.92f, 0.95f, 1.0f), true, 12.0f);
+		SensorLight->SetVolumetricScatteringIntensity(0.10f);
+		StairSensorLightComponents.Add(SensorLight);
+	}
+
+	ActiveParent = nullptr;
+}
+
+void AIGPrologueWorldScene::BuildBathroom()
+{
+	// 403호 욕실(EXPANSION_PLAN §4). 현관 바로 오른쪽, 동쪽 벽 너머 비어 있던 자리에 동서
+	// 200, 남북 150 cm 욕실을 들였다. 문은 안으로 열리고, 닫고 잠그면 숨는 자리가 된다
+	// (AIGBathroomRefuge, SpawnInteractables). 벽은 흰 유약 타일, 바닥은 회색 논슬립 타일이고
+	// 문턱은 대리석이다. 비품은 시안을 보고 Blender에서 만들었다(build_bathroom.py).
+	// 4층 기준 좌표다. 바닥면은 Z 0.5, 천장 밑면은 Z 225다.
+	ActiveParent = UpperFloorRoot;
+	UMaterialInterface* WallTileX = TexMat(TEXT("M_BathroomWallTile_X"), WallMaterial);
+	UMaterialInterface* WallTileY = TexMat(TEXT("M_BathroomWallTile_Y"), WallMaterial);
+	UMaterialInterface* FloorTile = TexMat(TEXT("M_BathroomFloorTile_XY"), FloorMaterial);
+	UMaterialInterface* Ceiling = TexMat(TEXT("M_StuccoCeil"), ConcreteMaterial);
+	UMaterialInterface* Marble = TexMat(TEXT("M_CounterStoneUV"), StoreFloorMaterial);
+
+	// 바닥. 403호 장판이 동쪽 벽 너머 X 220까지 깔려 있어 그 한 뼘은 얇은 타일 판으로 덮는다.
+	IGPrologueWorld::TagFootstepSurface(
+		CreateBlock(FVector(315, -140, -9.75f), FVector(190, 150, 20.5f), FloorTile),
+		IGPrologueWorld::FootstepConcreteTag);
+	CreateBlock(FVector(215, -140, 0.25f), FVector(10, 150, 0.5f), FloorTile, false);
+	CreateBlock(FVector(310, -140, 235), FVector(200, 150, 20), Ceiling);
+	// 북쪽과 동쪽 벽. 남쪽은 복도 북쪽 벽(Y -235..-215), 서쪽은 403호 동쪽 벽이라 욕실 쪽
+	// 면에만 타일을 한 겹 댄다. 문 자리는 비운다. 두 벽은 서로의 두께 안에서 끝나고 동쪽
+	// 벽이 2 cm 높아, 바깥 끝면끼리 같은 평면에 겹치지 않는다.
+	CreateBlock(FVector(307.5f, -55, 115), FVector(215, 20, 230), WallTileX);
+	CreateBlock(FVector(420, -140, 116), FVector(20, 170, 232), WallTileY);
+	CreateBlock(FVector(310, -214.6f, 112.5f), FVector(200, 0.8f, 225), WallTileX, false);
+	CreateBlock(FVector(210.4f, -194, 112.5f), FVector(0.8f, 42, 225), WallTileY, false);
+	CreateBlock(FVector(210.4f, -81, 112.5f), FVector(0.8f, 32, 225), WallTileY, false);
+	CreateBlock(FVector(210.4f, -135, 215), FVector(0.8f, 76, 20), WallTileY, false);
+	// 대리석 문턱. 높이 3 cm, 문짝 밑과 5 mm 남는다.
+	IGPrologueWorld::TagFootstepSurface(
+		CreateBlock(FVector(206, -135, 1.5f), FVector(32, 76, 3), Marble),
+		IGPrologueWorld::FootstepConcreteTag);
+
+	// 문틀. 원점은 개구부 바닥 가운데이고 403호 쪽이 메시의 -Y다.
+	if (UStaticMesh* FrameMesh = PropMesh(TEXT("SM_BathroomDoorFrame")))
+	{
+		CreateBlock(FVector(200, -135, 0), FVector(100, 100, 100), nullptr, false, FrameMesh, FRotator(0, -90, 0));
+	}
+	// 비품. 벽에 붙는 것은 원점이 벽면과 바닥이다. 북쪽 벽에 세면대와 거울장, 안쪽에 변기,
+	// 문짝이 열려 눕는 남쪽 벽에는 수건걸이와 샤워 수전, 안쪽 모서리에 코너 선반. 시안과
+	// 좌우가 바뀐 배치다. 문이 남쪽으로 열려야 세면대에 걸리지 않는다.
+	CreateProp(TEXT("SM_BathroomBasin"), FVector(262, -65, 0.5f), nullptr, 0.0f, 1.0f, true);
+	CreateProp(TEXT("SM_BathroomMirrorCabinet"), FVector(262, -65, 112), nullptr, 0.0f, 1.0f, true);
+	CreateProp(TEXT("SM_BathroomToilet"), FVector(357, -65, 0.5f), nullptr, 0.0f, 1.0f, true);
+	CreateProp(TEXT("SM_BathroomTowelRail"), FVector(290, -214.2f, 0.5f), nullptr, 180.0f, 1.0f, false);
+	CreateProp(TEXT("SM_BathroomShower"), FVector(372, -214.2f, 0.5f), nullptr, 180.0f, 1.0f, false);
+	CreateProp(TEXT("SM_BathroomCornerShelf"), FVector(410, -214.2f, 0.5f), nullptr, 0.0f, 1.0f, false);
+	CreateProp(TEXT("SM_FloorDrain"), FVector(388, -182, 0.5f), nullptr, 0.0f, 1.0f, false);
+	CreateProp(TEXT("SM_BathroomVentGrille"), FVector(378, -100, 225), nullptr, 0.0f, 1.0f, false);
+
+	// 천장 등과 문 옆(403호 쪽) 벽 스위치. 등은 처음에 꺼져 있다.
 	UStaticMesh* RingMesh = PropMesh(TEXT("SM_CeilingLightRing"));
 	UStaticMesh* DomeMesh = PropMesh(TEXT("SM_CeilingLightDome"));
-	StairCoreLights.Reset();
-	StairCoreLightDiscs.Reset();
-	StairCoreLightIntensities.Reset();
-	for (const float FloorZ : {0.0f, 300.0f, 600.0f})
+	if (RingMesh && DomeMesh)
 	{
-		const float CeilingUnderside = FloorZ + 280.0f;
-		if (RingMesh && DomeMesh)
-		{
-			CreateBlock(
-				FVector(-465.0f, -305.0f, CeilingUnderside), FVector(100, 100, 100),
-				nullptr, false, RingMesh, FRotator::ZeroRotator);
-			StairCoreLightDiscs.Add(CreateBlock(
-				FVector(-465.0f, -305.0f, CeilingUnderside), FVector(100, 100, 100),
-				LightPanelMaterial, false, DomeMesh, FRotator::ZeroRotator));
-		}
-		UPointLightComponent* LandingLight = CreateLight(
-			FVector(-465.0f, -305.0f, CeilingUnderside - 14.0f), 760.0f, 470.0f,
-			FLinearColor(0.92f, 0.95f, 1.0f), true, 14.0f);
-		LandingLight->SetVolumetricScatteringIntensity(0.10f);
-		StairCoreLights.Add(LandingLight);
-		StairCoreLightIntensities.Add(LandingLight->Intensity);
+		CreateBlock(FVector(305, -140, 225), FVector(100, 100, 100), nullptr, false, RingMesh, FRotator::ZeroRotator);
+		CreateBlock(FVector(305, -140, 225), FVector(100, 100, 100), LightPanelMaterial, false, DomeMesh, FRotator::ZeroRotator);
+	}
+	BathroomLight = CreateLight(FVector(305, -140, 211), 0.0f, 330.0f, FLinearColor(1.0f, 0.93f, 0.82f), true, 10.0f);
+	UnitPoweredLights.Add(BathroomLight);
+	BathroomLight->SetVolumetricScatteringIntensity(0.0f);
+	if (UStaticMesh* SwitchMesh = PropMesh(TEXT("SM_WallSwitch")))
+	{
+		CreateBlock(FVector(190, -192, 123), FVector(100, 100, 100), nullptr, false, SwitchMesh, FRotator(0, 90, 0));
 	}
 
 	ActiveParent = nullptr;
@@ -3508,7 +3606,16 @@ void AIGPrologueWorldScene::BuildLowerFloors()
 		CreateBlock(FVector(-330, -237.5f, FloorZ + 120.0f), FVector(20, 15, 240), PlasticDarkMaterial);
 		CreateBlock(FVector(-330, -372.5f, FloorZ + 120.0f), FVector(20, 15, 240), PlasticDarkMaterial);
 		CreateBlock(FVector(-330, -305, FloorZ + 225.0f), FVector(20, 120, 30), PlasticDarkMaterial);
-		CreateBlock(FVector(-313, -305, FloorZ + 220.0f), FVector(14, 8, 10), ScreenGlowMaterial, false);
+		if (UStaticMesh* ExitSignMesh = PropMesh(TEXT("SM_ExitSignLamp")))
+		{
+			CreateBlock(FVector(-320, -305, FloorZ + 225.0f), FVector(100, 100, 100),
+				nullptr, false, ExitSignMesh, FRotator(0, 90, 0));
+		}
+		else
+		{
+			// physics-audit: intentional 저작 메시가 없을 때만 짓는 폴백이다. 위 if와 배타적이라 화면에 함께 없다.
+			CreateBlock(FVector(-313, -305, FloorZ + 220.0f), FVector(14, 8, 10), ScreenGlowMaterial, false);
+		}
 		UPointLightComponent* ExitLamp = CreateLight(
 			FVector(-313, -305, FloorZ + 213.0f), 22.0f, 340.0f,
 			FLinearColor(0.30f, 1.0f, 0.42f), false, 5.0f);
@@ -3544,6 +3651,17 @@ void AIGPrologueWorldScene::BuildLowerFloors()
 	AddDoorNumber(-150.0f, 300.0f, TEXT("201"));
 	AddDoorNumber(-30.0f, 300.0f, TEXT("202"));
 	AddDoorNumber(78.0f, 300.0f, TEXT("203"));
+	// 202호는 방 셋으로 쪼갠 원룸이다. 현관문 하나를 셋이 같이 쓰고, 문 서쪽 벽에 무선
+	// 초인종 셋을 양면테이프로 붙였다(202-1·202-2·202-3). 동쪽은 203호 문틀까지 6 cm라
+	// 붙일 데가 없고, 서쪽은 201호 문틀까지 18 cm가 남는다. 문에는 정우가 붙인 쪽지가
+	// 있다(SpawnInteractables).
+	if (UStaticMeshComponent* Doorbells = CreateProp(
+		TEXT("SM_Doorbells202"), FVector(-90.0f, -235.0f, 300.0f), nullptr, 0.0f, 1.0f, false))
+	{
+		Doorbells->SetCastShadow(false);
+		Doorbells->bAffectDistanceFieldLighting = false;
+		Doorbells->SetCullDistance(900.0f);
+	}
 	{
 		// 201호. 세입자가 나간 뒤 관리인이 자재 창고로 쓴다. 장판을 걷어 낸 콘크리트
 		// 바닥에 석고보드가 누워 쌓이고, 북동쪽 구석은 세운 보드와 걸어 둔 비닐 사이로
@@ -3599,6 +3717,18 @@ void AIGPrologueWorldScene::BuildLowerFloors()
 	AddDoorNumber(-150.0f, 600.0f, TEXT("301"));
 	AddDoorNumber(-30.0f, 600.0f, TEXT("302"));
 	AddDoorNumber(78.0f, 600.0f, TEXT("303"));
+	// 303호에는 교대 근무를 하는 사람이 산다. 문에는 벨도 노크도 하지 말아 달라는 안내문이
+	// 붙어 있다(SpawnInteractables). 그 시간에는 새벽배송 보냉 가방이 문 동쪽 벽 앞에 놓여
+	// 있고, 낮에는 들여갔다(ApplyNightAtmosphere). 걸레받이(Y -238.5)에 닿지 않게 벽에서
+	// 조금 띄웠다.
+	DawnDeliveryBag = CreateProp(
+		TEXT("SM_DawnDeliveryBag"), FVector(160.0f, -257.0f, 600.0f), nullptr, 3.0f, 1.0f, true);
+	if (DawnDeliveryBag)
+	{
+		DawnDeliveryBag->SetVisibility(false);
+		DawnDeliveryBag->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		DawnDeliveryBag->SetCullDistance(1600.0f);
+	}
 	{
 		// 302호. 할머니가 요양원으로 가며 장롱만 두고 나갔다. 장판과 벽지가 남은 빈방이고,
 		// 장롱 문틈이 숨는 자리다(SpawnInteractables).
@@ -3680,7 +3810,7 @@ void AIGPrologueWorldScene::SetFixtureLive(
 			&& Now - CorridorSensorLastSeen[Index] < 18.0);
 		Scale *= bSensorOn ? 0.72f : 0.0f;
 	}
-	const bool bShines = bLive && bCommonInspectionLightsEnabled && Scale > 0.0f;
+	const bool bShines = bLive && bCommonInspectionLightsEnabled && bMissingFloorAnnexPowered && Scale > 0.0f;
 	if (UPointLightComponent* Light = FixtureLights[Index])
 	{
 		Light->SetIntensity(bShines ? (bCorridor ? 1020.0f : 920.0f) * Scale : 0.0f);
@@ -3735,6 +3865,13 @@ void AIGPrologueWorldScene::ApplyNightAtmosphere(const bool bSealed)
 		HeightFog->SetVolumetricFogExtinctionScale(bSealed ? 1.8f : 1.0f);
 	}
 	SetUnit401GapLit(bSealed);
+	if (DawnDeliveryBag)
+	{
+		// 새벽배송은 그 시간에 와 있다. 아침에는 303호가 들여간다.
+		DawnDeliveryBag->SetVisibility(bSealed);
+		DawnDeliveryBag->SetCollisionEnabled(
+			bSealed ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+	}
 	HourSealedAtSeconds = bSealed && GetWorld() ? GetWorld()->GetTimeSeconds() : -1.0;
 	ApplyExteriorTimeOfDay();
 	UpdateNeighborhoodAwake();
@@ -3836,7 +3973,8 @@ void AIGPrologueWorldScene::UpdateLightZones()
 	int32 HomeView = 0;
 	if (Band == 1 && HomeDoor && HomeDoor->IsFullyClosed())
 	{
-		const bool bInsideHome = FMath::Abs(Eye.X) < 200.0f
+		// 현관 옆 욕실(X 410까지)도 집 안이다.
+		const bool bInsideHome = Eye.X > -200.0f && Eye.X < 410.0f
 			&& Eye.Y > HomeDoorY && Eye.Y < 225.0f
 			&& Eye.Z > FourthFloorZ - 10.0f && Eye.Z < FourthFloorZ + 250.0f;
 		HomeView = bInsideHome ? 1 : 2;
@@ -3895,10 +4033,11 @@ void AIGPrologueWorldScene::UpdateLightZones()
 		{
 			if (ULightComponent* Resolved = Light.Get())
 			{
-				// 4일 차 밤에 차단기가 내려간 별관 등은 층을 오르내려도 다시 켜지지 않는다.
+				// 넷째 밤에 차단기가 내려간 별관 등과 403호 전등은 층을 오르내려도 다시 켜지지 않는다.
+				const UPointLightComponent* Point = Cast<UPointLightComponent>(Resolved);
 				const bool bVisible = bZoneVisible
 					&& (bMissingFloorAnnexPowered
-						|| !MissingFloorAnnexLights.Contains(Cast<UPointLightComponent>(Resolved)));
+						|| (!MissingFloorAnnexLights.Contains(Point) && !UnitPoweredLights.Contains(Point)));
 				if (Resolved->IsVisible() != bVisible)
 				{
 					Resolved->SetVisibility(bVisible);
@@ -4397,6 +4536,9 @@ void AIGPrologueWorldScene::BuildFifthFloorAnnex()
 			FVector(10.0f, 12.0f, 210.0f),
 			RailMetal);
 	}
+	// 5층 철문 빗장의 받이쇠. 손잡이 쪽 문설주 옆면(X 175의 결 판 바로 앞)에 붙어 문짝 끝과
+	// 2.5 mm를 띄운다. 빗장 몸통과 막대는 밤3 디렉터가 문짝에 단다.
+	CreateProp(TEXT("SM_DoorBarrelBoltKeeper"), FVector(174.9f, 455.85f, 1332.0f), nullptr, 0.0f, 1.0f, false);
 	CreateBlock(FVector(-397.5f, 700, 1320), FVector(15, 480, 240), AnnexWallY);
 	CreateBlock(FVector(397.5f, 700, 1320), FVector(15, 480, 240), AnnexWallY);
 
@@ -4912,14 +5054,46 @@ float AIGPrologueWorldScene::GetMissingFloorCctvFieldOfView() const
 	return IGPrologueWorld::CctvCameraFieldOfView;
 }
 
+bool AIGPrologueWorldScene::IsAnyUnitLightVisibleForTesting() const
+{
+	for (const UPointLightComponent* Light : UnitPoweredLights)
+	{
+		if (Light && Light->IsVisible() && Light->Intensity > 0.0f)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 void AIGPrologueWorldScene::SetMissingFloorAnnexPower(const bool bPowered)
 {
+	const bool bChanged = bMissingFloorAnnexPowered != bPowered;
 	bMissingFloorAnnexPowered = bPowered;
+	if (StairSensorLights)
+	{
+		StairSensorLights->ApplyPower();
+	}
+	// 건물 안 등이 다 차단기를 탄다(EXPANSION_PLAN §2.3 넷째 밤). 복도와 로비는 등과 갓을
+	// 같이, 2·3층은 서비스 등으로 다시 맞춘다. 같은 값이 거듭 오면 건너뛴다.
+	if (bChanged)
+	{
+		for (int32 Index = 0; Index < LobbyLights.Num(); ++Index) SetFixtureLive(Index, true, false);
+		for (int32 Index = 0; Index < CorridorLights.Num(); ++Index) SetFixtureLive(Index, true, true);
+		ApplyServiceLights();
+	}
 	// 끄는 것은 바로 한다. 켜는 것은 조명 구역이 정한다 — 별관과 윗계단 등은
 	// 아래층에 있는 동안 구역이 꺼 두었으니, 전원이 돌아와도 그 층에서는 켜지 않는다.
 	if (!bPowered)
 	{
 		for (UPointLightComponent* Light : MissingFloorAnnexLights)
+		{
+			if (Light)
+			{
+				Light->SetVisibility(false, true);
+			}
+		}
+		for (UPointLightComponent* Light : UnitPoweredLights)
 		{
 			if (Light)
 			{
@@ -5079,7 +5253,8 @@ void AIGPrologueWorldScene::HandleCorridorFlicker()
 	// for the whole session at 10 Hz and writes the intensity unconditionally,
 	// so without the gate anything else done to the west fixture is undone
 	// within a tenth of a second.
-	if (bCorridorFlickerSuspended || !bCommonInspectionLightsEnabled || !DegradedCorridorLight)
+	if (bCorridorFlickerSuspended || !bCommonInspectionLightsEnabled || !bMissingFloorAnnexPowered
+		|| !DegradedCorridorLight)
 	{
 		return;
 	}
@@ -6627,6 +6802,132 @@ void AIGPrologueWorldScene::SpawnInteractables()
 		}
 	}
 
+	// 계단탑 센서등. 층 참 넷의 등과 갓은 BuildStairCore가 세웠다.
+	StairSensorLights = World->SpawnActor<AIGStairSensorLights>(
+		AIGStairSensorLights::StaticClass(), FTransform::Identity, SpawnParameters);
+	if (StairSensorLights)
+	{
+		TArray<UPointLightComponent*> SensorLights;
+		TArray<UStaticMeshComponent*> SensorLamps;
+		TArray<float> SensorFloors;
+		for (int32 Index = 0; Index < StairSensorLightComponents.Num(); ++Index)
+		{
+			SensorLights.Add(StairSensorLightComponents[Index]);
+			SensorLamps.Add(StairSensorLamps.IsValidIndex(Index) ? StairSensorLamps[Index].Get() : nullptr);
+			SensorFloors.Add(GetStoreyFloorZ(Index));
+		}
+		StairSensorLights->Configure(this, SensorLights, SensorLamps, SensorFloors);
+	}
+
+	// 얇은 종이 메시에는 충돌이 없다. 읽기는 종이와 같은 크기의 상자로 받고 걸음은 막지
+	// 않는다. 상자는 메시 원점에서 종이 가운데까지 옮겨 단다.
+	const auto AddPaperReadArea = [](AIGReadableNote* Note, const FVector& Center, const FVector& Extent)
+	{
+		UStaticMeshComponent* Surface = Cast<UStaticMeshComponent>(Note->GetRootComponent());
+		if (!Surface)
+		{
+			return;
+		}
+		Surface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Surface->SetCastShadow(false);
+		UBoxComponent* ReadArea = NewObject<UBoxComponent>(Note, TEXT("ReadArea"));
+		Note->AddInstanceComponent(ReadArea);
+		ReadArea->SetupAttachment(Surface);
+		ReadArea->SetRelativeLocation(Center);
+		ReadArea->SetBoxExtent(Extent);
+		ReadArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		ReadArea->SetCollisionResponseToAllChannels(ECR_Ignore);
+		ReadArea->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+		ReadArea->SetGenerateOverlapEvents(false);
+		ReadArea->SetCanEverAffectNavigation(false);
+		ReadArea->RegisterComponent();
+	};
+
+	// 1층 엘리베이터 옆 벽의 관리실 공지. 밤 12시부터 새벽 5시까지 복도 등을 끄고 계단은
+	// 센서등이 켜진다는 안내다. 입주하는 저녁에 엘리베이터를 기다리며 읽을 자리에 붙인다.
+	// 호출 버튼(Y -227)의 북쪽, 엘리베이터 출입구 옆 벽(X 700) 앞면이다.
+	// 소품 감사가 메시 바운드를 찾을 수 있게 전체 경로로 부른다.
+	UStaticMesh* LightsOutNoticeMesh = LoadObject<UStaticMesh>(
+		nullptr, TEXT("/Game/Meshes/SM_NoticeLightsOutA4.SM_NoticeLightsOutA4"), nullptr, LOAD_NoWarn);
+	if (LightsOutNoticeMesh)
+	{
+		if (AIGReadableNote* LightsOutNotice = World->SpawnActor<AIGReadableNote>(
+			AIGReadableNote::StaticClass(),
+			FTransform(FRotator(0.0f, -90.0f, 0.0f), FVector(699.95f, -172.0f, 152.0f)),
+			SpawnParameters))
+		{
+			// 구운 메시라 제 재질(인쇄면과 테이프)을 그대로 쓴다. 크기도 메시 실치수다.
+			LightsOutNotice->ConfigurePrototypeVisuals(
+				LightsOutNoticeMesh, LightsOutNoticeMesh->GetMaterial(0), FVector(100.0f, 100.0f, 100.0f));
+			LightsOutNotice->SetInteractionPrompt(
+				NSLOCTEXT("IGMissingFloor", "LightsOutNoticePrompt", "공지 읽기"));
+			LightsOutNotice->SetNoteText(
+				NSLOCTEXT("IGMissingFloor", "LightsOutNoticeTitle", "복도 소등 안내"),
+				{
+					NSLOCTEXT(
+						"IGMissingFloor",
+						"LightsOutNoticeBody",
+						"공용 전기료를 줄이기 위해 밤 12시부터 새벽 5시까지 복도 등을 끕니다."),
+					FText::GetEmpty(),
+					NSLOCTEXT("IGMissingFloor", "LightsOutNoticeStairs", "계단은 센서등이 켜집니다."),
+					FText::GetEmpty(),
+					NSLOCTEXT("IGMissingFloor", "LightsOutNoticeSigned", "관리실"),
+				});
+			AddPaperReadArea(LightsOutNotice, FVector::ZeroVector, FVector(10.5f, 0.2f, 14.85f));
+		}
+	}
+
+	// 202호 문의 쪽지. 쪼갠 원룸 셋이 현관문 하나를 같이 쓰니 택배가 자꾸 바뀐다. 말끝마다
+	// 사과하는 정우가 붙였다. 메시 원점이 문짝 앞면 가운데 바닥이라 문 자리에 그대로 둔다.
+	UStaticMesh* Door202NoteMesh = LoadObject<UStaticMesh>(
+		nullptr, TEXT("/Game/Meshes/SM_DoorPrints202.SM_DoorPrints202"), nullptr, LOAD_NoWarn);
+	if (Door202NoteMesh)
+	{
+		if (AIGReadableNote* Door202Note = World->SpawnActor<AIGReadableNote>(
+			AIGReadableNote::StaticClass(),
+			FTransform(FRotator::ZeroRotator, FVector(-30.0f, -237.35f, 300.0f)),
+			SpawnParameters))
+		{
+			Door202Note->ConfigurePrototypeVisuals(
+				Door202NoteMesh, Door202NoteMesh->GetMaterial(0), FVector(100.0f, 100.0f, 100.0f));
+			Door202Note->SetInteractionPrompt(
+				NSLOCTEXT("IGMissingFloor", "Door202NotePrompt", "쪽지 읽기"));
+			Door202Note->SetNoteText(
+				NSLOCTEXT("IGMissingFloor", "Door202NoteTitle", "기사님 죄송해요ㅠ"),
+				{
+					FText::AsCultureInvariant(TEXT("202-1, 202-2, 202-3")),
+					NSLOCTEXT("IGMissingFloor", "Door202NoteBody", "다 다른 집이에요"),
+					NSLOCTEXT("IGMissingFloor", "Door202NoteAsk", "호수 한 번만 봐 주세요!"),
+				});
+			AddPaperReadArea(Door202Note, FVector(-17.0f, 0.0f, 133.0f), FVector(10.5f, 0.2f, 14.85f));
+		}
+	}
+
+	// 303호 문의 안내문. 교대 근무로 낮에 자는 집이다. 벨도 노크도 하지 말아 달라고 한다.
+	UStaticMesh* Door303SignMesh = LoadObject<UStaticMesh>(
+		nullptr, TEXT("/Game/Meshes/SM_DoorPrints303.SM_DoorPrints303"), nullptr, LOAD_NoWarn);
+	if (Door303SignMesh)
+	{
+		if (AIGReadableNote* Door303Sign = World->SpawnActor<AIGReadableNote>(
+			AIGReadableNote::StaticClass(),
+			FTransform(FRotator::ZeroRotator, FVector(78.0f, -237.35f, 600.0f)),
+			SpawnParameters))
+		{
+			Door303Sign->ConfigurePrototypeVisuals(
+				Door303SignMesh, Door303SignMesh->GetMaterial(0), FVector(100.0f, 100.0f, 100.0f));
+			Door303Sign->SetInteractionPrompt(
+				NSLOCTEXT("IGMissingFloor", "Door303SignPrompt", "안내문 읽기"));
+			Door303Sign->SetNoteText(
+				NSLOCTEXT("IGMissingFloor", "Door303SignTitle", "벨 누르지 마세요"),
+				{
+					NSLOCTEXT("IGMissingFloor", "Door303SignSleep", "낮에 자는 사람이 있어요."),
+					NSLOCTEXT("IGMissingFloor", "Door303SignKnock", "노크도 하지 말아 주세요."),
+					NSLOCTEXT("IGMissingFloor", "Door303SignParcel", "택배는 문 앞에 두고 가 주세요."),
+				});
+			AddPaperReadArea(Door303Sign, FVector(-13.0f, 0.0f, 140.0f), FVector(10.5f, 0.2f, 7.4f));
+		}
+	}
+
 	// 뒤따르는 발. 밤2에 한 번, 계단탑에서 한 층 뒤를 걷는다.
 	{
 		TArray<FVector> StairRoute;
@@ -6961,29 +7262,106 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 			NSLOCTEXT("IGMissingFloor", "BatteryBuyPrompt", "건전지 한 팩 사기"));
 	}
 
-	// 4층 서쪽 계단실 입구의 방화문. 늘 고임목으로 괴어 열려 있다. 경첩은 남쪽
-	// 문설주 모서리, 문짝은 북쪽(+Y)으로 120 cm. 열면 복도 쪽으로 돌아 남쪽 벽에 붙는다.
-	AIGSwingDoor* FireDoor = World->SpawnActor<AIGSwingDoor>(
-		AIGSwingDoor::StaticClass(),
-		FTransform(FRotator::ZeroRotator, FVector(-320.0f, -365.0f, 900.0f)),
-		SpawnParameters);
-	if (FireDoor)
+	// 2·3·4층 계단 목의 방화문. 늘 고임목으로 괴어 열려 있다. 경첩은 남쪽 문설주 모서리,
+	// 문짝은 북쪽(+Y)으로 120 cm다. 열면 복도 쪽으로 돌아 남쪽 벽 앞에 선다. 88도에서
+	// 멈춰야 복도 쪽 레버가 벽을 긁지 않는다. 고임목은 복도 쪽에서 문짝 끝 밑으로
+	// 밀어 넣었다. 문짝·클로저·스티커·고임목은 시안을 보고 Blender에서 만들었다
+	// (build_stair_fire_door.py).
+	UStaticMesh* FireDoorLeafMesh = PropMesh(TEXT("SM_StairFireDoorLeaf"));
+	UStaticMesh* FireDoorPrintsMesh = PropMesh(TEXT("SM_FireDoorPrints"));
+	UStaticMesh* FireDoorArmMesh = PropMesh(TEXT("SM_FireDoorCloserArm"));
+	UStaticMesh* FireDoorRodMesh = PropMesh(TEXT("SM_FireDoorCloserRod"));
+	UStaticMesh* FireDoorWedgeMesh = PropMesh(TEXT("SM_FireDoorWedge"));
+	for (const float FireDoorZ : {300.0f, 600.0f, 900.0f})
 	{
-		FireDoor->ConfigurePrototypeVisuals(
-			CubeMesh,
-			TexMat(TEXT("M_UnitDoorPaintedSteel"), DoorMaterial),
-			TexMat(TEXT("M_MetalUV"), MetalFrameMaterial),
-			FVector(6.0f, 120.0f, 210.0f));
-		FireDoor->SetOpenYaw(-92.0f);
+		AIGSwingDoor* FireDoor = World->SpawnActor<AIGSwingDoor>(
+			AIGSwingDoor::StaticClass(),
+			FTransform(FRotator::ZeroRotator, FVector(-320.0f, -365.0f, FireDoorZ)),
+			SpawnParameters);
+		if (!FireDoor)
+		{
+			continue;
+		}
+		if (FireDoorLeafMesh)
+		{
+			FireDoor->ConfigureAuthoredLeaf(FireDoorLeafMesh, nullptr, FVector(5.0f, 120.0f, 208.0f));
+			FireDoor->AddLeafDressing(FireDoorPrintsMesh);
+			// 클로저 피니언(계단 쪽 면에서 5 cm)과 문틀 머리 밑에 매단 슈. 팔은 문짝 윗면보다
+			// 4 cm 낮게, 머리 밑면보다 5 cm 낮게 지난다. 고임목보다 먼저 달아야 닫힌 문에서
+			// 팔꿈치가 꺾일 쪽을 정한다.
+			FireDoor->SetCloserArms(
+				FireDoorArmMesh,
+				FireDoorRodMesh,
+				FVector(-5.0f, 28.0f, 205.2f),
+				FVector(-11.0f, 55.0f, 205.2f),
+				34.0f,
+				31.0f);
+		}
+		else
+		{
+			FireDoor->ConfigurePrototypeVisuals(
+				CubeMesh,
+				TexMat(TEXT("M_UnitDoorPaintedSteel"), DoorMaterial),
+				TexMat(TEXT("M_MetalUV"), MetalFrameMaterial),
+				FVector(6.0f, 120.0f, 210.0f));
+		}
+		FireDoor->SetOpenYaw(-88.0f);
 		if (AIGFireDoorWedge* Wedge = World->SpawnActor<AIGFireDoorWedge>(
 				AIGFireDoorWedge::StaticClass(),
-				FTransform(FRotator(0.0f, -2.0f, 0.0f), FVector(-212.0f, -366.0f, 900.0f)),
+				FTransform(FRotator(0.0f, -90.0f, 0.0f), FVector(-212.0f, -353.0f, FireDoorZ)),
 				SpawnParameters))
 		{
-			Wedge->Configure(FireDoor, CubeMesh, WoodMaterial);
-			// 계단실 반층 참. 닫힌 문 너머 걷는 소리는 여기서 삼킨다. 복도까지는 닿지 않는다.
-			Wedge->SetStairwellCenter(FVector(-420.0f, -305.0f, 870.0f));
+			Wedge->Configure(FireDoor, FireDoorWedgeMesh, CubeMesh, WoodMaterial);
+			// 계단실 층 참. 닫힌 문 너머 걷는 소리는 여기서 삼킨다. 복도까지는 닿지 않는다.
+			Wedge->SetStairwellCenter(FVector(-420.0f, -305.0f, FireDoorZ - 30.0f));
 		}
+	}
+
+	// 403호 욕실 문. 경첩은 남쪽 문설주, 문짝은 북쪽(+Y)으로 70 cm이고 욕실 쪽(동쪽)으로
+	// 연다. 문틀 턱이 403호 쪽에 있어 문짝은 그 턱에 닿아 닫힌다. 닫고 잠그면 숨는 자리다.
+	if (AIGSwingDoor* BathroomDoor = World->SpawnActor<AIGSwingDoor>(
+			AIGSwingDoor::StaticClass(),
+			FTransform(FRotator::ZeroRotator, FVector(197.3f, -170.0f, IGPrologueWorld::FourthFloorZ)),
+			SpawnParameters))
+	{
+		if (UStaticMesh* BathroomLeafMesh = PropMesh(TEXT("SM_BathroomDoorLeaf")))
+		{
+			BathroomDoor->ConfigureAuthoredLeaf(BathroomLeafMesh, nullptr, FVector(3.6f, 70.0f, 199.0f));
+		}
+		else
+		{
+			BathroomDoor->ConfigurePrototypeVisuals(
+				CubeMesh, TexMat(TEXT("M_KitchenGlossUV"), SignWhiteMaterial), MetalFrameMaterial,
+				FVector(3.6f, 70.0f, 199.0f));
+		}
+		BathroomDoor->SetOpenYaw(-90.0f);
+		// ABS 민짝이다. 위층 사람이 두드리면 철문이 아니라 속 빈 판 소리가 난다.
+		BathroomDoor->SetHollowLeaf(true);
+		// 욕실 쪽 로제트의 누름 잠금 단추 자리. 문이 닫혔을 때만 누를 수 있다.
+		if (AIGBathroomRefuge* Refuge = World->SpawnActor<AIGBathroomRefuge>(
+				AIGBathroomRefuge::StaticClass(),
+				FTransform(FRotator::ZeroRotator, FVector(200.4f, -108.9f, IGPrologueWorld::FourthFloorZ + 99.0f)),
+				SpawnParameters))
+		{
+			Refuge->Configure(
+				BathroomDoor,
+				FBox(FVector(210.0f, -215.0f, IGPrologueWorld::FourthFloorZ - 10.0f),
+					FVector(410.0f, -65.0f, IGPrologueWorld::FourthFloorZ + 225.0f)),
+				FVector(165.0f, -135.0f, IGPrologueWorld::FourthFloorZ),
+				FVector(245.0f, -135.0f, IGPrologueWorld::FourthFloorZ));
+		}
+	}
+	if (AIGRoomLightSwitch* BathroomSwitch = World->SpawnActor<AIGRoomLightSwitch>(
+		AIGRoomLightSwitch::StaticClass(),
+		FTransform(FRotator(0.0f, 90.0f, 0.0f), FVector(187.5f, -192.0f, IGPrologueWorld::FourthFloorZ + 123)),
+		SpawnParameters))
+	{
+		BathroomSwitch->ConfigureSwitch(
+			TEXT("State.MissingFloor.BathroomLightOn"),
+			NSLOCTEXT("IGRoomLight", "BathroomOn", "욕실 불 켜기"),
+			NSLOCTEXT("IGRoomLight", "BathroomOff", "욕실 불 끄기"),
+			600.0f);
+		BathroomSwitch->BindLight(BathroomLight);
 	}
 
 	// 403호 현관문 안쪽 걸쇠. 손잡이 위, 문틀 쪽 끝에서 8 cm.

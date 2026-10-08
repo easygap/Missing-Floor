@@ -1183,7 +1183,7 @@ void AIGNeighborhoodLifeDirector::UpdateScooters(
 			Runtime.ParkedSeconds += DeltaSeconds;
 			const UStaticMeshComponent* Body = ScooterBodies.IsValidIndex(SlotIndex)
 				? ScooterBodies[SlotIndex].Get() : nullptr;
-			if (Body && Body->IsVisible() && Body->GetStaticMesh() == RiddenScooterMesh
+			if (Body && Body->IsVisible() && Body->GetStaticMesh() == RiddenScooterMesh && !bParkedRiderPresent
 				&& (Runtime.ParkedSeconds > 6.0f
 					|| (Runtime.ParkedSeconds > 2.0f && !Body->WasRecentlyRendered(0.2f))))
 			{
@@ -1686,8 +1686,11 @@ void AIGNeighborhoodLifeDirector::RefreshParkedScooterPresence()
 			[](const FScooterRuntime& Runtime) { return !Runtime.bActive; });
 		if (ParkedSlot != INDEX_NONE)
 		{
+			// 콜을 기다리며 앉아 있는 날은 공동현관 쪽(동쪽)을 보고 세운다. 현관을 나서는 그녀와
+			// 얼굴이 마주친다. 다른 날은 첫 저녁에 골목에서 들어와 선 그대로 서쪽을 본다.
+			const float ApproachX = bParkedRiderPresent ? -90.0f : 90.0f;
 			TArray<FVector> Corners = {
-				FVector(IGNeighborhoodLife::ParkingX + 90.0f, IGNeighborhoodLife::ParkingY, RoadStart.Z),
+				FVector(IGNeighborhoodLife::ParkingX + ApproachX, IGNeighborhoodLife::ParkingY, RoadStart.Z),
 				FVector(IGNeighborhoodLife::ParkingX, IGNeighborhoodLife::ParkingY, RoadStart.Z)};
 			TArray<float> Radii = {0.0f, 0.0f};
 			FScooterRuntime& Runtime = ScooterRuntime[ParkedSlot];
@@ -1702,6 +1705,7 @@ void AIGNeighborhoodLifeDirector::RefreshParkedScooterPresence()
 			Runtime.bEngineCut = true;
 			Runtime.ParkedSeconds = 10.0f;
 			SetScooterVisible(ParkedSlot, true, false);
+			RefreshParkedRider(ParkedSlot, true);
 			ApplyScooterTransform(ParkedSlot, 0.0f);
 			SetScooterBlocking(ParkedSlot, true);
 		}
@@ -1711,6 +1715,77 @@ void AIGNeighborhoodLifeDirector::RefreshParkedScooterPresence()
 		// 그 시간에는 정우가 배달을 나가 있다. 연석은 비어 있다.
 		DeactivateScooter(ParkedSlot);
 	}
+	else if (bShouldBeParked && ParkedSlot != INDEX_NONE && ScooterRuntime[ParkedSlot].bEngineCut)
+	{
+		RefreshParkedRider(ParkedSlot, false);
+	}
+}
+
+void AIGNeighborhoodLifeDirector::RefreshParkedRider(const int32 SlotIndex, const bool bForce)
+{
+	if (!ScooterRuntime.IsValidIndex(SlotIndex) || !ScooterRuntime[SlotIndex].bParked
+		|| !ScooterBodies.IsValidIndex(SlotIndex))
+	{
+		return;
+	}
+	const UStaticMeshComponent* Body = ScooterBodies[SlotIndex];
+	const bool bSeated = Body && Body->GetStaticMesh() == RiddenScooterMesh;
+	if (!Body || !RiddenScooterMesh || bSeated == bParkedRiderPresent
+		|| (!bForce && Body->WasRecentlyRendered(0.3f)))
+	{
+		return;
+	}
+	SetScooterVisible(SlotIndex, true, bParkedRiderPresent);
+	// 시동은 꺼 둔 채 앉아 있다. 기사가 탄 메시라도 불은 켜지 않는다.
+	if (ScooterHeadlights.IsValidIndex(SlotIndex))
+	{
+		ScooterHeadlights[SlotIndex]->SetVisibility(false);
+	}
+	if (ScooterTailLights.IsValidIndex(SlotIndex))
+	{
+		ScooterTailLights[SlotIndex]->SetVisibility(false);
+	}
+}
+
+void AIGNeighborhoodLifeDirector::SetParkedRiderPresent(const bool bPresent)
+{
+	if (bParkedRiderPresent == bPresent)
+	{
+		return;
+	}
+	bParkedRiderPresent = bPresent;
+	const int32 ParkedSlot = ScooterRuntime.IndexOfByPredicate(
+		[](const FScooterRuntime& Runtime) { return Runtime.bParked && Runtime.bEngineCut; });
+	if (ParkedSlot == INDEX_NONE)
+	{
+		return;
+	}
+	// 보이지 않으면 다시 세워 방향까지 맞춘다. 보이는 동안에는 메시만 나중에 바꾼다.
+	const UStaticMeshComponent* Body = ScooterBodies.IsValidIndex(ParkedSlot) ? ScooterBodies[ParkedSlot].Get() : nullptr;
+	if (Body && !Body->WasRecentlyRendered(0.3f))
+	{
+		DeactivateScooter(ParkedSlot);
+		RefreshParkedScooterPresence();
+		return;
+	}
+	RefreshParkedRider(ParkedSlot, false);
+}
+
+bool AIGNeighborhoodLifeDirector::GetSeatedRiderLocation(FVector& OutLocation) const
+{
+	const int32 ParkedSlot = ScooterRuntime.IndexOfByPredicate(
+		[](const FScooterRuntime& Runtime) { return Runtime.bParked && Runtime.bEngineCut; });
+	if (ParkedSlot == INDEX_NONE || !ScooterBodies.IsValidIndex(ParkedSlot))
+	{
+		return false;
+	}
+	const UStaticMeshComponent* Body = ScooterBodies[ParkedSlot];
+	if (!Body || !Body->IsVisible() || Body->GetStaticMesh() != RiddenScooterMesh)
+	{
+		return false;
+	}
+	OutLocation = ScooterRuntime[ParkedSlot].Location;
+	return true;
 }
 
 void AIGNeighborhoodLifeDirector::SetScooterVisible(

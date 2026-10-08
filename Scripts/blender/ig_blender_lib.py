@@ -928,6 +928,50 @@ def _source_materials(ob):
     return [m for m in ob.data.materials if m is not None]
 
 
+def tint_box(ob, lo, hi, hue_deg=0.0, sat_mul=1.0, val_mul=1.0):
+    """원본 재질의 Base Color에서 상자 안만 색상(도)·채도·명도를 바꾼다. 굽기가 이 색을 옮긴다.
+
+    상자는 굽는 순간의 물체 좌표(m)로 준다. refine·rig 스크립트는 굽기 전에 Y를 뒤집으므로
+    Y로 고르는 상자는 뒤집힌 뒤의 부호로 적는다. X와 Z만 쓰면 신경 쓸 일이 없다.
+    같은 물건을 따로 뽑은 생성물의 색을 맞추거나, 시안에 없던 뒷면을 지어낸 색을 고칠 때 쓴다.
+    """
+    for mat in ob.data.materials:
+        if mat is None or not mat.use_nodes:
+            continue
+        tree, nodes, links = _nodes(mat)
+        bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+        if bsdf is None or not bsdf.inputs["Base Color"].is_linked:
+            continue
+        source = bsdf.inputs["Base Color"].links[0].from_socket
+        hsv = nodes.new("ShaderNodeHueSaturation")
+        hsv.inputs["Hue"].default_value = 0.5 + hue_deg / 360.0
+        hsv.inputs["Saturation"].default_value = sat_mul
+        hsv.inputs["Value"].default_value = val_mul
+        links.new(source, hsv.inputs["Color"])
+        geometry = nodes.new("ShaderNodeNewGeometry")
+        split = nodes.new("ShaderNodeSeparateXYZ")
+        links.new(geometry.outputs["Position"], split.inputs["Vector"])
+        inside = None
+        for axis, low, high in zip("XYZ", lo, hi):
+            for edge, operation in ((low, "GREATER_THAN"), (high, "LESS_THAN")):
+                test = nodes.new("ShaderNodeMath")
+                test.operation = operation
+                test.inputs[1].default_value = edge
+                links.new(split.outputs[axis], test.inputs[0])
+                if inside is None:
+                    inside = test
+                    continue
+                both = nodes.new("ShaderNodeMath")
+                both.operation = "MULTIPLY"
+                links.new(inside.outputs[0], both.inputs[0])
+                links.new(test.outputs[0], both.inputs[1])
+                inside = both
+        links.new(inside.outputs[0], hsv.inputs["Fac"])
+        links.new(hsv.outputs["Color"], bsdf.inputs["Base Color"])
+    log(f"  tint box {[round(v, 3) for v in lo]}..{[round(v, 3) for v in hi]} "
+        f"hue {hue_deg:+.1f}deg sat x{sat_mul} val x{val_mul}")
+
+
 def prepare_organic_source(ob, roughness_floor=0.58):
     """살과 천의 원본에서 조각난 면 노멀과 잘못 추정된 금속 반사를 걷어 낸다.
 

@@ -137,6 +137,22 @@ Blender 원본이 없는 메시(스캔 소품, 예전 지오메트리 스크립�
   (`--clip-y-*`, `--shift`, `--squash`), 저밀도 데시메이트(예산), 고밀도→저밀도
   굽기. 털처럼 얇은 조각으로 깨진 표면은 `--voxel-remesh 0.006`으로 녹인다.
   위층 사람처럼 정점색 AO를 읽는 재질은 `--vertex-ao`.
+- 생성 원본(glTF)은 UV 이음매마다 정점이 갈라져 있다. 배달 오토바이는 조각이 4,969개였고,
+  붙이지 않고 줄이면 조각마다 따로 줄어 옷과 차체 전체에 틈과 가시가 생긴다(2026-10-08까지
+  그랬다). `refine_generated.py`는 이제 읽자마자 0.02 mm 안의 정점을 붙인다. UV는 면 모서리마다
+  따로 있어서 원본 텍스처 좌표는 그대로다. 사람이나 차처럼 가까이서 보는 생성물은 여기에
+  `--organic --voxel-remesh 0.006`을 더한다.
+- 같은 물건을 따로 뽑은 생성물은 색이 어긋난다. `--recolor-above z,색상,채도,명도`는 다듬은
+  좌표에서 그 높이 위만 굽기 전에 색을 옮긴다(세워 둔 오토바이 배달통을 탄 쪽 주황에 맞춤).
+  Blender 색상 노드는 선형 값에 걸리므로 sRGB로 잰 차이를 그대로 넣으면 넘치거나 모자란다.
+  선형 공간에서 재고 넣는다. 상자로 고르는 공용 도우미는 `ig.tint_box`다.
+- `rig_walker.py`의 스무딩(기본 2회)은 가는 팔을 원본보다 안으로 줄인다. 팔이 몸통 옆에 붙어 내려오는 인물은
+  팔에서 쏜 굽기 광선이 옆 셔츠를 맞혀 팔에 셔츠색 조각이 묻는다(SK_YudamReflection). 케이지를 늘려도 안 낫는다.
+  그런 인물은 `--smooth-iterations 0`으로 리깅한다. 굽은 아틀라스에서 팔 섬에 다른 색 조각이 섞였는지 본다.
+- 움직임이 단순한 몸은 동작을 굽지 않고 뼈만 달아 게임이 돌린다(`rig_eoduksini.py`, 어둑시니). 동작을 구우면
+  Unreal이 테이크마다 AnimSequence를 만들어서 FBX를 `bake_anim=False`로 내보낸다. 팔과 몸통 사이 틈은 고밀도
+  원본으로 잰다. 줄인 메시는 2 cm 단면에 점이 몇십 개뿐이라 어디서나 틈이 있는 것처럼 나온다. 미리보기
+  `_lean_side/front/back.png`는 게임의 `AIGShadowFigure::PoseSculptedBody`와 같은 계산으로 다 숙인 자세를 찍는다.
 - 축이 헷갈리면 `--probe`(주축·양끝 높이)와 `--views`(정면·측면·위 세 장)로
   본 뒤 정한다. 생성물은 입력 그림에 따라 눕거나 대각선으로 나온다.
   기는 자세는 프로브가 찍는 양끝 높이 중 높은 쪽이 머리다. 그 끝을 +X로 두고
@@ -232,7 +248,10 @@ pwsh -NoProfile -File Scripts\Import-BlenderAssets.ps1 -Only SM_MokHansooFigure
 | SM_GasMeterBox / SM_AcOutdoorUnit / SM_ConvexMirror | 절차 | 골목 샛길 둘의 벽 소품. 거울면은 금속이라 루멘이 비춘다 |
 | SM_TriangleKimbapA~D | 절차 | 편의점 삼각김밥. 김 필름은 `AI/KimbapFilmAlbedo_20260916.png`, 앞뒤 인쇄와 개봉 번호는 `UtilityPrints/Kimbap*.png`를 붙여 굽는다(`build_detail_props.py`) |
 | SM_TobaccoCabinet, SM_WindowBar, SM_HotWaterDispenser, SM_TrashBin | 절차 | 계산대 뒤 담배 진열장(담뱃갑 192), 창가 취식대, 온수기, 2구 쓰레기통 |
-| SM_DeliveryScooterRidden / SM_DeliveryScooter | 생성 | 골목 배달 오토바이. gpt-image 시안 두 장을 TRELLIS.2로 뽑아 `refine_generated.py --yaw 90 --length 180`으로 다듬었다(앞 +X). 달리는 동안은 기사가 탄 메시, 내린 뒤에는 세워 둔 메시다. 충돌은 없고 막힘 상자를 `AIGNeighborhoodLifeDirector`가 둔다 |
+| SM_DeliveryScooterRidden / SM_DeliveryScooter | 생성 | 골목 배달 오토바이. gpt-image 시안 두 장을 TRELLIS.2로 뽑아 `refine_generated.py --yaw 90 --length 180 --organic --voxel-remesh 0.006`으로 다듬었다(앞 +X). 세워 둔 쪽은 `--recolor-above 0.655,12.5,1.05,2.0`으로 배달통 색을 맞췄다. 달리는 동안과 첫째·둘째 낮의 정우는 기사가 탄 메시, 내린 뒤에는 세워 둔 메시다. 충돌은 없고 막힘 상자를 `AIGNeighborhoodLifeDirector`가 둔다 |
+| SK_Neighbor303 | 생성+리깅 | 셋째 낮 계단의 303호. `rig_walker.py --profile resident --height 160 --yaw 90 --cage 0.012 --tint-box=-1.0,-0.11,0.80,1.33,0,0.3,0.05`. 시안에 없던 가방 뒷면을 검게 했고, 등판에서 9 cm 넘게 뒤에 있는 정점(멘 가방)은 빈손 프로필에서 몸통 뼈만 따른다. Idle·Walk·LookBack |
+| SK_Eoduksini | 생성+리깅 | 어둑시니 몸. `rig_eoduksini.py`(키 200 cm, yaw 90, 허리 1.08 m). 뼈 넷(root·spine·arm_l·arm_r)만 있고 동작은 없다. 게임이 UPoseableMeshComponent로 허리를 숙이고 팔을 늘어뜨린다. 허리 위아래 10 cm 띠에서 root와 spine을 섞고, 팔은 어깨에서만 spine과 섞는다. 굽기 전에 점토색을 M_PlasticDark 밝기의 젖은 검정으로 낮춘다 |
+| SM_Note303First / Second / Third / Last | 절차 | 403호 현관문 바깥의 303호 쪽지 넷(`build_notes303.py`). 원점은 문짝 바깥면 가운데 바닥이고 인쇄는 `mirror_print_uv` |
 | SK_ListenerCrawler | 생성+리깅 | 위층 사람의 기는 몸. 위 「리깅된 인물」. Crawl·Listen·Bang·Lunge |
 | SM_ListenerEntityCrawl | 생성 | 위층 사람(정적 폴백). 해부 시트의 옆모습 칸에서 뽑았다(앞모습 3/4 칸은 네 발 짐승처럼 읽혔다). 폰의 앞이 +X라 머리가 +X에 와야 한다. 프로브에서 높은 끝이 이미 +X면 `--yaw 0`, 길이는 `--length 190`. 정점 AO, 석고 재질은 그대로 |
 | SM_AlleyCatRun | 생성 | 골목 고양이. 구운 털 색을 MI로 쓴다 |

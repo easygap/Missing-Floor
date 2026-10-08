@@ -13,6 +13,7 @@ class AIGNeighborhoodLifeDirector;
 class AIGPickupItem;
 class AIGFlashlightPickup;
 class AIGSlidingDoor;
+class AIGStairSensorLights;
 class AIGSwingDoor;
 class AIGZoneTrigger;
 class UAudioComponent;
@@ -95,6 +96,7 @@ public:
 
 	/** 403호 현관문. 그가 문 앞에서 두드리려면 문이 닫혀 있는지 알아야 한다. */
 	AIGSwingDoor* GetHomeDoor() const { return HomeDoor; }
+	AIGNeighborhoodLifeDirector* GetNeighborhoodLifeDirector() const { return NeighborhoodLifeDirector; }
 
 	/** 1층 공동현관. 그 시간에 밀어 본 것을 밖에서 이어 받는다(폰 신호). */
 	AIGSwingDoor* GetBuildingDoor() const { return BuildingDoor; }
@@ -239,6 +241,17 @@ public:
 	UStaticMeshComponent* GetCommonBreakerToggle() const { return CommonBreakerToggle; }
 	void SetCommonInspectionLightsEnabled(bool bEnabled);
 	bool AreCommonInspectionLightsOff() const;
+	bool AreCommonInspectionLightsEnabled() const { return bCommonInspectionLightsEnabled; }
+	/**
+	 * 넷째 밤 관리인의 차단기. 내려가면 건물 안 등이 다 죽는다. 별관과 윗계단 등, 계단
+	 * 센서등, 복도와 로비, 2·3층, 403호의 전등까지다. 비상구 유도등은 축전지라 남고, 달빛과
+	 * 창에 비친 빛도 남는다.
+	 */
+	bool IsMissingFloorAnnexPowered() const { return bMissingFloorAnnexPowered; }
+	/** 검사용. 403호 전등 가운데 지금 그려지는 것이 있는가. */
+	bool IsAnyUnitLightVisibleForTesting() const;
+	/** 계단탑 층 참의 센서등. 어둑시니와 첫째 밤 연출이 켜지고 꺼지는 것을 듣는다. */
+	AIGStairSensorLights* GetStairSensorLights() const { return StairSensorLights; }
 
 	/**
 	 * Release topology for 없는 층 night 3. The path is built from real
@@ -466,6 +479,8 @@ private:
 	void InitializePrologue();
 	bool PositionPlayer();
 	void BuildApartment();
+	/** 403호 현관 옆 욕실. BuildApartment 뒤, 같은 4층 기준 좌표로 짓는다. */
+	void BuildBathroom();
 
 	/** Shows the aging planes the current stage has reached, hides the rest. */
 	void ApplyUnit403AgeStage();
@@ -625,20 +640,23 @@ private:
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> LobbyLightDiscs;
 	UPROPERTY(Transient) TObjectPtr<AIGFlashlightPickup> Flashlight;
 	UPROPERTY(Transient) TObjectPtr<UPointLightComponent> HomeCeilingLight;
+	/** 403호 욕실 천장 등. 욕실 문 옆 스위치가 세기를 정한다. */
+	UPROPERTY(Transient) TObjectPtr<UPointLightComponent> BathroomLight;
 	/**
 	 * 없는 층: 필로티 주차장 거리 쪽에 내려오는 셔터. 계단탑 1층 출입구와
 	 * 연결통로가 셔터 안쪽에 남아 그 시간에도 1층 로비와 관리실까지 걸어갈 수
 	 * 있다. 감추고 충돌을 끈 채 지어 두고, SetTheHourSealed만 내린다.
 	 */
 	UPROPERTY(Transient) TObjectPtr<UStaticMeshComponent> StairCoreNightGate;
-	/** 계단탑 층 참의 등(1~3층)과 2·3층 복도와 집의 등. 그 시간에는 꺼진다. */
-	UPROPERTY(Transient) TArray<TObjectPtr<UPointLightComponent>> StairCoreLights;
-	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> StairCoreLightDiscs;
+	/** 2·3층 복도와 집의 등. 그 시간에는 꺼진다. */
 	UPROPERTY(Transient) TArray<TObjectPtr<UPointLightComponent>> LowerFloorLights;
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> LowerFloorLightDiscs;
-	/** 위 두 묶음의 낮 세기. 밤과 차단기가 0으로 내렸다가 이 값으로 되돌린다. */
-	TArray<float> StairCoreLightIntensities;
+	/** 위 묶음의 낮 세기. 밤과 차단기가 0으로 내렸다가 이 값으로 되돌린다. */
 	TArray<float> LowerFloorLightIntensities;
+	/** 계단탑 1~4층 참의 센서등과 갓. 켜고 끄는 일은 StairSensorLights가 한다. */
+	UPROPERTY(Transient) TArray<TObjectPtr<UPointLightComponent>> StairSensorLightComponents;
+	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> StairSensorLamps;
+	UPROPERTY(Transient) TObjectPtr<AIGStairSensorLights> StairSensorLights;
 	void ApplyServiceLights();
 	/** P1: the fifth meter's dial, which never turns, and its dead breaker. */
 	UPROPERTY(Transient) TObjectPtr<UStaticMeshComponent> FifthMeterDisc;
@@ -719,6 +737,8 @@ private:
 	FTimerHandle LightZoneTimer;
 
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> Unit401GapSegments;
+	/** 303호 문 옆 새벽배송 보냉 가방. 그 시간에만 놓여 있다. */
+	UPROPERTY(Transient) TObjectPtr<UStaticMeshComponent> DawnDeliveryBag;
 	UPROPERTY(Transient) TObjectPtr<class URectLightComponent> Unit401GapLight;
 	FTimerHandle Unit401GapPollTimer;
 	FTimerHandle Unit401GapBeatTimer;
@@ -746,6 +766,12 @@ private:
 	/** Night 4: the three practical lights on the upper stair/roof/annex circuit. */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UPointLightComponent>> MissingFloorAnnexLights;
+	/**
+	 * 403호의 전등. 머리맡 스탠드, 싱크대 아래 등, 천장 등, 욕실 등이다. 넷째 밤 차단기가
+	 * 내려가면 같이 죽는다. 달빛과 창에 비친 빛은 전기가 아니라 여기 넣지 않는다.
+	 */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UPointLightComponent>> UnitPoweredLights;
 	/** 4일 차 밤의 별관 차단기. 층별 조명 구역이 이 값을 거스르지 않는다. */
 	bool bMissingFloorAnnexPowered = true;
 	/** SetRemoteViewActive로 켜 둔 화면 수. 0보다 크면 조명 구역은 모든 층을 켠다. */

@@ -15,6 +15,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	AIGReadableNote*, Note,
 	bool, bOpened);
 
+/** 폰 화면에서 넘겨 보는 글 한 장. 앱 이름 아래 줄, 제목, 본문(마지막 줄은 글쓴이·댓글 수 같은 상태 줄). */
+struct FIGPhonePage
+{
+	FText Subtitle;
+	FText Title;
+	TArray<FText> BodyLines;
+};
+
 /**
  * A piece of paper the player can stop and read: a building-management
  * notice taped to the lift doors, a memo on the fridge, a torn ledger page.
@@ -46,6 +54,10 @@ public:
 
 	/** Uses a dark smartphone notification screen instead of a paper sheet. */
 	void SetPhoneNotificationPresentation();
+
+	/** 폰 화면에서 첫 장(이 쪽지의 제목과 본문) 뒤로 넘겨 볼 글. 바뀌면 읽기 화면을 다시 짠다. */
+	void SetExtraPhonePages(TArray<FIGPhonePage> InPages) { ExtraPhonePages = MoveTemp(InPages); ++PresentationRevision; }
+	const TArray<FIGPhonePage>& GetExtraPhonePages() const { return ExtraPhonePages; }
 
 	/** 현장에 놓인 인쇄 원본을 먼저 보여 주고, 다음 장에서 본문을 읽는다. */
 	void SetReadingArtwork(UTexture2D* Texture) { ReadingArtwork = Texture; ++PresentationRevision; }
@@ -118,6 +130,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<UTexture2D> ReadingArtwork;
 	uint32 PresentationRevision = 0;
+	TArray<FIGPhonePage> ExtraPhonePages;
 	static TWeakObjectPtr<AIGReadableNote> OpenNote;
 
 	bool bOpen = false;

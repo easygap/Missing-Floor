@@ -378,8 +378,13 @@ private:
 	void ArriveAtHomeDoor();
 	void LeaveHomeDoor();
 	void PlayHomeDoorKnock(bool bSingle);
-	/** 철문 녹음 한 타. 3연은 두드리는 동안 0.62초마다 한 타씩 친다. */
-	void PlayHomeDoorSteelHit();
+	/**
+	 * §3.1 닫힌 방화문·욕실 문 앞의 3연. 403호 문처럼 그 문짝을 치고, 소리는 문에서 난다.
+	 * 문짝의 결(철문, 속 빈 ABS, 유리)대로 운다.
+	 */
+	void PlayClosedDoorKnock();
+	/** 문짝 녹음 한 타. 3연은 두드리는 동안 0.62초마다 한 타씩 친다. */
+	void PlayDoorHit();
 
 	// -- locomotion ---------------------------------------------------------
 	/** Sweeps toward Target; returns true on arrival (or when wedged). */
@@ -403,10 +408,10 @@ private:
 	/** 계단 위에서는 몸이 경사를 따라 눕는다. 평지에 내려서면 천천히 편다. */
 	void UpdateStairPitch(float DeltaSeconds);
 	/**
-	 * 4층 계단실 방화문(§4). 닫혀 있으면 그 문을 지나는 길은 막힌다. 문 앞까지 와서
-	 * 두드리고 듣는다 — 403호 현관문과 같은 문법이다.
+	 * 2·3·4층 계단실 방화문(§4). 닫혀 있으면 그 문을 지나는 길은 막힌다. 문 앞까지 와서
+	 * 두드리고 듣는다 — 403호 현관문과 같은 문법이다. 이 걸음을 막는 문을 돌려준다.
 	 */
-	bool LegCrossesClosedFireDoor(const FVector& FromFeet, const FVector& ToFeet);
+	AIGSwingDoor* FindClosedFireDoorOnLeg(const FVector& FromFeet, const FVector& ToFeet);
 	/**
 	 * 닫힌 문(방화문, 관리실 문)에 막혔다. 그는 문을 열지도 부수지도 않는다. 문에 대고
 	 * 세 번 두드리고, 귀를 대고 듣는다. 12초 안에 다시 막히면 듣기만 한다.
@@ -648,11 +653,15 @@ private:
 	bool bCadenceEarsUp = false;
 	/** 닫힌 403호 문 앞에 서 있다. */
 	bool bAtHomeDoor = false;
+	/** 닫힌 방화문이나 욕실 문 앞에 서 있다. 두드리면 그 문짝이 운다. */
+	bool bAtClosedDoor = false;
+	/** 지금 두드리는 문. 문짝의 결을 여기서 읽는다. */
+	TWeakObjectPtr<AIGSwingDoor> KnockDoor;
 	/** 문 앞에서 안쪽 소리에 한 번 더 두드렸다. 한 번뿐이다. */
 	bool bDoorReknocked = false;
 	/** 한 번 더 두드리기까지 남은 시간. 0 이하이면 예약이 없다. */
 	float DoorReknockCountdown = -1.0f;
-	/** 이번 문 노크에서 친 철문 타수. 3이면 남은 타가 없다. */
+	/** 이번 문 노크에서 친 타수. 3이면 남은 타가 없다. */
 	int32 DoorSteelHitsPlayed = 3;
 	/** 문 노크가 나는 자리. 두드리는 동안 그는 움직이지 않는다. */
 	FVector DoorKnockPoint = FVector::ZeroVector;
@@ -739,11 +748,18 @@ private:
 	float SearchBudgetSeconds = 0.0f;
 	/** 수색을 마치고 돌아가는 동안의 경계. 이 시각까지 더 천천히 기고 더 오래 듣는다. */
 	double AlertUntilSeconds = -1000.0;
-	/** 4층 계단실 방화문. 처음 길을 짤 때 찾아 둔다. */
-	TWeakObjectPtr<AIGSwingDoor> StairFireDoor;
+	/** 계단실 방화문 셋. 처음 길을 짤 때 찾아 둔다. */
+	TArray<TWeakObjectPtr<AIGSwingDoor>> StairFireDoors;
 	bool bStairFireDoorResolved = false;
 	/** 이번 걸음이 닫힌 문(403호 현관문 말고)에 막혔다. */
 	bool bBlockedByClosedDoor = false;
+	/**
+	 * 집 안에서 욕실 안 소리를 들었다. 벽을 더듬지 않고 욕실 문 앞으로 가서, 문이
+	 * 닫혀 있으면 두드린다(§4). 열려 있으면 안으로 든다.
+	 */
+	TWeakObjectPtr<class AIGBathroomRefuge> RoomAhead;
+	/** 욕실 문 앞에 닿았다. 닫혀 있으면 두드리고 참, 열려 있으면 안으로 목표를 옮긴다. */
+	bool ArriveAtRoomDoor();
 	/** 막은 문. 두드릴 방향을 잰다. */
 	TWeakObjectPtr<AActor> BlockingDoor;
 	/** 닫힌 문 노크는 12초에 한 번. 그 사이에는 문 앞에서 듣기만 한다. */

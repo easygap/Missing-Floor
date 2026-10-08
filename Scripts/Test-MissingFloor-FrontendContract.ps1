@@ -495,12 +495,13 @@ Assert-ContainsAll $surfaceTextureScript @(
 	'FRONTEND_UI_TEXTURE_NAMES',
 	'"T_TitleBackground_D"'
 ) '타이틀 UI 텍스처 임포트 계약'
-# §9 에필로그의 세 정지 화면도 같은 UI 경로로 들어간다. 월드 아틀라스에
+# §9 에필로그의 네 정지 화면도 같은 UI 경로로 들어간다. 월드 아틀라스에
 # 섞이면 화면 전체를 덮는 그림이 밉맵과 스트리밍을 타게 된다.
 Assert-ContainsAll $surfaceTextureScript @(
 	'"T_EpilogueWorkshop_D"',
 	'"T_EpilogueAutumn_D"',
-	'"T_EpilogueServiceBay_D"'
+	'"T_EpilogueServiceBay_D"',
+	'"T_EpilogueDoorNote_D"'
 ) '에필로그 정지 화면 UI 텍스처 임포트 계약'
 Assert-ContainsAll $prepareAiArtScript @(
 	"Source = 'EpilogueWorkshop_v1'",

@@ -28,11 +28,23 @@
 | `/Game/Photo/Props/*` (9종: old_bed_frame, side_table_01, metal_office_desk, painted_wooden_chair_01, desk_lamp_arm_01, trashbag, cardboard_box_01, plastic_crate_01, utility_box_01) | polyhaven.com (포토그래메트리 스캔) | CC0 1.0 | 2026-07-19 | 원본(glTF, 1K 텍스처) | `Content/SourceArt/PhotoProps/` | 실물 스캔 소품 |
 | `/Game/Meshes/SM_*` (30종: 생활 소품·밸브 손잡이·고양이·위층 사람·M5 공동 잔존물·목한수 근접 대치) | 직접 제작 (UE5 Geometry Script 절차 모델링) | 프로젝트 소유 | 2026-08-05 | 원본 | `Scripts/generate_meshes.py` | 회전체·베벨·불리언·스윕. ImageGen 비율 기준과 실제 치수 계약에 맞춰 절차 메시로 재구성 |
 | `/Game/Meshes/SM_UnitDoorLeaf·WideL, SM_UnitDoorHardware·WideL, SM_UnitDoorFrame·Wide, SM_FireExtinguisherBox, SM_FireExtinguisher, SM_MailboxUnit, SM_CeilingLightRing·Dome, SM_FridgeBody·Door, SM_KitchenBaseRun, SM_DrumWasher, SM_KitchenWallUnits, SM_RangeHood, SM_Microwave, SM_KitchenSink, SM_InductionHob, SM_Wardrobe, SM_WallAirConditioner, SM_TrafficCone, SM_StoreCoolerBank·Door, SM_StoreGondola, SM_StoreCounter, SM_CardTerminal, SM_HotSnackWarmer, SM_ChestFreezer, SM_OpenShowcase, SM_ApartmentWindow, SM_VenetianBlind, SM_VideoIntercom, SM_WallSwitch, SM_ShoeCabinet, SM_VillaWindow, SM_UtilityPole, SM_GasMeterBox, SM_AcOutdoorUnit, SM_ConvexMirror, SM_TriangleKimbapA~D, SM_TobaccoCabinet, SM_WindowBar, SM_HotWaterDispenser, SM_TrashBin` (49종) | 직접 제작 (Blender 5.2 헤드리스 절차 모델링, Cycles 베이크) | 프로젝트 소유 | 2026-09-04 | 원본 | `Content/SourceArt/Blender/<이름>/`, `Scripts/blender/build_*.py` | 실제 치수·베벨·UCX 충돌·구운 D/N/ORM. `Docs/BLENDER_PIPELINE.md` |
-| `/Game/Meshes/SM_DeliveryScooterRidden`, `SM_DeliveryScooter` | 직접 제작 (gpt-image 시안 → TRELLIS.2 생성 → Blender 다듬기·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/DeliveryScooter_20261002.png`, `DeliveryScooterParked_20261007.png`, `Content/SourceArt/Generated/DeliveryScooter*/`, `Content/SourceArt/Blender/<이름>/` | 골목 배달 오토바이. 기사가 탄 채 달리는 모델과 세워 둔 모델을 바꿔 쓴다. 충돌 없음(막힘 상자는 디렉터가 둔다) |
+| `/Game/Meshes/SM_DeliveryScooterRidden`, `SM_DeliveryScooter` | 직접 제작 (gpt-image 시안 → TRELLIS.2 생성 → Blender 다듬기·베이크) | 프로젝트 소유 | 2026-10-07, 2026-10-08 다시 다듬음 | 원본 | `Content/SourceArt/AI/DeliveryScooter_20261002.png`, `DeliveryScooterParked_20261007.png`, `Content/SourceArt/Generated/DeliveryScooter*/`, `Content/SourceArt/Blender/<이름>/` | 골목 배달 오토바이. 기사가 탄 채 달리는 모델과 세워 둔 모델을 바꿔 쓴다. 첫째·둘째 낮에는 202호 정우가 탄 모델로 공동현관 옆 연석에 앉아 있다. 10월 8일에 생성 원본의 UV 이음매를 붙이고 6 mm 복셀 리메시 뒤 다시 줄였고, 세워 둔 쪽 배달통은 탄 쪽 색에 맞췄다. 충돌 없음(막힘 상자는 디렉터가 둔다) |
 | `/Game/Meshes/SM_Elevator{CabSides,CabFront,CabBack,BackPanel,CabCeiling,CabFloor,DoorPanel,LandingFrame,Cop,CctvDome,FullLamp,ButtonLed}`, `/Game/Prototype/Materials/M_ElevatorMirror` | 직접 제작 (gpt-image 시안과 텍스처 → Blender 절차 모델링·베이크, 거울 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Elevator*_2026100{6,7}.png`(+JSON), `Scripts/blender/build_elevator.py`, `Scripts/import_elevator_mirror.py` | 실제로 오르내리는 엘리베이터와 층별 문틀. 거울은 씬 캡처 결과를 보여 주는 언릿 머티리얼이다 |
-| `/Game/Meshes/SK_YudamReflection`, `A_YudamReflection_{Idle,Walk,LookBack}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/AI/YudamFrontReference_20261006.png`(+JSON), `Content/SourceArt/Generated/YudamReflection/` | 엘리베이터 거울에만 그리는 유담. 「만원」에서 거울 속에 늘어나는 사람도 이 모델이다 |
+| `/Game/Meshes/SK_YudamReflection`, `A_YudamReflection_{Idle,Walk,LookBack}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/AI/YudamFrontReference_20261006.png`(+JSON), `Content/SourceArt/Generated/YudamReflection/` | 엘리베이터 거울에만 그리는 유담. 「만원」에서 거울 속에 늘어나는 사람도 이 모델이다. 2026-10-08에 스무딩 없이 다시 리깅해 팔의 셔츠색 조각을 없앴다 |
 | `/Game/Meshes/SK_StairFoldedFigure`, `A_StairFoldedFigure_{Idle,Twitch,Lift}` | 직접 제작 (gpt-image 시안 → TRELLIS.2 → Blender 리깅 `rig_folded.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/AI/StairwellFoldedFigure_20261002.png`(+JSON), `Content/SourceArt/Generated/StairFoldedFigure/` | 밤2 「뒤따르는 발」의 허리 꺾인 작업복 차림 |
 | `/Game/Meshes/SK_MokHansooPatrol`, `A_MokHansooPatrol_{Idle,Walk,Run,Look,Freeze,Grab}` | 직접 제작 (기존 목한수 이미지를 참고로 gpt-image 순찰 차림 정면 → TRELLIS.2 → Blender 리깅 `rig_walker.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/Generated/MokHansooPatrol/source-front.png`(+JSON), `Content/SourceArt/Blender/SK_MokHansooPatrol/` | 밤3 순찰하는 관리인의 걷기·달리기·굳기 |
+| `/Game/Meshes/SM_StairSensorLight` | 직접 제작 (gpt-image 시안 → Blender 절차 모델링·베이크, 발광은 돔에만) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/StairSensorLight{Off,Lit}_20261007.png`(+JSON), `Scripts/blender/build_stair_sensor_light.py` | 계단탑 층 참의 원형 LED 센서등. 씬이 MID의 EmissiveStrength로 켜고 끈다 |
+| `/Game/Meshes/SM_NoticeLightsOutA4` | 직접 제작 (gpt-image 인쇄면 → Blender A4 판·테이프 베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/NoticeLightsOut_20261007.png`(+JSON), `Scripts/blender/build_notice_prints.py` | 1층 엘리베이터 옆 관리실 공지 「복도 소등 안내」. 인쇄 글자와 읽기 문구가 같다 |
+| `/Game/Meshes/SM_StairFireDoorLeaf, SM_FireDoorCloserArm, SM_FireDoorCloserRod, SM_FireDoorPrints, SM_FireDoorWedge, SM_ExitSignLamp` | 직접 제작 (gpt-image 시안·인쇄면 → Blender 절차 모델링·베이크, 고임목 윗면은 시안 사진을 펴서 씀) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/FireDoor{Concept,Sticker,Wedge}_20261007.png`, `ExitSignFace_20261007.png`(+JSON), `Scripts/rectify_concept_faces.py`, `Scripts/blender/build_stair_fire_door.py` | 2·3·4층 계단 목의 방화문, 도어클로저 팔 두 마디, 양면 스티커, 고임목, 피난구 유도등 |
+| `/Game/Meshes/SM_DoorPrints202, SM_Doorbells202, SM_DoorPrints303, SM_DawnDeliveryBag` | 직접 제작 (gpt-image 인쇄면·시안 → Blender 판·초인종·가방 베이크, 가방 앞·옆면은 시안 사진을 펴서 씀) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/{Door202Note,Doorbells202,Door303Sign,DawnDeliveryBag}_20261007.png`(+JSON), `Scripts/rectify_concept_faces.py`, `Scripts/blender/build_neighbor_doors.py` | 202호 쪽지와 무선 초인종 셋, 303호 안내문, 그 시간 303호 문 옆의 새벽배송 보냉 가방. 쪽지·안내문 글자와 읽기 문구가 같다 |
+| `/Game/Meshes/SM_Bathroom{Toilet,Basin,MirrorCabinet,Shower,DoorLeaf,DoorFrame,TowelRail,CornerShelf,VentGrille}`, `SM_FloorDrain` | 직접 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Bathroom{Concept,Toilet,Basin,MirrorCabinet,Shower,Door}_20261007.png`(+JSON), `Scripts/blender/build_bathroom.py` | 403호 욕실의 비품과 문. 문짝 욕실 쪽 로제트에 누름 잠금 단추가 있다 |
+| `/Game/Prototype/Textures/T_Bathroom{WallTile,FloorTile}_{D,N,R,A}`, `/Game/Prototype/Materials/M_BathroomWallTile_{X,Y}`, `M_BathroomFloorTile_XY` | 직접 제작 (gpt-image 타일 → 잘라 1024로 축소, 노멀·거칠기·AO 파생, 월드 투영 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 가공(자르기·축소·맵 파생) | `Content/SourceArt/AI/Bathroom{WallTile,FloorTile}_20261007.png`(+JSON), `Scripts/condition_ai_tiles.py`, `Scripts/generate_ai_pbr_maps.py`, `Scripts/import_bathroom_surfaces.py` | 욕실 벽 흰 유약 타일(한 장 25 cm), 바닥 회색 논슬립 타일(한 장 20 cm) |
+| `/Game/Meshes/SM_RooftopDoorLeaf`, `SM_AnnexDoorLeaf`, `SM_RooftopDoorSign` | 직접 제작 (gpt-image 시안·인쇄면 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/{RooftopDoor,AnnexDoorOutside,RooftopDoorSign}_20261007.png`(+JSON), `Scripts/blender/build_rooftop_doors.py` | 옥상 철문(85 cm)과 5층 철문(88 cm), 옥상 철문 계단 쪽 안내판. 안내판 글자와 시안 글자가 같다 |
+| `/Game/Meshes/SM_DoorBarrelBolt`, `SM_DoorBarrelBoltPin`, `SM_DoorBarrelBoltKeeper` | 직접 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/DoorBarrelBolt_20261007.png`(+JSON), `Scripts/blender/build_rooftop_doors.py` | 5층 철문 안쪽 빗장의 몸통, 미는 막대, 문설주 옆면의 받이쇠 |
+| `/Game/Meshes/SM_Note303{First,Second,Third,Last}` | 직접 제작 (gpt-image 손글씨·인쇄면 → Blender 판·테이프 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Note303{First,Second,Third,Last}_20261007.png`(+JSON), `Scripts/blender/build_notes303.py` | 303호가 403호 현관문 바깥에 붙이는 쪽지 넷. 종이 글자와 읽기 화면 문구가 같다. 마지막 쪽지는 에필로그 「403호 문」 그림을 찍을 때만 문에 붙인다 |
+| `/Game/Meshes/SK_Neighbor303`, `A_Neighbor303_{Idle,Walk,LookBack}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile resident`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/Neighbor303Front_20261008.png`(+JSON), `Content/SourceArt/Generated/Neighbor303/` | 셋째 낮 계단에서 마주치는 303호. 가방 뒷면은 굽기 전에 검게 했다 |
+| `/Game/Meshes/SK_Eoduksini`, `SK_Eoduksini_Skeleton`, `/Game/Prototype/Materials/MI_Eoduksini`, `/Game/Prototype/Textures/T_Eoduksini_{D,N,ORM}` | 직접 제작 (gpt-image 점토 원형 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/EoduksiniClay_20261008.png`(+JSON), `Content/SourceArt/Generated/Eoduksini/` | 어둑시니 몸. 동작 없이 뼈 넷만 있고, 게임이 허리와 팔을 직접 돌린다 |
+| `/Game/UI/Textures/T_EpilogueDoorNote_D` | 직접 제작 (게임 안 렌더 `Run-EpilogueDoorStill.ps1`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/T_EpilogueDoorNote_D.png` | 에필로그 「403호 문」 정지 화면. 마지막 쪽지만 붙은 403호 문이고, 호수 표찰은 들지 않는다 |
 | `/Game/Prototype/Textures/T_StairWetBootprints_M`, `/Game/Prototype/Materials/M_StairWetBootprints` | 직접 제작 (gpt-image 마스크 → 회색조 축소, 데칼 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 가공(회색조·512px·흐림 1.2px) | `Content/SourceArt/AI/StairWetBootprints_20261007.png`(+JSON), `Scripts/import_stair_bootprints.py` | 「뒤따르는 발」이 남기는 젖은 작업화 자국 |
 | `/Game/Meshes/SM_PocketFlashlight`, `SM_ServicePressurePanel` | 직접 제작 (gpt-image 형태 참고·바탕 그림 → Blender 모델링·베이크) | 프로젝트 소유 | 2026-10-02 | 원본 | `Content/SourceArt/AI/PocketFlashlight_20261002.png`, `PlasterPressure_20261002.png`(+JSON), `Scripts/blender/build_pocket_flashlight.py`, `build_service_pressure_panel.py` | 현관 손전등과 들뜬 보수판 |
 | `/Game/Meshes/SM_ListenerEntityCrawl, SM_AlleyCatRun, SM_MokHansooFigure, SM_FinalCavityRemains` | 직접 제작 (기준 시트 한 칸 → ComfyUI 네이티브 TRELLIS.2 형상 생성 → Blender 다듬기) | 프로젝트 소유. TRELLIS.2 가중치 MIT(Microsoft, Comfy-Org 재포장), DINOv3 Meta 제한 허가, BiRefNet MIT | 2026-09-08 | 원본 | `Content/SourceArt/Generated/<이름>/<시도>/generation.json`, `Scripts/generate_3d_comfy.py`, `Scripts/blender/refine_generated.py` | 입력은 우리 기준 시트뿐. Hunyuan3D는 한국 제외 라이선스라 쓰지 않는다 |
@@ -498,3 +510,162 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 권리/참조: 상호·전화번호는 모두 가상이다. 번호는 국번이 0으로 시작해 실제로 걸리지 않는다.
   사람·실제 상표·읽을 수 없는 가짜 글자가 없다
 - 프롬프트 전문: 원본마다 같은 이름의 JSON
+
+## 2026-10-07 2·3층 방화문, 202호와 303호
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/FireDoorConcept_20261007.png`
+    `7CA46A941EB833D52BDBCE14119C20AAB468695DEA8F1D3ED2AEEB8CFBDAD9E4`
+  - `Content/SourceArt/AI/FireDoorSticker_20261007.png`
+    `0515002D66A1E8D74FD1DF70EF1740DD37EF5C91BE6293F9C0B5003B9E9943DC`
+  - `Content/SourceArt/AI/FireDoorWedge_20261007.png`
+    `08BDE9CDF75E0D84F83792605836604ADBC4A2C5097CD332BDFF55D097E3E704`
+  - `Content/SourceArt/AI/ExitSignFace_20261007.png`
+    `F3489CF91B40691FE50DD7FBDD7AEA0D5A94CDCD14A8299FDD6D11BB1CCFA0B7`
+  - `Content/SourceArt/AI/Door202Note_20261007.png`
+    `2E15CC66371DA85DC502386C3560ACB95B3BD60208CAC9412CAC9A84D0BA4BF1`
+  - `Content/SourceArt/AI/Doorbells202_20261007.png`
+    `DE726CFC8039FBC5E6EE279B8D4AE017BE00CB2E3F42D8E4B1FC304F6670E96C`
+  - `Content/SourceArt/AI/Door303Sign_20261007.png`
+    `488C7E3197E81243AD18019A27642853A1DD3A38DE04A2B0A16653556DC5D109`
+  - `Content/SourceArt/AI/DawnDeliveryBag_20261007.png`
+    `C83A333B27F1CF415BCCC474A8F32330B6348205E4A0053EFA674371A1CE3F2B`
+- 파생: 방화문 문짝·클로저 팔·고임목·피난구 유도등은 시안을 보고
+  `Scripts/blender/build_stair_fire_door.py`가 모델링해 굽는다. 고임목 윗면과 보냉 가방 앞·옆면은
+  `Scripts/rectify_concept_faces.py`가 시안 사진의 면을 원근 없이 펴서 `Content/SourceArt/UtilityPrints/`에
+  남긴다(가방 윗면은 옆면 가운데 천을 잘라 쓴다). 스티커·쪽지·안내문·초인종은 인쇄면을 판에 붙여 굽는다
+  (`Scripts/blender/build_neighbor_doors.py`)
+- 런타임: 스티커는 문짝과 같이 돌고, 쪽지·안내문·초인종과 함께 그림자를 끈다. 보냉 가방은 그 시간에만
+  보이고 그때만 충돌이 켜진다. 피난구 유도등은 발광 3으로 늘 켜져 있다
+- 권리/참조: 실제 제품이나 상표를 본뜨지 않았다. 피난구 유도등은 녹색 바탕에 문으로 달려 나가는 사람을
+  그린 흔한 모양이다. 글자는 받은 뒤 한 자씩 확인했다
+- 프롬프트 전문: 원본마다 같은 이름의 JSON
+
+## 2026-10-07 계단 센서등과 복도 소등 안내
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/StairSensorLightOff_20261007.png`
+    `75338D34DEF84471540140454E4A298B1EFC9763B40B81F1690455C66436D95B`
+  - `Content/SourceArt/AI/StairSensorLightLit_20261007.png`
+    `BE659A65BEF193904DC9FC636AA7E7885D6DEDD11EA6585FECD9E5E65EF9A26C`
+  - `Content/SourceArt/AI/NoticeLightsOut_20261007.png`
+    `E2437E9AEE339B70BAF5658041D08999B33EE878485EA211CFA8625D3B3501D9`
+- 파생: 센서등은 시안 두 장을 보고 `Scripts/blender/build_stair_sensor_light.py`가 밑판·확산 돔·
+  감지 렌즈를 모델링해 D/N/ORM/E를 굽는다. 공지는 `Scripts/blender/build_notice_prints.py`가
+  A4 판에 인쇄면을 붙이고 위쪽 테이프 두 장과 함께 1024로 굽는다
+- 런타임: 센서등 넷은 계단탑 층 참 천장에 붙고, 꺼져 있을 때는 등 세기와 돔 발광이 0이다.
+  공지는 그림자를 끄고 읽기 상자로만 판정한다
+- 권리/참조: 실제 제품이나 상표를 본뜨지 않은 일반적인 원형 센서등이다. 공지의 글자는 게임 속
+  관리실이 쓴 가상의 문장이고, 받은 뒤 한 자씩 확인했다
+- 프롬프트 전문: 원본마다 같은 이름의 JSON
+
+## 2026-10-07 403호 욕실
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/BathroomConcept_20261007.png`
+    `35EEFC2A8EEB8064151EE0A3111E301C4CF8FC1ED820F161BEF83AE5D264B69C`
+  - `Content/SourceArt/AI/BathroomWallTile_20261007.png`
+    `EDCE045942F80DDDE1381574127ED2C09104ABF26B038066D9CF5F6167702814`
+  - `Content/SourceArt/AI/BathroomFloorTile_20261007.png`
+    `91949570ACD0E0C764C2AF01C460611F9DF969D32222C184654B329CE8D5E9C6`
+  - `Content/SourceArt/AI/BathroomToilet_20261007.png`
+    `69A991E788B11EEC0EC4B6834FB9A11E1B857788B59518B18169AA706C55BD6B`
+  - `Content/SourceArt/AI/BathroomBasin_20261007.png`
+    `882C762A46CFA3A786CD24840ED366A045F6517BBC26D8149B97C8AA15DA3B27`
+  - `Content/SourceArt/AI/BathroomMirrorCabinet_20261007.png`
+    `C52D9D1D7AAD0077CE1B364AC201E3A9AF21744E5F361A6A86D0684073F0CEA1`
+  - `Content/SourceArt/AI/BathroomShower_20261007.png`
+    `6046B685850A8C6C371C5B1F8532567C94954F0266116809E50EA21898D6298D`
+  - `Content/SourceArt/AI/BathroomDoor_20261007.png`
+    `708CBC755F359256342FD5FFE5BC74AF56B9F9FD4D447F99950BFE5E9B5753A3`
+- 파생: 전경 시안은 배치와 색, 나머지 다섯 장은 비품마다의 형상 기준이다.
+  `Scripts/blender/build_bathroom.py`가 비품 아홉 개와 배수구를 모델링해 D/N/ORM을 굽는다.
+  타일 두 장은 줄눈 칸에 맞춰 잘라 1024로 줄이고(`Content/SourceArt/T_Bathroom{WallTile,FloorTile}_D.png`),
+  `generate_ai_pbr_maps.py`가 노멀·거칠기·AO를 만든다. 이미 칸에 맞춰 잘랐으므로 이음매 찾기는 하지 않는다
+- 런타임: 벽과 바닥은 씬이 월드 투영 재질로 깔아 블록 크기와 상관없이 타일 크기가 같다. 욕실 등은
+  스위치를 켤 때만 켜진다
+- 권리/참조: 실제 제품이나 상표를 본뜨지 않은 흔한 옛 빌라 욕실 비품이다. 글자와 로고가 없다
+- 프롬프트 전문: 원본마다 같은 이름의 JSON
+
+## 2026-10-07 옥상 철문, 5층 철문과 빗장
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/RooftopDoor_20261007.png`
+    `CA09A96515AC87BDDE904D5FF84ABB7BA6F1A654AB8B93E58DFE44BD10551F35`
+  - `Content/SourceArt/AI/AnnexDoorOutside_20261007.png`
+    `BDDA1EB0825B268B1DB0A9ED9FF5EDE8118A748904E774A9E11C63DFD3C18574`
+  - `Content/SourceArt/AI/DoorBarrelBolt_20261007.png`
+    `101F6A3C0F5289D312F6B8998BDA1BD2AD02BF736CB4F518D9C7EC103DA5ED96`
+  - `Content/SourceArt/AI/RooftopDoorSign_20261007.png`
+    `E112F1E3DFB2001BEB27BC207DC882C1F7C0E5781F00E75030B84CBD3B4846C9`
+- 파생: `Scripts/blender/build_rooftop_doors.py`가 시안 셋을 보고 두 문짝과 빗장 세 부품을 모델링해 D/N/ORM을
+  굽는다. 칠은 시안 가운데에서 잰 짙은 회녹색이고, 비 맞는 면의 바랜 칠·빗물 자국·표찰 자국은 그 면에 붙인
+  바깥 칠 재질에만 있다. 안내판은 인쇄면을 판에 붙여 굽는다
+- 런타임: 두 문짝은 AIGSwingDoor 저작 문짝으로 달리고 충돌은 문짝 판 하나다. 안내판은 문짝과 같이 돌며
+  그림자를 끈다. 빗장 몸통과 막대는 문짝에 붙어 돌고, 받이쇠는 씬이 문설주 옆면에 둔다
+- 권리/참조: 실제 제품이나 상표를 본뜨지 않은 흔한 옛 빌라 철문과 빗장이다. 안내판 글자는 받은 뒤 한 자씩
+  확인했다
+- 프롬프트 전문: 원본마다 같은 이름의 JSON
+
+## 2026-10-07 303호 쪽지
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/Note303First_20261007.png`
+    `8903EAA406A7A788AF823DBF7DDD663E63FC0CE41FECF485DD3560B56D82D464`
+  - `Content/SourceArt/AI/Note303Second_20261007.png`
+    `F53D249C2EDBAF340D18C37A0E8CC652B4422A85B3DCD41D107C5B561BDB4D81`
+  - `Content/SourceArt/AI/Note303Third_20261007.png`
+    `FF264700F4CE91729A71135B6174C4DA87AA8DF346BB772E0F4FD115D47CFEF4`
+  - `Content/SourceArt/AI/Note303Last_20261007.png`
+    `196393D257AF76EADDF89CFE2DD8F4F599392DBFEA483636D42897337C92FB09`
+- 파생: `Scripts/blender/build_notes303.py`가 쪽지마다 판을 만들어 앞면에 원본을 그대로 붙이고 투명 테이프를
+  더해 굽는다. 찢은 공책 종이는 원본에서 종이가 시작하는 높이를 열마다 읽어 그 선대로 판을 잘랐다
+- 런타임: 쪽지는 403호 문짝 회전축에 붙은 읽기 쪽지 액터라 문과 같이 돈다. 충돌과 그림자는 없고, 읽기는
+  종이 크기의 상자로 받는다
+- 권리/참조: 실제 사람의 글씨를 본뜨지 않은 손글씨와 장식 없는 인쇄면이다. 글자는 받은 뒤 한 자씩 확인했다
+- 프롬프트 전문: 원본마다 같은 이름의 JSON
+
+## 2026-10-08 계단의 303호
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), ComfyUI 네이티브 TRELLIS.2
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/Neighbor303Front_20261008.png`
+    `2E9B5E80FE85D64D1317F2574CE99A39943B54C70085CE83EC6F7F20E02592D7`
+- 파생: 마스크를 쓴 안과 맨얼굴 안을 같은 차림으로 뽑아 마스크 쪽을 골랐다. TRELLIS.2(1024, 시드 56)로 뽑은
+  형상을 `rig_walker.py --profile resident --height 160 --yaw 90 --cage 0.012`로 다듬어 리깅했다. 시안에 없던
+  가방 뒷면을 생성기가 회색과 남색으로 지어내서 `--tint-box`로 등 뒤 상자만 굽기 전에 검게 했다
+- 런타임: AIGStairNeighbor가 계단 길 위로 옮기며 Idle·Walk를 튼다. 충돌은 플레이어 몸만 막는 캡슐 하나다
+- 권리/참조: 특정 인물을 본뜨지 않은 가상의 30대 간호사다. 옷과 가방에 글자와 로고가 없다
+- 프롬프트 전문: 같은 이름의 JSON
+
+## 2026-10-08 어둑시니 몸
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), ComfyUI 네이티브 TRELLIS.2
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/EoduksiniClay_20261008.png`
+    `9E4CBB89EC3521118D0FA85EB3E1C44F89B3615B21E2179A8299824F0D02006E`
+- 파생: 같은 생김새를 회색 점토 원형과 숯빛 몸 두 안으로 뽑아 형태가 또렷한 점토 쪽을 골랐다. TRELLIS.2(1024,
+  시드 56)로 뽑은 형상을 `rig_eoduksini.py`(키 200 cm, yaw 90, 허리 1.08 m)로 다듬어 뼈 넷을 달았다. 굽기 전에
+  점토색을 M_PlasticDark 밝기의 젖은 검정으로 낮추고 거칠기를 0.32~0.40으로 옮겼다
+- 런타임: AIGShadowFigure가 UPoseableMeshComponent로 띄워 허리 뼈를 숙이고 팔을 늘어뜨린다. 충돌은 없고, 숙인
+  머리가 컬링되지 않게 경계 상자를 2.8배로 잡는다
+- 권리/참조: 한국 민담의 어둑시니를 바탕으로 지은 가상의 존재다. 특정 작품의 괴물을 본뜨지 않았고 글자와 로고가 없다
+- 프롬프트 전문: 같은 이름의 JSON
+
+## 2026-10-08 에필로그 「403호 문」
+
+- 도구/모드: 게임 안 렌더(UE 5.8 에디터 -game, Scalability 3, TSR 100%, 1024×1536). 생성 그림이 아니다
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/T_EpilogueDoorNote_D.png`
+    `114E5E8BC0F11EE2016B6C56D74014D9D336566E96B39215081222B6B1B20057`
+- 파생: `Run-EpilogueDoorStill.ps1`이 낮 장면 검사(`-IGEpilogueDoorStill`)를 띄워 303호 쪽지 셋을 숨기고
+  SM_Note303Last를 문짝에 붙인 뒤, 따로 세운 카메라(가로 화각 50도)로 복도에서 문을 찍는다. HUD·몸·손전등은 뺀다.
+  같은 비례로 LANCZOS 축소만 했다. `Import-EndingStills.ps1`이 UI 텍스처(밉 없음, 스트리밍 안 함)로 반입한다
+- 런타임: 에필로그 HUD가 원본 비례로 판을 그리고 머리글·본문·각주를 얹는다. 월드에 놓이지 않는다
+- 권리/참조: 프로젝트 안의 메시와 텍스처만 찍혔다. 문 위 호수 표찰은 화면 밖이고, 쪽지와 통닭집 자석의 글씨는
+  화면 크기에서 읽히지 않는다

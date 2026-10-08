@@ -53,11 +53,18 @@ AIGFireDoorWedge::AIGFireDoorWedge()
 
 void AIGFireDoorWedge::Configure(
 	AIGSwingDoor* InDoor,
+	UStaticMesh* InWedgeMesh,
 	UStaticMesh* CubeMesh,
 	UMaterialInterface* WoodMaterial)
 {
 	Door = InDoor;
-	if (CubeMesh)
+	if (InWedgeMesh)
+	{
+		// 각목을 비스듬히 잘라 만든 고임목. 원점이 바닥 중심이고 실치수다.
+		WedgeMesh->SetStaticMesh(InWedgeMesh);
+		WedgeMesh->SetCastShadow(false);
+	}
+	else if (CubeMesh)
 	{
 		// 18×7×4 cm 나무토막을 비스듬히 문 밑에 끼웠다.
 		WedgeMesh->SetStaticMesh(CubeMesh);

@@ -127,6 +127,20 @@ TILES: tuple[TileSpec, ...] = (
         "entrance door is supposed to be flat, and the target here is well "
         "under the 10-12 of the weathered surfaces.",
     ),
+    # 403호 욕실. 원본에서 줄눈 가운데부터 줄눈 가운데까지 정수 장을 잘라 왔으니
+    # 가장자리는 이미 이어진다. period 탐지는 타일 면의 잔결(51~64 px)을 주기로 읽고
+    # 줄눈 하나를 지웠다. 이음매는 건드리지 않고 밝기 얼룩만 걷는다.
+    TileSpec(
+        "T_BathroomWallTile",
+        seam="none",
+        note="흰 유약 타일 25 cm, 줄눈 3 mm, 4 x 4장. 유약 면이라 원래 밋밋하다. "
+        "올리지 않는다.",
+    ),
+    TileSpec(
+        "T_BathroomFloorTile",
+        seam="none",
+        note="회색 논슬립 타일 20 cm, 줄눈 4 mm, 5 x 5장.",
+    ),
 )
 
 

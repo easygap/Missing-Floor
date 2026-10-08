@@ -124,6 +124,7 @@ ATLAS_EXCLUSIONS = {
     "T_EpilogueWorkshop_D": "§9 에필로그 정지 화면, 월드에 놓이지 않는다",
     "T_EpilogueAutumn_D": "§9 에필로그 정지 화면, 월드에 놓이지 않는다",
     "T_EpilogueServiceBay_D": "§9 에필로그 정지 화면, 월드에 놓이지 않는다",
+    "T_EpilogueDoorNote_D": "§9 에필로그 정지 화면, 월드에 놓이지 않는다",
     "T_HudDialogueFilm_D": "UI group, no mips, not streamed",
     "T_MissingFloorJournalPaper_D": "UI group, no mips, not streamed",
     "T_AudioCalibrationWall_D": "UI group, no mips, not streamed",

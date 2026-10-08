@@ -10,6 +10,7 @@
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGMissingFloorMercyDirector.h"
+#include "Entity/IGMissingFloorNightFourDirector.h"
 #include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -144,11 +145,18 @@ void AIGNightLoopDirector::RequestExternalCapture(APawn* Player)
 	{
 		return;
 	}
-	// 밤4 가면 대치 중에는 결말 C가 포획을 혼자 맡는다. 다른 괴이가 침대 리셋을
-	// 걸면 타임라인 둘이 부딪친다. 괴이 감독도 그동안은 나오지 않는다.
+	// 밤4 가면 대치 중에는 위층 사람에게 잡힌 것과 똑같이 다룬다(HandlePlayerCaptured).
+	// 괴이 감독은 정전 뒤 망치질 동안에만 나온다(어둑시니, 철문 밖의 부름). 공격성이 3에
+	// 닿았으면 결말 C가 혼자 맡고, 아니면 침대로 돌아간다. 둘을 같이 걸면 타임라인 둘이
+	// 부딪친다.
 	if (const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-		Narrative && Narrative->GetNightIndex() == 4 && Narrative->IsNightFourMaskRunning())
+		Narrative && Narrative->GetNightIndex() == 4 && Narrative->IsNightFourMaskRunning()
+		&& Narrative->GetAggressionTier() >= 3)
 	{
+		for (TActorIterator<AIGMissingFloorNightFourDirector> It(GetWorld()); It; ++It)
+		{
+			It->HandleMaskExternalCapture(Character);
+		}
 		return;
 	}
 	BeginCaptureReset(Character, true);

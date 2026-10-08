@@ -574,10 +574,15 @@ if ($stageSetupBody.Groups['body'].Value -notmatch 'DestroyPartialStage\(\);') {
 # 셋업이 직접 세우는 것과, 셋업이 부르는 헬퍼가 세우는 것을 함께 센다.
 # 증인 다섯은 지금 마지막 실패 경로보다 뒤에 있지만, 그 사이에 실패가 하나
 # 생기면 이름이 살아남아 재시도를 막는다.
-# 셋업이 부르는 스폰 헬퍼는 셋이다. 셋업 본문만 보면 이 열둘을 놓친다. 밤 베드는
-# 액터가 아니라 이름 붙인 컴포넌트라 teardown이 DestroyComponent로 걷는다.
+# 셋업이 부르는 스폰 헬퍼는 다섯이다. 셋업 본문만 보면 이 열셋을 놓친다. 밤 베드는
+# 액터가 아니라 이름 붙인 컴포넌트라 teardown이 DestroyComponent로 걷는다. 403호 문의
+# 303호 쪽지는 배열에 담기므로 teardown이 배열을 돌며 걷고, 정우와 말하는 상자는 이름
+# 붙은 멤버라 아래 규칙대로 비워야 한다.
+$stageHelperNames = @(
+	'SpawnOptionalWitnesses', 'SpawnArrivalInteractables', 'SpawnNightAmbienceBeds',
+	'SpawnDoor403Notes', 'SpawnJeongwooTalk')
 $stageHelperBodies = ''
-foreach ($stageHelperName in @('SpawnOptionalWitnesses', 'SpawnArrivalInteractables', 'SpawnNightAmbienceBeds')) {
+foreach ($stageHelperName in $stageHelperNames) {
 	$stageHelperBody = [regex]::Match(
 		$greyboxStageSource,
 		'void AIGListenerGreyboxDirector::' + $stageHelperName +
@@ -587,7 +592,7 @@ foreach ($stageHelperName in @('SpawnOptionalWitnesses', 'SpawnArrivalInteractab
 	}
 	$stageHelperBodies += $stageHelperBody.Groups['body'].Value
 }
-# 셋을 넘어 더 부르기 시작하면 위 목록으로는 부족해진다.
+# 위 목록에 없는 헬퍼를 부르기 시작하면 감사가 그 안을 못 본다.
 $stageHelperCalls = @(
 	[regex]::Matches(
 		$stageSetupBody.Groups['body'].Value,
@@ -595,7 +600,7 @@ $stageHelperCalls = @(
 		ForEach-Object { $_.Groups['name'].Value } |
 		Sort-Object -Unique)
 foreach ($stageHelper in $stageHelperCalls) {
-	if ($stageHelper -notin @('SpawnOptionalWitnesses', 'SpawnArrivalInteractables', 'SpawnNightAmbienceBeds')) {
+	if ($stageHelper -notin $stageHelperNames) {
 		throw (
 			'The greybox stage setup calls {0}; the teardown audit does not follow it.' -f
 				$stageHelper)
@@ -637,7 +642,7 @@ $tickingActors = Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Source') -R
 # IGMissingFloorFifthDawnDirector는 기본 Tick을 끄고, 재관람 스킵을 누르는
 # 동안과 중도 해제 후 진행률을 되감는 짧은 구간에만 켠다. 완료 또는
 # 되감기 종료 즉시 스스로 비활성화하며 평상시 비용은 발생하지 않는다.
-# IGMissingFloorEpilogueDirector는 같은 이유로 같은 방식이다. 87초 시각표는
+# IGMissingFloorEpilogueDirector는 같은 이유로 같은 방식이다. 99초 시각표는
 # 타이머가 밀고, Tick은 재관람 우회를 누르는 동안과 중도 해제 뒤 진행률을
 # 되감는 구간에만 켜진다. 마지막 카드로 건너뛰거나 되감기가 끝나면 스스로
 # 비활성화한다.
@@ -664,6 +669,21 @@ $reviewedTickingFiles = @(
 	'IGElevatorRideProbe.cpp',
 	# -IGListenerPursuitProbe에서만 생성한다. 위층 사람의 추격과 수색을 재고 종료한다.
 	'IGListenerPursuitProbe.cpp',
+	# -IGStairSensorProbe에서만 생성한다. 계단 센서등과 3층 참의 어둑시니를 겪고 종료한다.
+	'IGStairSensorProbe.cpp',
+	# -IGFireDoorProbe에서만 생성한다. 방화문 셋과 고임목, 문 앞의 위층 사람과 관리인을 보고 종료한다.
+	'IGFireDoorProbe.cpp',
+	# -IGBathroomProbe에서만 생성한다. 403호 욕실에 숨어 위층 사람과 손님을 겪고 종료한다.
+	'IGBathroomProbe.cpp',
+	'IGGuestDoorsProbe.cpp',
+	'IGDayScenesProbe.cpp',
+	# -IGNeighbor303Probe에서만 생성한다. 셋째 낮 계단의 303호를 겪고 종료한다.
+	'IGNeighbor303Probe.cpp',
+	# -IGNightFourHammerProbe에서만 생성한다. 밤4 망치질 사이의 정전과 부름을 겪고 종료한다.
+	'IGNightFourHammerProbe.cpp',
+	'IGEpiloguePreviewProbe.cpp',
+	# 셋째 낮의 303호. 계단을 오르내리거나 서서 말하는 동안에만 켜고, 건물을 나가면 끈다.
+	'IGStairNeighbor.cpp',
 	# 들뜬 보수판. 눌렸다 튀어나오는 1.6초 동안만 켜고 끝나면 끈다.
 	'IGResonantPanel.cpp',
 	# 전용 인자로만 생성한다. 실제 오디오 페이드와 충돌을 순서대로 확인한 뒤 종료한다.

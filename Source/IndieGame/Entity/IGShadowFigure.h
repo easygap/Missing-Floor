@@ -5,14 +5,16 @@
 #include "IGShadowFigure.generated.h"
 
 class UMaterialInterface;
+class UPoseableMeshComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
 
 /**
- * 어둠이 사람 꼴을 한 것. 어둑시니와 문 밖의 손님이 같은 몸을 쓴다.
+ * 어둠이 사람 꼴을 한 것. 어둑시니와 문 밖의 손님이 같은 틀을 쓴다.
  *
- * 기본 도형 몇 개로 지은 윤곽뿐이다. 얼굴도 옷도 없다. 손전등에 비치면 젖은
- * 검정이 빛을 조금 되쏘고, 어둠 속에서는 등 뒤의 희미한 빛을 가리는 것으로만
+ * 처음에는 기본 도형 몇 개로 지은 윤곽뿐이다. 손님은 그 위에 종이를 입고(DressAsPaper),
+ * 어둑시니는 빚어 만든 몸으로 갈아입는다(DressAsEoduksini). 얼굴은 없다. 손전등에 비치면
+ * 젖은 검정이 빛을 조금 되쏘고, 어둠 속에서는 등 뒤의 희미한 빛을 가리는 것으로만
  * 보인다. 크기(Growth 0~1)가 커지면 1.1 m에서 2.9 m까지 자라고 상체가 앞으로
  * 숙어진다. 보이는 동안만 틱이 돈다.
  */
@@ -47,12 +49,22 @@ public:
 	void DressAsPaper();
 	bool IsPaper() const { return bPaper; }
 
+	/**
+	 * 어둑시니의 몸으로 갈아입힌다. 원기둥과 구 대신 빚어 만든 몸(SK_Eoduksini)이 선다.
+	 * 허리는 뼈를 직접 돌려 숙이고, 팔은 숙인 어깨에 매달린 채 늘어져 있다. 몸을 못 읽으면
+	 * 도형 윤곽이 그대로 남는다. 한 번만 입힌다.
+	 */
+	void DressAsEoduksini();
+	bool IsSculpted() const { return SculptedBody != nullptr; }
+
 	float GetGrowth() const { return CurrentGrowth; }
 	/** 가슴 높이. 시선과 손전등이 닿는지 볼 때 쓴다. */
 	FVector GetChestLocation() const;
 
 private:
 	void ApplyPose();
+	/** 빚은 몸의 허리를 숙이고 팔을 늘어뜨린다. 각도는 도 단위다. */
+	void PoseSculptedBody(float LeanDegrees, float TrembleDegrees);
 	UStaticMeshComponent* AddPart(
 		const TCHAR* Name,
 		USceneComponent* Parent,
@@ -77,6 +89,14 @@ private:
 	/** 종이 몸이 입은 낱장들. 런타임에 붙인다. */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UStaticMeshComponent>> Sheets;
+
+	/** 어둑시니의 빚은 몸. DressAsEoduksini가 붙인다. */
+	UPROPERTY(Transient)
+	TObjectPtr<UPoseableMeshComponent> SculptedBody;
+
+	/** 빚은 몸의 쉬는 자세(컴포넌트 공간). 숙일 때마다 여기서부터 돌린다. */
+	FTransform SpineRest;
+	FTransform ArmRest[2];
 
 	FVector TargetLocation = FVector::ZeroVector;
 	float MoveSpeed = 0.0f;

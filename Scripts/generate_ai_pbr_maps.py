@@ -107,6 +107,14 @@ SURFACES = (
     SurfaceSpec(
         "T_MissingFloorSteelStair", 0.68, 0.52, 0.86, 0.62,
         rough_detail=0.14, ao_depth=0.90),
+    # 403호 욕실 벽은 유약 타일이라 번들거리고, 줄눈만 거칠게 파인다. 바닥은 미끄럼
+    # 방지 타일이라 무광이다. 손전등에 벽과 바닥이 다르게 비쳐야 한다.
+    SurfaceSpec(
+        "T_BathroomWallTile", 0.14, 0.06, 0.62, 0.30,
+        rough_detail=0.30, ao_depth=0.70),
+    SurfaceSpec(
+        "T_BathroomFloorTile", 0.74, 0.60, 0.88, 0.40,
+        rough_detail=0.12, ao_depth=0.80),
     # Rooftop urethane membrane. A thick rubbery coat: diffuse, but not as dead
     # as concrete, and the roller laps are a soft thickness change rather than
     # cut relief, so the normal stays gentle.

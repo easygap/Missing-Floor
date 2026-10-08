@@ -564,7 +564,7 @@ void AIGPlayerCharacter::LeaveHidingSpotImmediately()
 bool AIGPlayerCharacter::IsConcealedInHidingSpot() const
 {
 	const AIGHidingSpot* Spot = HidingSpot.Get();
-	return Spot && Spot->IsOccupantConcealed();
+	return (Spot && Spot->IsOccupantConcealed()) || bLockedRoomConcealed;
 }
 
 void AIGPlayerCharacter::SetHidingCameraLift(const float Centimeters)

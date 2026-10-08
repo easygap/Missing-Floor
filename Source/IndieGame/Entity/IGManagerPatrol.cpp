@@ -90,6 +90,10 @@ namespace IGManagerPatrol
 	constexpr float KnockReach = 1500.0f;
 	constexpr float FreezeSeconds = 2.5f;
 	constexpr float StareSeconds = 5.0f;
+	/** 2·3층 방화문을 여는 소리. 조심하지 않는다. 그의 건물이다. */
+	constexpr float FireDoorOpenLoudness = 0.3f;
+	/** 이 높이 위의 방화문이 4층 문이다. 그 문은 열지 않는다. */
+	constexpr float FourthFloorFireDoorZ = 800.0f;
 	constexpr float InvestigateDwellSeconds = 4.0f;
 	constexpr float SearchDwellSeconds = 6.0f;
 	/** 손이 닿는 거리. 발끼리 잰다. */
@@ -1011,20 +1015,70 @@ void AIGManagerPatrol::TickWalking(const float DeltaSeconds, const float Speed)
 	}
 }
 
+void AIGManagerPatrol::ResolveFireDoors() const
+{
+	if (bFireDoorResolved)
+	{
+		return;
+	}
+	bFireDoorResolved = true;
+	for (TActorIterator<AIGFireDoorWedge> It(GetWorld()); It; ++It)
+	{
+		FireDoors.Add(It->GetDoor());
+	}
+}
+
 bool AIGManagerPatrol::IsFireDoorClosed() const
 {
-	if (!bFireDoorResolved)
+	ResolveFireDoors();
+	for (const TWeakObjectPtr<AIGSwingDoor>& Candidate : FireDoors)
 	{
-		AIGManagerPatrol* Self = const_cast<AIGManagerPatrol*>(this);
-		Self->bFireDoorResolved = true;
-		for (TActorIterator<AIGFireDoorWedge> It(GetWorld()); It; ++It)
+		const AIGSwingDoor* Door = Candidate.Get();
+		if (Door && Door->GetActorLocation().Z > IGManagerPatrol::FourthFloorFireDoorZ)
 		{
-			Self->FireDoor = It->GetDoor();
-			break;
+			return !Door->IsOpen();
 		}
 	}
-	const AIGSwingDoor* Door = FireDoor.Get();
-	return Door && !Door->IsOpen();
+	return false;
+}
+
+AIGSwingDoor* AIGManagerPatrol::FindFireDoorAhead(const FVector& From, const FVector& To) const
+{
+	ResolveFireDoors();
+	for (const TWeakObjectPtr<AIGSwingDoor>& Candidate : FireDoors)
+	{
+		AIGSwingDoor* Door = Candidate.Get();
+		if (!Door || (Door->IsOpen() && !Door->IsSwinging()))
+		{
+			continue;
+		}
+		// 문짝은 경첩에서 +Y로 120 cm, 닫히면 경첩과 같은 X 평면이다. 위층 사람과 같은 판정이다.
+		const FVector Hinge = Door->GetActorLocation();
+		if (Hinge.Z > IGManagerPatrol::FourthFloorFireDoorZ
+			|| (FMath::Abs(From.Z - Hinge.Z) > 150.0f && FMath::Abs(To.Z - Hinge.Z) > 150.0f))
+		{
+			continue;
+		}
+		// 문짝이 도는 동안은 문 앞 한 걸음 안에서도 선다. 다 열린 문은 남쪽 벽에 붙어 있다.
+		const float FromSide = From.X - Hinge.X;
+		const float ToSide = To.X - Hinge.X;
+		if (Door->IsSwinging() && FMath::Abs(FromSide) < 60.0f
+			&& From.Y > Hinge.Y - 20.0f && From.Y < Hinge.Y + 140.0f)
+		{
+			return Door;
+		}
+		if (FromSide * ToSide > 0.0f || FMath::IsNearlyEqual(FromSide, ToSide))
+		{
+			continue;
+		}
+		const float Alpha = FromSide / (FromSide - ToSide);
+		const float CrossY = FMath::Lerp(From.Y, To.Y, Alpha);
+		if (CrossY > Hinge.Y - 20.0f && CrossY < Hinge.Y + 140.0f)
+		{
+			return Door;
+		}
+	}
+	return nullptr;
 }
 
 int32 AIGManagerPatrol::GetFourthFloorStandNode() const
@@ -1531,6 +1585,18 @@ void AIGManagerPatrol::HandleListenerKnock(const FVector& Where)
 bool AIGManagerPatrol::StepToward(const FVector& Target, const float Speed, const float DeltaSeconds)
 {
 	const FVector From = GetFeet();
+	// 2·3층 방화문이 닫혀 있으면 연다. 몸에 충돌이 없으니 여기서 막지 않으면 문을 뚫고
+	// 지나간다. 문이 다 열릴 때까지 문 앞에 서서 문 쪽을 본다.
+	if (AIGSwingDoor* Door = FindFireDoorAhead(From, Target))
+	{
+		if (Door->IsFullyClosed())
+		{
+			Door->BeginScriptedSwingWithLoudness(true, IGManagerPatrol::FireDoorOpenLoudness, 1.0f);
+		}
+		const FVector ToDoor = Door->GetComponentsBoundingBox().GetCenter() - From;
+		FaceYaw(ToDoor.Rotation().Yaw, DeltaSeconds);
+		return false;
+	}
 	const FVector Delta = Target - From;
 	const float Distance = Delta.Size();
 	if (Distance <= 2.0f)

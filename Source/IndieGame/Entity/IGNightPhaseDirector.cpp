@@ -154,6 +154,7 @@ void AIGNightPhaseDirector::BeginTheHour(const int32 NightIndex)
 		if (UIGStoryStateSubsystem* Story = Instance->GetSubsystem<UIGStoryStateSubsystem>())
 		{
 			Story->RemoveState(FGameplayTag::RequestGameplayTag(TEXT("State.MissingFloor.HomeLightOn"), false));
+			Story->RemoveState(FGameplayTag::RequestGameplayTag(TEXT("State.MissingFloor.BathroomLightOn"), false));
 		}
 	}
 

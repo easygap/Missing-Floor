@@ -41,6 +41,7 @@
 | 에필로그 1 공방 (§9) | `EpilogueWorkshop_v1.png` | `T_EpilogueWorkshop_D` + 런타임 한글 | Keep + runtime UI | 엔딩 A 17.6~45초 정지 화면 | 손과 현만, 얼굴·상체 0, 구운 글자 0, 원본 3:2 유지 |
 | 에필로그 2 가을 (§9) | `EpilogueAutumn_v1.png` | `T_EpilogueAutumn_D` + 런타임 한글 | Keep + runtime UI | 엔딩 A 45~61초 정지 화면 | 간판·상호 0, 401호 창턱 라디오 1개, 원본 2:3 유지 |
 | 마지막 신 서비스 베이 (§9) | `EpilogueServiceBay_v1.png` | `T_EpilogueServiceBay_D` + 런타임 한글 | Keep + runtime UI | 엔딩 B 17.6~45초 정지 화면 | 사람·유해·카트 0, 방수포 자국과 캐스터 자국만, 원본 3:2 유지 |
+| 에필로그 403호 문 (§9) | 게임 안 렌더 `Run-EpilogueDoorStill.ps1` | `T_EpilogueDoorNote_D` + 런타임 한글 | Keep + runtime UI | 두 엔딩 보도 뒤 12초 정지 화면(A 75~87초, B 59~71초) | 303호 쪽지 셋 없이 마지막 쪽지 한 장, 문 위 호수 표찰 0, 쪽지 글씨는 화면 크기에서 판독 불가, 원본 2:3 유지 |
 
 ## 2026-09-08 생성 메시 갱신
 

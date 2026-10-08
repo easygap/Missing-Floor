@@ -56,6 +56,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Indie Game|Neighborhood")
 	void PrimeOutdoorSequence();
 
+	/**
+	 * 첫째·둘째 낮, 정우가 연석에 세운 오토바이에 앉아 콜을 기다린다. 그녀가 보지 않을 때
+	 * 앉고 일어난다(기사가 탄 메시와 빈 메시를 바꿔 끼운다). 시동은 꺼져 있어 불은 없다.
+	 */
+	void SetParkedRiderPresent(bool bPresent);
+	/** 정우가 오토바이에 앉아 있으면 그 오토바이 차체 중심(바닥)을 준다. */
+	bool GetSeatedRiderLocation(FVector& OutLocation) const;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -188,6 +196,8 @@ private:
 	void ApplyScooterTransform(int32 SlotIndex, float DeltaSeconds);
 	void ParkScooter(int32 SlotIndex);
 	void RefreshParkedScooterPresence();
+	/** 세워 둔 오토바이에 정우를 앉히거나 내린다. 보이는 동안에는 바꾸지 않는다(bForce 제외). */
+	void RefreshParkedRider(int32 SlotIndex, bool bForce);
 	void SetScooterVisible(int32 SlotIndex, bool bVisible, bool bWithRider);
 	void SetScooterBlocking(int32 SlotIndex, bool bBlocking);
 
@@ -316,6 +326,7 @@ private:
 	float GustPeakStrength = 0.0f;
 	bool bPoolsInitialized = false;
 	bool bOutdoorSequencePrimed = false;
+	bool bParkedRiderPresent = false;
 	bool bNearMissArmed = false;
 	/** 이번 실행에서 첫 외출의 오토바이가 지나갔다. 밤 전에는 서사에 남기지 않는다. */
 	bool bNearMissPlayed = false;

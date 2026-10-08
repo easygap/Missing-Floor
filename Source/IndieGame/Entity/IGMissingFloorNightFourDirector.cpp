@@ -18,9 +18,11 @@
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
 #include "Entity/IGMissingFloorMercyDirector.h"
+#include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "Entity/IGNightLoopDirector.h"
 #include "Entity/IGNightPhaseDirector.h"
+#include "Entity/IGNightThreatDirector.h"
 #include "Environment/IGDustSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -138,6 +140,14 @@ namespace IGNightFour
 
 	/** 4타에 401호가 답하기까지. 망치의 1.1초 꼬리 뒤, 알아듣고 손을 드는 시간. */
 	constexpr float Unit401ReplyDelaySeconds = 1.25f;
+	/**
+	 * 벽이 열리기 직전(§2.3 넷째 밤). 4타에서 401호의 대답이 걷힌 뒤 5층 철문 밖에서 부른다.
+	 * 첫 말은 노크 2.4초 뒤이고, 벽 안의 둘, 쉬고, 하나는 그 말이 다 읽힐 무렵 온다. 그때까지
+	 * 손이 저려 망치를 못 든다. 부름이 오지 못했으면 벽만 조금 뒤에 답한다.
+	 */
+	constexpr float HammerCallDelaySeconds = 3.6f;
+	constexpr float WallAnswerAfterCallSeconds = 4.8f;
+	constexpr float WallAnswerWithoutCallSeconds = 1.4f;
 
 	/** 목한수의 보폭. 뒷걸음이라 좁다. 첫 발은 몸이 뒤로 빠지자마자 나온다. */
 	constexpr float MokStepStride = 48.0f;
@@ -1192,6 +1202,13 @@ void AIGMissingFloorNightFourDirector::ResetFinaleTimers()
 	GetWorldTimerManager().ClearTimer(PowerCutTimer);
 	GetWorldTimerManager().ClearTimer(PowerCutStepTimer);
 	GetWorldTimerManager().ClearTimer(Unit401ReplyTimer);
+	GetWorldTimerManager().ClearTimer(HammerCallTimer);
+	GetWorldTimerManager().ClearTimer(WallAnswerTimer);
+	for (FTimerHandle& HitTimer : WallAnswerHitTimers)
+	{
+		GetWorldTimerManager().ClearTimer(HitTimer);
+	}
+	bHammerHeldForCall = false;
 	GetWorldTimerManager().ClearTimer(RecordingLiftTimer);
 	// 「오빠다.」 뒤 3초. 그 사이 05:30이 오면 막간은 낮에 시작하면 안 된다.
 	GetWorldTimerManager().ClearTimer(InterludeTimer);
@@ -2710,6 +2727,19 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 				}),
 				IGNightFour::Unit401ReplyDelaySeconds,
 				false);
+			// 벽이 열리기 직전, 5층 철문 밖에서 누가 부른다. 손이 저려 잠깐 못 친다. 그 사이
+			// 부름이 오고 벽 안에서 둘, 쉬고, 하나가 오면 다시 든다. 대답할 쪽은 벽이다.
+			// 프로브와 밤 캡처는 다섯 번을 곧장 친다.
+			if (!IGNightFour::IsImmediateFinaleRun())
+			{
+				bHammerHeldForCall = true;
+				GetWorldTimerManager().SetTimer(
+					HammerCallTimer,
+					this,
+					&AIGMissingFloorNightFourDirector::BeginHammerCallAtDoor,
+					IGNightFour::HammerCallDelaySeconds,
+					false);
+			}
 		}
 	}
 
@@ -2740,6 +2770,47 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 				IGNightFour::WallCollapseDelaySeconds,
 				false);
 		}
+	}
+	RefreshPresentation();
+}
+
+void AIGMissingFloorNightFourDirector::BeginHammerCallAtDoor()
+{
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative || !bHourCurrentlyActive || bFailureEndingActive || bWallOpeningPending
+		|| Narrative->IsNightFourWallOpened())
+	{
+		bHammerHeldForCall = false;
+		RefreshPresentation();
+		return;
+	}
+	bool bCalled = false;
+	for (TActorIterator<AIGNightThreatDirector> It(GetWorld()); It; ++It)
+	{
+		bCalled |= It->BeginHammerCall();
+	}
+	GetWorldTimerManager().SetTimer(
+		WallAnswerTimer,
+		this,
+		&AIGMissingFloorNightFourDirector::PlayWallAnswerBetweenStrikes,
+		bCalled ? IGNightFour::WallAnswerAfterCallSeconds : IGNightFour::WallAnswerWithoutCallSeconds,
+		false);
+}
+
+void AIGMissingFloorNightFourDirector::PlayWallAnswerBetweenStrikes()
+{
+	bHammerHeldForCall = false;
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (Narrative && bHourCurrentlyActive && !bFailureEndingActive && !bWallOpeningPending
+		&& !Narrative->IsNightFourWallOpened())
+	{
+		AIGMissingFloorNightThreeDirector::PlayWallAnswerKnocks(this, WallAnswerHitTimers);
+		AIGHorrorHUD::PushAudioCaptionAt(
+			this,
+			NSLOCTEXT("IGMissingFloor", "NightFourWallAnswerCaption", "벽 안에서 둘, 쉬고, 하나"),
+			2.6f,
+			AIGMissingFloorNightThreeDirector::GetWallAnswerLocation());
+		UE_LOG(LogTemp, Display, TEXT("NIGHT4_WALL_ANSWER between strikes"));
 	}
 	RefreshPresentation();
 }
@@ -3888,7 +3959,8 @@ void AIGMissingFloorNightFourDirector::RefreshPresentation()
 		&& Narrative->IsFinalChoiceUnlocked()
 		&& Narrative->IsNightFourMaskRunning()
 		&& !Narrative->IsNightFourWallOpened()
-		&& !bWallOpeningPending;
+		&& !bWallOpeningPending
+		&& !bHammerHeldForCall;
 	WallBreakTarget->SetActorHiddenInGame(!bCanBreak);
 	WallBreakTarget->SetInteractionEnabled(bCanBreak);
 

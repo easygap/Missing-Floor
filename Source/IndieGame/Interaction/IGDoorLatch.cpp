@@ -6,12 +6,6 @@
 #include "Interaction/IGSwingDoor.h"
 #include "Materials/MaterialInterface.h"
 
-namespace IGDoorLatch
-{
-	// 걸면 쇠막대가 문틀 쪽으로 이만큼 밀려 나간다.
-	constexpr float BoltTravelCm = 4.5f;
-}
-
 AIGDoorLatch::AIGDoorLatch()
 {
 	LatchRoot = CreateDefaultSubobject<USceneComponent>(TEXT("LatchRoot"));
@@ -37,7 +31,7 @@ AIGDoorLatch::AIGDoorLatch()
 	Bolt->SetCastShadow(false);
 }
 
-void AIGDoorLatch::Configure(AIGSwingDoor* InDoor, UStaticMesh* CubeMesh, UMaterialInterface* Material)
+void AIGDoorLatch::BindDoor(AIGSwingDoor* InDoor)
 {
 	if (AIGSwingDoor* Previous = Door.Get())
 	{
@@ -50,6 +44,11 @@ void AIGDoorLatch::Configure(AIGSwingDoor* InDoor, UStaticMesh* CubeMesh, UMater
 		AttachToComponent(InDoor->GetDoorPivot(), FAttachmentTransformRules::KeepWorldTransform);
 		InDoor->OnLatchChanged.AddUObject(this, &AIGDoorLatch::RefreshBoltPose);
 	}
+}
+
+void AIGDoorLatch::Configure(AIGSwingDoor* InDoor, UStaticMesh* CubeMesh, UMaterialInterface* Material)
+{
+	BindDoor(InDoor);
 	if (CubeMesh)
 	{
 		// 받침판 12×1×5 cm, 쇠막대 9×1.4×1.4 cm. 기본 큐브는 100 cm다.
@@ -66,6 +65,32 @@ void AIGDoorLatch::Configure(AIGSwingDoor* InDoor, UStaticMesh* CubeMesh, UMater
 	RefreshBoltPose();
 }
 
+void AIGDoorLatch::ConfigureAuthored(
+	AIGSwingDoor* InDoor,
+	UStaticMesh* HousingMesh,
+	UStaticMesh* PinMesh,
+	const float InTravelCm,
+	const FText& InLockPrompt,
+	const FText& InUnlockPrompt)
+{
+	BindDoor(InDoor);
+	BoltTravelCm = InTravelCm;
+	BoltRestOffset = FVector::ZeroVector;
+	LockPrompt = InLockPrompt;
+	UnlockPrompt = InUnlockPrompt;
+	// 몸통 15 x 4.4 cm가 문 면에서 2 cm 솟는다. 초점 상자도 그만하게 둔다.
+	FocusBox->SetBoxExtent(FVector(8.0f, 1.6f, 3.0f));
+	FocusBox->SetRelativeLocation(FVector(-1.5f, 1.4f, 0.0f));
+	for (UStaticMeshComponent* Part : {Plate.Get(), Bolt.Get()})
+	{
+		Part->EmptyOverrideMaterials();
+		Part->SetRelativeScale3D(FVector::OneVector);
+	}
+	Plate->SetStaticMesh(HousingMesh);
+	Bolt->SetStaticMesh(PinMesh);
+	RefreshBoltPose();
+}
+
 bool AIGDoorLatch::CanInteract_Implementation(AActor* Interactor) const
 {
 	const AIGSwingDoor* LatchedDoor = Door.Get();
@@ -77,9 +102,11 @@ bool AIGDoorLatch::CanInteract_Implementation(AActor* Interactor) const
 FText AIGDoorLatch::GetInteractionPrompt_Implementation(AActor* Interactor) const
 {
 	const AIGSwingDoor* LatchedDoor = Door.Get();
-	return LatchedDoor && LatchedDoor->IsLatched()
-		? NSLOCTEXT("IGMissingFloor", "DoorLatchOpenPrompt", "걸쇠 풀기")
-		: NSLOCTEXT("IGMissingFloor", "DoorLatchClosePrompt", "걸쇠 걸기");
+	if (LatchedDoor && LatchedDoor->IsLatched())
+	{
+		return UnlockPrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "DoorLatchOpenPrompt", "걸쇠 풀기") : UnlockPrompt;
+	}
+	return LockPrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "DoorLatchClosePrompt", "걸쇠 걸기") : LockPrompt;
 }
 
 void AIGDoorLatch::CompleteInteraction_Implementation(const FIGInteractionContext& Context)
@@ -107,5 +134,5 @@ void AIGDoorLatch::RefreshBoltPose()
 	// 액터의 +X가 문틀 쪽이다. 걸면 막대가 받침 밖으로 밀려 나간다.
 	const AIGSwingDoor* LatchedDoor = Door.Get();
 	const bool bLatched = LatchedDoor && LatchedDoor->IsLatched();
-	Bolt->SetRelativeLocation(FVector(bLatched ? IGDoorLatch::BoltTravelCm : 0.0f, -0.9f, 0.0f));
+	Bolt->SetRelativeLocation(BoltRestOffset + FVector(bLatched ? BoltTravelCm : 0.0f, 0.0f, 0.0f));
 }

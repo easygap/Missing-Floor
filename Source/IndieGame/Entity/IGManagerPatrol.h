@@ -148,6 +148,13 @@ private:
 	void PlayBodyAnim(UAnimSequence* Sequence, bool bLoop, float Rate);
 	/** 4층 계단실 방화문. 닫혀 있으면 그 문을 열고 복도를 비추지 않는다. 문 앞 참에서 선다. */
 	bool IsFireDoorClosed() const;
+	/** 계단실 방화문 셋을 처음 한 번 모은다. */
+	void ResolveFireDoors() const;
+	/**
+	 * 이 걸음이 지나는 2·3층 방화문 가운데 닫혀 있거나 아직 도는 문. 그는 그 문을 열고
+	 * 다 열릴 때까지 문 앞에 선다. 4층 문은 열지 않는다(GetFourthFloorStandNode).
+	 */
+	AIGSwingDoor* FindFireDoorAhead(const FVector& From, const FVector& To) const;
 	/** 4층에서 서는 자리. 방화문이 닫혀 있으면 문 안쪽 참이다. */
 	int32 GetFourthFloorStandNode() const;
 	/** 놓친 자리 둘레에서 들러 볼 점들. 같은 층의 방과 복도 끝이다. */
@@ -202,8 +209,9 @@ private:
 	TObjectPtr<UAnimSequence> GrabAnim;
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> ActiveAnim;
-	TWeakObjectPtr<AIGSwingDoor> FireDoor;
-	bool bFireDoorResolved = false;
+	/** 2·3·4층 계단실 방화문. */
+	mutable TArray<TWeakObjectPtr<AIGSwingDoor>> FireDoors;
+	mutable bool bFireDoorResolved = false;
 	/** 수색에서 들를 점과, 지금 몇 번째인가. */
 	TArray<int32> SearchStops;
 	int32 SearchStopCursor = 0;

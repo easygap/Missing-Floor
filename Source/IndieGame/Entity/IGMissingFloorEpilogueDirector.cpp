@@ -43,8 +43,9 @@ namespace IGEpilogue
 		21.20f,  // 6 유담이 조율 렌치를 잡는다 (정음까지 약 21초)
 		45.00f,  // 7 에필로그 2 — 가을의 달빛빌라
 		61.00f,  // 8 뉴스 자막
-		75.00f,  // 9 마지막 카드
-		87.00f,  // 10 끝
+		75.00f,  // 9 403호 문의 마지막 쪽지
+		87.00f,  // 10 마지막 카드
+		99.00f,  // 11 끝
 	};
 
 	constexpr float EndingBTimes[] =
@@ -59,9 +60,28 @@ namespace IGEpilogue
 		29.60f,  // 7 5층 벽에서 둘, 쉬고, 하나
 		36.20f,  // 8 난간 두 번
 		45.00f,  // 9 뉴스 자막
-		59.00f,  // 10 마지막 카드
-		71.00f,  // 11 끝
+		59.00f,  // 10 403호 문의 마지막 쪽지
+		71.00f,  // 11 마지막 카드
+		83.00f,  // 12 끝
 	};
+
+	/**
+	 * 403호 문. 두 엔딩 모두 보도 뒤, 마지막 카드 앞에 온다. 303호는 쪽지로만
+	 * 말해 온 사람이라 마지막 말도 쪽지다. 그날 새벽 그녀는 올라오는 대신 119를
+	 * 눌렀고, 신호가 돌아온 05:30에 그 전화가 이어져 구급대가 바로 왔다(§9).
+	 */
+	FText DoorNoteHeading()
+	{
+		return NSLOCTEXT("IGMissingFloor", "EpilogueDoorNoteHeading", "403호 문");
+	}
+
+	FText DoorNoteFootnote()
+	{
+		return NSLOCTEXT(
+			"IGMissingFloor",
+			"EpilogueDoorNoteFootnote",
+			"그날 새벽 망치 소리에 303호는 올라오는 대신 119를 눌렀다");
+	}
 
 	/** 몽타주 네 소리는 방 안이 아니라 기억 속이라 거리를 두지 않는다. */
 	constexpr float MontageInnerRadius = 4000.0f;
@@ -307,7 +327,7 @@ bool AIGMissingFloorEpilogueDirector::StartEpilogue(
 	StartWorldSeconds = GetWorld()->GetTimeSeconds();
 	if (!bReplaySkipAvailable)
 	{
-		// §6. 처음 보는 결말도 10초가 지나면 E를 길게 눌러 넘길 수 있다. 결말을
+		// §6. 처음 보는 결말도 10초가 지나면 Tab(패드 Y)을 길게 눌러 넘길 수 있다. 결말을
 		// 끝까지 보게 하는 것은 연출의 힘이어야지 잠긴 입력이어서는 안 된다.
 		GetWorldTimerManager().SetTimer(
 			FirstViewSkipTimer,
@@ -377,7 +397,7 @@ void AIGMissingFloorEpilogueDirector::ScheduleNextCue()
 	}
 
 	// 막간과 같은 규칙이다. 각 큐를 앞 큐가 아니라 시작 시각에 맞춰 예약해야
-	// 한 프레임의 지연이 87초 동안 쌓이지 않는다.
+	// 한 프레임의 지연이 99초 동안 쌓이지 않는다.
 	const float CueTime = bEndingA
 		? IGEpilogue::EndingATimes[NextCueIndex]
 		: IGEpilogue::EndingBTimes[NextCueIndex];
@@ -618,6 +638,14 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 			return;
 
 		case 9:
+			PresentScene(
+				EIGMissingFloorEpilogueScene::DoorNote,
+				IGEpilogue::DoorNoteHeading(),
+				BuildDoorNoteLines(),
+				IGEpilogue::DoorNoteFootnote());
+			return;
+
+		case 10:
 			StopBeds();
 			PresentScene(
 				EIGMissingFloorEpilogueScene::Card,
@@ -629,7 +657,7 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 				FText::GetEmpty());
 			return;
 
-		case 10:
+		case 11:
 			FinishEpilogue();
 			return;
 
@@ -725,6 +753,14 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 		return;
 
 	case 10:
+		PresentScene(
+			EIGMissingFloorEpilogueScene::DoorNote,
+			IGEpilogue::DoorNoteHeading(),
+			BuildDoorNoteLines(),
+			IGEpilogue::DoorNoteFootnote());
+		return;
+
+	case 11:
 		StopBeds();
 		PresentScene(
 			EIGMissingFloorEpilogueScene::Card,
@@ -736,7 +772,7 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 			FText::GetEmpty());
 		return;
 
-	case 11:
+	case 12:
 		FinishEpilogue();
 		return;
 
@@ -850,6 +886,21 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildServiceBayLines() const
 		"IGMissingFloor",
 		"EpilogueServiceBay4",
 		"방을 빼고 403호 열쇠를 돌려줬다."));
+	return Lines;
+}
+
+TArray<FText> AIGMissingFloorEpilogueDirector::BuildDoorNoteLines() const
+{
+	TArray<FText> Lines;
+	// 화난 쪽지 셋은 떼어졌다. 그림 속 쪽지 글씨는 읽히지 않는 거리라 말은 여기서 한다.
+	Lines.Add(NSLOCTEXT(
+		"IGMissingFloor",
+		"EpilogueDoorNote1",
+		"붙어 있던 쪽지는 다 떼어지고, 하늘색 쪽지 한 장이 새로 붙어 있다."));
+	Lines.Add(NSLOCTEXT(
+		"IGMissingFloor",
+		"EpilogueDoorNote2",
+		"그동안 시끄럽다고만 해서 죄송합니다. 303호"));
 	return Lines;
 }
 

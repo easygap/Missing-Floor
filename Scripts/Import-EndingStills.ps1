@@ -12,7 +12,7 @@ if (-not (Test-Path -LiteralPath $projectPath)) {
 }
 $source = Join-Path $importRoot 'Content/SourceArt'
 New-Item -ItemType Directory -Force -Path $source | Out-Null
-$names = @('T_TitleBackground_D', 'T_EpilogueWorkshop_D', 'T_EpilogueAutumn_D', 'T_EpilogueServiceBay_D')
+$names = @('T_TitleBackground_D', 'T_EpilogueWorkshop_D', 'T_EpilogueAutumn_D', 'T_EpilogueServiceBay_D', 'T_EpilogueDoorNote_D')
 foreach ($name in $names) {
 	Copy-Item -LiteralPath (Join-Path $projectRoot "Content/SourceArt/$name.png") -Destination $source -Force
 }
@@ -23,7 +23,7 @@ $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $env:IG_FRONTEND_UI_ONLY = '1'
 try {
 	& $editor $projectPath -unattended -nullrhi -nosound -nosplash -RenderOffscreen "-abslog=$logPath" "-ExecutePythonScript=$scriptPath" | Out-Null
-	if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'Imported 4 textures')) {
+	if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'Imported 5 textures')) {
 		throw "엔딩 이미지 반입에 실패했습니다: $logPath"
 	}
 } finally { Remove-Item Env:IG_FRONTEND_UI_ONLY -ErrorAction SilentlyContinue }
@@ -32,4 +32,4 @@ New-Item -ItemType Directory -Force -Path $destination | Out-Null
 foreach ($name in $names) {
 	Copy-Item -LiteralPath (Join-Path $importRoot "Content/UI/Textures/$name.uasset") -Destination $destination -Force
 }
-Write-Host 'ENDING_STILLS_IMPORT PASS assets=4'
+Write-Host 'ENDING_STILLS_IMPORT PASS assets=5'

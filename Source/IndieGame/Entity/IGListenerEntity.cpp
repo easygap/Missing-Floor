@@ -16,6 +16,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Environment/IGDustSubsystem.h"
+#include "Interaction/IGBathroomRefuge.h"
 #include "Interaction/IGFireDoorWedge.h"
 #include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGSwingDoor.h"
@@ -108,6 +109,17 @@ namespace IGListener
 	constexpr float DoorSteelPitches[DoorSteelHitCount] = {0.84f, 0.80f, 0.86f};
 	/** 합성 3연과 같은 간격. */
 	constexpr float DoorSteelSpacingSeconds = 0.62f;
+	/**
+	 * 욕실 ABS 문짝. 그의 손이 내는 나무 타격(석고 노크와 같은 녹음)을 높여 속 빈 판으로
+	 * 낸다. 철문보다 가볍고 짧게 운다.
+	 */
+	const TCHAR* const HollowDoorSamples[DoorSteelHitCount] = {
+		TEXT("Knock_Plaster_0"), TEXT("Knock_Plaster_1"), TEXT("Knock_Plaster_2")};
+	constexpr float HollowDoorPitches[DoorSteelHitCount] = {1.16f, 1.12f, 1.18f};
+	constexpr float HollowDoorVolume = 0.86f;
+	/** 공동현관 유리문. 철문 녹음을 높이고 줄여 알루미늄 틀과 유리가 떨리는 소리로 쓴다. */
+	constexpr float GlassDoorPitchScale = 1.38f;
+	constexpr float GlassDoorVolumeScale = 0.62f;
 	/**
 	 * 문 앞 복도에서 문 노크에 숨이 걸리는 거리. 두어 칸이다. 집 안에서는 거리와
 	 * 상관없이 걸린다. 순찰 노크에는 놀람이 없다 — 이 노크가 무서운 것은 그녀의
@@ -369,6 +381,7 @@ void AIGListenerEntity::EnterState(const EIGListenerState NewState)
 		bKnockingUp = false;
 		bCadenceEarsUp = false;
 		bAtHomeDoor = false;
+		bAtClosedDoor = false;
 		DoorReknockCountdown = -1.0f;
 		DoorSteelHitsPlayed = IGListener::DoorSteelHitCount;
 	}
@@ -555,6 +568,10 @@ void AIGListenerEntity::EnterState(const EIGListenerState NewState)
 		{
 			PlayHomeDoorKnock(/*bSingle=*/false);
 		}
+		else if (bAtClosedDoor)
+		{
+			PlayClosedDoorKnock();
+		}
 		else if (bKnockingUp)
 		{
 			PlayCeilingKnock();
@@ -641,12 +658,12 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		{
 			FaceDirection(AttentionDirection, DeltaSeconds);
 		}
-		// 문짝을 치는 철문 녹음은 한 타씩이라 3연의 간격대로 이어 친다.
-		if (bAtHomeDoor
+		// 문짝을 치는 녹음은 한 타씩이라 3연의 간격대로 이어 친다.
+		if ((bAtHomeDoor || bAtClosedDoor)
 			&& DoorSteelHitsPlayed < IGListener::DoorSteelHitCount
 			&& StateSeconds >= IGListener::DoorSteelSpacingSeconds * DoorSteelHitsPlayed)
 		{
-			PlayHomeDoorSteelHit();
+			PlayDoorHit();
 		}
 		if (StateSeconds >= IGListener::BangSeconds)
 		{
@@ -740,6 +757,9 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 			{
 				ArriveAtClosedDoor();
 			}
+			else if (ArriveAtRoomDoor())
+			{
+			}
 			else if (bCallFromAbove)
 			{
 				ArriveBelowUpperSound();
@@ -822,6 +842,10 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 			{
 				// 문 너머로 달아났다. 문을 부수지 않는다. 두드리고 듣는다.
 				ArriveAtClosedDoor();
+				break;
+			}
+			if (bArrived && ArriveAtRoomDoor())
+			{
 				break;
 			}
 			if (bArrived && !bMomentumTried && Quiet >= IGListener::ChaseMomentumAfterSeconds)
@@ -1018,7 +1042,9 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 				bLungeArmed = false;
 				const bool bHeardInside = GetWorld()->GetTimeSeconds() - LastHeardHiddenPlayerSeconds
 					<= IGListener::HiddenDetectMemorySeconds;
+				// 잠긴 욕실은 가구와 다르다. 그는 문을 열지 않으니 문 너머로 손을 넣지 못한다.
 				if (bHeardInside
+					&& HidingPlayer->GetHidingSpot()
 					&& FVector::Dist2D(Player->GetActorLocation(), GetActorLocation())
 						<= IGListener::HiddenReachRadius
 					&& Tuning.bCaptureEnabled)
@@ -1895,6 +1921,7 @@ void AIGListenerEntity::ArriveBelowUpperSound(const bool bKeepHolding)
 	bKnockingUp = bKnockUp;
 	bCadenceEarsUp = false;
 	bAtHomeDoor = false;
+	bAtClosedDoor = false;
 	if (bKnockUp)
 	{
 		LastCeilingKnockSeconds = Now;
@@ -1951,6 +1978,17 @@ void AIGListenerEntity::NoteHeardLocation(
 	const bool bHomeSound)
 {
 	LastHeardLocation = Location;
+	RoomAhead = nullptr;
+	// 집 안에서 들은 욕실 소리. 그는 벽을 따라 기지 않고 욕실 문 앞으로 간다.
+	if (const AIGBathroomRefuge* Room = AIGBathroomRefuge::FindRoomAt(GetWorld(), Location))
+	{
+		if (!Room->IsInside(GetActorLocation()) && IsInsideHome(GetActorLocation()) && Room->GetDoor())
+		{
+			LastHeardLocation = Room->GetOutsideApproach() + FVector(0.0f, 0.0f, 60.0f);
+			RoomAhead = const_cast<AIGBathroomRefuge*>(Room);
+			return;
+		}
+	}
 	FVector DoorCenter = FVector::ZeroVector;
 	FVector Outward = FVector::ZeroVector;
 	if (bHomeSound
@@ -2049,6 +2087,7 @@ void AIGListenerEntity::ArriveAtHomeDoor()
 	// 문을 향해 돌아선다. 걸어온 방향 그대로 두드리면 옆벽을 치는 그림이 된다.
 	AttentionDirection = -Outward;
 	bAtHomeDoor = true;
+	bAtClosedDoor = false;
 	bDoorReknocked = false;
 	bKnockingUp = false;
 	bCadenceEarsUp = false;
@@ -2490,37 +2529,64 @@ bool AIGListenerEntity::PlanNavPath(const FVector& GoalFeet)
 	return NavPath.Num() > 0;
 }
 
-bool AIGListenerEntity::LegCrossesClosedFireDoor(const FVector& FromFeet, const FVector& ToFeet)
+AIGSwingDoor* AIGListenerEntity::FindClosedFireDoorOnLeg(const FVector& FromFeet, const FVector& ToFeet)
 {
 	if (!bStairFireDoorResolved)
 	{
 		bStairFireDoorResolved = true;
 		for (TActorIterator<AIGFireDoorWedge> It(GetWorld()); It; ++It)
 		{
-			StairFireDoor = It->GetDoor();
-			break;
+			StairFireDoors.Add(It->GetDoor());
 		}
 	}
-	const AIGSwingDoor* Door = StairFireDoor.Get();
-	if (!Door || Door->IsOpen())
+	for (const TWeakObjectPtr<AIGSwingDoor>& Candidate : StairFireDoors)
+	{
+		AIGSwingDoor* Door = Candidate.Get();
+		if (!Door || Door->IsOpen())
+		{
+			continue;
+		}
+		// 문짝은 경첩에서 액터의 +Y로 120 cm 뻗는다. 닫히면 X가 경첩과 같은 평면이다.
+		// 층마다 같은 자리라 높이로 그 층의 문만 고른다.
+		const FVector Hinge = Door->GetActorLocation();
+		if (FMath::Abs(FromFeet.Z - Hinge.Z) > 150.0f && FMath::Abs(ToFeet.Z - Hinge.Z) > 150.0f)
+		{
+			continue;
+		}
+		const float FromSide = FromFeet.X - Hinge.X;
+		const float ToSide = ToFeet.X - Hinge.X;
+		if (FromSide * ToSide > 0.0f || FMath::IsNearlyEqual(FromSide, ToSide))
+		{
+			continue;
+		}
+		const float Alpha = FromSide / (FromSide - ToSide);
+		const float CrossY = FMath::Lerp(FromFeet.Y, ToFeet.Y, Alpha);
+		if (CrossY > Hinge.Y - 20.0f && CrossY < Hinge.Y + 140.0f)
+		{
+			return Door;
+		}
+	}
+	return nullptr;
+}
+
+bool AIGListenerEntity::ArriveAtRoomDoor()
+{
+	AIGBathroomRefuge* Room = RoomAhead.Get();
+	if (!Room)
 	{
 		return false;
 	}
-	// 문짝은 경첩에서 액터의 +Y로 120 cm 뻗는다. 닫히면 X가 경첩과 같은 평면이다.
-	const FVector Hinge = Door->GetActorLocation();
-	if (FMath::Abs(FromFeet.Z - Hinge.Z) > 150.0f && FMath::Abs(ToFeet.Z - Hinge.Z) > 150.0f)
+	RoomAhead = nullptr;
+	AIGSwingDoor* Door = Room->GetDoor();
+	if (Door && !Door->IsOpen())
 	{
-		return false;
+		BlockingDoor = Door;
+		ArriveAtClosedDoor();
+		return true;
 	}
-	const float FromSide = FromFeet.X - Hinge.X;
-	const float ToSide = ToFeet.X - Hinge.X;
-	if (FromSide * ToSide > 0.0f || FMath::IsNearlyEqual(FromSide, ToSide))
-	{
-		return false;
-	}
-	const float Alpha = FromSide / (FromSide - ToSide);
-	const float CrossY = FMath::Lerp(FromFeet.Y, ToFeet.Y, Alpha);
-	return CrossY > Hinge.Y - 20.0f && CrossY < Hinge.Y + 140.0f;
+	// 문이 열려 있다. 안으로 든다.
+	LastHeardLocation = Room->GetInsideApproach() + FVector(0.0f, 0.0f, 60.0f);
+	return true;
 }
 
 void AIGListenerEntity::ArriveAtClosedDoor()
@@ -2535,9 +2601,17 @@ void AIGListenerEntity::ArriveAtClosedDoor()
 	bKnockingUp = false;
 	bCadenceEarsUp = false;
 	bAtHomeDoor = false;
+	bAtClosedDoor = false;
+	KnockDoor = Cast<AIGSwingDoor>(BlockingDoor.Get());
+	if (const AIGSwingDoor* Door = KnockDoor.Get())
+	{
+		// 엎드린 그가 손을 뻗는 높이에서 문짝을 친다. 소리는 그의 몸이 아니라 그 문에서 난다.
+		DoorKnockPoint = Door->GetKnockPoint(GetActorLocation() + FVector(0.0f, 0.0f, 40.0f));
+		bAtClosedDoor = true;
+	}
 	if (Now - LastClosedDoorKnockSeconds >= IGListener::CeilingKnockIntervalSeconds)
 	{
-		// §3.1 닫힌 방화문 너머에서 소리가 났다. 세 번 두드리고, 문에 귀를 대고 듣는다.
+		// §3.1 닫힌 방화문이나 욕실 문 너머에서 소리가 났다. 세 번 두드리고, 문에 귀를 대고 듣는다.
 		LastClosedDoorKnockSeconds = Now;
 		EnterState(EIGListenerState::Banging);
 	}
@@ -2622,11 +2696,11 @@ bool AIGListenerEntity::MoveTowardGoal(
 	}
 	const FVector Feet = GetFeetLocation();
 	const FVector Target = NavPath[NavPathIndex];
-	if (LegCrossesClosedFireDoor(Feet, Target))
+	if (AIGSwingDoor* ClosedFireDoor = FindClosedFireDoorOnLeg(Feet, Target))
 	{
 		// 닫힌 방화문 앞. 문을 뚫고 지나가지 않는다.
 		bBlockedByClosedDoor = true;
-		BlockingDoor = StairFireDoor.Get();
+		BlockingDoor = ClosedFireDoor;
 		NavPath.Reset();
 		NavPathOnStair.Reset();
 		NavPathIndex = 0;
@@ -3664,6 +3738,7 @@ void AIGListenerEntity::PlayHomeDoorKnock(const bool bSingle)
 		FVector(DoorCenter.X, DoorCenter.Y, GetActorLocation().Z + 40.0f)
 		+ Outward * IGListener::HomeDoorKnockOffset;
 	DoorKnockPoint = KnockPoint;
+	KnockDoor.Reset();
 	// 문 노크는 밤2 대본 노크와 같은 간격이어야 알아듣는다. 티어 빠르기를 싣지 않고,
 	// 두드리는 동작도 제 속도로 돈다.
 	KnockRate = 1.0f;
@@ -3687,7 +3762,7 @@ void AIGListenerEntity::PlayHomeDoorKnock(const bool bSingle)
 	DoorSteelHitsPlayed = bSteel ? 0 : IGListener::DoorSteelHitCount;
 	if (bSteel)
 	{
-		PlayHomeDoorSteelHit();
+		PlayDoorHit();
 		if (bSingle)
 		{
 			DoorSteelHitsPlayed = IGListener::DoorSteelHitCount;
@@ -3737,22 +3812,95 @@ void AIGListenerEntity::PlayHomeDoorKnock(const bool bSingle)
 	}
 }
 
-void AIGListenerEntity::PlayHomeDoorSteelHit()
+void AIGListenerEntity::PlayClosedDoorKnock()
 {
-	const int32 Hit = DoorSteelHitsPlayed;
-	if (Hit < 0 || Hit >= IGListener::DoorSteelHitCount)
+	// 문 노크는 밤2 대본 노크와 같은 간격이다. 티어 빠르기는 싣지 않는다.
+	KnockRate = 1.0f;
+	const AIGSwingDoor* Door = KnockDoor.Get();
+	const EIGDoorKnockSurface Surface = Door ? Door->GetKnockSurface() : EIGDoorKnockSurface::Steel;
+	const bool bHollow = Surface == EIGDoorKnockSurface::Hollow;
+	const bool bRecorded = IGAudio::Sample(
+		bHollow ? IGListener::HollowDoorSamples[0] : IGListener::DoorSteelSamples[0]) != nullptr;
+	// 철문은 403호 문처럼 합성이 문짝 너머의 저역을 깐다. 녹음이 없으면 합성이 혼자 낸다.
+	if (Surface == EIGDoorKnockSurface::Steel || !bRecorded)
+	{
+		IGAudio::SpawnOneShotAt(
+			this,
+			UIGToneSequenceSoundWave::CreateWallKnockTriple(this, IGListener::DoorKnockMuffle),
+			DoorKnockPoint,
+			bRecorded ? IGListener::DoorKnockUnderlayVolume : IGListener::DoorKnockVolume,
+			1.0f,
+			IGListener::DoorKnockInnerRadius,
+			IGListener::DoorKnockFalloff,
+			EIGAudioBus::Entity);
+	}
+	// 첫 타는 지금 친다. 나머지 둘은 두드리는 동안 TickState가 친다.
+	DoorSteelHitsPlayed = bRecorded ? 0 : IGListener::DoorSteelHitCount;
+	if (bRecorded)
+	{
+		PlayDoorHit();
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (UIGRecordingSubsystem* Recording =
+			World->GetSubsystem<UIGRecordingSubsystem>())
+		{
+			Recording->RecordEntitySound(DoorKnockPoint, 0.55f, this);
+		}
+	}
+	EmitPresentationCue(DoorKnockPoint, 1.0f, IGListener::DoorKnockInnerRadius + IGListener::DoorKnockFalloff);
+	OnKnocked.Broadcast(DoorKnockPoint);
+	if (IsNearForCaption(DoorKnockPoint))
+	{
+		AIGHorrorHUD::PushAudioCaptionAt(
+			this,
+			bHollow
+				? NSLOCTEXT("IGMissingFloor", "EntityHollowDoorKnockCaption", "욕실 문을 세 번 두드리는 소리")
+				: Surface == EIGDoorKnockSurface::Glass
+					? NSLOCTEXT("IGMissingFloor", "EntityGlassDoorKnockCaption", "유리문을 세 번 두드리는 소리")
+					: NSLOCTEXT("IGMissingFloor", "EntitySteelDoorKnockCaption", "철문을 세 번 두드리는 소리"),
+			2.4f,
+			DoorKnockPoint);
+	}
+	// 문 바로 너머에 있으면 놀란다. 403호 문과 같은 거리다.
+	if (AIGPlayerCharacter* PlayerCharacter =
+		Cast<AIGPlayerCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
+	{
+		const FVector PlayerAt = PlayerCharacter->GetActorLocation();
+		UIGStressComponent* Stress = PlayerCharacter->GetStress();
+		if (Stress
+			&& FMath::Abs(PlayerAt.Z - DoorKnockPoint.Z) <= FloorHeightThreshold
+			&& FVector::Dist2D(PlayerAt, DoorKnockPoint) <= IGListener::DoorKnockStartleCentimeters)
+		{
+			Stress->ApplyScare(0.25f);
+		}
+	}
+}
+
+void AIGListenerEntity::PlayDoorHit()
+{
+	const int32 HitIndex = DoorSteelHitsPlayed;
+	if (HitIndex < 0 || HitIndex >= IGListener::DoorSteelHitCount)
 	{
 		return;
 	}
 	++DoorSteelHitsPlayed;
-	if (USoundBase* Steel = IGAudio::Sample(IGListener::DoorSteelSamples[Hit]))
+	// 403호 문은 KnockDoor가 비어 있고 철문이다.
+	const AIGSwingDoor* Door = KnockDoor.Get();
+	const EIGDoorKnockSurface Surface = Door ? Door->GetKnockSurface() : EIGDoorKnockSurface::Steel;
+	const bool bHollow = Surface == EIGDoorKnockSurface::Hollow;
+	const bool bGlass = Surface == EIGDoorKnockSurface::Glass;
+	if (USoundBase* Hit = IGAudio::Sample(
+			bHollow ? IGListener::HollowDoorSamples[HitIndex] : IGListener::DoorSteelSamples[HitIndex]))
 	{
 		IGAudio::SpawnOneShotAt(
 			this,
-			Steel,
+			Hit,
 			DoorKnockPoint,
-			IGListener::DoorKnockVolume,
-			IGListener::DoorSteelPitches[Hit],
+			bHollow ? IGListener::HollowDoorVolume
+				: IGListener::DoorKnockVolume * (bGlass ? IGListener::GlassDoorVolumeScale : 1.0f),
+			bHollow ? IGListener::HollowDoorPitches[HitIndex]
+				: IGListener::DoorSteelPitches[HitIndex] * (bGlass ? IGListener::GlassDoorPitchScale : 1.0f),
 			IGListener::DoorKnockInnerRadius,
 			IGListener::DoorKnockFalloff,
 			EIGAudioBus::Entity);

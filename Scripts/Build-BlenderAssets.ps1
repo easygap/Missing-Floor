@@ -64,6 +64,13 @@ $builders = [ordered]@{
 	'witness_props' = @('SM_WitnessPrescriptionEnvelope', 'SM_WitnessStoreRoster', 'SM_WitnessCigaretteButts')
 	'lobby_mailboxes' = @('SM_MailboxUnit')
 	'ceiling_light' = @('SM_CeilingLightRing', 'SM_CeilingLightDome')
+	'stair_sensor_light' = @('SM_StairSensorLight')
+	'notice_prints' = @('SM_NoticeLightsOutA4')
+	'stair_fire_door' = @('SM_StairFireDoorLeaf', 'SM_FireDoorCloserArm', 'SM_FireDoorCloserRod', 'SM_FireDoorPrints', 'SM_FireDoorWedge', 'SM_ExitSignLamp')
+	'neighbor_doors' = @('SM_DoorPrints202', 'SM_Doorbells202', 'SM_DoorPrints303', 'SM_DawnDeliveryBag')
+	'bathroom' = @('SM_BathroomToilet', 'SM_BathroomBasin', 'SM_BathroomMirrorCabinet', 'SM_BathroomShower', 'SM_BathroomDoorLeaf', 'SM_BathroomDoorFrame', 'SM_BathroomTowelRail', 'SM_BathroomCornerShelf', 'SM_FloorDrain', 'SM_BathroomVentGrille')
+	'notes303' = @('SM_Note303First', 'SM_Note303Second', 'SM_Note303Third', 'SM_Note303Last')
+	'rooftop_doors' = @('SM_RooftopDoorLeaf', 'SM_AnnexDoorLeaf', 'SM_RooftopDoorSign', 'SM_DoorBarrelBolt', 'SM_DoorBarrelBoltPin', 'SM_DoorBarrelBoltKeeper')
 	'fridge' = @('SM_FridgeBody', 'SM_FridgeDoor')
 	'kitchen' = @('SM_KitchenBaseRun', 'SM_DrumWasher', 'SM_KitchenWallUnits', 'SM_RangeHood', 'SM_Microwave', 'SM_KitchenSink', 'SM_InductionHob')
 	'apartment_props' = @('SM_Wardrobe', 'SM_WallAirConditioner')
@@ -92,6 +99,10 @@ if ($selected -contains 'fire_safety') {
 if ($selected -contains 'neighborhood_prints') {
 	& python (Join-Path $PSScriptRoot 'build_apartment_calendar.py')
 	if ($LASTEXITCODE -ne 0) { throw '2025년 달력 생성 실패' }
+}
+if ($selected -contains 'stair_fire_door' -or $selected -contains 'neighbor_doors') {
+	& python (Join-Path $PSScriptRoot 'rectify_concept_faces.py')
+	if ($LASTEXITCODE -ne 0) { throw '시안 면 펴기 실패' }
 }
 if ($selected -contains 'roof_utility') {
 	& python (Join-Path $PSScriptRoot 'build_roof_utility_prints.py')

@@ -261,18 +261,21 @@ Assert-ContainsAll $story @(
 Assert-ContainsAll $epilogueSource @(
 	'constexpr float EndingATimes[]',
 	'constexpr float EndingBTimes[]',
-	'87.00f',
-	'71.00f',
+	'99.00f',
+	'83.00f',
 	'EIGMissingFloorEpilogueScene::Montage',
 	'EIGMissingFloorEpilogueScene::Workshop',
 	'EIGMissingFloorEpilogueScene::Autumn',
 	'EIGMissingFloorEpilogueScene::ServiceBay',
 	'EIGMissingFloorEpilogueScene::News',
+	'EIGMissingFloorEpilogueScene::DoorNote',
 	'EIGMissingFloorEpilogueScene::Card',
 	'조율이 끝난 방',
 	'같이 있던 밤',
 	'업라이트 1대  ·  받는 분 백유담  ·  집들이 전에 전달',
 	'네 시 반 알람은 지웠다.',
+	'그동안 시끄럽다고만 해서 죄송합니다. 303호',
+	'그날 새벽 망치 소리에 303호는 올라오는 대신 119를 눌렀다',
 	'인근 편의점 직원의 목격 진술을 토대로 당시 행적을 확인 중이다'
 ) '에필로그 타임라인과 카피'
 
@@ -282,7 +285,7 @@ Assert-ContainsAll $epilogueHeader @(
 	'int32 GetPlayedSceneCount() const'
 ) '에필로그 검증 훅'
 
-# §34.2와 같은 규칙. 초회차는 다 보고, 두 번째부터 우회가 열린다.
+# §34.2와 같은 규칙. 처음 보는 결말은 10초 뒤에, 두 번째부터는 바로 우회가 열린다.
 # §22.4의 선택 직전 자동 저장이 하는 일이 여기서 완성된다.
 Assert-ContainsAll $epilogueHeader @(
 	'bool BeginReplaySkipInput();',
@@ -340,7 +343,8 @@ Assert-ContainsAll $hudSource @(
 	'const float SourceAspect = SourceWidth / SourceHeight;',
 	'T_EpilogueWorkshop_D',
 	'T_EpilogueAutumn_D',
-	'T_EpilogueServiceBay_D'
+	'T_EpilogueServiceBay_D',
+	'T_EpilogueDoorNote_D'
 ) '에필로그 HUD 렌더'
 
 # 텍스처 없이도 장면이 성립해야 한다. 에필로그의 뜻은 문장에 있다.
@@ -610,7 +614,7 @@ Assert-ContainsAll $greyboxSource @(
 
 Assert-ContainsAll $greyboxSource @(
 	'EProbeStep::EpilogueContract',
-	'Epilogue->GetPlayedSceneCount() != 5',
+	'Epilogue->GetPlayedSceneCount() != 6',
 	'Epilogue->CompleteImmediatelyForProbe()',
 	'Hud->IsMissingFloorEpilogueVisible()',
 	'Narrative->GetConfirmedTruthCount() != TruthsBefore',

@@ -31,6 +31,7 @@ HUD_UI_TEXTURE_NAMES = {
     "T_EpilogueWorkshop_D",
     "T_EpilogueAutumn_D",
     "T_EpilogueServiceBay_D",
+    "T_EpilogueDoorNote_D",
 }
 FRONTEND_UI_ONLY = os.environ.get("IG_FRONTEND_UI_ONLY") == "1"
 FRONTEND_UI_TEXTURE_NAMES = {
@@ -38,6 +39,7 @@ FRONTEND_UI_TEXTURE_NAMES = {
     "T_EpilogueWorkshop_D",
     "T_EpilogueAutumn_D",
     "T_EpilogueServiceBay_D",
+    "T_EpilogueDoorNote_D",
 }
 APARTMENT_VISUAL_ONLY = os.environ.get("IG_APARTMENT_VISUAL_ONLY") == "1"
 APARTMENT_VISUAL_TEXTURE_NAMES = {

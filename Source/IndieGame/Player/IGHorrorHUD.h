@@ -59,6 +59,8 @@ enum class EIGMissingFloorEpilogueScene : uint8
 	ServiceBay,
 	/** 두 엔딩 공통. 목격한 만큼 문장이 선명해진다(§22.3). */
 	News,
+	/** 두 엔딩 공통. 403호 문에 303호의 마지막 쪽지가 붙어 있다. */
+	DoorNote,
 	/** 마지막 카드 한 줄. */
 	Card
 };
@@ -723,6 +725,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> EpilogueServiceBayTexture;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> EpilogueDoorNoteTexture;
 
 	/** ImageGen-derived blank ledger paper. All Korean copy remains runtime text. */
 	UPROPERTY(Transient)

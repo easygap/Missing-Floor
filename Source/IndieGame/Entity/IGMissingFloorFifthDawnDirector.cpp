@@ -131,7 +131,7 @@ bool AIGMissingFloorFifthDawnDirector::StartInterlude(
 	if (!bReplaySkipAvailable)
 	{
 		// §6. 처음 보는 사람도 붙잡아 두지 않는다. 15초면 이 막간이 무엇인지는
-		// 알게 된다. 그 뒤로는 E를 길게 눌러 넘어간다.
+		// 알게 된다. 그 뒤로는 Tab(패드 Y)을 길게 눌러 넘어간다.
 		GetWorldTimerManager().SetTimer(
 			FirstViewSkipTimer,
 			FTimerDelegate::CreateWeakLambda(this, [this]()

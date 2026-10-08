@@ -198,8 +198,8 @@ void AIGListenerGreyboxDirector::AdvanceEndingLifecycleProbe()
 		EndingEpilogueSeconds = Now - EndingEpilogueStartedAt;
 		if (Epilogue->IsActive()) { return; }
 		const AIGHorrorHUD* Hud = Cast<AIGHorrorHUD>(Controller->GetHUD());
-		const bool bPassed = EndingEpilogueSeconds >= (bEndingB ? 70.0 : 86.0)
-			&& Epilogue->GetPlayedSceneCount() == (bEndingB ? 4 : 5)
+		const bool bPassed = EndingEpilogueSeconds >= (bEndingB ? 82.0 : 98.0)
+			&& Epilogue->GetPlayedSceneCount() == (bEndingB ? 5 : 6)
 			&& Hud && !Hud->IsMissingFloorEpilogueVisible()
 			&& IGOnboardingMemory::HasSeenEnding(ExpectedEnding)
 			&& Controller->IsNightFiveAvailable() == bEndingB

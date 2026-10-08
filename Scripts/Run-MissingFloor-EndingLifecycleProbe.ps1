@@ -96,8 +96,8 @@ function Invoke-EndingProcess([string]$Name, [string]$Mode, [string]$Ending, [st
             reportedProfilePath = $receipt.profilePath; profilePathMetadataMismatch = $metadataMismatch
         }
         if ($Mode -eq 'ending') {
-            $minimumSeconds = if ($expectB) { 70.0 } else { 86.0 }
-            $expectedScenes = if ($expectB) { 4 } else { 5 }
+            $minimumSeconds = if ($expectB) { 82.0 } else { 98.0 }
+            $expectedScenes = if ($expectB) { 5 } else { 6 }
             if (-not $receipt.restoredThroughSaveSubsystem -or $receipt.epilogueSeconds -lt $minimumSeconds -or
                 $receipt.epilogueScenes -ne $expectedScenes) { throw "실제 복원·에필로그 재생 조건을 채우지 못했습니다: $Name" }
             if ($expectB -and (-not $receipt.vigilObserved -or -not $receipt.sevenSecondWaitObserved -or
@@ -135,7 +135,7 @@ if ((Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash -cne $manif
 [ordered]@{
     schemaVersion = 2; createdAt = [DateTime]::UtcNow.ToString('o'); archive = $archiveRoot
     commit = $manifest.commit; hasLocalChanges = $manifest.hasLocalChanges; manifestSha256 = $manifestHash
-    scope = '실제 FullGame 진행의 선택 직전 저장, 새 프로세스의 정상 저장 복원, A/B 상호작용 완료, B의 30초 기다림, A 87초/B 71초 에필로그, 프로필 기록과 재시작 후 다섯째 밤 해금. NullRHI 기능 검사이며 영상·음질·실제 키 홀드·사람의 완주 평가는 별도입니다.'
+    scope = '실제 FullGame 진행의 선택 직전 저장, 새 프로세스의 정상 저장 복원, A/B 상호작용 완료, B의 30초 기다림, A 99초/B 83초 에필로그, 프로필 기록과 재시작 후 다섯째 밤 해금. NullRHI 기능 검사이며 영상·음질·실제 키 홀드·사람의 완주 평가는 별도입니다.'
     seed = $seedFile; seedSha256 = $seedHash; seedUnchanged = $true; cases = $results.ToArray()
     profilePathMetadataMismatchCount = @($results | Where-Object { $_.profileEvidence -and $_.profileEvidence.profilePathMetadataMismatch }).Count
     allowLegacyProfilePathMetadata = $AllowLegacyProfilePathMetadata.IsPresent

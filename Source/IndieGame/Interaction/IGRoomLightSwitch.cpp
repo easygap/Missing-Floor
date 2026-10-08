@@ -9,10 +9,6 @@
 #include "Entity/IGNoiseSubsystem.h"
 #include "Narrative/IGStoryStateSubsystem.h"
 
-namespace
-{
-	FGameplayTag LightOnTag() { return FGameplayTag::RequestGameplayTag(TEXT("State.MissingFloor.HomeLightOn"), false); }
-}
 
 AIGRoomLightSwitch::AIGRoomLightSwitch()
 {
@@ -24,6 +20,17 @@ AIGRoomLightSwitch::AIGRoomLightSwitch()
 	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	InteractionBox->SetGenerateOverlapEvents(false);
 	InteractionBox->SetCanEverAffectNavigation(false);
+	OnPrompt = NSLOCTEXT("IGRoomLight", "On", "방 불 켜기");
+	OffPrompt = NSLOCTEXT("IGRoomLight", "Off", "방 불 끄기");
+}
+
+void AIGRoomLightSwitch::ConfigureSwitch(
+	const FName InStateTag, const FText& InOnPrompt, const FText& InOffPrompt, const float InOnIntensity)
+{
+	StateTagName = InStateTag;
+	OnPrompt = InOnPrompt;
+	OffPrompt = InOffPrompt;
+	OnIntensity = InOnIntensity;
 }
 
 void AIGRoomLightSwitch::BeginPlay()
@@ -45,20 +52,19 @@ void AIGRoomLightSwitch::BindLight(UPointLightComponent* InLight)
 void AIGRoomLightSwitch::RefreshState()
 {
 	const UIGStoryStateSubsystem* Story = GetGameInstance()->GetSubsystem<UIGStoryStateSubsystem>();
-	bLightOn = Story && Story->HasState(LightOnTag());
+	bLightOn = Story && Story->HasState(FGameplayTag::RequestGameplayTag(StateTagName, false));
 	// 층별 조명 구역이 Visibility를 쥔다. 스위치는 세기만 바꾼다.
-	if (Light) Light->SetIntensity(bLightOn ? 950.f : 0.f);
+	if (Light) Light->SetIntensity(bLightOn ? OnIntensity : 0.f);
 }
 
 void AIGRoomLightSwitch::HandleState(FGameplayTag Tag, bool bAdded)
 {
-	if (Tag == LightOnTag()) RefreshState();
+	if (Tag == FGameplayTag::RequestGameplayTag(StateTagName, false)) RefreshState();
 }
 
 FText AIGRoomLightSwitch::GetInteractionPrompt_Implementation(AActor* Interactor) const
 {
-	return bLightOn ? NSLOCTEXT("IGRoomLight", "Off", "방 불 끄기")
-		: NSLOCTEXT("IGRoomLight", "On", "방 불 켜기");
+	return bLightOn ? OffPrompt : OnPrompt;
 }
 
 void AIGRoomLightSwitch::CompleteInteraction_Implementation(const FIGInteractionContext& Context)
@@ -66,8 +72,9 @@ void AIGRoomLightSwitch::CompleteInteraction_Implementation(const FIGInteraction
 	if (!CanInteract_Implementation(Context.Interactor.Get()) || !Light) return;
 	UIGStoryStateSubsystem* Story = GetGameInstance()->GetSubsystem<UIGStoryStateSubsystem>();
 	if (!Story) return;
-	if (bLightOn) Story->RemoveState(LightOnTag());
-	else Story->AddState(LightOnTag());
+	const FGameplayTag LightOnTag = FGameplayTag::RequestGameplayTag(StateTagName, false);
+	if (bLightOn) Story->RemoveState(LightOnTag);
+	else Story->AddState(LightOnTag);
 	IGAudio::SpawnOneShotAt(this, UIGToneSequenceSoundWave::CreateSwitchClick(this, bLightOn),
 		GetActorLocation(), 0.3f, 1.f, 60.f, 400.f, EIGAudioBus::Player);
 	if (UIGNoiseSubsystem* Noise = GetWorld()->GetSubsystem<UIGNoiseSubsystem>())
