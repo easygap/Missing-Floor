@@ -1,0 +1,30 @@
+{
+  "name": "SM_DawnDeliveryBag",
+  "mesh_class": "prop",
+  "fbx": "SM_DawnDeliveryBag.fbx",
+  "textures": {
+    "D": "SM_DawnDeliveryBag_D.png",
+    "N": "SM_DawnDeliveryBag_N.png",
+    "ORM": "SM_DawnDeliveryBag_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3496,
+  "bounds_m": {
+    "min": [
+      -0.233,
+      -0.161,
+      0.0
+    ],
+    "max": [
+      0.233,
+      0.161,
+      0.3115
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "새벽배송 보냉 가방 45 x 30 x 28 cm. 원점 바닥 중심, 투명 주머니가 있는 앞면이 -Y. 앞·옆은 DawnDeliveryBag_20261007 시안을 편 사진, 손잡이 둘은 뚜껑 위에 눕는다. 충돌은 몸통 하나."
+}

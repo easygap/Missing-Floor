@@ -1,0 +1,30 @@
+{
+  "name": "SM_DoorBarrelBoltKeeper",
+  "mesh_class": "prop",
+  "fbx": "SM_DoorBarrelBoltKeeper.fbx",
+  "textures": {
+    "D": "SM_DoorBarrelBoltKeeper_D.png",
+    "N": "SM_DoorBarrelBoltKeeper_N.png",
+    "ORM": "SM_DoorBarrelBoltKeeper_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 468,
+  "bounds_m": {
+    "min": [
+      -0.0165,
+      -0.014,
+      -0.026
+    ],
+    "max": [
+      0.0,
+      0.014,
+      0.026
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "빗장 받이쇠. 원점은 문설주 옆면에 붙는 면 가운데, -X로 1.65 cm 나온다. 막대 구멍 지름 1.4 cm가 x축을 따라 뚫려 있다. 충돌·그림자 없음."
+}

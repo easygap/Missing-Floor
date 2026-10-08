@@ -1,0 +1,30 @@
+{
+  "name": "SM_Note303Second",
+  "mesh_class": "prop",
+  "fbx": "SM_Note303Second.fbx",
+  "textures": {
+    "D": "SM_Note303Second_D.png",
+    "N": "SM_Note303Second_N.png",
+    "ORM": "SM_Note303Second_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 544,
+  "bounds_m": {
+    "min": [
+      0.0454,
+      -0.0004,
+      1.3625
+    ],
+    "max": [
+      0.1619,
+      -0.0002,
+      1.5234
+    ]
+  },
+  "origin": "door-face",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "403호 문짝 바깥면 가운데 바닥이 원점, 앞 -Y. 찢은 공책 종이 10 x 15 cm(가운데 X 0.10, Z 1.44), 위 가장자리는 찢긴 선대로 자른 판, 위 두 귀퉁이 테이프. 원본 SourceArt/AI/Note303Second_20261007(gpt-image). 충돌·그림자 없음."
+}

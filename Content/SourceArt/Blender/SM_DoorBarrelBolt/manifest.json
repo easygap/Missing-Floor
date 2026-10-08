@@ -1,0 +1,30 @@
+{
+  "name": "SM_DoorBarrelBolt",
+  "mesh_class": "prop",
+  "fbx": "SM_DoorBarrelBolt.fbx",
+  "textures": {
+    "D": "SM_DoorBarrelBolt_D.png",
+    "N": "SM_DoorBarrelBolt_N.png",
+    "ORM": "SM_DoorBarrelBolt_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 864,
+  "bounds_m": {
+    "min": [
+      -0.09,
+      0.0,
+      -0.022
+    ],
+    "max": [
+      0.06,
+      0.0197,
+      0.022
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "빗장 몸통 15 x 4.4 cm. 원점은 문 면 위 몸통 가운데에서 x로 +1.5 cm(막대 끝이 풀렸을 때 x 0.06), 몸통은 +Y로 2 cm 솟는다. 막대는 +X로 민다. 충돌·그림자 없음."
+}

@@ -1,0 +1,30 @@
+{
+  "name": "SM_FireDoorWedge",
+  "mesh_class": "prop",
+  "fbx": "SM_FireDoorWedge.fbx",
+  "textures": {
+    "D": "SM_FireDoorWedge_D.png",
+    "N": "SM_FireDoorWedge_N.png",
+    "ORM": "SM_FireDoorWedge_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 108,
+  "bounds_m": {
+    "min": [
+      -0.09,
+      -0.035,
+      0.0
+    ],
+    "max": [
+      0.09,
+      0.035,
+      0.0416
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "나무 고임목 18 x 7 cm, 두께 4.2 cm에서 0.6 cm로. 원점 바닥 중심, 얇은 끝이 +X. 윗면은 FireDoorWedge_20261007을 편 FireDoorWedgeTop. 충돌 없음."
+}

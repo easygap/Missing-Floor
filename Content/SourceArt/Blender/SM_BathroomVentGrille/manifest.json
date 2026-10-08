@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomVentGrille",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomVentGrille.fbx",
+  "textures": {
+    "D": "SM_BathroomVentGrille_D.png",
+    "N": "SM_BathroomVentGrille_N.png",
+    "ORM": "SM_BathroomVentGrille_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 248,
+  "bounds_m": {
+    "min": [
+      -0.12,
+      -0.12,
+      -0.012
+    ],
+    "max": [
+      0.12,
+      0.12,
+      0.0
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "천장 환풍구 덮개 24 x 24 cm. 원점은 천장면 가운데, 아래로 1.2 cm. 충돌 없음."
+}

@@ -1,0 +1,142 @@
+{
+  "name": "Eoduksini",
+  "trial": "trellis1024-s56",
+  "status": "Generated",
+  "source": "Content/SourceArt/AI/EoduksiniClay_20261008.png",
+  "sourceSha256": "9e4cbb89ec3521118d0fa85eb3e1c44f89b3615b21e2179a8299824f0d02006e",
+  "route": "trellis",
+  "resolution": 1024,
+  "seed": 56,
+  "postprocess": "pbr",
+  "decimateFaces": 200000,
+  "textureSize": 2048,
+  "server": {
+    "url": "http://127.0.0.1:8199",
+    "version": "0.34.6",
+    "device": "cuda:0 NVIDIA GeForce RTX 3060 : cudaMallocAsync"
+  },
+  "startedAt": "2026-10-08T02:21:51.452754+00:00",
+  "license": "TRELLIS.2 / Pixal3D weights: Comfy-Org repackage, MIT/permissive; DINOv3, MoGe, BiRefNet: see lunia_z SourceArt/Manifests/ComfyNative.20260908.json",
+  "runtimeReady": false,
+  "promptId": "c4e4f276-46c3-4d10-b48b-db6db40935c7",
+  "elapsedSeconds": 70.1,
+  "finishedAt": "2026-10-08T02:23:01.641058+00:00",
+  "files": [
+    {
+      "path": "Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/base-color_00001_.png",
+      "bytes": 2834860,
+      "sha256": "c58ac91e3fdf3a995d393f57173bbce279bd214a88b5f6a94a218cbcbd637eaa"
+    },
+    {
+      "path": "Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/cleaned-colored_00001_.glb",
+      "bytes": 6020168,
+      "sha256": "9502744555d7c3eec0d06a9f90944f7647e36964882c2bfc91908706ac2fb672"
+    },
+    {
+      "path": "Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/colored_00001_.glb",
+      "bytes": 48175140,
+      "sha256": "a72fa70bd0ba3105138ef7a00ca179a64f2a72892152db4562a0c55dbe3a21e1",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/conditioning_00001_.png",
+      "bytes": 223712,
+      "sha256": "f93592d5a17a762feb84ee3b5cfe2fce881f412240177e75d4496096f26d775a"
+    },
+    {
+      "path": "Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/metallic_00001_.png",
+      "bytes": 18150,
+      "sha256": "4f9af3e236abb1c1bf6af3be72ba40220bfcff69c52e46b7f5e91e45603ce9b4"
+    },
+    {
+      "path": "Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/pbr_00001_.glb",
+      "bytes": 9264012,
+      "sha256": "34412c6fa06c68c38742c3ee6318b7055c970a06a4d0989cc6180c56ac7659b1"
+    },
+    {
+      "path": "Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/roughness_00001_.png",
+      "bytes": 1591880,
+      "sha256": "e4fe5ef11173dfae713e6f791a3378804c99752faf4eeb615f6bff23cbf32e0b"
+    },
+    {
+      "path": "Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/shape_00001_.glb",
+      "bytes": 38535012,
+      "sha256": "7eb1e9325e2b9fb1fbd7a174ab3ddc193223c6d5b2cc5e5e3e54cc4bfd5b073b",
+      "pruned": true
+    }
+  ],
+  "outputs": {
+    "5": {
+      "images": [
+        {
+          "filename": "conditioning_00001_.png",
+          "subfolder": "ig3d\\Eoduksini\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "28": {
+      "3d": [
+        {
+          "filename": "shape_00001_.glb",
+          "subfolder": "ig3d\\Eoduksini\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "33": {
+      "3d": [
+        {
+          "filename": "colored_00001_.glb",
+          "subfolder": "ig3d\\Eoduksini\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "38": {
+      "3d": [
+        {
+          "filename": "cleaned-colored_00001_.glb",
+          "subfolder": "ig3d\\Eoduksini\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "43": {
+      "images": [
+        {
+          "filename": "base-color_00001_.png",
+          "subfolder": "ig3d\\Eoduksini\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "45": {
+      "images": [
+        {
+          "filename": "roughness_00001_.png",
+          "subfolder": "ig3d\\Eoduksini\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "44": {
+      "images": [
+        {
+          "filename": "metallic_00001_.png",
+          "subfolder": "ig3d\\Eoduksini\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "42": {
+      "3d": [
+        {
+          "filename": "pbr_00001_.glb",
+          "subfolder": "ig3d\\Eoduksini\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    }
+  }
+}

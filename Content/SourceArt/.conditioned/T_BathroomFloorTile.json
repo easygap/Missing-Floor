@@ -1,0 +1,50 @@
+{
+  "stem": "T_BathroomFloorTile",
+  "seam_mode": "none",
+  "seam_action": "left alone",
+  "flat_field": 1.0,
+  "field_cells": 8,
+  "period_axis": "auto",
+  "input_sha256": "1B85A9385BE26A9339336361F1E00201E32B7AFF219476147B01024690E49701",
+  "output_sha256": "7E416A1766DC84BB49CD6A9EBC5F44453F3722E2F6A37A4E4A37F78656992FBB",
+  "before": {
+    "size": [
+      1024,
+      1024
+    ],
+    "luma_mean": 0.5228,
+    "luma_stddev": 10.87,
+    "below_25pct": 0.0,
+    "above_65pct": 0.0002,
+    "stipple": 2.627,
+    "field_spread": 11,
+    "field_range": [
+      127,
+      138
+    ],
+    "seam_h": 24.82,
+    "seam_v": 4.56,
+    "seam_h_ratio": 6.69,
+    "seam_v_ratio": 1.19
+  },
+  "after": {
+    "size": [
+      1024,
+      1024
+    ],
+    "luma_mean": 0.5216,
+    "luma_stddev": 10.79,
+    "below_25pct": 0.0,
+    "above_65pct": 0.0002,
+    "stipple": 2.618,
+    "field_spread": 10,
+    "field_range": [
+      128,
+      138
+    ],
+    "seam_h": 22.74,
+    "seam_v": 5.29,
+    "seam_h_ratio": 6.18,
+    "seam_v_ratio": 1.38
+  }
+}

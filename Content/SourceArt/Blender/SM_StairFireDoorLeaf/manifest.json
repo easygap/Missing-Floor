@@ -1,0 +1,30 @@
+{
+  "name": "SM_StairFireDoorLeaf",
+  "mesh_class": "hero",
+  "fbx": "SM_StairFireDoorLeaf.fbx",
+  "textures": {
+    "D": "SM_StairFireDoorLeaf_D.png",
+    "N": "SM_StairFireDoorLeaf_N.png",
+    "ORM": "SM_StairFireDoorLeaf_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3456,
+  "bounds_m": {
+    "min": [
+      -0.6035,
+      -0.093,
+      0.015
+    ],
+    "max": [
+      0.6115,
+      0.093,
+      2.095
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "계단실 방화문 문짝 120 x 208 x 5 cm(바닥 틈 1.5 cm). 경첩 +X, 앞면 -Y가 계단 쪽, 원점 바닥 중심. AIGSwingDoor::ConfigureAuthoredLeaf로 단다. 계단 쪽 위 모서리에 도어클로저 몸통, 피니언 (0.32, -0.050, 2.048). 양쪽 레버. 충돌은 문짝 판 하나."
+}

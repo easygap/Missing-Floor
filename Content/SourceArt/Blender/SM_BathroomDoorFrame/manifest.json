@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomDoorFrame",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomDoorFrame.fbx",
+  "textures": {
+    "D": "SM_BathroomDoorFrame_D.png",
+    "N": "SM_BathroomDoorFrame_N.png",
+    "ORM": "SM_BathroomDoorFrame_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 912,
+  "bounds_m": {
+    "min": [
+      -0.436,
+      -0.112,
+      0.0
+    ],
+    "max": [
+      0.436,
+      0.112,
+      2.11
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "욕실 문틀. 개구부 76 x 205, 벽 두께 20. 원점 개구부 바닥 가운데, 폭 X, 두께 Y(-Y가 403호 쪽)."
+}

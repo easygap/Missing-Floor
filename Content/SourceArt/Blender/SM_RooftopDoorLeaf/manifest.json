@@ -1,0 +1,30 @@
+{
+  "name": "SM_RooftopDoorLeaf",
+  "mesh_class": "hero",
+  "fbx": "SM_RooftopDoorLeaf.fbx",
+  "textures": {
+    "D": "SM_RooftopDoorLeaf_D.png",
+    "N": "SM_RooftopDoorLeaf_N.png",
+    "ORM": "SM_RooftopDoorLeaf_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3780,
+  "bounds_m": {
+    "min": [
+      -0.4285,
+      -0.092,
+      0.01
+    ],
+    "max": [
+      0.4368,
+      0.092,
+      2.045
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "옥상 철문 85 x 203.5 x 4.5 cm(바닥 틈 1 cm). 경첩 +X, 앞면 -Y가 옥상 쪽, +Y가 계단 쪽. +Y에 경첩 너클과 열쇠 구멍, -Y 면이 비를 맞는다. 원점 바닥 중심. AIGSwingDoor::ConfigureAuthoredLeaf로 단다. 충돌은 문짝 판 하나."
+}

@@ -1,0 +1,31 @@
+{
+  "name": "SM_ExitSignLamp",
+  "mesh_class": "prop",
+  "fbx": "SM_ExitSignLamp.fbx",
+  "textures": {
+    "D": "SM_ExitSignLamp_D.png",
+    "N": "SM_ExitSignLamp_N.png",
+    "ORM": "SM_ExitSignLamp_ORM.png",
+    "E": "SM_ExitSignLamp_E.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 288,
+  "bounds_m": {
+    "min": [
+      -0.16,
+      -0.047,
+      -0.0675
+    ],
+    "max": [
+      0.16,
+      0.0,
+      0.0675
+    ]
+  },
+  "origin": "center",
+  "emissive_strength": 3.0,
+  "blender": "5.2.0 LTS",
+  "notes": "소형 피난구 유도등 32 x 13.5 x 4.5 cm. 원점은 벽에 닿는 뒷면 가운데, 앞 -Y. 발광면은 SourceArt/AI/ExitSignFace_20261007(gpt-image), 발광 3. 충돌 없음."
+}

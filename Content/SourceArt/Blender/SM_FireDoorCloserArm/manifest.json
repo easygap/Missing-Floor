@@ -1,0 +1,30 @@
+{
+  "name": "SM_FireDoorCloserArm",
+  "mesh_class": "prop",
+  "fbx": "SM_FireDoorCloserArm.fbx",
+  "textures": {
+    "D": "SM_FireDoorCloserArm_D.png",
+    "N": "SM_FireDoorCloserArm_N.png",
+    "ORM": "SM_FireDoorCloserArm_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 440,
+  "bounds_m": {
+    "min": [
+      -0.0135,
+      -0.0135,
+      -0.0045
+    ],
+    "max": [
+      0.3505,
+      0.0135,
+      0.0085
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "도어클로저 팔. 원점이 피니언 축, +X로 34 cm 끝이 팔꿈치. 충돌 없음."
+}

@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomMirrorCabinet",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomMirrorCabinet.fbx",
+  "textures": {
+    "D": "SM_BathroomMirrorCabinet_D.png",
+    "N": "SM_BathroomMirrorCabinet_N.png",
+    "ORM": "SM_BathroomMirrorCabinet_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 440,
+  "bounds_m": {
+    "min": [
+      -0.3,
+      -0.148,
+      0.0
+    ],
+    "max": [
+      0.3,
+      0.0,
+      0.7
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "세면대 위 거울장 60 x 70 x 13 cm, 거울 문 둘과 아래 열린 칸. 원점은 벽면과 장 밑면, 앞 -Y. 거울은 금속 1·거칠기 0.03으로 굽는다. 시안 SourceArt/AI/BathroomMirrorCabinet_20261007."
+}

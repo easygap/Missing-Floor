@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomTowelRail",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomTowelRail.fbx",
+  "textures": {
+    "D": "SM_BathroomTowelRail_D.png",
+    "N": "SM_BathroomTowelRail_N.png",
+    "ORM": "SM_BathroomTowelRail_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 5548,
+  "bounds_m": {
+    "min": [
+      -0.254,
+      -0.083,
+      0.6724
+    ],
+    "max": [
+      0.254,
+      0.0,
+      1.174
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "크롬 수건걸이 50 cm(높이 1.15 m)와 반 접어 걸친 회색 수건. 원점은 벽면과 바닥, 앞 -Y. 충돌 없음."
+}

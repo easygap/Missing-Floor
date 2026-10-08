@@ -1,0 +1,10 @@
+{
+  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
+  "date": "2026-10-07",
+  "prompt": "The same ceiling-mounted LED motion-sensor light, same angle, same aged plastic and same flat solid #00ff00 chroma-key background, but now switched on: the frosted diffuser dome glows evenly in a slightly cool white with a soft brighter centre and the glow falling off gently toward the rim; the yellowed base ring stays unlit and keeps its colour; the small faceted PIR sensor lens stays unlit and reads slightly darker than the glowing dome around it. No light spill or glow halo onto the green background, no bloom, no lens flare. Keep the silhouette identical. Rendering discipline (critical): resolve every surface with gentle continuous gradients, never with fine dots. Absolutely no per-pixel noise of any kind: no stippling, no dithering, no halftone or screen-door pattern, no pointillist speckle, no added film grain. No text, no labels, no watermark.",
+  "sha256": "BE659A65BEF193904DC9FC636AA7E7885D6DEDD11EA6585FECD9E5E65EF9A26C",
+  "usage": "같은 센서등이 켜진 모습. 확산 돔의 발광 색과 감지 렌즈가 꺼진 채 남는 모양의 기준.",
+  "references": [
+    "StairSensorLightOff_20261007.png (편집 대상)"
+  ]
+}

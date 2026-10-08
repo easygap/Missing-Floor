@@ -13,20 +13,20 @@
   "triangles": 12000,
   "bounds_m": {
     "min": [
-      -0.9232,
-      -0.3779,
-      -0.0069
+      -0.8996,
+      -0.3738,
+      0.0004
     ],
     "max": [
-      0.8961,
-      0.3721,
-      1.5862
+      0.8976,
+      0.3743,
+      1.5813
     ]
   },
   "origin": "bottom",
   "emissive_strength": 0.0,
   "blender": "5.2.0 LTS",
-  "notes": "골목을 달려 지나가는 배달 오토바이(기사 탑승). 원본 DeliveryScooter_20261002, TRELLIS.2. 앞 +X, 원점 바퀴 접지 가운데.",
+  "notes": "배달 오토바이(기사 탑승). 골목을 달려 지나가고, 첫째·둘째 낮에는 정우가 이 모습으로 공동현관 앞 연석에서 콜을 기다린다. 원본 DeliveryScooter_20261002, TRELLIS.2. UV 이음매를 붙이고 6 mm 복셀 리메시 뒤 줄였다. 앞 +X, 원점 바퀴 접지 가운데.",
   "generated_from": "../Generated/DeliveryScooterRidden/trellis1024-s56/raw/pbr_00001_.glb",
   "vertex_ao": false
 }

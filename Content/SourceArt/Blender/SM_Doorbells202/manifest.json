@@ -1,0 +1,30 @@
+{
+  "name": "SM_Doorbells202",
+  "mesh_class": "prop",
+  "fbx": "SM_Doorbells202.fbx",
+  "textures": {
+    "D": "SM_Doorbells202_D.png",
+    "N": "SM_Doorbells202_N.png",
+    "ORM": "SM_Doorbells202_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 1560,
+  "bounds_m": {
+    "min": [
+      -0.022,
+      -0.019,
+      1.289
+    ],
+    "max": [
+      0.022,
+      0.0,
+      1.515
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "202호 문 서쪽 벽의 무선 초인종 셋(4.4 x 7 cm, 두께 1.6 cm). 원점은 벽면 바닥, 앞 -Y, 위에서부터 202-1·202-2·202-3. 앞면은 SourceArt/AI/Doorbells202_20261007(gpt-image)을 그대로 비춘다. 충돌 없음."
+}

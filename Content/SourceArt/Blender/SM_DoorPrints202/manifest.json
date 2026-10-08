@@ -1,0 +1,30 @@
+{
+  "name": "SM_DoorPrints202",
+  "mesh_class": "prop",
+  "fbx": "SM_DoorPrints202.fbx",
+  "textures": {
+    "D": "SM_DoorPrints202_D.png",
+    "N": "SM_DoorPrints202_N.png",
+    "ORM": "SM_DoorPrints202_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 36,
+  "bounds_m": {
+    "min": [
+      -0.2959,
+      -0.0004,
+      1.1793
+    ],
+    "max": [
+      -0.05,
+      -0.0002,
+      1.4954
+    ]
+  },
+  "origin": "door-face",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "202호 문짝 앞면 가운데 바닥이 원점, 앞 -Y. A4 손글씨 쪽지(가운데 X -0.17, Z 1.33), 위 두 모서리 투명 테이프. 원본 SourceArt/AI/Door202Note_20261007(gpt-image). 충돌·그림자 없음."
+}

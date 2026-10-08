@@ -1,0 +1,31 @@
+{
+  "name": "SM_StairSensorLight",
+  "mesh_class": "prop",
+  "fbx": "SM_StairSensorLight.fbx",
+  "textures": {
+    "D": "SM_StairSensorLight_D.png",
+    "N": "SM_StairSensorLight_N.png",
+    "ORM": "SM_StairSensorLight_ORM.png",
+    "E": "SM_StairSensorLight_E.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3736,
+  "bounds_m": {
+    "min": [
+      -0.13,
+      -0.13,
+      -0.089
+    ],
+    "max": [
+      0.13,
+      0.13,
+      0.0
+    ]
+  },
+  "origin": "top-center",
+  "emissive_strength": 1.0,
+  "blender": "5.2.0 LTS",
+  "notes": "계단 센서등. 원점은 천장 접촉면 중심, 아래로 9 cm. 발광은 돔에만 구웠고 씬이 MID EmissiveStrength로 켜고 끈다."
+}

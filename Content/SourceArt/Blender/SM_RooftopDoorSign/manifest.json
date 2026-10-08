@@ -1,0 +1,30 @@
+{
+  "name": "SM_RooftopDoorSign",
+  "mesh_class": "prop",
+  "fbx": "SM_RooftopDoorSign.fbx",
+  "textures": {
+    "D": "SM_RooftopDoorSign_D.png",
+    "N": "SM_RooftopDoorSign_N.png",
+    "ORM": "SM_RooftopDoorSign_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 12,
+  "bounds_m": {
+    "min": [
+      -0.15,
+      0.0227,
+      1.37
+    ],
+    "max": [
+      0.15,
+      0.0239,
+      1.57
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "옥상 철문 계단 쪽 안내판 30 x 20 cm, 가운데 높이 1.47 m. 원점과 축은 SM_RooftopDoorLeaf와 같다. 원본 SourceArt/AI/RooftopDoorSign_20261007(gpt-image). 충돌·그림자 없음."
+}

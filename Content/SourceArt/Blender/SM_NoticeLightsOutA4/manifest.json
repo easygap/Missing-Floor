@@ -1,0 +1,30 @@
+{
+  "name": "SM_NoticeLightsOutA4",
+  "mesh_class": "prop",
+  "fbx": "SM_NoticeLightsOutA4.fbx",
+  "textures": {
+    "D": "SM_NoticeLightsOutA4_D.png",
+    "N": "SM_NoticeLightsOutA4_N.png",
+    "ORM": "SM_NoticeLightsOutA4_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 36,
+  "bounds_m": {
+    "min": [
+      -0.105,
+      -0.0001,
+      -0.1485
+    ],
+    "max": [
+      0.105,
+      0.0001,
+      0.1485
+    ]
+  },
+  "origin": "center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "A4 21×29.7cm, 종이 0.15mm. 앞 -Y, 원점 중앙. 관리실 공지 「복도 소등 안내」. 앞면만 인쇄, 위쪽 테이프 2개, 충돌 없음(읽기는 씬의 상자)."
+}

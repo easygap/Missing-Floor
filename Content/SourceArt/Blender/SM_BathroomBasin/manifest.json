@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomBasin",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomBasin.fbx",
+  "textures": {
+    "D": "SM_BathroomBasin_D.png",
+    "N": "SM_BathroomBasin_N.png",
+    "ORM": "SM_BathroomBasin_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 12804,
+  "bounds_m": {
+    "min": [
+      -0.2215,
+      -0.3576,
+      0.41
+    ],
+    "max": [
+      0.2215,
+      0.0042,
+      0.9499
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "벽걸이 세면대 45 x 36 cm, 테두리 윗면 82 cm. 원점은 벽면과 바닥, 앞 -Y. 싱글 레버 수전과 병 트랩. 시안 SourceArt/AI/BathroomBasin_20261007. 충돌은 몸통 하나."
+}

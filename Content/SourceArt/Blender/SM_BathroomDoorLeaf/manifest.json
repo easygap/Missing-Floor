@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomDoorLeaf",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomDoorLeaf.fbx",
+  "textures": {
+    "D": "SM_BathroomDoorLeaf_D.png",
+    "N": "SM_BathroomDoorLeaf_N.png",
+    "ORM": "SM_BathroomDoorLeaf_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 2624,
+  "bounds_m": {
+    "min": [
+      -0.35,
+      -0.0805,
+      0.035
+    ],
+    "max": [
+      0.359,
+      0.0805,
+      2.025
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "욕실 문짝 70 x 199 x 3.6 cm(바닥에서 3.5 cm 띄움). 경첩 +X, 앞면 -Y가 403호 쪽, 원점 바닥 가운데. AIGSwingDoor::ConfigureAuthoredLeaf로 단다. 아래 루버로 안쪽 불빛이 샌다. 욕실 쪽 로제트에 누름 잠금 단추(문짝 기준 X -0.261, Z 0.99)."
+}

@@ -1,0 +1,37 @@
+{
+  "name": "SK_Eoduksini",
+  "mesh_class": "hero",
+  "fbx": "SK_Eoduksini.fbx",
+  "textures": {
+    "D": "SK_Eoduksini_D.png",
+    "N": "SK_Eoduksini_N.png",
+    "ORM": "SK_Eoduksini_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 12000,
+  "bounds_m": {
+    "min": [
+      -0.1818,
+      -0.2637,
+      -0.0007
+    ],
+    "max": [
+      0.1816,
+      0.2647,
+      2.0006
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "생성 GLB pbr_00001_.glb에서 허리를 숙이는 뼈 넷으로 리깅",
+  "skeletal": true,
+  "animations": {},
+  "bones": {
+    "waist_cm": 108.0,
+    "armpit_cm": 154.0
+  },
+  "generated_from": "../Generated/Eoduksini/trellis1024-s56/raw/pbr_00001_.glb"
+}

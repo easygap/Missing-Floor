@@ -1,0 +1,30 @@
+{
+  "name": "SM_DoorPrints303",
+  "mesh_class": "prop",
+  "fbx": "SM_DoorPrints303.fbx",
+  "textures": {
+    "D": "SM_DoorPrints303_D.png",
+    "N": "SM_DoorPrints303_N.png",
+    "ORM": "SM_DoorPrints303_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 60,
+  "bounds_m": {
+    "min": [
+      -0.2481,
+      -0.0004,
+      1.314
+    ],
+    "max": [
+      -0.0119,
+      -0.0002,
+      1.486
+    ]
+  },
+  "origin": "door-face",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "303호 문짝 앞면 가운데 바닥이 원점, 앞 -Y. A5 가로 인쇄 안내문(가운데 X -0.13, Z 1.40), 네 모서리 투명 테이프. 원본 SourceArt/AI/Door303Sign_20261007(gpt-image). 충돌·그림자 없음."
+}

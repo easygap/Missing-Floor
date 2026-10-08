@@ -1,0 +1,49 @@
+{
+  "name": "SK_Neighbor303",
+  "mesh_class": "hero",
+  "fbx": "SK_Neighbor303.fbx",
+  "textures": {
+    "D": "SK_Neighbor303_D.png",
+    "N": "SK_Neighbor303_N.png",
+    "ORM": "SK_Neighbor303_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 14000,
+  "bounds_m": {
+    "min": [
+      -0.1945,
+      -0.3165,
+      0.0
+    ],
+    "max": [
+      0.1938,
+      0.3166,
+      1.6
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "셋째 낮 계단에서 마주치는 303호(3교대 간호사, 31, 160 cm). 원본 Neighbor303Front_20261008(gpt-image) → TRELLIS.2 → rig_walker --profile resident. 시안에 없던 가방 뒤판을 생성기가 회색과 남색으로 지어내서 등 뒤 상자(X -0.11 m 뒤, 높이 0.80~1.33 m)만 굽기 전에 검게 했다. 멘 가방은 몸통 뼈만 따른다. 굽기 케이지 12 mm. Idle·Walk 루프, LookBack 1회.",
+  "skeletal": true,
+  "animations": {
+    "Idle": {
+      "frames": 120,
+      "fps": 30,
+      "loop": true
+    },
+    "Walk": {
+      "frames": 32,
+      "fps": 30,
+      "loop": true
+    },
+    "LookBack": {
+      "frames": 75,
+      "fps": 30,
+      "loop": false
+    }
+  },
+  "generated_from": "../Generated/Neighbor303/trellis1024-s56/raw/pbr_00001_.glb"
+}

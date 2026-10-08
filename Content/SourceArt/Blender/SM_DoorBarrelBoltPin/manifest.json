@@ -1,0 +1,30 @@
+{
+  "name": "SM_DoorBarrelBoltPin",
+  "mesh_class": "prop",
+  "fbx": "SM_DoorBarrelBoltPin.fbx",
+  "textures": {
+    "D": "SM_DoorBarrelBoltPin_D.png",
+    "N": "SM_DoorBarrelBoltPin_N.png",
+    "ORM": "SM_DoorBarrelBoltPin_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 724,
+  "bounds_m": {
+    "min": [
+      -0.08,
+      0.0043,
+      -0.0068
+    ],
+    "max": [
+      0.06,
+      0.036,
+      0.0068
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "빗장 막대 14 cm와 꼭지. 몸통과 원점이 같고 풀린 자리다. 걸면 +X로 4.5 cm 민다. 충돌·그림자 없음."
+}

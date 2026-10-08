@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomCornerShelf",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomCornerShelf.fbx",
+  "textures": {
+    "D": "SM_BathroomCornerShelf_D.png",
+    "N": "SM_BathroomCornerShelf_N.png",
+    "ORM": "SM_BathroomCornerShelf_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 1168,
+  "bounds_m": {
+    "min": [
+      -0.215,
+      -0.0003,
+      1.38
+    ],
+    "max": [
+      0.0003,
+      0.215,
+      1.61
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "흰 플라스틱 코너 선반(높이 1.38 m, 반지름 21 cm)과 이름표 없는 병 둘. 원점은 모서리 바닥. 충돌 없음."
+}

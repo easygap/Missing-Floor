@@ -1,0 +1,30 @@
+{
+  "name": "SM_Note303Third",
+  "mesh_class": "prop",
+  "fbx": "SM_Note303Third.fbx",
+  "textures": {
+    "D": "SM_Note303Third_D.png",
+    "N": "SM_Note303Third_N.png",
+    "ORM": "SM_Note303Third_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 60,
+  "bounds_m": {
+    "min": [
+      -0.4009,
+      -0.0004,
+      1.4174
+    ],
+    "max": [
+      -0.1591,
+      -0.0002,
+      1.7426
+    ]
+  },
+  "origin": "door-face",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "403호 문짝 바깥면 가운데 바닥이 원점, 앞 -Y. 인쇄한 A4(가운데 X -0.28, Z 1.58), 네 귀퉁이 테이프. 원본 SourceArt/AI/Note303Third_20261007(gpt-image). 충돌·그림자 없음."
+}

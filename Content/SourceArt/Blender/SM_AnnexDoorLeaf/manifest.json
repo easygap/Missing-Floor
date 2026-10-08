@@ -1,0 +1,30 @@
+{
+  "name": "SM_AnnexDoorLeaf",
+  "mesh_class": "hero",
+  "fbx": "SM_AnnexDoorLeaf.fbx",
+  "textures": {
+    "D": "SM_AnnexDoorLeaf_D.png",
+    "N": "SM_AnnexDoorLeaf_N.png",
+    "ORM": "SM_AnnexDoorLeaf_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3876,
+  "bounds_m": {
+    "min": [
+      -0.4435,
+      -0.092,
+      0.01
+    ],
+    "max": [
+      0.4518,
+      0.092,
+      2.045
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "5층 철문 88 x 203.5 x 4.5 cm. 개구부 90 cm보다 2 cm 좁아 손잡이 쪽에 빗장 받이쇠 자리가 남는다. 경첩 +X, 앞면 -Y가 증축부 안, +Y가 옥상 쪽. +Y에 열쇠 구멍과 호수 표찰을 뗀 자리(나사 구멍 둘), -Y에 경첩 너클. 원점 바닥 중심. 충돌은 문짝 판 하나."
+}

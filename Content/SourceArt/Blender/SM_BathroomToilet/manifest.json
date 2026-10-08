@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomToilet",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomToilet.fbx",
+  "textures": {
+    "D": "SM_BathroomToilet_D.png",
+    "N": "SM_BathroomToilet_N.png",
+    "ORM": "SM_BathroomToilet_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 16460,
+  "bounds_m": {
+    "min": [
+      -0.24,
+      -0.679,
+      0.0
+    ],
+    "max": [
+      0.24,
+      0.0,
+      0.761
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "투피스 양변기 48 x 68 x 76 cm, 뚜껑 닫힘. 원점은 물탱크 뒤 벽면과 바닥, 앞 -Y. 시안 SourceArt/AI/BathroomToilet_20261007. 충돌은 몸통과 물탱크 둘."
+}

@@ -1,0 +1,30 @@
+{
+  "name": "SM_FireDoorCloserRod",
+  "mesh_class": "prop",
+  "fbx": "SM_FireDoorCloserRod.fbx",
+  "textures": {
+    "D": "SM_FireDoorCloserRod_D.png",
+    "N": "SM_FireDoorCloserRod_N.png",
+    "ORM": "SM_FireDoorCloserRod_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 700,
+  "bounds_m": {
+    "min": [
+      -0.026,
+      -0.026,
+      -0.006
+    ],
+    "max": [
+      0.32,
+      0.026,
+      0.048
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "도어클로저 막대와 슈. 원점이 슈 축(슈 윗면 +5 cm가 문틀 머리 밑면), +X로 31 cm 끝이 팔꿈치. 팔보다 8 mm 위를 지난다. 충돌 없음."
+}

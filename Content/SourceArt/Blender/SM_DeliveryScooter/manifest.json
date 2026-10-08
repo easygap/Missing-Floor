@@ -13,20 +13,20 @@
   "triangles": 9000,
   "bounds_m": {
     "min": [
-      -0.9073,
-      -0.3219,
-      -0.0168
+      -0.8993,
+      -0.3212,
+      0.0016
     ],
     "max": [
-      0.8986,
-      0.3191,
-      1.2341
+      0.9032,
+      0.3197,
+      1.2355
     ]
   },
   "origin": "bottom",
   "emissive_strength": 0.0,
   "blender": "5.2.0 LTS",
-  "notes": "공동현관 앞에 세워 둔 배달 오토바이. 원본 DeliveryScooterParked_20261007, TRELLIS.2. 앞 +X, 원점 바퀴 접지 가운데.",
+  "notes": "공동현관 앞에 세워 둔 배달 오토바이. 원본 DeliveryScooterParked_20261007, TRELLIS.2. UV 이음매를 붙이고 6 mm 복셀 리메시 뒤 줄였다. 배달통 색은 탄 모델에 맞춰 0.655 m 위만 굽기 전에 보정했다(꼬리등은 그 아래). 앞 +X, 원점 바퀴 접지 가운데.",
   "generated_from": "../Generated/DeliveryScooterParked/trellis1024-s56/raw/pbr_00001_.glb",
   "vertex_ao": false
 }

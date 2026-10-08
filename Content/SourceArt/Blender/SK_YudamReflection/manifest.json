@@ -13,20 +13,20 @@
   "triangles": 14000,
   "bounds_m": {
     "min": [
-      -0.1604,
-      -0.286,
-      0.0
+      -0.1619,
+      -0.2859,
+      0.0001
     ],
     "max": [
-      0.1607,
-      0.2861,
-      1.6202
+      0.161,
+      0.2855,
+      1.6204
     ]
   },
   "origin": "bottom",
   "emissive_strength": 0.0,
   "blender": "5.2.0 LTS",
-  "notes": "승강기 거울에만 비치는 유담. gpt-image 정면 원본 YudamFrontReference_20261006 → TRELLIS → 두 발 리깅(빈손).",
+  "notes": "승강기 거울에만 비치는 유담. gpt-image 정면 원본 YudamFrontReference_20261006 → TRELLIS → 두 발 리깅(빈손). 스무딩 없이 줄인다. 스무딩이 가는 팔을 원본보다 안으로 줄여 굽기 광선이 옆 셔츠를 맞히고 팔에 셔츠색 조각이 묻었다(2026-10-08).",
   "skeletal": true,
   "animations": {
     "Idle": {

@@ -1,0 +1,30 @@
+{
+  "name": "SM_BathroomShower",
+  "mesh_class": "prop",
+  "fbx": "SM_BathroomShower.fbx",
+  "textures": {
+    "D": "SM_BathroomShower_D.png",
+    "N": "SM_BathroomShower_N.png",
+    "ORM": "SM_BathroomShower_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3660,
+  "bounds_m": {
+    "min": [
+      -0.1695,
+      -0.1355,
+      0.6009
+    ],
+    "max": [
+      0.2151,
+      0.0,
+      1.7135
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "벽걸이 샤워 수전(가운데 높이 1 m)과 호스, 벽 걸이의 손 샤워기(1.55 m). 원점은 벽면과 바닥, 앞 -Y. 시안 SourceArt/AI/BathroomShower_20261007. 충돌 없음."
+}
