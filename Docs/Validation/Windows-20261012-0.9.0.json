@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "version": "0.9.0",
+  "generatedAt": "2026-10-12T06:11:02.740595+00:00",
+  "status": "RELEASE_CANDIDATE",
+  "buildCommit": "4afc87a840a06ed1217b93f67525d0339a01328c",
+  "hasLocalChanges": false,
+  "releaseComplete": false,
+  "shippingReleaseCertified": false,
+  "scope": "같은 개발 PC의 배포본 자동 검사와 오프스크린 성능 측정이다. 실제 창의 화면 출력 비용, 여섯 장비의 출시 인증과 처음 하는 사람의 완주 검수를 포함하지 않는다.",
+  "measurementEnvironment": "성능 측정은 다른 Unreal 프로세스와 Blender가 없을 때 시작했다. 밤 경로는 10월 12일부터 손전등을 챙긴 상태로 돈다. 재부팅하거나 드라이버 셰이더 캐시를 지우지는 않았다.",
+  "package": {
+    "gameFileCount": 89,
+    "gameBytes": 882850270,
+    "manifestSha256": "6d3facbbd631bdf9b80cde451557b7afdafc25830de13dd8c5e3be51099cf5d3",
+    "zip": "MissingFloor-0.9.0-Windows.zip",
+    "zipBytes": 720996056,
+    "zipSha256": "d3e9395c54aa4ffa8a207d3090cf9d0ba8b7b6435b4132dc87dc6b1e2c52276a"
+  },
+  "sections": {
+    "packageContents": {
+      "command": "Scripts/check_package_contents.py",
+      "required": 159,
+      "missing": 0,
+      "shippedPackages": 1380,
+      "note": "경찰관(SK_PolicePatrol)과 종이 손님(SK_PaperGuest) 몸, 동작, 재질이 배포본에 들었다"
+    },
+    "pipelineCache": {
+      "file": "Build/Windows/PipelineCaches/PSO_IndieGame_PCD3D_SM6.spc",
+      "stablePsos": 269,
+      "graphics": 265,
+      "compute": 4,
+      "rejected": 0,
+      "filteredBySanitizer": 0,
+      "recordedSessions": 14,
+      "note": "현장 확인과 5층 철문간의 손님 촬영을 기록 장면에 더했다(Scripts/Record-PsoCache.ps1)"
+    },
+    "packageReview": {
+      "passed": true,
+      "cases": [
+        "Arrival",
+        "ArrivalResume",
+        "FullGame",
+        "Audio"
+      ],
+      "archiveUnchanged": true
+    },
+    "saveRecoveryNewSave": {
+      "cases": 16,
+      "passed": true
+    },
+    "saveRecovery024EraSave": {
+      "seed": "Saved/Validation/Review090-20261001-162856/SaveUser/Saved/SaveGames/AutoSave_1.sav",
+      "seedSha256": "e0d61ab08f8b46528d385e8f02168c4b082ecf989b678ca8b3cd8ae16efa73c6",
+      "seedNote": "0.2.4 다음 판 번호만 바꾼 10월 1일 Shipping 배포본이 쓴 입주 저장이다(저장 스키마 3, 엔진 커스텀 버전 91개). PSO 기록용 Development 배포본이 쓴 저장은 커스텀 버전 키가 둘 더 있어 헤더 검사에서 거부되므로 씨앗으로 쓰지 않았다",
+      "cases": 16,
+      "passed": true
+    },
+    "endingLifecycle": {
+      "passed": true,
+      "cases": [
+        "Checkpoint",
+        "EndingA",
+        "ProfileA",
+        "EndingB",
+        "ProfileB"
+      ]
+    },
+    "frontend_ko": {
+      "resolutions": 4,
+      "layoutSamples": 44,
+      "inputEvents": 44,
+      "dialogueCases": 8,
+      "titleCases": 4,
+      "archiveUnchanged": true
+    },
+    "frontend_en": {
+      "resolutions": 4,
+      "layoutSamples": 44,
+      "inputEvents": 44,
+      "dialogueCases": 8,
+      "titleCases": 4,
+      "archiveUnchanged": true
+    },
+    "frontend_ja": {
+      "resolutions": 4,
+      "layoutSamples": 44,
+      "inputEvents": 44,
+      "dialogueCases": 8,
+      "titleCases": 4,
+      "archiveUnchanged": true
+    },
+    "frontend_zh-Hans": {
+      "resolutions": 4,
+      "layoutSamples": 44,
+      "inputEvents": 44,
+      "dialogueCases": 8,
+      "titleCases": 4,
+      "archiveUnchanged": true
+    },
+    "frontend_zh-Hant": {
+      "resolutions": 4,
+      "layoutSamples": 44,
+      "inputEvents": 44,
+      "dialogueCases": 8,
+      "titleCases": 4,
+      "archiveUnchanged": true
+    }
+  },
+  "profileRuns": [
+    {
+      "group": "1080p-q2",
+      "run": 1,
+      "warmupSeconds": 120,
+      "presentationMode": "Offscreen",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 11.451,
+      "onePercentLowFps": 79.858,
+      "gpuP95Ms": 10.975,
+      "maxFrameMs": 14.783,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": true,
+      "analyzedSeconds": 63.811,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q2",
+      "run": 2,
+      "warmupSeconds": 120,
+      "presentationMode": "Offscreen",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 11.467,
+      "onePercentLowFps": 78.021,
+      "gpuP95Ms": 10.992,
+      "maxFrameMs": 23.866,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": true,
+      "analyzedSeconds": 63.813,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q2",
+      "run": 3,
+      "warmupSeconds": 120,
+      "presentationMode": "Offscreen",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 11.961,
+      "onePercentLowFps": 75.734,
+      "gpuP95Ms": 11.356,
+      "maxFrameMs": 15.626,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": true,
+      "analyzedSeconds": 63.815,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q1",
+      "run": 1,
+      "warmupSeconds": 120,
+      "presentationMode": "Offscreen",
+      "resolution": "1080p",
+      "quality": 1,
+      "targetFps": 30,
+      "frameP95Ms": 8.778,
+      "onePercentLowFps": 104.027,
+      "gpuP95Ms": 8.344,
+      "maxFrameMs": 11.534,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": true,
+      "analyzedSeconds": 63.809,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    }
+  ],
+  "remainingValidation": [
+    "여섯 장비(최소·권장, Windows 10·11, NVIDIA·AMD)의 성능 측정",
+    "처음 하는 다섯 사람의 완주 기록",
+    "실제 창 모드에서 PresentMon으로 잰 화면 출력 비용",
+    "원어민의 번역 검수(영어·일본어·중국어 간체·번체)"
+  ],
+  "sources": [
+    {
+      "path": "Saved/Packages/Windows-20261012-141526/manifest.json",
+      "bytes": 25289,
+      "sha256": "6d3facbbd631bdf9b80cde451557b7afdafc25830de13dd8c5e3be51099cf5d3"
+    },
+    {
+      "path": "Saved/Validation/WindowsPackage-20261012-141934/summary.json",
+      "bytes": 3024,
+      "sha256": "e085b2c95514ab07f6502df29a7a9a475d072688c7420f5c7a2571bb38f63cd1"
+    },
+    {
+      "path": "Saved/Validation/WindowsPackage-20261012-141934/SaveRecovery/summary.json",
+      "bytes": 10079,
+      "sha256": "7b43df357d0bbeac41b5a44413b490686749609714e8781e17710f4496c50e6e"
+    },
+    {
+      "path": "Saved/Validation/SaveRecovery1001Shipping-20261012-145445/summary.json",
+      "bytes": 10084,
+      "sha256": "b2a5e321453fb79e5be16011a9ab0c20d40890b2e43c6a188f11a9fff183bec1"
+    },
+    {
+      "path": "Saved/Validation/WindowsPackage-20261012-141934/EndingLifecycle/summary.json",
+      "bytes": 7707,
+      "sha256": "1c8f8a05c6ab8810fd939852f47018dd7a5c7b7aba496a1f34806f0ee78b5bc0"
+    },
+    {
+      "path": "Saved/Releases/0.9.0/package.json",
+      "bytes": 576,
+      "sha256": "4e0cd70692db702d6688be1478fabcaa4c2a1084a77f2b81c873936af7fc44b8"
+    },
+    {
+      "path": "Saved/Validation/WindowsPackage-20261012-141934/Frontend/summary.json",
+      "bytes": 15182,
+      "sha256": "3319669fab94b9f98b1abceea439528fe73449b7109ef77d572512139ec2333a"
+    },
+    {
+      "path": "Saved/Validation/Frontend-en-20261012-141934/summary.json",
+      "bytes": 14818,
+      "sha256": "eb07a9d4ab4a2b2dde4898946303b43a58175468b8c43e3f336bdc8a66bc1200"
+    },
+    {
+      "path": "Saved/Validation/Frontend-ja-20261012-141934/summary.json",
+      "bytes": 14818,
+      "sha256": "c2de6e7c10d7ddb2d31779bf0543999c19810787e575e38665740a44d3cce13e"
+    },
+    {
+      "path": "Saved/Validation/Frontend-zh-Hans-20261012-141934/summary.json",
+      "bytes": 14958,
+      "sha256": "c0958ff7f425fac759d640e88112d55edd3a91aa032cd6e11a0263497a6f8291"
+    },
+    {
+      "path": "Saved/Validation/Frontend-zh-Hant-20261012-141934/summary.json",
+      "bytes": 14958,
+      "sha256": "29dfee346b271d926a2de444767585194ef474cc27bc19de28244f285c0aba7e"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-20261012-145550/summary.json",
+      "bytes": 4076,
+      "sha256": "ee3ddc59521089c6af80569d0a27a7468c84b913efe09fd600f09d68f08f3d60"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-20261012-145550/Run1/summary.json",
+      "bytes": 8740,
+      "sha256": "f54a35b704e085047fb5d25149af625823a30532b0f68f20c875960a18a8c17a"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-20261012-145550/Run2/summary.json",
+      "bytes": 8740,
+      "sha256": "f81d1a1ac0c45c8c3fe7b86d4ed7c29b66dd7cb82287ceaef3b323c992905f64"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-20261012-145550/Run3/summary.json",
+      "bytes": 8744,
+      "sha256": "a912228f1fc4a0326b695b4800bc3a096c9c2c726fdc54238e2fd2a23da8ca56"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q1-20261012-145550/summary.json",
+      "bytes": 2436,
+      "sha256": "5f6b4084e5b9cde2c11f6d81e50fc2740c8d78761f5c00020f19afe7eebeec4e"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q1-20261012-145550/Run1/summary.json",
+      "bytes": 8679,
+      "sha256": "7978a7b7d656f5d6c3ffb84e4a75b13454692dab4b9443378b84b70c4918bc84"
+    }
+  ]
+}
