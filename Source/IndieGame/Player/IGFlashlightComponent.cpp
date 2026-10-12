@@ -105,7 +105,18 @@ void UIGFlashlightComponent::RefreshOwnership()
 {
 	const UGameInstance* Instance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	const UIGStoryStateSubsystem* Story = Instance ? Instance->GetSubsystem<UIGStoryStateSubsystem>() : nullptr;
-	SetAvailable(Story && Story->HasState(GetOwnershipTag()));
+	SetAvailable(!bDropped && Story && Story->HasState(GetOwnershipTag()));
+}
+
+void UIGFlashlightComponent::SetDropped(const bool bInDropped)
+{
+	if (bDropped == bInDropped)
+	{
+		return;
+	}
+	bDropped = bInDropped;
+	ClearKnockLoose();
+	RefreshOwnership();
 }
 
 void UIGFlashlightComponent::HandleStoryStateChanged(FGameplayTag StateTag, bool bAdded)
@@ -171,7 +182,7 @@ void UIGFlashlightComponent::SetOn(const bool bNewOn)
 			bLowBatteryNoticed = false;
 			AIGHorrorHUD::PushThought(
 				this,
-				NSLOCTEXT("IGMissingFloor", "YudamBatteryChanged", "건전지를 새것으로 갈아 끼웠다."),
+				NSLOCTEXT("IGMissingFloor", "YudamBatteryChanged", "이걸로 좀 버티겠지."),
 				2.6f);
 		}
 		PreviousWorldRotation = GetComponentRotation();
@@ -286,6 +297,8 @@ void UIGFlashlightComponent::ClearKnockLoose()
 	KnockLooseAge = -1.0f;
 	PreviousWorldRotation = GetComponentRotation();
 	Beam->SetRelativeRotation(FRotator::ZeroRotator);
+	Beam->SetIntensity(BeamIntensity * GetCellOutput());
+	Spill->SetIntensity(520.0f * GetCellOutput());
 }
 
 void UIGFlashlightComponent::TickComponent(
@@ -316,13 +329,13 @@ void UIGFlashlightComponent::TickComponent(
 			3.0f);
 	}
 	float Flicker = SampleFlicker(DeltaSeconds) * GetCellOutput();
-	if (KnockLooseAge >= 0.52f)
+	if (KnockLooseAge >= 0.0f)
 	{
-		// 바닥에 떨어진 손전등은 빛의 절반쯤을 바닥에 빼앗긴다. 닿는 순간에만 한 번
-		// 더 어두워진다. 되풀이하면 점멸이 된다.
-		const bool bLandingDip = KnockLooseAge < 0.64f
-			&& !(AccessibilitySubsystem && AccessibilitySubsystem->IsReducedFlickerEnabled());
-		Flicker *= bLandingDip ? 0.35f : 0.5f;
+		// 손을 떠난 빛은 천장을 쓰는 첫 순간만 보이고 곧 꺼진다. 떨어지는 빛이 코앞의
+		// 얼굴을 쓸고 지나가면 화면이 네 프레임쯤 하얗게 탔다(15%로 줄여도 40cm 앞에서는
+		// 탔다). 바닥에 떨어진 손전등의 빛은 괴물 쪽의 바닥 빛(위층 사람의 CaptureKeyLight)이
+		// 맡고, 얼굴이 그 빛 속으로 기어 들어온다.
+		Flicker *= 1.0f - FMath::SmoothStep(0.08f, 0.20f, KnockLooseAge);
 	}
 	Beam->SetIntensity(BeamIntensity * Flicker);
 	Spill->SetIntensity(520.0f * Flicker);

@@ -1840,21 +1840,6 @@ UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateCaptureStruggle(UObjec
 	return Wave;
 }
 
-UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreateCaptureCut(UObject* Outer)
-{
-	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGCaptureCut"));
-	TArray<FIGToneNote> Notes;
-	// 화면이 검게 끊기는 순간 머리가 바닥에 닿는 둔한 타격이 온다. 그 뒤로 귀에
-	// 높은 울림이 남는다. 두 음을 67Hz 어긋나게 겹쳐 맥놀이가 나고 1.5초에 걸쳐
-	// 사라진다. 그 아래로 몸싸움 소리의 뒤쪽과 노크 둘이 이어진다.
-	Notes.Add({0.00f, 0.45f, 44.0f, 0.340f, 0.004f, 2.6f, EIGToneWaveform::Sub});
-	Notes.Add({0.00f, 0.08f, 900.0f, 0.100f, 0.010f, 1.6f, EIGToneWaveform::BandNoise, 0.35f});
-	Notes.Add({0.04f, 1.55f, 6120.0f, 0.020f, 0.100f, 1.2f, EIGToneWaveform::Sine});
-	Notes.Add({0.04f, 1.55f, 6187.0f, 0.016f, 0.100f, 1.2f, EIGToneWaveform::Sine});
-	Wave->ConfigureNotes(MoveTemp(Notes), false);
-	return Wave;
-}
-
 UIGToneSequenceSoundWave* UIGToneSequenceSoundWave::CreatePresenceLayer(UObject* Outer)
 {
 	UIGToneSequenceSoundWave* Wave = IGToneSequence::NewWave(Outer, TEXT("IGPresenceLayer"));

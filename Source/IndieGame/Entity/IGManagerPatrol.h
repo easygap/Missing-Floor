@@ -6,6 +6,7 @@
 
 class AIGListenerEntity;
 class AIGNightLoopDirector;
+enum class EIGCaptureKind : uint8;
 class AIGPlayerCharacter;
 class AIGPrologueWorldScene;
 class AIGSwingDoor;
@@ -78,6 +79,8 @@ public:
 
 	EIGManagerPatrolState GetPatrolState() const { return State; }
 	bool IsOnDuty() const { return bOnDuty; }
+	/** 검사 전용. 그녀 앞 80cm에 서서 곧바로 손목을 잡는다. */
+	void BeginCatchForProbe();
 	/** 쫓거나 잡는 중. 그동안 다른 괴이는 끼어들지 않는다. */
 	bool IsPursuing() const;
 	/** 월드에 쫓고 있는 관리인이 있는가. 괴이 감독이 긴장 예산을 잴 때 쓴다. */
@@ -131,6 +134,13 @@ private:
 	void BeginRetreat(float RestAfterSeconds);
 	void BeginCatch();
 	void FinishCatch();
+	/**
+	 * 포획 화면이 다 덮였다(밤 루프 감독). 누가 잡았든 안쪽 방으로 돌아가 있고,
+	 * 그가 잡았으면 그녀를 403호 현관에 두고 계단 열쇠를 거둬 간다.
+	 */
+	void HandleCaptureSettled(EIGCaptureKind Kind, const FVector& CaptureSpot);
+	/** 403호 문밖에서 열쇠 꾸러미, 도어락, 멀어지는 슬리퍼. 데려다 놓고 가는 소리다. */
+	void PlayEscortAftermath(bool bKeyTaken);
 
 	void TickResting(float DeltaSeconds);
 	void TickWalking(float DeltaSeconds, float Speed);
@@ -225,7 +235,9 @@ private:
 	TWeakObjectPtr<UIGNoiseSubsystem> NoiseSubsystem;
 	FDelegateHandle NoiseHandle;
 	FDelegateHandle KnockHandle;
+	FDelegateHandle CaptureSettledHandle;
 	FTimerHandle DutyTimer;
+	FTimerHandle EscortTimer;
 
 	TArray<FPatrolNode> Nodes;
 	TArray<FRouteStop> Route;

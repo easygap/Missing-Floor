@@ -82,7 +82,7 @@ namespace IGInputBinding
 			{
 				TEXT("RequestHint"),
 				NSLOCTEXT("IGInput", "ActionHint", "힌트"),
-				NSLOCTEXT("IGInput", "DescHint", "막혔을 때 지금 어디를 보면 될지 떠올립니다. 누를수록 조금씩 더 자세해집니다."),
+				NSLOCTEXT("IGInput", "DescHint", "진행이 막혔을 때 힌트를 봅니다. 여러 번 누르면 더 자세히 알려 줍니다."),
 				EKeys::H,
 				EKeys::Gamepad_RightShoulder,
 			},
@@ -183,7 +183,7 @@ bool UIGInputBindingSubsystem::TryRebind(
 	if (!NewKey.IsValid())
 	{
 		OutFailureReason = NSLOCTEXT(
-			"IGInput", "RebindInvalid", "그 입력은 키로 쓸 수 없습니다.");
+			"IGInput", "RebindInvalid", "이 입력은 지정할 수 없습니다.");
 		return false;
 	}
 	if (IsReservedKey(NewKey))
@@ -199,9 +199,9 @@ bool UIGInputBindingSubsystem::TryRebind(
 	{
 		OutFailureReason = bGamepad
 			? NSLOCTEXT(
-				"IGInput", "RebindNeedsPad", "패드 칸에는 패드 버튼만 넣을 수 있습니다.")
+				"IGInput", "RebindNeedsPad", "게임패드 버튼을 눌러 주세요.")
 			: NSLOCTEXT(
-				"IGInput", "RebindNeedsKeyboard", "키보드 칸에는 키보드나 마우스만 넣을 수 있습니다.");
+				"IGInput", "RebindNeedsKeyboard", "키보드나 마우스 버튼을 눌러 주세요.");
 		return false;
 	}
 	// §24 즉시 차단 16. 한 장치 안에서 두 동사가 같은 키를 쓰면 두드리기가

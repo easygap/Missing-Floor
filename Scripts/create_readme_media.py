@@ -45,7 +45,7 @@ def build_global_palette(frames: list[Image.Image]) -> Image.Image:
     return atlas.quantize(colors=PALETTE_COLORS, method=Image.Quantize.MEDIANCUT)
 
 
-def main() -> None:
+def build_route_preview() -> int:
     captures = [load_capture(filename) for filename in CAPTURES]
     palette = build_global_palette(captures)
 
@@ -77,10 +77,15 @@ def main() -> None:
         disposal=2,
         comment=b"Actual in-game capture route preview",
     )
-    # 추격 GIF는 예고편과 같은 촬영분의 연속 프레임을 쓴다. 계단을 기어 내려오는 몸,
-    # 발치에서 일어나는 몸, 넘어지며 얼굴이 덮치는 순간(capture-front 4~45)까지.
+    return len(gif_frames)
+
+
+def build_chase() -> None:
+    # 추격 GIF는 예고편과 같은 촬영분의 연속 프레임을 쓴다. 4층 참에 귀를 댄 몸, 복도
+    # 끝에서 기어 와 발밑에서 붙잡고, 바닥 빛 속에 얼굴을 들이민 채 듣다가 끊기기까지
+    # (listener-approach 0~116, 끊김은 111). 화면은 흔들리지 않는다.
     motion = []
-    for shot, start, end in (('stair-landing', 0, 60), ('listener-approach', 0, 66), ('capture-front', 4, 46)):
+    for shot, start, end in (('stair-landing', 0, 60), ('listener-approach', 0, 117)):
         for index in range(start, end, 3):
             with Image.open(PROJECT_ROOT / 'Saved/Trailer' / shot / f'frame_{index:04d}.png') as source:
                 motion.append(source.convert('RGB').resize(FRAME_SIZE, Image.Resampling.LANCZOS))
@@ -88,10 +93,16 @@ def main() -> None:
     motion = [frame.quantize(palette=motion_palette, dither=Image.Dither.FLOYDSTEINBERG) for frame in motion]
     motion[0].save(MEDIA_ROOT / 'night-listener-chase.gif', save_all=True, append_images=motion[1:],
                    duration=100, loop=0, optimize=True, disposal=2)
-    print(
-        "README_MEDIA PASS "
-        f"captures={len(captures)} frames={len(gif_frames)} output={OUTPUT_PATH}"
-    )
+
+
+def main() -> None:
+    # --chase면 추격 GIF만 다시 만든다. 낮 동선 GIF는 README 캡처가 바뀔 때만 만든다.
+    import sys
+    if '--chase' not in sys.argv:
+        frames = build_route_preview()
+        print(f"README_MEDIA PASS captures={len(CAPTURES)} frames={frames} output={OUTPUT_PATH}")
+    build_chase()
+    print("README_MEDIA PASS chase=night-listener-chase.gif")
 
 
 if __name__ == "__main__":

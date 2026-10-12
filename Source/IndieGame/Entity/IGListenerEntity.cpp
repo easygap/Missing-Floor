@@ -52,6 +52,11 @@ namespace IGListener
 	constexpr float SearchRadius = 350.0f;
 	constexpr float ChaseGiveUpSeconds = 8.0f;
 	constexpr float CaptureHoldSeconds = 2.5f;
+	// 감독이 없을 때 잡은 몸이 끊길 때까지 쓰는 시간. 몸싸움 소리의 첫 노크(1.48초)다.
+	constexpr float CaptureCutSeconds = 1.48f;
+	// 끊기는 때의 이만큼에 얼굴이 멈춘다. 나머지는 멈춰서 듣는 시간이다.
+	constexpr float CaptureArriveFraction = 0.78f;
+	constexpr float CaptureFaceStopCentimeters = 45.0f;
 	/** Hearing bonus while deliberately listening. */
 	constexpr float ListeningGain = 2.0f;
 	constexpr float HoldingGain = 1.5f;
@@ -1007,7 +1012,8 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 	if (!bDormant
 		&& State != EIGListenerState::Waiting
 		&& State != EIGListenerState::CaptureHold
-		&& State != EIGListenerState::FinaleLured)
+		&& State != EIGListenerState::FinaleLured
+		&& GetWorld()->GetTimeSeconds() >= PerceptionGraceUntil)
 	{
 		if (!CachedPlayer.IsValid())
 		{
@@ -1096,6 +1102,20 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 		|| State == EIGListenerState::FinaleLured)
 	{
 		return;
+	}
+	// 잡은 뒤 잠깐은 그녀가 내는 소리를 듣지 않는다. 바닥에서 일어나 숨을 고르는 소리에
+	// 곧장 돌아오면 깨어난 것이 아니다. 건물과 연출이 내는 소리는 그대로 듣는다.
+	if (Event.TimeSeconds < PerceptionGraceUntil)
+	{
+		const AActor* Source = Event.Instigator.Get();
+		const bool bFromHer = Source
+			&& (Source->IsA<AIGPlayerCharacter>()
+				|| Cast<AIGPlayerCharacter>(Source->GetOwner())
+				|| Cast<AIGPlayerCharacter>(Source->GetInstigator()));
+		if (bFromHer)
+		{
+			return;
+		}
 	}
 	const AIGSwingDoor* Door = HomeDoor.Get();
 	const bool bHomeSound = Door
@@ -1898,6 +1918,33 @@ void AIGListenerEntity::ResetToPatrolStart(const bool bRaiseAggression)
 	// §5.6: the habit survives the reset. He does not forget where you have been
 	// loud just because the clock went back to half past four — that memory is
 	// the whole point of the heatmap, and it only halves when a night ends.
+	RefreshNightTuning();
+	EnterState(EIGListenerState::Patrolling);
+}
+
+bool AIGListenerEntity::IsInCaptureGrace() const
+{
+	const UWorld* World = GetWorld();
+	return World && World->GetTimeSeconds() < PerceptionGraceUntil;
+}
+
+void AIGListenerEntity::ReturnAfterCapture(const float GraceSeconds)
+{
+	TeleportTo(SpawnLocation, GetActorRotation(), false, true);
+	SetActorEnableCollision(true);
+	PatrolIndex = 0;
+	NavPath.Reset();
+	NavPathOnStair.Reset();
+	PlayerTrail.Reset();
+	AlertUntilSeconds = -1000.0;
+	StairPitchTarget = 0.0f;
+	StairBodyPitch = 0.0f;
+	bBeatHold = false;
+	bReactingToSound = false;
+	bAmbushArmed = false;
+	bLungeArmed = false;
+	const UWorld* World = GetWorld();
+	PerceptionGraceUntil = World ? World->GetTimeSeconds() + GraceSeconds : -1000.0;
 	RefreshNightTuning();
 	EnterState(EIGListenerState::Patrolling);
 }
@@ -3173,27 +3220,20 @@ void AIGListenerEntity::UpdateSkeletalPose(
 	{
 	case EIGListenerState::CaptureHold:
 	{
-		// 넘어지는 동안 한 번 물러나 웅크렸다가, 점점 빨라지며 눈앞으로 달려들고 화면이
-		// 끊기는 순간 얼굴이 닿는다. 도착해서 머무는 시간은 없다. 눈앞에서 서성이면
-		// 무섭지 않고 어색했다. 0.12초마다 0.045초씩 멈춰 서서 한 장씩 찍어 넘긴 인형처럼
-		// 끊겨 보인다.
+		// 쓰러진 눈을 향해 기어 올라온다. 멀리서는 빠르고 가까워질수록 느려져, 끊기기
+		// 조금 전 눈앞에서 멈춘다. 멈춘 뒤에는 꼼짝 않고 듣는다. 그녀의 숨소리를 듣는
+		// 것이다. 물러났다 달려들거나 프레임을 끊어 튀는 동작은 쓰지 않는다. 바닥을
+		// 두드리는 노크 하나에 화면이 끊긴다.
 		const AIGPlayerCharacter* Victim = CaptureVictim.Get();
 		const float CutSeconds = Victim && Victim->GetCaptureCutSeconds() > 0.0f
 			? Victim->GetCaptureCutSeconds()
-			: 0.95f;
-		const bool bFrozen = FMath::Fmod(StateSeconds, 0.12f) < 0.045f;
-		PlayBodyAnim(EIGListenerBodyAnim::Crawl, true, bFrozen ? 0.0f : 2.6f);
-		if (!bFrozen)
-		{
-			const float Phase = FMath::Clamp(StateSeconds / CutSeconds, 0.0f, 1.0f);
-			const FVector Coil = CaptureFallenEye + CaptureStrikeLine * 70.0f - FVector(0, 0, 8);
-			const FVector Wanted = Phase < 0.45f
-				? FMath::Lerp(CaptureFaceStart, Coil,
-					FMath::InterpEaseOut(0.0f, 1.0f, Phase / 0.45f, 2.0f))
-				: FMath::Lerp(Coil, CaptureViewTarget,
-					FMath::Pow((Phase - 0.45f) / 0.55f, 2.4f));
-			ListenerSkeletal->AddWorldOffset(Wanted - GetCaptureFaceLocation());
-		}
+			: IGListener::CaptureCutSeconds;
+		const float Arrive = FMath::Clamp(
+			StateSeconds / (CutSeconds * IGListener::CaptureArriveFraction), 0.0f, 1.0f);
+		PlayBodyAnim(EIGListenerBodyAnim::Crawl, true, 1.6f * FMath::Square(1.0f - Arrive));
+		const FVector Wanted = FMath::Lerp(
+			CaptureFaceStart, CaptureViewTarget, FMath::InterpEaseOut(0.0f, 1.0f, Arrive, 2.2f));
+		ListenerSkeletal->AddWorldOffset(Wanted - GetCaptureFaceLocation());
 		if (CaptureKeyLight)
 		{
 			// 손전등이 바닥에 떨어진 뒤에야 얼굴에 빛이 닿는다.
@@ -4368,10 +4408,11 @@ void AIGListenerEntity::BeginCapture(APawn* Player)
 	{
 		const FVector Direction = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
 		SetActorRotation(Direction.Rotation());
-		// 플레이어는 뒤로 넘어져 바닥 가까이에서 괴물 쪽을 조금 올려다본다(AIGPlayerCharacter의
-		// 포획 시점). 기는 자세의 얼굴은 위를 보고 있어서 이 각도에서 가장 잘 읽힌다. 얼굴은
-		// 이 시선 위에서 70cm까지 물러났다가 눈앞 20cm로 달려든다. 주먹 쥔 두 팔을 가슴
-		// 앞으로 드는 덮치기 동작은 쓰지 않는다. 권투 자세로 읽혔다.
+		// 플레이어는 발목을 잡혀 바닥으로 끌려 내려가 괴물 쪽을 조금 올려다본다
+		// (AIGPlayerCharacter의 포획 시점). 기는 자세의 얼굴은 위를 보고 있어서 이 각도에서
+		// 가장 잘 읽힌다. 얼굴은 이 시선을 따라 눈앞 45cm까지 기어 올라와 멈춘다. 머리가
+		// 통째로 화면에 들어오는 거리다. 20~28cm에서는 얼굴이 화면을 채워 뭉개진 덩어리로
+		// 보였다. 주먹 쥔 두 팔을 가슴 앞으로 드는 덮치기 동작은 쓰지 않는다. 권투 자세로 읽혔다.
 		// 넘어지는 눈높이는 선 사람 기준으로 잰다. 침대 밑에서 끌려 나와 아직 앉은
 		// 몸을 엔진의 앉은 눈높이로 재면 덮치는 얼굴이 바닥 밑으로 들어간다.
 		FVector StandingEye = Player->GetPawnViewLocation();
@@ -4387,8 +4428,8 @@ void AIGListenerEntity::BeginCapture(APawn* Player)
 			+ Direction * AIGPlayerCharacter::CaptureFallBackCentimeters
 			- FVector(0, 0, AIGPlayerCharacter::CaptureFallDropCentimeters);
 		CaptureStrikeLine = (-Direction * 34.0f + FVector(0, 0, 10)).GetSafeNormal();
-		CaptureViewTarget = CaptureFallenEye + CaptureStrikeLine * 20.0f;
-		// 바닥에 떨어진 손전등 자리. 달려드는 얼굴이 이 빛 속으로 들어온다.
+		CaptureViewTarget = CaptureFallenEye + CaptureStrikeLine * IGListener::CaptureFaceStopCentimeters;
+		// 바닥에 떨어진 손전등 자리. 기어 오는 얼굴이 이 빛 속으로 들어온다.
 		CaptureKeyLightLocation = CaptureViewTarget - FVector(0, 0, 18) + Direction * 4.0f;
 	}
 	CaptureVictim = Cast<AIGPlayerCharacter>(Player);

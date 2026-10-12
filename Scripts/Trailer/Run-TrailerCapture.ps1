@@ -9,10 +9,10 @@ param(
 # 트레일러 재료를 30fps 고정 간격으로 찍는다. 프레임은 Saved/Trailer/<장면>/에 쌓인다.
 # 다음 순서로 영상을 만든다.
 #   1. 이 스크립트
-#   2. python Scripts/Trailer/cards.py [소셜 미리보기 경로]
+#   2. python Scripts/Trailer/cards.py (소셜 미리보기는 --social <경로>)
 #   3. python Scripts/Trailer/assemble.py --marks
 #   4. python Scripts/Trailer/compose.py
-#   5. python Scripts/Trailer/assemble.py trailer_final.mp4
+#   5. python Scripts/Trailer/assemble.py ko, 그다음 en
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $editor = & (Join-Path $root 'Scripts\Resolve-UnrealEditor.ps1') -Commandlet

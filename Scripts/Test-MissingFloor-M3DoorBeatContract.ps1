@@ -209,8 +209,8 @@ Require-All $greybox @(
 	'void AIGListenerGreyboxDirector::HandleNightTwoReturnedHome()',
 	'NightPhase->CompleteNightGoal();'
 ) '비트 2-5 night ending'
-# 포획 리셋은 침대로 되돌린다. 그것이 도착으로 세어지면 잡히는 것이 목표
-# 달성이 된다.
+# 잡혀서 403호 안에서 깨어난 것을 도착으로 세면 잡히는 것이 목표 달성이 된다.
+# 한 번 나갔다 와야 한다.
 Require-All $beat @(
 	'void AIGMissingFloorNightTwoBeatDirector::NotifyCaptureReset()',
 	'bMustLeaveHomeAgain = true;',

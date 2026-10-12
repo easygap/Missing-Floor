@@ -40,6 +40,13 @@ public:
 
 	AIGSwingDoor* GetDoor() const { return Door.Get(); }
 
+	/**
+	 * 손님에게 잡힌 밤, 손님이 뜯어 놓았다(§5.4). 받침판이 나사 하나에 매달려 기울고
+	 * 새벽까지 걸 수 없다. 걸려 있었으면 풀린다. 새벽에 손님 감독이 되돌린다.
+	 */
+	void SetBroken(bool bInBroken);
+	bool IsBroken() const { return bBroken; }
+
 	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
 	virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;
 	virtual void CompleteInteraction_Implementation(const FIGInteractionContext& Context) override;
@@ -70,4 +77,5 @@ private:
 	/** 비어 있으면 현관 걸쇠 문구를 쓴다. */
 	FText LockPrompt;
 	FText UnlockPrompt;
+	bool bBroken = false;
 };

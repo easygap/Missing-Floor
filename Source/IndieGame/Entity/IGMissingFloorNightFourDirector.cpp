@@ -1357,13 +1357,8 @@ void AIGMissingFloorNightFourDirector::BeginCavityReveal()
 		break;
 	}
 
-	AIGHorrorHUD::PushThought(
-		this,
-		NSLOCTEXT(
-			"IGMissingFloor",
-			"FinalRevealBegin",
-			"위에서부터 천천히 비춰 본다."),
-		4.2f);
+	// 벽 안을 알아보는 동안에는 유담이 몸의 상태를 해설하지 않는다.
+	// 시선 확인이 끝난 뒤 오빠를 부르는 한마디만 남긴다.
 	SetActorTickEnabled(true);
 }
 
@@ -1434,13 +1429,7 @@ void AIGMissingFloorNightFourDirector::AdvanceCavityReveal()
 	}
 	if (FinalRevealStage == 0)
 	{
-		AIGHorrorHUD::PushThought(
-			this,
-			NSLOCTEXT(
-				"IGMissingFloor", "FinalRevealSkull",
-				"고개가 옷깃 쪽으로 푹 숙여져 있다."),
-			3.0f);
-		// 알아보는 순간 공동 안에서 석고가 갈라져 떨어진다. 글만 있던 단계에 소리.
+		// 손전등이 얼굴에 닿을 때 석고가 갈라져 떨어진다.
 		IGAudio::SpawnOneShotAt(
 			this,
 			UIGToneSequenceSoundWave::CreateSettlePlasterTick(this),
@@ -1460,16 +1449,7 @@ void AIGMissingFloorNightFourDirector::AdvanceCavityReveal()
 			PlayerCharacter->PlayScareKick(0.8f);
 		}
 	}
-	else if (FinalRevealStage == 1)
-	{
-		AIGHorrorHUD::PushThought(
-			this,
-			NSLOCTEXT(
-				"IGMissingFloor", "FinalRevealRibs",
-				"갈비뼈 사이에 석고 가루가 쌓여 있다. 오래됐어."),
-			3.0f);
-	}
-	else
+	else if (FinalRevealStage == 2)
 	{
 		BeginSilenceBeat();
 		return;
@@ -1513,7 +1493,7 @@ void AIGMissingFloorNightFourDirector::BeginSilenceBeat()
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"FinalRevealShoes",
-			"한쪽 발이 안으로 꺾여 있다. 방수포, 카트 바퀴… 오빠야."),
+			"오빠…"),
 		5.0f);
 	const UIGMissingFloorNarrativeSubsystem* NarrativeNow = GetNarrative();
 	if (FifthDawn.IsValid() && NarrativeNow
@@ -1714,7 +1694,7 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 	const FText MokLine = NSLOCTEXT(
 		"IGMissingFloor",
 		"MokHansooFinalLine",
-		"그만해요. 덮어야 돼. 이거… 말해 봤자 아무도 안 믿어요.");
+		"망치 내려놔요. 거기서 나와. 내가 처리할 테니까.");
 	AIGHorrorHUD::PushDialogue(
 		this,
 		NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
@@ -1982,7 +1962,7 @@ void AIGMissingFloorNightFourDirector::CompleteConfrontation()
 		this,
 		NSLOCTEXT(
 			"IGMissingFloor", "FinalConfrontationAfter",
-			"나를 지나쳐서 관리인을 따라갔어."),
+			"관리인 쪽으로 갔어."),
 		4.5f);
 	// §8 4-5b. 앞의 줄이 다 읽힌 뒤, 유담이 폰을 본다. 선택은 지금처럼 바로
 	// 열린다 — 먼저 고른 사람은 이 줄을 건너뛴다.
@@ -2496,7 +2476,7 @@ void AIGMissingFloorNightFourDirector::StartWaterMaskIfReady()
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"P5MaskReady",
-				"물 도는 동안엔 벽 치는 소리가 묻히겠다."),
+				"물소리가 꽤 커. 지금 치면 덜 들리겠어."),
 			4.0f);
 		// §8 4-5b의 심기. 망치를 들기 전에 폰 녹음을 켠다. 그 시간의 소리는
 		// 담기지 않는다는 것을 밤2에 배웠어도 증거를 만들 생각은 그대로다. 벽이
@@ -2552,12 +2532,8 @@ void AIGMissingFloorNightFourDirector::PlayRecordingLiftBeat()
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"NightFourRecordingLifted",
-			"폰을 보니 방금 그 소리가 다 찍혀 있다."),
+			"방금 소리가 녹음됐어."),
 		3.4f);
-	AIGHorrorHUD::PushThought(
-		this,
-		NSLOCTEXT("IGMissingFloor", "P2PhoneKept", "녹음됐다. 이번엔 제대로 됐어."),
-		4.0f);
 }
 
 void AIGMissingFloorNightFourDirector::SetRiserFlowPlaying(
@@ -2686,9 +2662,9 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 		AIGHorrorHUD::PushThought(
 			this,
 			StrikeCount == 1
-				? NSLOCTEXT("IGMissingFloor", "NightFourStrikeFirst", "석고에 금이 갔다.")
+				? NSLOCTEXT("IGMissingFloor", "NightFourStrikeFirst", "금 갔어.")
 				: StrikeCount == 2
-					? NSLOCTEXT("IGMissingFloor", "NightFourStrikeSecond", "안이 비었어. 소리가 달라.")
+					? NSLOCTEXT("IGMissingFloor", "NightFourStrikeSecond", "조금만 더.")
 					: NSLOCTEXT("IGMissingFloor", "NightFourStrikeFourth", "손이 저리다. 한 번만 더."),
 			2.2f);
 		if (StrikeCount == 4)
@@ -2993,9 +2969,8 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 		return;
 	}
 
-	// 두 묶음으로 나눈다. 앞 묶음은 그가 한 일을 가리키고, 뒤 묶음은 그 일이
-	// 누구에게 일어났는지를 가리킨다. 순서는 각 묶음 안에서 그를 겨냥하는
-	// 정도이자, 사람 쪽에서는 도하와 가까운 정도다.
+	// 본 흔적에서 나온 추궁을 먼저 고른다. 그다음은 오빠나 이웃에 관한 말이다.
+	// 물건을 본 순서와 관계없이 이어 읽히도록 각 문장은 단독으로도 뜻이 통해야 한다.
 	struct FReplyEntry
 	{
 		EIGMissingFloorWitness Witness;
@@ -3009,42 +2984,42 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyFoam",
-				"관리실 안쪽 방이요. 문틈까지 계란판 붙여 놓으셨더라고요."),
+				"그 소리 듣기 싫어서 문틈까지 막았어요?"),
 		},
 		{
 			EIGMissingFloorWitness::BoothWallCalendar,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyCalendar",
-				"달력이요. 26일에 동그라미 치고, 그 뒤로 한 장도 안 넘기셨죠."),
+				"7월 26일. 달력에 표시해 뒀던데. 그날 무슨 일이 있었어요?"),
 		},
 		{
 			EIGMissingFloorWitness::AnnexWorkGlove,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyGlove",
-				"5층 장갑에 석고가 굳어 있던데요. 아저씨 거예요?"),
+				"벽은 아저씨가 막았죠? 장갑에 석고가 다 묻어 있던데."),
 		},
 		{
 			EIGMissingFloorWitness::RecorderEmptyBay,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyRecorder",
-				"녹화기 하드는 언제 빼셨어요?"),
+				"CCTV 하드는 왜 빼 놨어요?"),
 		},
 		{
 			EIGMissingFloorWitness::BoothInnerRoomHum,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyInnerRoom",
-				"안쪽 방에 뭘 계속 돌려 놓으셨던데요. 그래서 못 들으셨어요?"),
+				"관리실 안에도 계셨잖아요. 두드리는 소리 못 들었어요?"),
 		},
 		{
 			EIGMissingFloorWitness::RoofDoorWind,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyWind",
-				"옥상에서 바람 들어 봤어요. 바람이 둘, 쉬고, 하나로 불어요?"),
+				"바람 소리라면서요. 사람이 두드리고 있었잖아요."),
 		},
 	};
 
@@ -3055,21 +3030,21 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyPack",
-				"탱크 옆에 꽁초 여섯 개요. 거기 앉아서 쉬던 사람이 있었다고요."),
+				"우리 오빠 여기 살았잖아요. 아저씨도 알았잖아요."),
 		},
 		{
 			EIGMissingFloorWitness::HwangWaterBowl,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyBowl",
-				"401호 할머니는 아직도 물그릇을 갈아 놓으세요. 매일요."),
+				"할머니는 들었대요. 왜 아무도 안 들어가 봤어요?"),
 		},
 		{
 			EIGMissingFloorWitness::SeoSleepingPills,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyPills",
-				"서일영 씨 아세요? 골목에 그분 약봉투가 떨어져 있던데요."),
+				"서일영 씨도 알아요? 그날 무슨 일이 있었는지."),
 		},
 	};
 
@@ -3090,7 +3065,7 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 		}
 	}
 
-	// 서류는 최대 둘까지만 댄다. 셋을 연달아 대면 사람이 아니라 조서가 된다.
+	// 같은 종류의 질문이 길어지지 않게 앞 묶음에서는 둘까지만 고른다.
 	const int32 DocumentQuota = FMath::Min(HeldDocuments.Num(), 2);
 	for (int32 Index = 0; Index < DocumentQuota; ++Index)
 	{

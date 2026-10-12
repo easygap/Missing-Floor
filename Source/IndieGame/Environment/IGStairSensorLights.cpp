@@ -298,7 +298,7 @@ void AIGStairSensorLights::Update()
 			continue;
 		}
 		const FVector Feet = GetFeet(Actor);
-		// 순간이동(리셋, 침대로 옮기기)은 움직임이 아니다. 한 번에 2 m 넘게 뛴 걸음은 버린다.
+		// 순간이동(잡힌 뒤 옮기기, 밤의 시작)은 움직임이 아니다. 한 번에 2 m 넘게 뛴 걸음은 버린다.
 		const float Travel = Mover.bHasLast ? FVector::Dist(Feet, Mover.LastFeet) : 0.0f;
 		const bool bMoved = Mover.bHasLast
 			&& DeltaSeconds > KINDA_SMALL_NUMBER

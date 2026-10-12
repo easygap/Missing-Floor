@@ -228,6 +228,9 @@ void AIGStairwellPresenceProbe::Tick(const float DeltaSeconds)
 			if (!bShots || LiftedSeconds > 1.4f)
 			{
 				Check(Follower->IsFigureShown(), TEXT("stays_while_watched"));
+				// 다음 단계로 넘어갈 때 한 번만 돌아본다. 0.1초 동안 매 프레임
+				// 180도를 더하면 30fps에서는 다시 정면을 보고 검사가 실패한다.
+				PC->SetControlRotation(PC->GetControlRotation() + FRotator(0.0f, 180.0f, 0.0f));
 				Next(4);
 			}
 		}
@@ -241,11 +244,7 @@ void AIGStairwellPresenceProbe::Tick(const float DeltaSeconds)
 		break;
 	}
 	case 4:
-		// 눈을 돌린다.
-		if (PhaseSeconds < 0.1f)
-		{
-			PC->SetControlRotation(PC->GetControlRotation() + FRotator(0.0f, 180.0f, 0.0f));
-		}
+		// 눈을 돌린 뒤 형체가 사라지고 발자국이 남는지 기다린다.
 		if (PhaseSeconds > 1.0f && Phase == 4)
 		{
 			Check(!Follower->IsFigureShown() && !Follower->IsEncounterActive(), TEXT("gone_when_she_looks_away"));

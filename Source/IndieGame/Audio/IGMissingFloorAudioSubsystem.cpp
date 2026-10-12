@@ -1088,32 +1088,6 @@ void UIGMissingFloorAudioSubsystem::PlayTruthStrikeNow(
 	}
 }
 
-void UIGMissingFloorAudioSubsystem::PlayCaptureCut()
-{
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-	UIGToneSequenceSoundWave* Cut = UIGToneSequenceSoundWave::CreateCaptureCut(this);
-	PrepareSound(Cut, EIGAudioBus::Score);
-	UAudioComponent* Component = UGameplayStatics::CreateSound2D(
-		World,
-		Cut,
-		1.0f,
-		1.0f,
-		0.0f,
-		nullptr,
-		false,
-		true);
-	if (Component)
-	{
-		Component->SetUISound(false);
-		RegisterComponent(Component, EIGAudioBus::Score);
-		Component->Play();
-	}
-}
-
 void UIGMissingFloorAudioSubsystem::PlayEndingATuningResolution()
 {
 	UWorld* World = GetWorld();

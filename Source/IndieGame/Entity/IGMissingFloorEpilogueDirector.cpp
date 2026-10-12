@@ -80,7 +80,7 @@ namespace IGEpilogue
 		return NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueDoorNoteFootnote",
-			"그날 새벽 망치 소리에 303호는 올라오는 대신 119를 눌렀다");
+			"그날 새벽 망치 소리를 들은 303호는 위층에 올라가지 않고 119에 신고했다");
 	}
 
 	/** 몽타주 네 소리는 방 안이 아니라 기억 속이라 거리를 두지 않는다. */
@@ -554,7 +554,7 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"EpilogueWorkshopHeading",
-					"장례를 치르고, 공방"),
+					"장례를 마친 뒤, 공방"),
 				BuildWorkshopLines(),
 				NSLOCTEXT(
 					"IGMissingFloor",
@@ -674,7 +674,7 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"EpilogueServiceBayHeading",
-				"오빠를 꺼낸 날, 5층"),
+				"방을 빼던 날, 5층"),
 			BuildServiceBayLines(),
 			NSLOCTEXT(
 				"IGMissingFloor",
@@ -872,7 +872,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildServiceBayLines() const
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
 		"EpilogueServiceBay2",
-		"그 뒤로 새벽 두 번을 401호 할머니와 벽 앞에서 같이 대답했다."));
+		"할머니와 새벽에 두 번 더 올라왔다. 둘이서 벽을 두드렸다."));
 	if (Narrative
 		&& Narrative->HasWitness(EIGMissingFloorWitness::RooftopCigarettePack))
 	{
@@ -981,7 +981,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueNews6Calendar",
-			"관리실 벽 달력은 지난해 7월 26일에 표시된 채 멈춰 있었다"));
+			"관리실에 남은 지난해 7월 달력에는 26일에 표시가 돼 있었다"));
 	}
 
 	// §13의 회수는 목격과 무관하게 남는다. 근무표를 본 회차에만 그 제보가

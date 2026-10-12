@@ -257,13 +257,6 @@ public:
 	 */
 	void PlayEndingATuningResolution();
 
-	/**
-	 * 포획 화면이 끊기는 순간의 저역 타격과 귀울림. 머릿속에서 나는 소리라
-	 * 방 울림을 타지 않는 스코어 버스로 낸다. 방을 타지 않는 효과음은
-	 * 붙잡힌 채 듣는 노크 하나뿐이어야 한다(§21.3).
-	 */
-	void PlayCaptureCut();
-
 	UFUNCTION(BlueprintPure, Category = "Audio|Missing Floor")
 	EIGAudioThreatState GetThreatState() const { return ThreatState; }
 

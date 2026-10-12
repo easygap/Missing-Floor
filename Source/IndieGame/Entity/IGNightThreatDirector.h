@@ -5,6 +5,7 @@
 #include "IGNightThreatDirector.generated.h"
 
 class AIGBathroomRefuge;
+class AIGDoorLatch;
 class AIGListenerEntity;
 class AIGMissingFloorEvidence;
 class AIGNightLoopDirector;
@@ -17,6 +18,7 @@ class AIGSwingDoor;
 class UAudioComponent;
 class UStaticMeshComponent;
 class UIGMissingFloorNarrativeSubsystem;
+enum class EIGCaptureKind : uint8;
 struct FIGNoiseEvent;
 
 /** 문 밖의 손님이 어디까지 왔는가. */
@@ -109,6 +111,18 @@ public:
 	FVector GetEoduksiniLocation() const;
 	EIGGuestStage GetGuestStage() const { return GuestStage; }
 	float GetDarknessSeconds() const { return DarknessSeconds; }
+	/** 잡고도 그 밤 안에 한 번 더 오기로 했다(걸쇠를 뜯은 밤). */
+	bool IsGuestReturnOwed() const { return bGuestReturnOwed; }
+	int32 GetFallenPaperCount() const { return FallenPaperCount; }
+
+	/** 검사 전용. Spot(바닥)에 다 자란 어둑시니를 세우고 곧바로 덮게 한다. */
+	void BeginEoduksiniCaptureForProbe(const FVector& Spot);
+	/** 검사 전용. 지금 밤의 손님이 403호 현관을 두드리기 시작한다. 머문 시간과 시간 창은 보지 않는다. */
+	void StartHomeGuestForProbe();
+	/** 예고편 촬영 전용. Spot(바닥)에 어둑시니를 세운다. 그 뒤는 평소처럼 쳐다보면 커지며 다가온다. */
+	void ShowEoduksiniForMedia(const FVector& Spot) { ManifestEoduksiniAt(Spot); }
+	/** 예고편 촬영 전용. 소리 없이 거둔다. */
+	void HideEoduksiniForMedia() { DismissEoduksini(true); }
 
 	/** 첫째 밤 3층 참의 센서등이 꺼지며 어둑시니를 처음 보여 준 비트. 한 판에 한 번. */
 	static const FName SensorIntroBeat;
@@ -145,6 +159,8 @@ private:
 	bool FindManifestSpot(FVector& OutLocation) const;
 	bool IsValidManifestSpot(const FVector& Candidate, FVector& OutFloor) const;
 	void DismissEoduksini(bool bSilently);
+	/** 다 자란 어둑시니가 그녀를 덮는다. 잡지 않는 난이도면 숙여 오다 흩어진다. */
+	void BeginEoduksiniCapture(AIGPlayerCharacter& Player, AIGShadowFigure& Figure);
 	float GetDarknessThresholdSeconds() const;
 	/** 자리를 받아 어둑시니를 세운다. 들숨과 자막, 처음 볼 때의 속말이 같이 온다. */
 	void ManifestEoduksiniAt(const FVector& Spot);
@@ -176,7 +192,25 @@ private:
 	/** 도어락(403호)이나 열쇠(5층) 소리 한 번. Step 0 누름·꽂음, 1 틀림, 2 다시, 3 풀림. */
 	void PlayGuestLockStep(int32 Step);
 	void OpenDoorForGuest();
+	/**
+	 * 손님에게 잡힌다. 고개가 문간의 종이 몸 쪽으로 돌아가고, 열린 문으로 든 바람에
+	 * 종이가 날리고, 문이 쾅 닫히며 끊긴다. 현관 바닥에서 정신이 들면 그 밤의 목소리가
+	 * 등 뒤, 집 안에서 말을 맺는다.
+	 */
 	void BeginGuestCapture();
+	void SpeakGuestBehind();
+	void SlamGuestDoor();
+	/** 그녀가 깨어날 자리. 손님이 온 문의 안쪽 현관 바닥이다. */
+	FTransform GetGuestWakeTransform() const;
+	/** 문에 달린 걸쇠(403호)나 빗장(5층). */
+	AIGDoorLatch* FindLatchFor(const AIGSwingDoor* Door) const;
+	/**
+	 * 깨어나기 직전, 화면이 아직 덮여 있을 때(밤 루프 감독). 어둑시니는 그 자리에서
+	 * 거두고, 손님은 걸쇠를 뜯고 현관에 종이를 흩어 놓은 채 그 밤 안에 한 번 더 온다.
+	 */
+	void HandleCaptureSettled(EIGCaptureKind Kind, const FVector& CaptureSpot);
+	/** 새벽에 뜯긴 걸쇠를 고쳐 둔다. 낮 동안 누가 고쳐 놓은 셈이다. */
+	void HandleHourActiveChanged(bool bActive);
 	void EndGuest(bool bCloseDoor);
 	/**
 	 * 그녀가 욕실 안이다. 손님은 욕실 문을 거쳐서만 간다. 잠그지 않은 문은 열고, 잠긴 문은
@@ -280,9 +314,18 @@ private:
 	float GuestRoomWaitStart = 0.0f;
 	bool bGuestCapturing = false;
 	double GuestCaptureSeconds = -1.0;
+	/** 잡고도 그 밤 안에 한 번 더 온다. 그 시각(밤 경과 초)과 그 밤. */
+	bool bGuestReturnOwed = false;
+	float GuestReturnAtHourSeconds = 0.0f;
+	int32 GuestReturnNight = 0;
+	FTimerHandle GuestBehindTimer;
+	FTimerHandle GuestSlamTimer;
+	FTimerHandle GuestWakeThoughtTimer;
+	FDelegateHandle CaptureSettledHandle;
+	FDelegateHandle HourActiveHandle;
 	/** 지금 손님이 망치질 사이의 부름이다. 첫 말이 계획서의 그 말이다. */
 	bool bHammerCall = false;
-	/** 이번 밤에 부름을 썼다. 침대로 돌아가도 다시 오지 않고, 그 시간이 다시 시작되면 푼다. */
+	/** 이번 밤에 부름을 썼다. 잡혔다 깨어나도 다시 오지 않고, 그 시간이 다시 시작되면 푼다. */
 	bool bHammerCallUsed = false;
 	float GuestRustleSeconds = 0.0f;
 	FVector LastGuestLocation = FVector::ZeroVector;

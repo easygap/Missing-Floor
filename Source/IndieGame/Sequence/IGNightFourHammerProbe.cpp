@@ -35,7 +35,6 @@ namespace IGNightFourHammerProbe
 	const FVector WallFeet(175.0f, 700.0f, 1200.0f);
 	const FVector WallFace(246.0f, 700.0f, 1290.0f);
 	/** 403호 침대 옆, 방 안. 4층 바닥 기준이 아니라 월드 좌표다. */
-	constexpr float HomeFloorZ = 900.0f;
 	/** 넷째 타 뒤 벽 안의 대답까지(밤4 디렉터의 3.6 + 4.8초). 이보다 일찍 풀리면 부름을 건너뛴 것이다. */
 	constexpr float ExpectedReleaseSeconds = 8.4f;
 }
@@ -327,16 +326,16 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 			}
 			break;
 		}
-		// 빗장 없음. 열고 들어와 잡는다. 공격성 3 아래라 결말 C가 아니라 침대로 간다.
+		// 빗장 없음. 열고 들어와 잡는다. 공격성 3 아래라 결말 C가 아니라 그 철문 안쪽에서 깬다.
 		if (IsCapturedSince(CaptureBaseline))
 		{
 			Check(NightLoop->IsCaptureResetInFlight() && Narrative->GetEndingChoice().IsNone(),
-				TEXT("hammer_phase_capture_goes_to_bed"));
+				TEXT("hammer_phase_capture_is_not_ending_c"));
 			Next(6);
 		}
 		else if (PhaseSeconds >= 45.0f)
 		{
-			Check(false, TEXT("hammer_phase_capture_goes_to_bed"));
+			Check(false, TEXT("hammer_phase_capture_is_not_ending_c"));
 			Finish();
 		}
 		break;
@@ -400,7 +399,8 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 		break;
 
 	case 6:
-		// 침대에서 깼다. 정전은 그대로라 403호 전등도 죽어 있어야 한다.
+		// 철문 안쪽 바닥에서 깼다. 빗장은 휘어 걸리지 않고, 정전은 그대로라 403호 전등도
+		// 죽어 있어야 한다.
 		if (NightLoop->IsCaptureResetInFlight() && PhaseSeconds < 20.0f)
 		{
 			return;
@@ -410,13 +410,22 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 			bActed = true;
 			PhaseSeconds = 0.0f;
 			const float FeetZ = Player->GetActorLocation().Z - Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-			Check(FMath::Abs(FeetZ - HomeFloorZ) < 60.0f, TEXT("woke_in_403"));
+			// 5층 바닥은 1200(손님 문 검사와 같은 바닥).
+			Check(FMath::Abs(FeetZ - 1200.0f) < 60.0f
+				&& FVector::Dist2D(Player->GetActorLocation(), AnnexDoor->GetActorLocation()) < 200.0f,
+				TEXT("woke_inside_annex_door"));
+			const AIGDoorLatch* Bolt = nullptr;
+			for (TActorIterator<AIGDoorLatch> It(GetWorld()); It; ++It)
+			{
+				if (It->GetDoor() == AnnexDoor.Get()) { Bolt = *It; }
+			}
+			Check(Bolt && Bolt->IsBroken(), TEXT("guest_bent_the_bolt"));
 			Check(!Building->IsMissingFloorAnnexPowered() && !Building->IsAnyUnitLightVisibleForTesting(),
 				TEXT("home_lights_dead_in_blackout"));
 		}
 		if (PhaseSeconds >= 1.0f && PhaseSeconds - DeltaSeconds < 1.0f)
 		{
-			Shoot(TEXT("blackout-403"));
+			Shoot(TEXT("blackout-annex-wake"));
 		}
 		if (PhaseSeconds >= 1.5f)
 		{

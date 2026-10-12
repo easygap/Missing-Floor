@@ -1,0 +1,609 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-08T07:11:48.067603+00:00",
+  "status": "LOCAL_AUDIT_WITH_OPEN_ITEMS",
+  "buildCommit": "556ccd4ccb32601ee35705cfa5a73cc0a12dbe32",
+  "hasLocalChanges": true,
+  "shippingReleaseCertified": false,
+  "scope": "한 공유 개발 PC에서 수행한 Shipping 자동 성능·화면·진행 점검이다. 첫 설치, 실제 창 출력, 최소 사양·AMD 장비, 사람의 전체 플레이는 포함하지 않는다.",
+  "rawEvidenceRoot": "Saved/Validation/Optimization-20261008",
+  "engine": {
+    "installed": "5.8.1",
+    "changelist": 56057345,
+    "latestHotfixAsOf20261008": "5.8.3",
+    "updatedDuringAudit": false
+  },
+  "hardware": {
+    "cpu": "Ryzen 9 7900X",
+    "gpu": "RTX 3060 8GB",
+    "ramGiB": 32,
+    "driver": "595.79",
+    "os": "Windows 11 Home 25H2 (10.0.26200)",
+    "rebooted": false,
+    "driverCacheCleared": false,
+    "otherBlenderJobsObservedDuringEveryRunIncludingWarmup": true
+  },
+  "package": {
+    "directory": "%LOCALAPPDATA%/IndieGame/ReviewPackages/Optimization-20261008-r2",
+    "fileCount": 89,
+    "bytes": 870627721,
+    "shippingSha256": "a5b96d01f5de700a642d374fe4f316dafc6d8cc1e67c9297d799735dd7f559d4",
+    "manifestSha256": "ab37491aae2fa54065712e24d320c157b1583cb506d17df98dbc821d6aebb3ab",
+    "archiveUnchanged": true,
+    "requiredAssets": 150,
+    "missingAssets": 0,
+    "shippedPackages": 1363,
+    "sourceSnapshotFilesVerified": 81
+  },
+  "fixes": [
+    "첫 계단 목격의 접촉 포획 예외가 다음 밤에 남지 않도록 타이머와 순찰 상태를 정리했다.",
+    "엘리베이터 버튼판과 만원 표시등의 인쇄 UV 방향을 바로잡았다.",
+    "30fps 계단 검사에서 시선을 두 번 돌리던 검사 코드를 고쳤다."
+  ],
+  "performance": {
+    "createdAt": "2026-10-08T07:11:47.906905+00:00",
+    "shippingReleaseCertified": false,
+    "scope": "공유 개발 PC 한 대의 Shipping 오프스크린 자동 밤 장면 경로. High 1080p만 워밍업 뒤 3회 반복했고 나머지는 각 1회 측정했다.",
+    "telemetrySha256": "7a022401281019575100dff36aacd185fa6fc5bd10a83f49ba08fd8ba5dd923f",
+    "shippingSha256": "a5b96d01f5de700a642d374fe4f316dafc6d8cc1e67c9297d799735dd7f559d4",
+    "runs": [
+      {
+        "case": "High1080-immediate",
+        "run": 1,
+        "label": "1080p High · 워밍업 없음",
+        "summary": "After/High1080-immediate/Run1/summary.json",
+        "summarySha256": "bc489207f42d1aee89afefed199b0dd7d94e6ddd15160d895b015728b60291c0",
+        "rawSha256": "474f8916c802fb6ff79054958e80642317f58f7a60bf283af1e839ffdb592789",
+        "gpuRawSha256": "d15768e05f687cb9c53b8a8bd9c621d17d112aef73e01cf94d6c8402c6eb6c2f",
+        "receiptSha256": "6d4fc9d5573cc7ccb9c56b0a56967382af744f9508f60955ca5c62248ae7f37a",
+        "settings": {
+          "Width": 1920,
+          "Height": 1080,
+          "ScreenPercentage": 100,
+          "SecondaryScreenPercentage": 100,
+          "DynamicResolutionMode": 0,
+          "QualityLevel": 2,
+          "AntiAliasingMethod": 2,
+          "VSync": 0,
+          "FrameLimit": 0
+        },
+        "warmupSeconds": 0.0,
+        "analyzedFrames": 7396,
+        "analyzedSeconds": 63.811,
+        "frameP95Ms": 10.353,
+        "frameMaxMs": 63.964,
+        "onePercentLowFps": 69.7,
+        "gpuP95Ms": 9.716,
+        "framesOver50Ms": 1,
+        "framesOver100Ms": 0,
+        "frameGatePassed": false,
+        "measuredCommittedMiBMax": 4607.152,
+        "telemetry": {
+          "pid": 43160,
+          "samples": 34,
+          "gpuMemorySamples": 34,
+          "boundaryPreviousPidSamplesExcluded": 0,
+          "observedPrivateBytesMax": 4830760960,
+          "observedDedicatedGpuBytesMax": 3124621312,
+          "otherHeavyProcesses": [
+            "blender:34808",
+            "blender:36368",
+            "blender:55180"
+          ],
+          "otherHeavyProcessSamples": 7,
+          "scope": "기동·워밍업 포함. 약 1.9초 간격의 Windows 프로세스별 메모리 표본이며 순간 최고치를 보증하지 않는다."
+        }
+      },
+      {
+        "case": "High1080",
+        "run": 1,
+        "label": "1080p High",
+        "summary": "After/High1080/Run1/summary.json",
+        "summarySha256": "25ad0ae6aa7211a5db62249149e67f98249fd6f302153569469c42d06ff10334",
+        "rawSha256": "60f67069ec020c9d38628ae31736225c1726d8a94672912be6a2cf68453d9241",
+        "gpuRawSha256": "1ba6829900c06af0cf6369eb8bc578ff686a95902253e19dd0fcfc1b7d95b0ee",
+        "receiptSha256": "6d4fc9d5573cc7ccb9c56b0a56967382af744f9508f60955ca5c62248ae7f37a",
+        "settings": {
+          "Width": 1920,
+          "Height": 1080,
+          "ScreenPercentage": 100,
+          "SecondaryScreenPercentage": 100,
+          "DynamicResolutionMode": 0,
+          "QualityLevel": 2,
+          "AntiAliasingMethod": 2,
+          "VSync": 0,
+          "FrameLimit": 0
+        },
+        "warmupSeconds": 120.0,
+        "analyzedFrames": 7410,
+        "analyzedSeconds": 63.813,
+        "frameP95Ms": 10.261,
+        "frameMaxMs": 14.909,
+        "onePercentLowFps": 82.75,
+        "gpuP95Ms": 9.69,
+        "framesOver50Ms": 0,
+        "framesOver100Ms": 0,
+        "frameGatePassed": true,
+        "measuredCommittedMiBMax": 4632.238,
+        "telemetry": {
+          "pid": 48784,
+          "samples": 97,
+          "gpuMemorySamples": 96,
+          "boundaryPreviousPidSamplesExcluded": 0,
+          "observedPrivateBytesMax": 4856963072,
+          "observedDedicatedGpuBytesMax": 3133665280,
+          "otherHeavyProcesses": [
+            "blender:54192",
+            "blender:54480",
+            "blender:54904"
+          ],
+          "otherHeavyProcessSamples": 19,
+          "scope": "기동·워밍업 포함. 약 1.9초 간격의 Windows 프로세스별 메모리 표본이며 순간 최고치를 보증하지 않는다."
+        }
+      },
+      {
+        "case": "High1080",
+        "run": 2,
+        "label": "1080p High",
+        "summary": "After/High1080/Run2/summary.json",
+        "summarySha256": "689948028b539a5a59092adb942830a4c7e6b894820e571afc0d0f4fece46464",
+        "rawSha256": "705195e1589f96b0eed7254b59567644c1da8e94f61b409d78f76a0a933d5bb7",
+        "gpuRawSha256": "b2cc36a0ef3c0ec1d85cf51be4dd7cfbe9b8091ddf4245974167777aaa31ac9a",
+        "receiptSha256": "6d4fc9d5573cc7ccb9c56b0a56967382af744f9508f60955ca5c62248ae7f37a",
+        "settings": {
+          "Width": 1920,
+          "Height": 1080,
+          "ScreenPercentage": 100,
+          "SecondaryScreenPercentage": 100,
+          "DynamicResolutionMode": 0,
+          "QualityLevel": 2,
+          "AntiAliasingMethod": 2,
+          "VSync": 0,
+          "FrameLimit": 0
+        },
+        "warmupSeconds": 120.0,
+        "analyzedFrames": 7380,
+        "analyzedSeconds": 63.815,
+        "frameP95Ms": 10.247,
+        "frameMaxMs": 25.736,
+        "onePercentLowFps": 66.076,
+        "gpuP95Ms": 9.603,
+        "framesOver50Ms": 0,
+        "framesOver100Ms": 0,
+        "frameGatePassed": true,
+        "measuredCommittedMiBMax": 4651.336,
+        "telemetry": {
+          "pid": 39908,
+          "samples": 98,
+          "gpuMemorySamples": 97,
+          "boundaryPreviousPidSamplesExcluded": 1,
+          "observedPrivateBytesMax": 4876980224,
+          "observedDedicatedGpuBytesMax": 3123486720,
+          "otherHeavyProcesses": [
+            "blender:14532",
+            "blender:29836",
+            "blender:31364",
+            "blender:31436",
+            "blender:34388"
+          ],
+          "otherHeavyProcessSamples": 42,
+          "scope": "기동·워밍업 포함. 약 1.9초 간격의 Windows 프로세스별 메모리 표본이며 순간 최고치를 보증하지 않는다."
+        }
+      },
+      {
+        "case": "High1080",
+        "run": 3,
+        "label": "1080p High",
+        "summary": "After/High1080/Run3/summary.json",
+        "summarySha256": "5cb8de7d565c2521f80027d0077dbe9ce04a6002128388bc40dcf67ea175785b",
+        "rawSha256": "0a7fd36f5675fb917646d7ab95a86e236572b6924fe5b66b5994c0e6fcb88ff0",
+        "gpuRawSha256": "4cb86acebf3da44ec2b43ce83958cb54884479dafbe618aac41707e930d5ac8c",
+        "receiptSha256": "6d4fc9d5573cc7ccb9c56b0a56967382af744f9508f60955ca5c62248ae7f37a",
+        "settings": {
+          "Width": 1920,
+          "Height": 1080,
+          "ScreenPercentage": 100,
+          "SecondaryScreenPercentage": 100,
+          "DynamicResolutionMode": 0,
+          "QualityLevel": 2,
+          "AntiAliasingMethod": 2,
+          "VSync": 0,
+          "FrameLimit": 0
+        },
+        "warmupSeconds": 120.0,
+        "analyzedFrames": 7344,
+        "analyzedSeconds": 63.813,
+        "frameP95Ms": 10.288,
+        "frameMaxMs": 21.541,
+        "onePercentLowFps": 62.097,
+        "gpuP95Ms": 9.66,
+        "framesOver50Ms": 0,
+        "framesOver100Ms": 0,
+        "frameGatePassed": true,
+        "measuredCommittedMiBMax": 4638.926,
+        "telemetry": {
+          "pid": 53160,
+          "samples": 97,
+          "gpuMemorySamples": 96,
+          "boundaryPreviousPidSamplesExcluded": 0,
+          "observedPrivateBytesMax": 4864352256,
+          "observedDedicatedGpuBytesMax": 3134210048,
+          "otherHeavyProcesses": [
+            "blender:19964",
+            "blender:48368",
+            "blender:52464",
+            "blender:53344",
+            "blender:55024",
+            "blender:56928"
+          ],
+          "otherHeavyProcessSamples": 46,
+          "scope": "기동·워밍업 포함. 약 1.9초 간격의 Windows 프로세스별 메모리 표본이며 순간 최고치를 보증하지 않는다."
+        }
+      },
+      {
+        "case": "Low1080",
+        "run": 1,
+        "label": "1080p Low",
+        "summary": "After/Low1080/Run1/summary.json",
+        "summarySha256": "fb068575eb9f82bb9e9ac7e933941e1f210006a948eb531e8e950c3fd4e64630",
+        "rawSha256": "8b1c5df6b52c8784abea7ceb5f22daa2d3e799bbdf8eb8025cebabdbb69e24de",
+        "gpuRawSha256": "f256e2feb52545504d8aa7bf8f6a2fa66ece1dca76a4141771a25a4c5bfabc35",
+        "receiptSha256": "6d4fc9d5573cc7ccb9c56b0a56967382af744f9508f60955ca5c62248ae7f37a",
+        "settings": {
+          "Width": 1920,
+          "Height": 1080,
+          "ScreenPercentage": 100,
+          "SecondaryScreenPercentage": 100,
+          "DynamicResolutionMode": 0,
+          "QualityLevel": 1,
+          "AntiAliasingMethod": 2,
+          "VSync": 0,
+          "FrameLimit": 0
+        },
+        "warmupSeconds": 120.0,
+        "analyzedFrames": 9738,
+        "analyzedSeconds": 63.813,
+        "frameP95Ms": 8.279,
+        "frameMaxMs": 23.787,
+        "onePercentLowFps": 72.102,
+        "gpuP95Ms": 7.588,
+        "framesOver50Ms": 0,
+        "framesOver100Ms": 0,
+        "frameGatePassed": true,
+        "measuredCommittedMiBMax": 4091.633,
+        "telemetry": {
+          "pid": 53604,
+          "samples": 97,
+          "gpuMemorySamples": 96,
+          "boundaryPreviousPidSamplesExcluded": 0,
+          "observedPrivateBytesMax": 4284915712,
+          "observedDedicatedGpuBytesMax": 2629185536,
+          "otherHeavyProcesses": [
+            "blender:11404",
+            "blender:23652",
+            "blender:37864",
+            "blender:41652",
+            "blender:46204",
+            "blender:50632",
+            "blender:52836",
+            "blender:54896",
+            "blender:56044",
+            "blender:56080",
+            "blender:56796"
+          ],
+          "otherHeavyProcessSamples": 59,
+          "scope": "기동·워밍업 포함. 약 1.9초 간격의 Windows 프로세스별 메모리 표본이며 순간 최고치를 보증하지 않는다."
+        }
+      },
+      {
+        "case": "High1440",
+        "run": 1,
+        "label": "1440p High",
+        "summary": "After/High1440/Run1/summary.json",
+        "summarySha256": "486c5f323e523c5b38a1864df1d0da574e9b37b2b41a70d71a37864723eabd6d",
+        "rawSha256": "a8b1ff29d2e93a1353a074ea894dab9425a28aa39ba63140f0556bb114b38d74",
+        "gpuRawSha256": "e3924ad1cbc37a73e48139aa57e00da769d100e368b0dc1ba4bf62bea688a302",
+        "receiptSha256": "6d4fc9d5573cc7ccb9c56b0a56967382af744f9508f60955ca5c62248ae7f37a",
+        "settings": {
+          "Width": 2560,
+          "Height": 1440,
+          "ScreenPercentage": 100,
+          "SecondaryScreenPercentage": 100,
+          "DynamicResolutionMode": 0,
+          "QualityLevel": 2,
+          "AntiAliasingMethod": 2,
+          "VSync": 0,
+          "FrameLimit": 0
+        },
+        "warmupSeconds": 120.0,
+        "analyzedFrames": 4639,
+        "analyzedSeconds": 63.82,
+        "frameP95Ms": 16.429,
+        "frameMaxMs": 21.555,
+        "onePercentLowFps": 53.783,
+        "gpuP95Ms": 15.906,
+        "framesOver50Ms": 0,
+        "framesOver100Ms": 0,
+        "frameGatePassed": true,
+        "measuredCommittedMiBMax": 4978.121,
+        "telemetry": {
+          "pid": 55924,
+          "samples": 98,
+          "gpuMemorySamples": 97,
+          "boundaryPreviousPidSamplesExcluded": 0,
+          "observedPrivateBytesMax": 5219966976,
+          "observedDedicatedGpuBytesMax": 3479248896,
+          "otherHeavyProcesses": [
+            "blender:27572",
+            "blender:29168",
+            "blender:31652",
+            "blender:45236",
+            "blender:47580",
+            "blender:48676",
+            "blender:55452",
+            "blender:56012",
+            "blender:57448"
+          ],
+          "otherHeavyProcessSamples": 14,
+          "scope": "기동·워밍업 포함. 약 1.9초 간격의 Windows 프로세스별 메모리 표본이며 순간 최고치를 보증하지 않는다."
+        }
+      },
+      {
+        "case": "Low720",
+        "run": 1,
+        "label": "720p Low",
+        "summary": "After/Low720/Run1/summary.json",
+        "summarySha256": "72cea2ae0a73c89b04016bf63da2bbe9aa4f568ab052c4cf82055448fed4dbb2",
+        "rawSha256": "9cb0367c5117a1145388cd9404d0599af057cee9a6d72532e0d1d93edcf8bd0a",
+        "gpuRawSha256": "7c77120287db9432995095b2ee4b055d3106cb00769272f6d5817b71b7cb50f6",
+        "receiptSha256": "6d4fc9d5573cc7ccb9c56b0a56967382af744f9508f60955ca5c62248ae7f37a",
+        "settings": {
+          "Width": 1280,
+          "Height": 720,
+          "ScreenPercentage": 100,
+          "SecondaryScreenPercentage": 100,
+          "DynamicResolutionMode": 0,
+          "QualityLevel": 1,
+          "AntiAliasingMethod": 2,
+          "VSync": 0,
+          "FrameLimit": 0
+        },
+        "warmupSeconds": 120.0,
+        "analyzedFrames": 15016,
+        "analyzedSeconds": 63.806,
+        "frameP95Ms": 5.621,
+        "frameMaxMs": 21.824,
+        "onePercentLowFps": 129.964,
+        "gpuP95Ms": 4.636,
+        "framesOver50Ms": 0,
+        "framesOver100Ms": 0,
+        "frameGatePassed": true,
+        "measuredCommittedMiBMax": 3900.98,
+        "telemetry": {
+          "pid": 57792,
+          "samples": 97,
+          "gpuMemorySamples": 96,
+          "boundaryPreviousPidSamplesExcluded": 0,
+          "observedPrivateBytesMax": 4090482688,
+          "observedDedicatedGpuBytesMax": 2398703616,
+          "otherHeavyProcesses": [
+            "blender:12360",
+            "blender:20208",
+            "blender:23420",
+            "blender:27492",
+            "blender:29824",
+            "blender:36676",
+            "blender:39184",
+            "blender:51008",
+            "blender:58196",
+            "blender:8636"
+          ],
+          "otherHeavyProcessSamples": 23,
+          "scope": "기동·워밍업 포함. 약 1.9초 간격의 Windows 프로세스별 메모리 표본이며 순간 최고치를 보증하지 않는다."
+        }
+      }
+    ]
+  },
+  "functional": {
+    "fixedStep30": {
+      "cases": [
+        "Bathroom",
+        "DayScenes",
+        "Elevator",
+        "FireDoor",
+        "Gameplay",
+        "GuestDoors",
+        "GuestLure",
+        "HammerBolted",
+        "HammerOpen",
+        "OverloadLeave",
+        "OverloadStay",
+        "Pursuit",
+        "StairSensor",
+        "Stairwell"
+      ],
+      "passed": 14,
+      "renderer": "Editor NullRHI"
+    },
+    "fixedStep60": {
+      "cases": [
+        "Bathroom",
+        "DayScenes",
+        "Elevator",
+        "FireDoor",
+        "Gameplay",
+        "GuestDoors",
+        "GuestLure",
+        "HammerBolted",
+        "HammerOpen",
+        "OverloadLeave",
+        "OverloadStay",
+        "Pursuit",
+        "StairSensor",
+        "Stairwell"
+      ],
+      "passed": 14,
+      "renderer": "앞 4개 Editor NullRHI, 나머지 10개 Shipping NullRHI"
+    },
+    "priorFailures": "최초 접촉 포획 실패, 수정 전 계단 검사 실패, 다른 프로젝트의 엔진 빌드 점유 중 Editor 시작 시간 초과 기록을 보존했다.",
+    "packageCases": [
+      {
+        "name": "Arrival",
+        "passed": true
+      },
+      {
+        "name": "ArrivalResume",
+        "passed": true
+      },
+      {
+        "name": "FullGame",
+        "passed": true
+      },
+      {
+        "name": "Audio",
+        "passed": true
+      }
+    ],
+    "saveRecoveryCases": 16,
+    "endingCases": [
+      {
+        "name": "Checkpoint",
+        "passed": true
+      },
+      {
+        "name": "EndingA",
+        "passed": true
+      },
+      {
+        "name": "ProfileA",
+        "passed": true
+      },
+      {
+        "name": "EndingB",
+        "passed": true
+      },
+      {
+        "name": "ProfileB",
+        "passed": true
+      }
+    ],
+    "endingScope": "실제 FullGame 진행의 선택 직전 저장, 새 프로세스의 정상 저장 복원, A/B 상호작용 완료, B의 30초 기다림, A 99초/B 83초 에필로그, 프로필 기록과 재시작 후 다섯째 밤 해금. NullRHI 기능 검사이며 영상·음질·실제 키 홀드·사람의 완주 평가는 별도입니다.",
+    "frontend": {
+      "resolutions": [
+        "1280x720",
+        "1600x900",
+        "1920x1080",
+        "2560x1440"
+      ],
+      "culture": "ko",
+      "layoutSamples": 44.0,
+      "inputEvents": 44.0,
+      "dialogueCases": 8
+    }
+  },
+  "visual": {
+    "specializedScreenshots": 31,
+    "elevatorAfterFix": 7,
+    "highAndLowEnvironmentScreenshots": 16,
+    "note": "실제 D3D12 캡처와 대표 화면을 확인했다. 자동 장수·파일 검증을 모든 화면의 사람 검수로 간주하지 않는다. 압축된 낮 장면 검사의 자막은 직전 대사가 남을 수 있다."
+  },
+  "staticValidation": {
+    "command": "pwsh -NoProfile -File Scripts/Validate-Project.ps1",
+    "exitCode": 0,
+    "lightPlacementFindings": 0,
+    "coplanarSurfaceFindings": 0,
+    "materialFindings": 0,
+    "note": "검사 스크립트가 다루는 소스·에셋 계약 범위의 결과다. Unreal 빌드와 실제 화면 검사는 별도로 수행했다."
+  },
+  "openItems": [
+    "메뉴·로딩을 생략한 시작 검사에서 63.964ms 프레임 1회. 원인과 실제 플레이 노출 여부는 추가 확인이 필요하다.",
+    "현재 엔진보다 최신인 5.8.3의 수정 사항을 반영한 뒤 같은 경로를 비교해야 한다.",
+    "출시 판정에는 깨끗한 커밋, 첫 설치·드라이버 캐시 없는 조건, 실제 창, 계약의 여섯 장비와 사람의 완주 검수가 필요하다."
+  ],
+  "evidence": [
+    {
+      "path": "source-snapshot-r2.json",
+      "sha256": "94522a884c1ea85e375093000bf6ad4a49f0a6a7bb972f1b977635aed0193ce9"
+    },
+    {
+      "path": "source-r2.diff",
+      "sha256": "a0e8c8691e4f5d86e1c0810386f056576418a83641888c9699343d7ab5f5947a"
+    },
+    {
+      "path": "source-verification-r2.json",
+      "sha256": "546de1efdc8bfaf2d76ec8ad68aebe550b2f4bb0336bcae0d0d3fef415ab6b36"
+    },
+    {
+      "path": "static-final.log",
+      "sha256": "e46941625f2be12cd422998ef5b5533e56dbb168de547c0d58543e6d61309255"
+    },
+    {
+      "path": "package-r2.log",
+      "sha256": "1cb7fcddf219140cf0163f5990896a34a37995a585fd598d4ae80e5a72d6c21c"
+    },
+    {
+      "path": "PackageReview/summary.json",
+      "sha256": "4c0b171080cf728f3a74d8550dd82be5ce10e0d15ee1c1d5d8f8ebf6d4ff78b9"
+    },
+    {
+      "path": "PackageReview/Frontend/summary.json",
+      "sha256": "dac7719f60dc343927ec6ed31682ec2ca75505c28ba5876c76d6b14a05a57eaf"
+    },
+    {
+      "path": "PackageReview/SaveRecovery/summary.json",
+      "sha256": "20fffd721f915ba6d9f5028e6804193e19300ea0fc8bfddd6edf54f48b697ac5"
+    },
+    {
+      "path": "PackageReview/EndingLifecycle/summary.json",
+      "sha256": "9131c77c199b65cd4e80c23e3424cbfa8312f2d2e7c3c4ae7ce26ee3cc7cc3fb"
+    },
+    {
+      "path": "PackageReview/Audio/waveform.json",
+      "sha256": "6ba5e44459c226895404793f0c40de5b8eeefe2068e4fa19ccf428113c886b2c"
+    },
+    {
+      "path": "After/matrix-summary.json",
+      "sha256": "ecf25d0fd7e810303627955100c698c146d98c654946d3e6afe4e7b8a7eebf24"
+    },
+    {
+      "path": "After/telemetry.jsonl",
+      "sha256": "7a022401281019575100dff36aacd185fa6fc5bd10a83f49ba08fd8ba5dd923f"
+    },
+    {
+      "path": "After/hardware.json",
+      "sha256": "834f5bbd6d89daac8ff1bbae543e4e2602996585289318cbf0142c3f13094f5b"
+    },
+    {
+      "path": "Logic-30-results.json",
+      "sha256": "b19b4b8f864a5bc549bb460e574ca78555294f053ab5c36ba160a1eebba41782"
+    },
+    {
+      "path": "Logic-30-fixed-results.json",
+      "sha256": "da38fdad9a2c9390a08a901bcfaa04e5585fe20860a50384d1252c7b58c31da5"
+    },
+    {
+      "path": "Logic-60-results.json",
+      "sha256": "0582909907bc75213bde7b293010d151a939678364048ffbcdc73690828f177e"
+    },
+    {
+      "path": "Logic-60-shipping-results.json",
+      "sha256": "1fbde1d5cb55c91ddaaa0a85fdb5473e5fca8f95de3406491b390de1e850e19b"
+    },
+    {
+      "path": "Visual-Q2/results.json",
+      "sha256": "0749319663b03333678d1424a2fbfd8430ab88df0ed18d35a9d6b52c816f1d91"
+    },
+    {
+      "path": "Visual-Q2/verified-evidence.json",
+      "sha256": "ac2cddbc70c3e1d748edd6124e0e6fd4a90bac62e5f9a65001ab4bbfca639229"
+    },
+    {
+      "path": "Visual-Q2-r2/results.json",
+      "sha256": "fe97d5fa8d70ac07c37c82fce62b9c9f4c951046953b6229256e2ec7d815aa91"
+    },
+    {
+      "path": "scene-results.json",
+      "sha256": "a19e01c0fac9f0ed3198a72d8b0a9aec0da558b02464f9cbcfa0c91c18cdbe0b"
+    }
+  ]
+}

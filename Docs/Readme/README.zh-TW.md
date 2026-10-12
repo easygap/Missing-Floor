@@ -2,98 +2,106 @@
 
 # Missing Floor
 
-以首爾老舊公寓為舞台的第一人稱恐怖遊戲，目前正以 Unreal Engine 5 開發，Windows 試玩版可免費下載。
+哥哥最後留下的地址是月光公寓501室。可是那棟樓只有四層。
 
-![雨後巷子盡頭的四層樓公寓，只有兩扇窗亮著燈](../Media/readme/title-menu-first-run-1080-zh-Hant.webp)
+這是一款以首爾老公寓為舞台的第一人稱恐怖遊戲。你扮演為了尋找失蹤的哥哥而搬進403室的侑潭，白天向鄰居打聽、翻查樓裡的紀錄，天亮前則要避開從天花板上面下來的東西。遊戲以 Unreal Engine 5 開發，Windows 測試版可以免費下載。
 
-退回的包裹上，哥哥的地址寫著月光公寓501室。
-但這棟樓只有四層。
+![雨後小巷盡頭的四層公寓，只有兩扇窗亮著燈](../Media/readme/title-menu-first-run-1080-zh-Hant.webp)
 
-為了找哥哥搬進403室的第一晚，凌晨四點半，
-上面明明沒有樓層，卻有人敲了天花板三下。
+目前能玩的是 0.2.4 測試版（Windows），支援繁體中文、簡體中文、韓文、英文和日文。
 
-[下載試玩版（Windows，0.2.4）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [預告片](https://github.com/easygap/Missing-Floor/releases/download/v0.2.3/MissingFloor-Trailer.mp4) · [操作方式](#操作方式)
+[下載測試版（Windows，0.2.4）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [預告片](https://github.com/easygap/Missing-Floor/releases/download/v0.2.3/MissingFloor-Trailer.mp4) · [操作說明](#操作說明)
 
 ## 白天
 
-手上的線索只有退回的包裹和一則語音留言。401室的阿嬤在這棟樓住了三十年，巷子對面便利商店打工的店員對附近的八卦很清楚。說不定有人還記得哥哥。
+搬來的第一晚，凌晨四點半，天花板傳來三下敲擊聲。403室在頂樓。
+
+天亮後，就沿著哥哥留下的痕跡在樓裡和小巷裡走動。401室的奶奶在這棟樓住了三十年，在小巷對面便利商店上班的娜琳對街坊的事很清楚。
+
+![403室所在的四樓走廊，每扇門上都貼著瓦斯檢查貼紙和沒撕掉的傳單](../Media/readme/game-corridor-day.webp)
 
 <table>
   <tr>
-    <td width="50%"><img src="../Media/readme/game-alley.webp" alt="公寓前的巷子，盡頭看得到便利商店的招牌"></td>
-    <td width="50%"><img src="../Media/readme/game-store.webp" alt="黎明24便利商店的櫃檯"></td>
+    <td width="50%"><img src="../Media/readme/game-alley.webp" alt="公寓門前的小巷，盡頭看得到便利商店的招牌"></td>
+    <td width="50%"><img src="../Media/readme/game-store.webp" alt="黎明24便利商店的收銀台"></td>
   </tr>
-  <tr><td>公寓前的巷子</td><td>黎明24便利商店</td></tr>
+  <tr><td>公寓門前的小巷</td><td>黎明24便利商店</td></tr>
 </table>
 
-管理室的帳本和監視器紀錄兜不起來。數數看電錶，把耳朵貼在牆上聽聽。看過的紀錄可以按`Tab`再翻出來，卡關時按`H`看提示。
+管理室的帳本、監視器畫面和一樓電表上的紀錄，總有對不起來的地方。貼著牆聽到的聲音也是線索。讀過的紀錄按 `Tab` 可以再看，卡住時按 `H`，侑潭會自言自語地提醒該看哪裡。
 
-招牌和牆上的告示都是韓文，畢竟是首爾的巷弄。需要讀的文件，調查時會顯示中文。
+場景裡的招牌和告示保留韓文，和劇情有關的文件調查時會顯示中文。
 
-## 夜晚
+<table>
+  <tr>
+    <td width="50%"><img src="../Media/readme/p1-meter-cabinet.webp" alt="各戶的電表和抄表單"></td>
+    <td width="50%"><img src="../Media/readme/game-booth.webp" alt="擺著帳本和監視器螢幕的管理室桌子"></td>
+  </tr>
+  <tr><td>一樓電表箱</td><td>管理室</td></tr>
+</table>
 
-每天凌晨四點半到五點半，這棟樓裡有些東西是醒著的。
+[在樓裡和附近走動的畫面（GIF，3.3 MB）](../Media/readme/readme-route-preview.gif)
 
-樓上的人看不見，只會循著聲音過來。不要用跑的，門要慢慢開；它經過你身邊時，記得憋氣。
+## 凌晨四點半
 
-在暗處待太久，黑暗會聚攏起來。越盯著看它就長得越大，把視線移開，往有燈的地方走。
+凌晨四點半到五點半，大門被鎖上，樓上的人在走廊裡爬來爬去。它看不見，卻聽得見。跑起來或用力關門，它就會往那邊過來；它從身邊經過時，只能憋住氣。
 
-就算門外傳來熟人的聲音，也不要開門。
+在沒開燈的地方待太久，會出現一個黑影，越盯著它看就越大。門外就算傳來熟人的聲音，也不能開門。
 
-![手電筒照著的夜晚管理室桌面](../Media/readme/game-booth.webp)
+![熄了燈的走廊，鄰居家的燈光從門縫底下透出來](../Media/readme/game-corridor-night.webp)
 
-可以躲進衣櫃或床底下，也可以插上門閂、把樓梯間的防火門關上。手電筒的電池會用完，記得去便利商店買。
+可以躲進衣櫃或床底下，也可以用玄關門閂和樓梯間的防火門擋住去路。手電筒的電池白天在便利商店買。
 
-被抓到，遊戲也不會結束。你會在自己房間醒來，找到的線索都還在，只是時間不會倒轉。
+被抓到也不會從那一晚的開頭重來。醒過來時人在被拖走的地方，中間已經過了幾分鐘。被什麼抓到，失去的東西就不一樣。被樓上的人抓到時，手電筒會掉在被抓的地方，得回到那裡去撿。
 
-![天快亮時的403室](../Media/readme/game-bedroom-dawn.webp)
+![還沒整理完的403室，可以躲進床底下](../Media/readme/game-bedroom.webp)
 
-[在走廊被追的畫面（GIF，4.8 MB）](../Media/readme/night-listener-chase.gif)
+[在走廊裡被追趕的畫面（GIF，3.6 MB）](../Media/readme/night-listener-chase.gif)
 
 ## 下載
 
-目前提供的是 0.2.4 試玩版。躲藏、門閂和防火門、手電筒電池，以及樓上的人之外、其他夜裡會來的東西，會在下一個試玩版加入。二樓和三樓也會在那時開放。
+目前發布的是 0.2.4 測試版。上面寫到的內容裡，躲藏、門閂和防火門、換電池、樓上的人以外的東西，以及被抓後在別處醒來，會在下一個測試版加入。在 0.2.4 中，被抓後還是會在403室的床上醒來。二樓和三樓也從下個版本開始可以去。
 
-1. 下載 [Windows 版 ZIP 檔](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip)。
-2. 完整解壓縮後執行`MissingFloor.exe`。同一個資料夾裡的`Engine`和`IndieGame`都要留著，不然開不起來。
-3. 選擇「開始遊戲」。進度會自動儲存，下次可以從「繼續遊戲」接著玩。
+1. 下載 [Windows 版 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip)。
+2. 全部解壓縮後執行 `MissingFloor.exe`。同一資料夾裡的 `Engine` 和 `IndieGame` 資料夾要放在一起才能啟動。
+3. 選擇「開始遊戲」。進度會自動儲存，之後選「繼續遊戲」就能接著玩。
 
-如果跳出「Windows 已保護您的電腦」，請先按「其他資訊」，再按「仍要執行」。執行檔沒有簽章，才會出現這個畫面。
+執行檔沒有簽章，第一次執行時可能會跳出「Windows 已保護您的電腦」。按「其他資訊」，再按「仍要執行」即可。
 
-遊戲支援繁體中文、簡體中文、韓文、英文和日文。第一次啟動會使用 Windows 的顯示語言，之後可以在設定裡切換。[執行說明](../PLAYING.md)目前只有韓文版，裡面有測試過的電腦規格，以及開不起來時可以怎麼做。
+語言一開始會跟隨 Windows 的顯示語言，可以在設定裡更改。測試過的電腦規格和打不開時可以試的方法，寫在[執行說明](../PLAYING.md)（韓文）裡。
 
-## 操作方式
+## 操作說明
 
 | 按鍵 | 操作 |
 |---|---|
-| WASD / 滑鼠 | 移動 / 轉動視角 |
-| 左 Shift / C / 空白鍵 | 奔跑 / 蹲下 / 跳躍 |
-| E | 調查 / 開門 / 躲藏 |
-| 長按 E | 輕輕開關門 / 貼牆傾聽 |
+| WASD、滑鼠 | 移動、環顧 |
+| 左 Shift、C、空白鍵 | 奔跑、蹲下、跳躍 |
+| E | 調查、開門、躲藏 |
+| 長按 E | 悄悄開關門、貼牆聆聽 |
 | Q | 敲擊 |
 | 左 Ctrl | 憋氣 |
 | F | 手電筒 |
 | F1 | 目標與操作 |
-| Tab / H | 調查紀錄（白天）/ 提示 |
-| ← → / 滑鼠滾輪 | 翻頁 |
-| Esc / F10 | 暫停 / 無障礙設定 |
+| Tab、H | 調查紀錄（白天）、提示 |
+| ← →、滑鼠滾輪 | 翻頁 |
+| Esc、F10 | 暫停、無障礙設定 |
 
-也支援手把。按鍵和按鈕都可以在設定裡重新指定。
+也可以用手把玩。按鍵和按鈕可以在設定裡重新配置。
 
-## 難度與無障礙設定
+## 難度與無障礙
 
-怕被追的話，按`F10`把難度改成「不追擊」。這樣什麼都抓不到你，故事和謎題一樣能玩到最後。不管哪個難度，所有結局都看得到。
+如果被追讓你吃不消，可以按 `F10` 把難度改成「無追逐」。這樣就不會被抓，只跟著劇情和謎題走。不管哪種難度，能看到的結局都一樣。
 
-字幕大小與背景、聲音方向提示、畫面晃動、光線閃爍和畫面質感都可以調整。長按不方便的話，可以改成按一下就開始。麥克風輸入是選用功能，預設關閉。
+字幕大小和背景、聲音方向提示、畫面晃動、燈光閃爍、鏡頭變形都可以調整。需要一直按住的操作，可以改成按一下維持。麥克風輸入預設關閉。
 
 ![無障礙設定畫面](../Media/readme/settings-accessibility-20260929-zh-Hant.webp)
 
 ## 素材來源
 
-音效是用 OpenGameArt 和 Kenney 的 CC0 素材包加工而成。照片材質來自 ambientCG，掃描道具來自 Poly Haven，全部是 CC0。字型是 Pretendard 和 Gowun Batang，都採用 SIL Open Font License 1.1。部分印刷品和參考圖是先用圖像生成模型做出來，再加以修改。每項素材的來源與授權都列在[素材清單](../ASSET_POLICY.md)（韓文）。
+音效來自 OpenGameArt 和 Kenney，地面和牆面材質來自 ambientCG，實物掃描道具來自 Poly Haven，皆為 CC0 素材。字型是 Pretendard 和 Gowun Batang（SIL Open Font License 1.1）。部分印刷品和參考圖是用 AI 生成後再手工修改的圖片。詳細來源和使用條件見[素材清單](../ASSET_POLICY.md)（韓文）。
 
 ## 問題回報
 
-遊戲當掉或出現怪怪的狀況時，請到[錯誤回報](https://github.com/easygap/Missing-Floor/issues/new?template=bug_report.yml)寫下發生的場景和情形。也歡迎留下[試玩心得與建議](https://github.com/easygap/Missing-Floor/issues/new?template=feedback.yml)。遊戲還在開發中，粗糙的地方不少。
+如果遊戲卡住或出現奇怪的狀況，請在[問題回報](https://github.com/easygap/Missing-Floor/issues/new?template=bug_report.yml)寫下是在哪個場景、發生了什麼。也歡迎留下[試玩心得和建議](https://github.com/easygap/Missing-Floor/issues/new?template=feedback.yml)。
 
-想從原始碼建置的話，請看[執行說明的「소스에서 빌드하기」](../PLAYING.md#소스에서-빌드하기)（韓文）。需要 Unreal Engine 5.8、Visual Studio 的「使用 C++ 的遊戲開發」工作負載、Windows SDK 和 Git LFS。
+想從原始碼建置，請看[執行說明裡的「소스에서 빌드하기」](../PLAYING.md#소스에서-빌드하기)（韓文）。需要 Unreal Engine 5.8、含「使用 C++ 的遊戲開發」工作負載的 Visual Studio、Windows SDK 和 Git LFS。

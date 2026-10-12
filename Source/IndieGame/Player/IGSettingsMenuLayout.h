@@ -219,7 +219,7 @@ namespace IGSettingsMenuLayout
 		switch (Category)
 		{
 		case 0: return {NightDifficulty, 2};       // 난이도와 힌트.
-		case 1: return {ReducedCameraMotion, 6};   // 화면 효과, 화면 질감, 가운데 점.
+		case 1: return {ReducedCameraMotion, 6};   // 화면 효과, 렌즈 왜곡, 가운데 점.
 		case 2: return {DirectionalFearCues, 5};   // 소리 안내와 노크 도움.
 		case 3: return {SoundCaptions, 5};         // 자막. 음성 대사가 없어 대사 자막 줄은 뺐다.
 		case 4: return {ToggleCrouch, 6};          // 입력과 조작 안내.

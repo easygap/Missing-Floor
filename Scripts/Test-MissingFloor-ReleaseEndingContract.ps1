@@ -194,9 +194,8 @@ Assert-ContainsAll $nightPhaseSource @(
 ) 'Hour suspension'
 Assert-ContainsAll $narrativeSource @(
 	'ResetNightFourForRetry()',
-	'Snapshot.Night.NightFourControlOrder.Reset()',
+	'Snapshot.Night.NightFourWallStrikeCount = 0',
 	'Snapshot.Night.EndingChoice = NAME_None',
-	'Snapshot.Night.SolvedPuzzles.Remove(FName(TEXT("P5")))',
 	'Snapshot.Night.CompletedBeats.Remove(FName(TEXT("Night4.SecondReport")))'
 ) 'Scoped narrative rollback'
 $rollbackMethod = [regex]::Match(
@@ -205,8 +204,10 @@ $rollbackMethod = [regex]::Match(
 if (-not $rollbackMethod.Success) {
 	throw 'Night-four rollback method could not be isolated.'
 }
+# 이미 푼 P5는 남긴다. 결말 C를 보고 다시 하는 밤4에서 같은 퍼즐을 또 풀게 하지 않는다.
 foreach ($durableToken in @('CaptureCount =', 'Truths.Reset', 'bFirstReportMade = false',
-	'bFifthDawnInterludeCompleted = false')) {
+	'bFifthDawnInterludeCompleted = false', 'NightFourControlOrder.Reset',
+	'SolvedPuzzles.Remove(FName(TEXT("P5")))')) {
 	if ($rollbackMethod.Groups['body'].Value.Contains($durableToken)) {
 		throw "Scoped retry incorrectly clears durable state: $durableToken"
 	}
@@ -275,7 +276,7 @@ Assert-ContainsAll $epilogueSource @(
 	'업라이트 1대  ·  받는 분 백유담  ·  집들이 전에 전달',
 	'네 시 반 알람은 지웠다.',
 	'그동안 시끄럽다고만 해서 죄송합니다. 303호',
-	'그날 새벽 망치 소리에 303호는 올라오는 대신 119를 눌렀다',
+	'그날 새벽 망치 소리를 들은 303호는 위층에 올라가지 않고 119에 신고했다',
 	'인근 편의점 직원의 목격 진술을 토대로 당시 행적을 확인 중이다'
 ) '에필로그 타임라인과 카피'
 
@@ -585,7 +586,7 @@ Assert-ContainsAll $narrativeSource @(
 
 # 6행 — 세입자 두 명의 단기 퇴거(프롤로그) → 그들이 들은 것(밤1).
 Assert-ContainsAll $greyboxSource @(
-	'그 집은 올해만 벌써 세 번째네요.'
+	'올해만 세 번째예요, 그 집.'
 ) '단기 퇴거 심기'
 
 # 12행 — 채널 5의 빈 복도(밤2) → 같은 화각에 직접 서기(밤3).

@@ -65,7 +65,7 @@ $status = Read-ProjectText 'Docs/IMPLEMENTATION_STATUS.md'
 $artMatrix = Read-ProjectText 'Docs/MISSING_FLOOR_ART_MATRIX.md'
 $captureRunner = Read-ProjectText 'Scripts/Run-MissingFloor-NightCapture.bat'
 
-# 침대 복귀와 페이드가 끝날 때까지 입력 잠금을 유지한다.
+# 깨어날 자리로 옮기고 눈이 뜨이는 첫 순간까지 입력을 잠근다(§5.4).
 Assert-ContainsAll $nightHeader @(
 	'bool IsCaptureResetInFlight() const { return bResetInFlight; }',
 	'void FinishWakeRecovery();',
@@ -80,7 +80,7 @@ Assert-ContainsAll $night @(
 	'#include "Player/IGHorrorHUD.h"',
 	'HorrorHUD->PlayCaptureWakeEcho(',
 	'UIGToneSequenceSoundWave::CreateClothSettle(this)',
-	'WakeTransform.GetLocation()',
+	'CaptureWake.GetLocation()',
 	'&AIGNightLoopDirector::FinishWakeRecovery',
 	'WakeEchoSeconds',
 	'WakeRecoverySeconds',
@@ -114,7 +114,7 @@ Assert-ContainsAll $finishRecoveryBlock @(
 	'bResetInFlight = false;'
 ) 'single input recovery exit'
 
-# 기상 시에는 침대 시야와 암전만 남기고 입력 복귀까지 HUD를 가린다.
+# 깨어날 때는 그 자리의 시야와 암전만 남기고 입력 복귀까지 HUD를 가린다.
 Assert-ContainsAll $hudHeader @(
     'void PlayCaptureWakeEcho(',
     'float OwnershipDurationSeconds = 0.68f);',
@@ -162,7 +162,7 @@ Assert-ContainsAll $status @(
 	'정사 v2.8 M1.1 포획 뒤 기상 잔향 구현',
 	'게임 전체의 시작, 각 밤의 시작, 포획 뒤 재시작을 분리했다',
 	'저녁 입주에서 시작하고',
-	'같은 밤의 04:30 침대 위치로만',
+	'잡은 괴이마다 다른 자리에서 깬다',
 	'일반 HUD와 입력은',
 	'M1.1 기상 잔향 계약',
 	'구현 완료·체감 승인 대기'

@@ -235,7 +235,6 @@ void UIGStressComponent::TickComponent(
 	UpdateStress(DeltaSeconds);
 	UpdateHeartbeat(DeltaSeconds);
 	UpdateBreathLayer(DeltaSeconds);
-	UpdateTremor(DeltaSeconds);
 	UpdatePostProcess();
 	RefreshTickState();
 }
@@ -660,25 +659,6 @@ void UIGStressComponent::PlayBreathOneShot(
 			CutSeconds,
 			false);
 	}
-}
-
-void UIGStressComponent::UpdateTremor(const float DeltaSeconds)
-{
-	TremorTime += DeltaSeconds;
-
-	// Nothing below half stress; past that a fine, fast shiver comes in.
-	const float Amount = FMath::GetMappedRangeValueClamped(
-		FVector2D(0.5f, 1.0f), FVector2D(0.0f, 0.42f), Stress);
-	if (Amount <= 0.0f)
-	{
-		Tremor = FRotator::ZeroRotator;
-		return;
-	}
-
-	// Two incommensurate frequencies so the shiver never visibly repeats.
-	Tremor.Pitch = FMath::Sin(TremorTime * 23.7f) * Amount;
-	Tremor.Yaw = FMath::Sin(TremorTime * 17.3f + 1.1f) * Amount;
-	Tremor.Roll = FMath::Sin(TremorTime * 11.9f + 2.4f) * Amount * 0.6f;
 }
 
 float UIGStressComponent::GetHeartbeatWarningScale() const

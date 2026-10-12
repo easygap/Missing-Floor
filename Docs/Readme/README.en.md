@@ -2,21 +2,23 @@
 
 # Missing Floor
 
-A first-person horror game set in a run-down apartment building in Seoul, made in Unreal Engine 5. There's a free playtest for Windows.
+Your brother's last address was Unit 501, Moonlight Villa. The building only has four floors.
+
+Missing Floor is a first-person horror game set in an old apartment building in Seoul. You play Yudam, who moves into Unit 403 to look for her missing brother. By day you talk to the neighbors and dig through records. Before dawn you stay out of the way of whatever comes down from above the ceiling. It's being made in Unreal Engine 5, and a free Windows playtest is up.
 
 ![A four-story building at the end of a wet alley, two windows lit](../Media/readme/title-menu-first-run-1080-en.webp)
 
-The returned parcel lists your brother's address as Unit 501, Moonlight Villa.
-The building only has four floors.
-
-On your first night in Unit 403, at 4:30 in the morning,
-someone knocks three times on a ceiling with nothing above it.
+The current build is 0.2.4 for Windows. Text is available in English, Korean, Japanese, and Simplified and Traditional Chinese.
 
 [Download the playtest (Windows, 0.2.4)](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [Trailer](https://github.com/easygap/Missing-Floor/releases/download/v0.2.3/MissingFloor-Trailer.mp4) · [Controls](#controls)
 
-## By day
+## Day
 
-All you have from your brother is the returned parcel and one voicemail. Mrs. Hwang in 401 has lived in the building for thirty years, and the clerk at the convenience store across the alley hears most of the neighborhood gossip. Somebody might remember him.
+At 4:30 a.m. on the first night, three knocks come from the ceiling. Unit 403 is on the top floor.
+
+In daylight you follow your brother's trail around the building and the alley. Mrs. Hwang in 401 has lived here for thirty years. Narin, who works at the convenience store across the alley, knows everyone's business.
+
+![The fourth-floor corridor. Gas inspection stickers and old flyers on every door.](../Media/readme/game-corridor-day.webp)
 
 <table>
   <tr>
@@ -26,41 +28,47 @@ All you have from your brother is the returned parcel and one voicemail. Mrs. Hw
   <tr><td>The alley</td><td>Dawn24</td></tr>
 </table>
 
-The ledger in the management office doesn't match the CCTV log. Count the meters. Put your ear to the walls. `Tab` brings back everything you've read, and `H` gives you a hint if you're stuck.
+The management office ledger, the CCTV and the meter readings on the ground floor don't quite agree. What you hear through the walls counts too. `Tab` brings back anything you've read, and if you're stuck, `H` has Yudam mutter where to look next.
 
-Shop signs, flyers and the notices on the walls are in Korean, as they would be in Seoul. Anything you actually need to read is translated when you examine it.
+Signs and notices stay in Korean. Story documents can be read in English when you examine them.
 
-## At night
+<table>
+  <tr>
+    <td width="50%"><img src="../Media/readme/p1-meter-cabinet.webp" alt="Electricity meters and reading cards for each unit"></td>
+    <td width="50%"><img src="../Media/readme/game-booth.webp" alt="The management office desk with the ledger and CCTV monitor"></td>
+  </tr>
+  <tr><td>Meter cabinet</td><td>Management office</td></tr>
+</table>
 
-From 4:30 to 5:30 every morning, some things in the building are awake.
+[Walking through the building and the neighborhood (GIF, 3.3 MB)](../Media/readme/readme-route-preview.gif)
 
-The one upstairs can't see. It follows sound. Don't run, and open doors slowly. If it passes close, hold your breath.
+## 4:30 a.m.
 
-Stay in the dark too long and the dark starts to gather. It grows the longer you look at it. Look away and get to a light.
+From 4:30 to 5:30 the building is locked, and the one upstairs crawls the corridors. It can't see, but it hears. Run or slam a door and it comes your way. When it passes right next to you, you hold your breath.
 
-If someone at the door calls out in a voice you know, don't open it.
+Stand in the dark too long and a black shape appears, and it grows the longer you look at it. If a familiar voice calls from outside your front door, don't open it.
 
-![The management office desk at night, under a flashlight](../Media/readme/game-booth.webp)
+![A dark corridor. Light from a neighbor's unit leaks under a door.](../Media/readme/game-corridor-night.webp)
 
-You can hide in the wardrobe or under the bed, latch the front door, or shut the fire door to the stairwell. Flashlight batteries run down, so pick up spares at the convenience store.
+You can hide in the wardrobe or under the bed, and block the way with the front-door latch or the stairwell fire doors. Flashlight batteries come from the convenience store.
 
-Getting caught doesn't end the game. You wake up back in your room. Whatever you found stays found, but the clock keeps running.
+Getting caught doesn't send you back to the start of the night. You come to wherever you were dragged, a few minutes later. What you lose depends on what caught you. If it was the one upstairs, your flashlight is lying on the floor where it grabbed you, and you have to go back there for it.
 
-![Unit 403 at dawn](../Media/readme/game-bedroom-dawn.webp)
+![Unit 403, boxes still half unpacked. You can hide under the bed.](../Media/readme/game-bedroom.webp)
 
-[A chase in the corridor (GIF, 4.8 MB)](../Media/readme/night-listener-chase.gif)
+[A chase in the corridor (GIF, 3.6 MB)](../Media/readme/night-listener-chase.gif)
 
 ## Download
 
-The current build is playtest 0.2.4. Hiding, the latch and fire door, flashlight batteries and the other things that come at night will be in the next playtest. The second and third floors open up then too.
+The current playtest is 0.2.4. Some of the above arrives in the next playtest: hiding, the latch and fire doors, batteries, the threats other than the one upstairs, and coming to somewhere other than your bed after being caught. In 0.2.4 you still wake in your bed in 403. The second and third floors open in the next version as well.
 
 1. Download the [Windows ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip).
-2. Extract the whole thing and run `MissingFloor.exe`. It won't start without the `Engine` and `IndieGame` folders next to it.
-3. Choose Start Game. Progress saves on its own, and Continue picks up where you left off.
+2. Extract everything and run `MissingFloor.exe`. The `Engine` and `IndieGame` folders have to stay next to it.
+3. Select Start Game. Progress saves automatically, and Continue picks up where you left off.
 
-If a "Windows protected your PC" window appears, click More info, then Run anyway. The executable isn't signed, which is why that shows up.
+The executable isn't signed, so Windows may show "Windows protected your PC." Select More info, then Run anyway.
 
-The game runs in English, Korean, Japanese, Simplified Chinese and Traditional Chinese. It starts in your Windows language, and you can change it in Settings. The [setup guide](../PLAYING.md) is in Korean only for now. It lists the PC the game has been tested on and what to try if it won't start.
+The game starts in your Windows display language, and you can change it in Settings. The PC it was tested on and what to try if it won't start are in the [setup guide](../PLAYING.md) (Korean).
 
 ## Controls
 
@@ -78,22 +86,22 @@ The game runs in English, Korean, Japanese, Simplified Chinese and Traditional C
 | ← →, mouse wheel | Turn pages |
 | Esc, F10 | Pause, accessibility settings |
 
-Gamepads work too. Keys and buttons can be remapped in Settings.
+Controllers work too. Keys and buttons can be remapped in Settings.
 
 ## Difficulty and accessibility
 
-If the chases are too much, press `F10` and set the difficulty to No Chase. Nothing will catch you, and you can still finish the story and the puzzles. Every ending can be reached on every difficulty.
+If being chased is too much, press `F10` and set the difficulty to No Chase. Nothing catches you and you can follow the story and puzzles to the end. Every ending is reachable on every difficulty.
 
-Caption size and background, sound direction cues, camera shake, light flicker and the camera texture can all be adjusted. If holding keys is uncomfortable, change Hold Actions so a single press starts an action. Microphone input is optional and off by default.
+Caption size and background, sound direction markers, camera shake, flickering lights and lens effects can all be adjusted. Held buttons can be switched to toggles. Microphone input is off unless you turn it on.
 
 ![The accessibility settings screen](../Media/readme/settings-accessibility-20260929-en.webp)
 
 ## Credits
 
-The sound effects are CC0 packs from OpenGameArt and Kenney, reworked for the game. Photo textures come from ambientCG and the scanned props from Poly Haven, all CC0. The fonts are Pretendard and Gowun Batang, both under the SIL Open Font License 1.1. Some of the printed material and reference art started out as image generator output and was retouched afterwards. Sources and licenses for every asset are in the [asset ledger](../ASSET_POLICY.md) (in Korean).
+Sound effects are CC0 assets from OpenGameArt and Kenney, surface textures come from ambientCG, and scanned props from Poly Haven, also CC0. The fonts are Pretendard and Gowun Batang (SIL Open Font License 1.1). Some printed material and reference artwork are AI-generated images that were then edited by hand. Full sources and terms are in the [asset ledger](../ASSET_POLICY.md) (Korean).
 
 ## Bugs and feedback
 
-If the game crashes or something behaves oddly, please [file a bug report](https://github.com/easygap/Missing-Floor/issues/new?template=bug_report.yml) with where it happened and what you saw. [Impressions and suggestions](https://github.com/easygap/Missing-Floor/issues/new?template=feedback.yml) are welcome too. It's still rough in places.
+If the game freezes or does something odd, [file a bug](https://github.com/easygap/Missing-Floor/issues/new?template=bug_report.yml) with where you were and what happened. [Thoughts on the playtest](https://github.com/easygap/Missing-Floor/issues/new?template=feedback.yml) are welcome too.
 
 To build from source, see "소스에서 빌드하기" in the [setup guide](../PLAYING.md#소스에서-빌드하기). You'll need Unreal Engine 5.8, Visual Studio with the "Game development with C++" workload, the Windows SDK and Git LFS.

@@ -682,6 +682,8 @@ $reviewedTickingFiles = @(
 	# -IGNightFourHammerProbe에서만 생성한다. 밤4 망치질 사이의 정전과 부름을 겪고 종료한다.
 	'IGNightFourHammerProbe.cpp',
 	'IGEpiloguePreviewProbe.cpp',
+	# -IGCaptureVarietyProbe에서만 생성한다. 괴이 넷에게 차례로 잡혀 보고 종료한다.
+	'IGCaptureVarietyProbe.cpp',
 	# 셋째 낮의 303호. 계단을 오르내리거나 서서 말하는 동안에만 켜고, 건물을 나가면 끈다.
 	'IGStairNeighbor.cpp',
 	# 들뜬 보수판. 눌렸다 튀어나오는 1.6초 동안만 켜고 끝나면 끈다.

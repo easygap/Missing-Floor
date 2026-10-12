@@ -41,6 +41,8 @@ namespace IGNightPhase
 	constexpr float DawnBlackSeconds = 0.75f;
 	constexpr float DawnLatchDelaySeconds = DawnFadeOutSeconds + 0.25f;
 	constexpr float DawnFadeInSeconds = 0.9f;
+	/** 포획으로 시계를 밀어도 05:30 앞에 남기는 시간. */
+	constexpr float CaptureDawnMarginSeconds = 30.0f;
 	/** 공동현관 유리문의 전자 잠금. 문 자체는 (604, -385)에 서 있다. */
 	const FVector EntranceLatchLocation(604.0f, -385.0f, 100.0f);
 	/**
@@ -501,6 +503,23 @@ void AIGNightPhaseDirector::ReleaseHeldListeners()
 		}
 	}
 	DawnHeldListeners.Reset();
+}
+
+float AIGNightPhaseDirector::ConsumeHourSeconds(const float Seconds)
+{
+	if (!bHourActive || bHourPaused || bFailureEndingSuspended || Seconds <= 0.0f)
+	{
+		return 0.0f;
+	}
+	const float Before = HourElapsedSeconds;
+	const float Ceiling = FMath::Max(
+		Before, HourDurationSeconds - IGNightPhase::CaptureDawnMarginSeconds);
+	HourElapsedSeconds = FMath::Min(Before + Seconds, Ceiling);
+	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
+	{
+		Narrative->SetNightElapsedSeconds(HourElapsedSeconds);
+	}
+	return HourElapsedSeconds - Before;
 }
 
 bool AIGNightPhaseDirector::IsCaptureResetInFlight() const

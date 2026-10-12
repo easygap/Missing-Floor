@@ -558,12 +558,13 @@ void UIGMissingFloorNarrativeSubsystem::ResetNightFourForRetry()
 	Snapshot.Night.AggressionTier = 1;
 	Snapshot.Night.bTheHourSealed = true;
 	Snapshot.Night.NightElapsedSeconds = 0.0f;
-	Snapshot.Night.NightFourControlOrder.Reset();
+	// P5(물길 세 조작)는 남긴다. 결말 C를 보고 다시 하는 밤4에서 이미 푼 퍼즐을 또
+	// 풀게 하지 않는다. 밤이 열리면 물길 소리가 바로 돈다. 벽과 망치질, 정전, 대치는
+	// 처음부터다(§34).
 	Snapshot.Night.NightFourWallStrikeCount = 0;
 	Snapshot.Night.bNightFourWallOpened = false;
 	Snapshot.Night.bSecondReportMade = false;
 	Snapshot.Night.EndingChoice = NAME_None;
-	Snapshot.Night.SolvedPuzzles.Remove(FName(TEXT("P5")));
 	Snapshot.Night.CompletedBeats.Remove(FName(TEXT("Night4.PowerCut")));
 	Snapshot.Night.CompletedBeats.Remove(FName(TEXT("Night4.FinalReveal")));
 	Snapshot.Night.CompletedBeats.Remove(FName(TEXT("Night4.FinalConfrontation")));

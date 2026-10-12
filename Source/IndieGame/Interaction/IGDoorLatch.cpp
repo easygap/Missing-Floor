@@ -95,8 +95,25 @@ bool AIGDoorLatch::CanInteract_Implementation(AActor* Interactor) const
 {
 	const AIGSwingDoor* LatchedDoor = Door.Get();
 	return Super::CanInteract_Implementation(Interactor)
+		&& !bBroken
 		&& LatchedDoor
 		&& LatchedDoor->IsFullyClosed();
+}
+
+void AIGDoorLatch::SetBroken(const bool bInBroken)
+{
+	if (bBroken == bInBroken)
+	{
+		return;
+	}
+	bBroken = bInBroken;
+	if (AIGSwingDoor* LatchedDoor = Door.Get(); bBroken && LatchedDoor && LatchedDoor->IsLatched())
+	{
+		// 문이 쾅 닫히는 소리가 뜯기는 소리를 덮는다. 따로 내지 않는다.
+		LatchedDoor->SetLatched(false, false);
+	}
+	SetInteractionEnabled(!bBroken);
+	RefreshBoltPose();
 }
 
 FText AIGDoorLatch::GetInteractionPrompt_Implementation(AActor* Interactor) const
@@ -134,5 +151,10 @@ void AIGDoorLatch::RefreshBoltPose()
 	// 액터의 +X가 문틀 쪽이다. 걸면 막대가 받침 밖으로 밀려 나간다.
 	const AIGSwingDoor* LatchedDoor = Door.Get();
 	const bool bLatched = LatchedDoor && LatchedDoor->IsLatched();
-	Bolt->SetRelativeLocation(BoltRestOffset + FVector(bLatched ? BoltTravelCm : 0.0f, 0.0f, 0.0f));
+	Bolt->SetRelativeLocation(BoltRestOffset + FVector(bLatched ? BoltTravelCm : 0.0f, 0.0f, 0.0f)
+		+ (bBroken ? FVector(0.0f, 0.0f, -2.5f) : FVector::ZeroVector));
+	// 뜯긴 걸쇠는 문틀 쪽 나사가 빠져 문 면을 따라 아래로 처진다.
+	const FRotator Hang = bBroken ? FRotator(-34.0f, 0.0f, 0.0f) : FRotator::ZeroRotator;
+	Plate->SetRelativeRotation(Hang);
+	Bolt->SetRelativeRotation(Hang);
 }

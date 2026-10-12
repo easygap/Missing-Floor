@@ -26,6 +26,7 @@
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
 #include "InputCoreTypes.h"
+#include "Interaction/IGElevator.h"
 #include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGPickupItem.h"
 #include "Interaction/IGSwingDoor.h"
@@ -119,8 +120,27 @@ namespace IGPlayerNoise
 	constexpr float SprintFieldOfViewBoost = 5.0f;
 	constexpr float LandingDipMinCentimeters = 0.6f;
 	constexpr float LandingDipMaxCentimeters = 3.2f;
-	constexpr float CaptureCameraKickDegrees = 3.2f;
 	constexpr float CaptureHapticIntensity = 0.70f;
+	/** 지나온 자리를 적는 간격과 개수. 2분치다. */
+	constexpr double FootholdIntervalSeconds = 0.5;
+	constexpr int32 FootholdCapacity = 240;
+	/**
+	 * 몸이 없는 괴이에게 잡힐 때 고개가 그쪽으로 돌아가는 시간. 어둑시니는 시선이
+	 * 저절로 천천히 들려야 하고, 손님과 관리인은 잡힌 순간 돌아본다.
+	 */
+	constexpr float CaptureLookUpSeconds = 1.2f;
+	constexpr float CaptureFaceTurnSeconds = 0.25f;
+	constexpr float CaptureTurnSeconds = 0.35f;
+	/** 정신이 들 때 시점이 올라오는 높이(cm). 바닥에 쓰러진 눈높이에서 선 눈높이로. */
+	constexpr float ComeToDropCentimeters = 118.0f;
+	// 관리인이 얼굴에 들이댄 손전등 빛. 순백이 아니라 노란 손전등의 빛이다. 끊기기
+	// 전까지 화면의 이만큼을 덮는다.
+	constexpr float CaptureGlareRed = 0.94f;
+	constexpr float CaptureGlareGreen = 0.88f;
+	constexpr float CaptureGlareBlue = 0.70f;
+	constexpr float CaptureGlarePeak = 0.9f;
+	// 어둑시니가 덮는 동안 화면과 소리가 함께 빠지는 정도. 끊기는 순간 둘 다 0이 된다.
+	constexpr float CaptureDrainPeak = 0.75f;
 	// §18.6 햅틱 계약. 표의 여섯 줄 중 셋이 여기 있다.
 	constexpr float ImpactHapticIntensity = 0.55f;
 	constexpr float ImpactHapticSeconds = 0.20f;
@@ -375,6 +395,7 @@ void AIGPlayerCharacter::Tick(const float DeltaSeconds)
 		StressComponent->SetExertion(BreathLoad);
 	}
 	UpdateCaptureFeedback(DeltaSeconds);
+	RecordFoothold();
 	// 2초쯤 걸려 조여 오고, 사라진 뒤에도 그만큼 걸려 풀린다. 한 번에 꺼지면 깜박임으로 읽힌다.
 	ThreatVignetteAlpha = FMath::FInterpTo(ThreatVignetteAlpha, ThreatVignetteTarget, DeltaSeconds, 1.6f);
 	UpdateChaseHaptic(DeltaSeconds);
@@ -589,7 +610,7 @@ FVector AIGPlayerCharacter::GetEyeOffsetFromActor() const
 
 void AIGPlayerCharacter::PlayScareKick(const float Degrees)
 {
-	ScareCameraKick = FMath::Max(ScareCameraKick, FMath::Clamp(Degrees, 0.0f, 4.0f));
+	ScareCameraKick = FMath::Max(ScareCameraKick, FMath::Clamp(Degrees, 0.0f, 1.8f));
 	SetCameraMotionEnabled(true);
 }
 
@@ -604,10 +625,130 @@ bool AIGPlayerCharacter::HasPhysicalCaptureView() const
 		&& CaptureThreat->HasPhysicalCaptureBody();
 }
 
-void AIGPlayerCharacter::PlayCaptureFeedback(const float DurationSeconds, const float CutSeconds)
+void AIGPlayerCharacter::SetCaptureLookTarget(const AActor* Actor, const FVector& Offset)
 {
+	CaptureLookActor = Actor;
+	CaptureLookOffset = Offset;
+	CaptureLookLast = Actor ? Actor->GetActorLocation() + Offset : Offset;
+	bCaptureLookSet = true;
+}
+
+FLinearColor AIGPlayerCharacter::GetCaptureCutColour() const
+{
+	const bool bReducedFlicker = AccessibilitySubsystem
+		&& AccessibilitySubsystem->IsReducedFlickerEnabled();
+	if (CaptureKind == EIGCaptureKind::Manager && !bReducedFlicker)
+	{
+		return FLinearColor(
+			IGPlayerNoise::CaptureGlareRed,
+			IGPlayerNoise::CaptureGlareGreen,
+			IGPlayerNoise::CaptureGlareBlue);
+	}
+	return FLinearColor::Black;
+}
+
+void AIGPlayerCharacter::PlayComeTo(const float Seconds)
+{
+	ComeToDurationSeconds = FMath::Max(Seconds, 0.05f);
+	ComeToRemainingSeconds = ComeToDurationSeconds;
+	SetCameraMotionEnabled(true);
+}
+
+void AIGPlayerCharacter::RecordFoothold()
+{
+	const UWorld* World = GetWorld();
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!World || !Movement || !Movement->IsMovingOnGround() || IsInHidingSpot()
+		|| CaptureFeedbackRemainingSeconds > 0.0f)
+	{
+		return;
+	}
+	// 움직이는 엘리베이터 바닥은 곧 다른 층에 가 있다. 거기 선 자리는 깨어날 자리가 못 된다.
+	if (const UPrimitiveComponent* Base = Cast<UPrimitiveComponent>(GetMovementBaseObject()))
+	{
+		if (Cast<AIGElevator>(Base->GetOwner()))
+		{
+			return;
+		}
+	}
+	const double Now = World->GetTimeSeconds();
+	if (Now - LastFootholdSeconds < IGPlayerNoise::FootholdIntervalSeconds)
+	{
+		return;
+	}
+	LastFootholdSeconds = Now;
+	FIGFoothold Foothold;
+	Foothold.Location = GetActorLocation();
+	Foothold.Rotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
+	Foothold.RoomDarkness = CachedRoomDarkness;
+	Foothold.Seconds = Now;
+	Footholds.Add(Foothold);
+	const int32 Excess = Footholds.Num() - IGPlayerNoise::FootholdCapacity;
+	if (Excess > 0)
+	{
+		Footholds.RemoveAt(0, Excess, EAllowShrinking::No);
+	}
+}
+
+bool AIGPlayerCharacter::FindFootholdAway(
+	const FVector& From,
+	const float MinDistance,
+	const float MaxAgeSeconds,
+	FVector& OutLocation,
+	FRotator& OutRotation) const
+{
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	for (int32 Index = Footholds.Num() - 1; Index >= 0; --Index)
+	{
+		const FIGFoothold& Foothold = Footholds[Index];
+		if (Now - Foothold.Seconds > MaxAgeSeconds)
+		{
+			break;
+		}
+		// 같은 층이어야 한다. 끌려간 자리가 계단 아래층이면 몸이 슬래브를 뚫은 셈이다.
+		if (FMath::Abs(Foothold.Location.Z - From.Z) <= 120.0f
+			&& FVector::Dist2D(Foothold.Location, From) >= MinDistance)
+		{
+			OutLocation = Foothold.Location;
+			OutRotation = Foothold.Rotation;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool AIGPlayerCharacter::FindLitFoothold(
+	const float MaxRoomDarkness,
+	const float MaxAgeSeconds,
+	FVector& OutLocation,
+	FRotator& OutRotation) const
+{
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	for (int32 Index = Footholds.Num() - 1; Index >= 0; --Index)
+	{
+		const FIGFoothold& Foothold = Footholds[Index];
+		if (Now - Foothold.Seconds > MaxAgeSeconds)
+		{
+			break;
+		}
+		if (Foothold.RoomDarkness <= MaxRoomDarkness)
+		{
+			OutLocation = Foothold.Location;
+			OutRotation = Foothold.Rotation;
+			return true;
+		}
+	}
+	return false;
+}
+
+void AIGPlayerCharacter::PlayCaptureFeedback(
+	const float DurationSeconds,
+	const float CutSeconds,
+	const EIGCaptureKind Kind)
+{
+	CaptureKind = Kind;
 	// 숨어 있다 잡히면 그 자리에서 끌려 나온다. 충돌과 이동을 먼저 돌려놓아야
-	// 뒤따르는 리셋이 몸을 침대로 옮길 수 있다.
+	// 루프 감독이 몸을 깨어날 자리로 옮길 수 있다.
 	LeaveHidingSpotImmediately();
 	// 입력이 막히면 키를 뗀 것이 전해지지 않는다. 쥐고 있던 숨 참기를 여기서 놓아야
 	// 깨어난 뒤 4초를 저절로 참다가 터지는 소리를 내지 않는다.
@@ -639,13 +780,17 @@ void AIGPlayerCharacter::PlayCaptureFeedback(const float DurationSeconds, const 
 		CaptureFeedbackDurationSeconds);
 	bCaptureCutDone = false;
 	CaptureFovScale = 1.0f;
-	CaptureImpactAlpha = 0.0f;
 	CaptureTunnelAlpha = 0.0f;
 	SetCameraMotionEnabled(true);
 	if (Flashlight && HasPhysicalCaptureView())
 	{
-		// 부딪힌 손에서 손전등이 튕겨 나간다. 괴물은 바닥에 떨어진 빛 언저리에서만 보인다.
+		// 끌려 내려가는 손에서 손전등이 튕겨 나간다. 괴물은 바닥에 떨어진 빛 언저리에서만 보인다.
 		Flashlight->PlayKnockLoose();
+	}
+	else if (Flashlight && Kind == EIGCaptureKind::Eoduksini)
+	{
+		// 어둠이 빛을 먹는다. 스위치는 그대로인데 빛이 끊기기 직전까지 사그라든다.
+		Flashlight->TriggerBrownOut(CaptureCutSeconds + 0.2f);
 	}
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -691,56 +836,92 @@ void AIGPlayerCharacter::UpdateCaptureFeedback(const float DeltaSeconds)
 	const bool bPhysical = HasPhysicalCaptureView();
 	if (PlayerController && bPhysical && !bReducedMotion)
 	{
-		// 0.14초 만에 고개가 그쪽으로 꺾인다. 부드럽게 돌아가면 잡힌 게 아니라
-		// 돌아보는 것처럼 보였다. 넘어지는 동안에도 얼굴을 놓치지 않는다. 얼굴은
-		// 한 번 물러났다가 달려들므로 가운데에 있어도 크기가 크게 변한다.
-		const float TurnAlpha = FMath::SmoothStep(0.0f, 0.14f, Age);
+		// 끌려 내려가는 동안 기어 올라오는 얼굴을 놓치지 않는다. 고개가 0.25초에 그쪽으로
+		// 간다. 0.14초는 등 뒤의 얼굴이면 화면이 홱 돌아 어지러웠고, 1초 가까이 천천히
+		// 돌면 잡힌 게 아니라 돌아보는 것처럼 보였다.
+		const float TurnAlpha = FMath::SmoothStep(0.0f, IGPlayerNoise::CaptureFaceTurnSeconds, Age);
 		FRotator FocusRotation = (CaptureThreat->GetCaptureFaceLocation()
 			- FirstPersonCamera->GetComponentLocation()).Rotation();
 		FocusRotation.Pitch = FMath::Clamp(FocusRotation.Pitch, -60.0f, 70.0f);
 		PlayerController->SetControlRotation(FQuat::Slerp(CaptureStartRotation.Quaternion(),
 			FocusRotation.Quaternion(), TurnAlpha).Rotator());
 	}
-	if (bPhysical)
+	else if (PlayerController && bCaptureLookSet && !bReducedMotion)
 	{
-		// 화면 충격은 닿는 순간 가장 크고 곧 가라앉는다. 시야는 끊기기 직전까지
-		// 조여 온다. 동작 감소에서는 시야각을 건드리지 않는다.
-		CaptureImpactAlpha = FMath::Exp(-Age * 6.0f);
-		CaptureTunnelAlpha = FMath::SmoothStep(0.05f, CaptureCutSeconds, Age);
-		CaptureFovScale = bReducedMotion
-			? 1.0f
-			: FMath::Lerp(1.0f, 0.80f, FMath::SmoothStep(0.05f, CaptureCutSeconds, Age));
-		if (!bCaptureCutDone && Age >= CaptureCutSeconds)
+		// 몸이 없는 괴이. 어둑시니는 시선이 저절로 천천히 들리고, 손님과 관리인은
+		// 그쪽으로 돌아본다. 흔들지 않는다.
+		if (const AActor* LookActor = CaptureLookActor.Get())
 		{
-			// 얼굴이 닿기 전에 끊는다. 검은 화면 뒤로 소리만 이어진다.
-			bCaptureCutDone = true;
-			if (PlayerController && PlayerController->PlayerCameraManager)
-			{
-				PlayerController->PlayerCameraManager->SetManualCameraFade(
-					1.0f, FLinearColor::Black, false);
-			}
-			if (UWorld* World = GetWorld())
-			{
-				if (UIGMissingFloorAudioSubsystem* AudioDirector =
-					World->GetSubsystem<UIGMissingFloorAudioSubsystem>())
-				{
-					AudioDirector->PlayCaptureCut();
-				}
-			}
-			CaptureFovScale = 1.0f;
-			CaptureImpactAlpha = 0.0f;
-			CaptureTunnelAlpha = 0.0f;
+			CaptureLookLast = LookActor->GetActorLocation() + CaptureLookOffset;
 		}
+		const float TurnSeconds = CaptureKind == EIGCaptureKind::Eoduksini
+			? IGPlayerNoise::CaptureLookUpSeconds
+			: IGPlayerNoise::CaptureTurnSeconds;
+		const float TurnAlpha = FMath::SmoothStep(0.0f, TurnSeconds, Age);
+		FRotator FocusRotation = (CaptureLookLast - FirstPersonCamera->GetComponentLocation()).Rotation();
+		FocusRotation.Pitch = FMath::Clamp(FocusRotation.Pitch, -60.0f, 75.0f);
+		PlayerController->SetControlRotation(FQuat::Slerp(CaptureStartRotation.Quaternion(),
+			FocusRotation.Quaternion(), TurnAlpha).Rotator());
+	}
+	// 시야는 끊기기 직전까지 조여 온다. 색 번짐·흐림 같은 화면 충격은 쓰지 않는다.
+	// 어둑시니는 가장자리부터 먹혀 끊기는 순간 다 어둡다. 관리인은 가장자리가
+	// 어두워지는 대신 손전등 빛이 화면을 덮는다.
+	const float TunnelPeak = CaptureKind == EIGCaptureKind::Eoduksini
+		? 1.0f
+		: (CaptureKind == EIGCaptureKind::Manager ? 0.0f : (bPhysical ? 0.85f : 0.55f));
+	CaptureTunnelAlpha = TunnelPeak * FMath::SmoothStep(0.05f, CaptureCutSeconds, Age);
+	CaptureFovScale = (bReducedMotion || !bPhysical)
+		? 1.0f
+		: FMath::Lerp(1.0f, 0.88f, FMath::SmoothStep(0.05f, CaptureCutSeconds, Age));
+	APlayerCameraManager* CameraManager = PlayerController
+		? PlayerController->PlayerCameraManager.Get()
+		: nullptr;
+	if (!bCaptureCutDone && CameraManager)
+	{
+		if (CaptureKind == EIGCaptureKind::Eoduksini)
+		{
+			// 빛과 소리가 같이 빠져나간다. 숨소리도 발소리도 화면과 함께 멀어진다.
+			CameraManager->SetManualCameraFade(
+				IGPlayerNoise::CaptureDrainPeak * FMath::SmoothStep(0.35f, CaptureCutSeconds, Age),
+				FLinearColor::Black,
+				true);
+		}
+		else if (CaptureKind == EIGCaptureKind::Manager)
+		{
+			// 손전등이 얼굴로 들어온다. 번쩍이지 않고 끊길 때까지 천천히 눈이 먼다.
+			CameraManager->SetManualCameraFade(
+				IGPlayerNoise::CaptureGlarePeak * FMath::SmoothStep(0.10f, CaptureCutSeconds, Age),
+				GetCaptureCutColour(),
+				false);
+		}
+	}
+	if (!bCaptureCutDone && Age >= CaptureCutSeconds)
+	{
+		// 끊는다. 위층 사람은 바닥을 두드리는 노크 하나에 끊기고(몸싸움 소리에 들어
+		// 있다), 어둑시니는 소리까지 다 빠진 뒤라 조용하다. 손님은 문이 닫히는 소리가,
+		// 관리인은 하얗게 먼 눈이 끊김을 대신한다.
+		bCaptureCutDone = true;
+		if (CameraManager)
+		{
+			CameraManager->SetManualCameraFade(
+				1.0f, GetCaptureCutColour(), CaptureKind == EIGCaptureKind::Eoduksini);
+		}
+		CaptureFovScale = 1.0f;
+		CaptureTunnelAlpha = 0.0f;
 	}
 	if (CaptureFeedbackRemainingSeconds <= 0.0f || bCaptureCutDone)
 	{
 		CaptureFovScale = 1.0f;
-		CaptureImpactAlpha = 0.0f;
 		CaptureTunnelAlpha = 0.0f;
 	}
-	if (CaptureFeedbackRemainingSeconds <= 0.0f && Flashlight)
+	if (CaptureFeedbackRemainingSeconds <= 0.0f)
 	{
-		Flashlight->ClearKnockLoose();
+		bCaptureLookSet = false;
+		CaptureLookActor.Reset();
+		if (Flashlight)
+		{
+			Flashlight->ClearKnockLoose();
+		}
 	}
 	const bool bHapticsEnabled = !AccessibilitySubsystem
 		|| AccessibilitySubsystem->AreHapticsEnabled();
@@ -1146,12 +1327,22 @@ void AIGPlayerCharacter::UpdateCameraMotion(const float DeltaSeconds)
 	LandingDip = FMath::FInterpTo(LandingDip, 0.0f, DeltaSeconds, 9.0f);
 	if (!bReducedMotion && HasPhysicalCaptureView())
 	{
-		// 뒤로 넘어진다. 0.06초 버티다가 가속하며 떨어져 0.36초에 바닥에 닿고,
-		// 그동안 뒤로도 조금 밀린다. 괴물은 넘어진 눈높이로 기어 들어온다.
+		// 발목을 잡혀 바닥으로 끌려 내려간다. 0.06초 버티다가 한 번에 내려가 0.36초에
+		// 바닥에 닿고, 그동안 그쪽으로 조금 끌린다. 기울지도 튀지도 않는다. 괴물은
+		// 쓰러진 눈높이로 기어 올라온다.
 		const float Age = CaptureFeedbackDurationSeconds - CaptureFeedbackRemainingSeconds;
 		const float Fall = FMath::Clamp((Age - 0.06f) / 0.30f, 0.0f, 1.0f);
 		TargetOffset.Z -= CaptureFallDropCentimeters * Fall * Fall;
 		TargetOffset.X -= CaptureFallBackCentimeters * FMath::SmoothStep(0.0f, 0.36f, Age);
+	}
+	if (ComeToRemainingSeconds > 0.0f)
+	{
+		// 정신이 든다. 바닥에 쓰러진 눈높이에서 앉았다가 일어선다. 동작 감소에서도
+		// 높이만 바뀌고 흔들림은 없다.
+		ComeToRemainingSeconds = FMath::Max(0.0f, ComeToRemainingSeconds - DeltaSeconds);
+		const float Rise = 1.0f - ComeToRemainingSeconds / FMath::Max(ComeToDurationSeconds, 0.05f);
+		TargetOffset.Z -= IGPlayerNoise::ComeToDropCentimeters
+			* (1.0f - FMath::InterpEaseInOut(0.0f, 1.0f, Rise, 2.2f));
 	}
 
 	// 보간 없이 그대로 건다. 10/s 보간은 걸음 주파수(1.9~2.9Hz)의 저역 필터라
@@ -1163,46 +1354,21 @@ void AIGPlayerCharacter::UpdateCameraMotion(const float DeltaSeconds)
 	AppliedCrouchCameraCompensation = CrouchCameraCompensation;
 	AppliedHidingCameraLift = HidingCameraLift;
 
-	// Fear tremor rides on the camera's own rotation rather than the control
-	// rotation, so it shakes the view without fighting the player's aim.
+	// 겁이 나도 화면을 떨지 않는다. 공포는 숨과 심장 소리, 좁아지는 가장자리로
+	// 전한다. 떨리는 화면은 무섭기보다 어지러웠다(2026-10-08).
 	FRotator CameraRotation = FRotator::ZeroRotator;
-	if (!bReducedMotion && StressComponent)
-	{
-		CameraRotation = StressComponent->GetTremor();
-	}
 	if (!bReducedMotion && KnockCameraKick > KINDA_SMALL_NUMBER)
 	{
 		CameraRotation.Pitch -= KnockCameraKick;
 	}
 	if (!bReducedMotion && ScareCameraKick > KINDA_SMALL_NUMBER)
 	{
+		// 놀라서 고개가 한 번 움찔한다. 옆으로 기울이지 않는다.
 		CameraRotation.Pitch -= ScareCameraKick;
-		CameraRotation.Roll += ScareCameraKick * 0.35f;
 	}
 	ScareCameraKick = FMath::FInterpTo(ScareCameraKick, 0.0f, DeltaSeconds, 7.0f);
-	if (!bReducedMotion && CaptureFeedbackRemainingSeconds > 0.0f && HasPhysicalCaptureView())
-	{
-		// 넘어지며 옆으로 기울고, 바닥에 닿는 순간 한 번 튄다. 떨림은 부딪힌
-		// 순간이 가장 크고 곧 잦아들지만 끊길 때까지 남는다.
-		const float Age = CaptureFeedbackDurationSeconds - CaptureFeedbackRemainingSeconds;
-		CameraRotation.Roll -= 13.0f * FMath::SmoothStep(0.10f, 0.40f, Age);
-		const float Jolt = Age > 0.36f ? FMath::Exp(-(Age - 0.36f) * 14.0f) : 0.0f;
-		CameraRotation.Pitch += 4.0f * Jolt;
-		CameraRotation.Roll -= 4.5f * Jolt;
-		const float Shake = 2.4f * FMath::Exp(-Age * 5.0f) + 0.35f;
-		CameraRotation.Pitch += Shake * FMath::Sin(Age * 71.0f);
-		CameraRotation.Yaw += Shake * 0.8f * FMath::Sin(Age * 53.0f + 1.3f);
-		CameraRotation.Roll += Shake * 0.6f * FMath::Sin(Age * 89.0f + 2.1f);
-	}
-	else if (!bReducedMotion && CaptureFeedbackRemainingSeconds > 0.0f)
-	{
-		const float CaptureAlpha = CaptureFeedbackRemainingSeconds
-			/ FMath::Max(CaptureFeedbackDurationSeconds, 0.05f);
-		const float SmoothedCaptureAlpha = CaptureAlpha * CaptureAlpha
-			* (3.0f - 2.0f * CaptureAlpha);
-		CameraRotation.Pitch -= IGPlayerNoise::CaptureCameraKickDegrees
-			* SmoothedCaptureAlpha;
-	}
+	// 잡히는 동안 화면을 기울이거나 흔들지 않는다(2026-10-08). 넘어지는 높이와 돌아가는
+	// 고개만으로 잡힌 것을 보인다. 흔들림은 무섭지 않고 어지러웠다.
 	KnockCameraKick = FMath::FInterpConstantTo(
 		KnockCameraKick,
 		0.0f,
@@ -1457,7 +1623,7 @@ void AIGPlayerCharacter::RefreshMicrophoneCaptureMode()
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"MicrophoneUnavailable",
-				"[마이크 입력을 열 수 없음]"),
+				"[마이크를 사용할 수 없습니다]"),
 			2.6f);
 		return;
 	}
@@ -1473,7 +1639,7 @@ void AIGPlayerCharacter::RefreshMicrophoneCaptureMode()
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"MicrophoneEnabled",
-			"[마이크 소음 입력 켜짐 · 음성은 저장되지 않음]"),
+			"[마이크 켜짐 · 소리는 저장하지 않음]"),
 		2.8f);
 }
 

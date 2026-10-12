@@ -49,7 +49,7 @@ namespace
 		{
 			return Make(TEXT("Hint.Arrival.Store"), {
 				NSLOCTEXT("IGHint", "ArrivalStore1", "편의점에 사진 한번 보여 드릴까."),
-				NSLOCTEXT("IGHint", "ArrivalStore2", "1층으로 내려가서 골목으로 나가 보자. 편의점 계산대에 호출벨이 있을 거야.") });
+				NSLOCTEXT("IGHint", "ArrivalStore2", "편의점에 가서 물어보자. 1층에서 골목으로 나가면 돼.") });
 		}
 		const bool b401 = Beat(N, TEXT("Arrival.Unit401"));
 		const bool b402 = Beat(N, TEXT("Arrival.Unit402"));
@@ -166,12 +166,12 @@ namespace
 		if (!bReachedFifth)
 		{
 			return Make(TEXT("Hint.Night3.Door"), {
-				NSLOCTEXT("IGHint", "NightThreeDoor1", "옥상 너머에 문이 하나 더 있을 거야."),
+				NSLOCTEXT("IGHint", "NightThreeDoor1", "옥상부터 둘러보자."),
 				NSLOCTEXT("IGHint", "NightThreeDoor2", "옥상 물탱크 옆으로 가면 철문이 있어."),
 				NSLOCTEXT("IGHint", "NightThreeDoor3", "열쇠 꾸러미의 다른 열쇠로 5층 철문을 열자.") });
 		}
 		return Make(TEXT("Hint.Night3.P3"), {
-			NSLOCTEXT("IGHint", "NightThreeWall1", "벽 세 칸 중에 하나는 속이 비어 있을 거야."),
+			NSLOCTEXT("IGHint", "NightThreeWall1", "벽마다 소리가 다른지 들어 보자."),
 			N->HasSource(ETruth::SomeoneInTheWall, ESource::PipeAuditionCriterion)
 				? NSLOCTEXT("IGHint", "NightThreeWall2Criterion", "수첩에 적혀 있었지. 빈 곳은 낮게 울리고 소리가 오래 간다고.")
 				: NSLOCTEXT("IGHint", "NightThreeWall2Notebook", "조율 수첩에 벽 얘기가 있었을 거야. 그것부터 읽자."),
@@ -188,8 +188,8 @@ namespace
 					? NSLOCTEXT("IGHint", "NightFour3Bypass", "다음은 옥상 우회 밸브야.")
 					: NSLOCTEXT("IGHint", "NightFour3Pump", "마지막으로 1층 관리실의 이송 펌프를 수동으로 돌리자."));
 			return Make(TEXT("Hint.Night4.P5"), {
-				NSLOCTEXT("IGHint", "NightFour1", "벽을 치려면 그 소리를 덮을 게 있어야 해."),
-				NSLOCTEXT("IGHint", "NightFour2", "탱크를 청소하는 새벽엔 배관이 온 벽을 울린다고 했지. 저수조 점검 메모에 순서가 있었어."),
+				NSLOCTEXT("IGHint", "NightFour1", "망치 소리가 너무 클 텐데. 좀 덜 들리게 할 수 없을까."),
+				NSLOCTEXT("IGHint", "NightFour2", "탱크를 청소할 땐 배관이 시끄럽댔지. 점검 메모를 보자."),
 				Last });
 		}
 		if (!N->IsNightFourWallOpened())
@@ -207,7 +207,7 @@ namespace
 		}
 		return Make(TEXT("Hint.Night4.Choice"), {
 			NSLOCTEXT("IGHint", "NightFourChoice1", "오빠 곁에 가 보자."),
-			NSLOCTEXT("IGHint", "NightFourChoice2", "튜닝 해머를 오빠 곁에 두고 물러나거나, 녹음을 끄고 곁에 앉아 있거나.") });
+			NSLOCTEXT("IGHint", "NightFourChoice2", "튜닝 해머를 돌려놓고 갈까. 아니면 녹음을 끄고 조금 더 있을까.") });
 	}
 
 	FIGHintStep ResolveDay(const UIGMissingFloorNarrativeSubsystem* N, const int32 NightIndex)

@@ -546,7 +546,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"TuningHammerThought",
-			"공구 상자에서 빠져 있던 오빠 튜닝 해머다. 챙겨 두자."),
+			"오빠 거다. 여기 있었네."),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
 		0.0f,
@@ -669,7 +669,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ImpactThought",
-			"모서리에 검은 얼룩이 배어 있다. 바닥에도 똑같은 얼룩이 있네."),
+			"여기 검은 얼룩… 바닥에도 묻어 있네."),
 		EIGMissingFloorTruth::LandingStruggle,
 		EIGMissingFloorSource::LandingImpactMark,
 		0.0f,
@@ -2433,7 +2433,7 @@ void AIGMissingFloorNightThreeDirector::ArmReturnPass()
 					4.2f);
 				return;
 			}
-			// 아직 위층에 있을 때만 맞는 말이다. 그새 잡혀서 침대로 돌아갔다면
+			// 아직 위층에 있을 때만 맞는 말이다. 그새 잡혀서 다른 자리에서 깼다면
 			// 하지 않는다.
 			const AIGPlayerCharacter* PlayerCharacter = Player.Get();
 			if (PlayerCharacter
@@ -2609,7 +2609,7 @@ void AIGMissingFloorNightThreeDirector::AdvanceReturn()
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"N3PassByThought",
-				"안 움직인다. 기다리는 건가."),
+				"안 따라오네."),
 			4.0f);
 	}
 	// 몇 걸음 더 멀어지고서야 참았던 숨이 나간다.
@@ -2688,8 +2688,9 @@ void AIGMissingFloorNightThreeDirector::NotifyCaptureReset()
 {
 	if (ReturnStage == EIGNightThreeReturnStage::Passing)
 	{
-		// 리셋은 침대로 되돌린다. 그것을 도착으로 세면 잡히는 것이 목표 달성이
-		// 되므로, 한 번 밖으로 나갔다 와야 한다. 형체는 다시 복도에 세운다.
+		// 잡혀서 403호 안에서 깨어날 수도 있다(관리인은 현관에 둔다). 그것을 도착으로
+		// 세면 잡히는 것이 목표 달성이 되므로, 한 번 밖으로 나갔다 와야 한다. 형체는
+		// 다시 복도에 세운다.
 		bMustLeaveHomeAgain = true;
 		HomeDwellSeconds = 0.0f;
 		bReliefPending = false;

@@ -22,6 +22,8 @@
 #include "Interaction/IGFireDoorWedge.h"
 #include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGSwingDoor.h"
+#include "Entity/IGMissingFloorNightThreeDirector.h"
+#include "Narrative/IGStoryStateSubsystem.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/CommandLine.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
@@ -271,6 +273,8 @@ void AIGManagerPatrol::Configure(
 	if (InNightLoop)
 	{
 		SeenCaptureCount = InNightLoop->GetCaptureCount();
+		CaptureSettledHandle = InNightLoop->OnCaptureSettled.AddUObject(
+			this, &AIGManagerPatrol::HandleCaptureSettled);
 	}
 	GetWorldTimerManager().SetTimer(
 		DutyTimer, this, &AIGManagerPatrol::RefreshDuty, IGManagerPatrol::DutyCheckSeconds, true);
@@ -279,6 +283,11 @@ void AIGManagerPatrol::Configure(
 void AIGManagerPatrol::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(DutyTimer);
+	GetWorldTimerManager().ClearTimer(EscortTimer);
+	if (AIGNightLoopDirector* Loop = NightLoop.Get())
+	{
+		Loop->OnCaptureSettled.Remove(CaptureSettledHandle);
+	}
 	if (UIGNoiseSubsystem* Noise = NoiseSubsystem.Get())
 	{
 		Noise->OnNoiseReported.Remove(NoiseHandle);
@@ -511,11 +520,14 @@ void AIGManagerPatrol::RefreshDuty()
 	{
 		return;
 	}
-	// 누가 잡았든 침대 리셋이 걸리면 그는 안쪽 방으로 돌아가 있다. 깨는 동안
-	// 복도에 서 있으면 깬 사람 눈앞에서 순간이동한 사람이 된다.
+	// 누가 잡았든 그녀가 잡히면 그는 안쪽 방으로 돌아가 있다. 깨는 동안 복도에 서
+	// 있으면 깬 사람 눈앞에서 순간이동한 사람이 된다. 그가 잡는 중이면 화면이 다
+	// 덮일 때까지 그 자리에 있다(HandleCaptureSettled).
 	if (const AIGNightLoopDirector* Loop = NightLoop.Get())
 	{
-		if (Loop->IsCaptureResetInFlight() || Loop->GetCaptureCount() != SeenCaptureCount)
+		const bool bHisCatch = State == EIGManagerPatrolState::Catching && Loop->IsCaptureResetInFlight();
+		if (!bHisCatch
+			&& (Loop->IsCaptureResetInFlight() || Loop->GetCaptureCount() != SeenCaptureCount))
 		{
 			SeenCaptureCount = Loop->GetCaptureCount();
 			if (State != EIGManagerPatrolState::Resting)
@@ -809,7 +821,9 @@ void AIGManagerPatrol::BeginCatch()
 		}
 		return;
 	}
-	// 숨은 자리를 열어 끌어낸다. 숨는 걸 봤을 때만 여기까지 온다.
+	// 숨은 자리를 열어 끌어낸다. 숨는 걸 봤을 때만 여기까지 온다. 손을 휘두르지도
+	// 말을 하지도 않는다. 손전등을 얼굴에 들이대고 손목을 쥔다. 그녀의 눈이 그 빛에
+	// 하얗게 멀어 가는 것이 이 포획의 전부다(§8 3-1b).
 	Character->LeaveHidingSpotImmediately();
 	IGAudio::SpawnOneShotAt(
 		this, UIGToneSequenceSoundWave::CreatePickupRustle(this),
@@ -821,30 +835,124 @@ void AIGManagerPatrol::BeginCatch()
 	{
 		Stress->ApplyScare(0.85f);
 	}
-	Character->PlayScareKick(1.6f);
 	PlayKeys(false);
+	if (AIGNightLoopDirector* Loop = NightLoop.Get())
+	{
+		Character->SetCaptureLookTarget(this, GetFeet() + FVector(0.0f, 0.0f, 150.0f) - GetActorLocation());
+		const FTransform Wake = AIGNightLoopDirector::GetHomeEntryWake();
+		Loop->RequestExternalCapture(Character, EIGCaptureKind::Manager, &Wake);
+	}
+}
+
+void AIGManagerPatrol::BeginCatchForProbe()
+{
+	AIGPlayerCharacter* Character = Player.Get();
+	if (!bOnDuty || !Character)
+	{
+		return;
+	}
+	const FVector Forward = Character->GetControlRotation().Vector().GetSafeNormal2D();
+	const UCapsuleComponent* Capsule = Character->GetCapsuleComponent();
+	const FVector Feet = Character->GetActorLocation()
+		- FVector(0.0f, 0.0f, Capsule ? Capsule->GetScaledCapsuleHalfHeight() : 96.0f)
+		+ Forward * 80.0f;
+	SetActorLocationAndRotation(Feet, (-Forward).Rotation());
+	if (!bBodyShown)
+	{
+		ShowBody(true);
+	}
+	BeginCatch();
 }
 
 void AIGManagerPatrol::FinishCatch()
 {
 	bCatchResolved = true;
 	AIGPlayerCharacter* Character = Player.Get();
-	if (Character && IsCaptureAllowed())
+	// 포획이 걸렸으면 화면이 다 덮일 때 안쪽 방으로 돌아간다(HandleCaptureSettled).
+	// 걸리지 못했으면(밤4 가면처럼 다른 대본이 잡고 있으면) 그냥 돌아간다.
+	if (Character && IsCaptureAllowed() && NightLoop.IsValid() && NightLoop->IsCaptureResetInFlight())
 	{
-		if (AIGNightLoopDirector* Loop = NightLoop.Get())
-		{
-			Loop->RequestExternalCapture(Character);
-		}
-		// 리셋이 걸리면 RefreshDuty가 안쪽 방으로 돌려보낸다. 걸리지 못했으면(밤4
-		// 가면처럼 다른 대본이 잡고 있으면) 그냥 돌아간다.
-		if (!NightLoop.IsValid() || !NightLoop->IsCaptureResetInFlight())
-		{
-			BeginRetreat(IGManagerPatrol::CaptureRestSeconds);
-		}
 		return;
 	}
 	// 추격 없음. 비추기만 하고 손을 놓은 채 돌아간다.
 	BeginRetreat(IGManagerPatrol::CaptureRestSeconds);
+}
+
+void AIGManagerPatrol::HandleCaptureSettled(const EIGCaptureKind Kind, const FVector& CaptureSpot)
+{
+	if (!bOnDuty)
+	{
+		return;
+	}
+	const bool bHisCatch = Kind == EIGCaptureKind::Manager;
+	if (const AIGNightLoopDirector* Loop = NightLoop.Get())
+	{
+		SeenCaptureCount = Loop->GetCaptureCount();
+	}
+	EnterRestingAtDoor(IGManagerPatrol::CaptureRestSeconds);
+	if (!bHisCatch)
+	{
+		return;
+	}
+	// 옥상과 창고 열쇠를 거둬 간다. 열쇠 꾸러미는 관리실 상판 제자리로 돌아간다.
+	bool bKeyTaken = false;
+	const FGameplayTag KeyTag = FGameplayTag::RequestGameplayTag(
+		FName(TEXT("State.MissingFloor.HasStairKey")), false);
+	if (UIGStoryStateSubsystem* Story = GetGameInstance()
+		? GetGameInstance()->GetSubsystem<UIGStoryStateSubsystem>()
+		: nullptr; Story && KeyTag.IsValid() && Story->HasState(KeyTag))
+	{
+		Story->RemoveState(KeyTag);
+		bKeyTaken = true;
+		for (TActorIterator<AIGMissingFloorNightThreeDirector> It(GetWorld()); It; ++It)
+		{
+			It->RefreshKeyringAvailability();
+			break;
+		}
+	}
+	PlayEscortAftermath(bKeyTaken);
+}
+
+void AIGManagerPatrol::PlayEscortAftermath(const bool bKeyTaken)
+{
+	// 문밖, 노크하는 손 높이. 깨어난 그녀는 문을 보고 서 있다.
+	const FVector Outside(
+		AIGPrologueWorldScene::HomeDoorX + AIGPrologueWorldScene::WideDoorLeafWidth * 0.5f,
+		AIGPrologueWorldScene::HomeDoorY - 40.0f,
+		AIGPrologueWorldScene::FourthFloorZ + 110.0f);
+	GetWorldTimerManager().SetTimer(
+		EscortTimer,
+		FTimerDelegate::CreateWeakLambda(this, [this, Outside, bKeyTaken]()
+		{
+			IGAudio::SpawnOneShotAt(
+				this, UIGToneSequenceSoundWave::CreateKeyRingJingle(this, true),
+				Outside, 0.5f, 1.0f, 120.0f, 1200.0f, EIGAudioBus::World);
+			AIGHorrorHUD::PushAudioCaptionAt(
+				this, NSLOCTEXT("IGMissingFloor", "CaptionMokKeys", "[열쇠 꾸러미가 짤랑거리는 소리]"),
+				2.0f, Outside);
+			GetWorldTimerManager().SetTimer(
+				EscortTimer,
+				FTimerDelegate::CreateWeakLambda(this, [this, Outside, bKeyTaken]()
+				{
+					IGAudio::SpawnOneShotAt(
+						this, UIGToneSequenceSoundWave::CreateSlipperScuff(this),
+						Outside - FVector(80.0f, 60.0f, 104.0f), 0.45f, 0.95f, 160.0f, 1400.0f,
+						EIGAudioBus::World);
+					AIGHorrorHUD::PushAudioCaptionAt(
+						this, NSLOCTEXT("IGMissingFloor", "CaptionMokSlippers", "[슬리퍼를 끄는 발소리]"),
+						2.2f, Outside - FVector(80.0f, 60.0f, 0.0f));
+					AIGHorrorHUD::PushThought(
+						this,
+						bKeyTaken
+							? NSLOCTEXT("IGMissingFloor", "YudamMokTookKeys", "열쇠 꾸러미를 가져갔네. 관리실에 도로 갖다 놨겠지.")
+							: NSLOCTEXT("IGMissingFloor", "YudamMokBroughtHome", "집까지 데려다 놓고 갔네."),
+						3.2f);
+				}),
+				1.5f,
+				false);
+		}),
+		0.9f,
+		false);
 }
 
 // -- 매 프레임 ---------------------------------------------------------------
@@ -1317,7 +1425,7 @@ void AIGManagerPatrol::UpdateSenses(const float DeltaSeconds)
 	if (bBodyShown && DistanceToPlayer < 1400.0f)
 	{
 		ThinkOnce(TEXT("Night3.MokFirstHeard"),
-			NSLOCTEXT("IGMissingFloor", "YudamMokFirstHeard", "관리인 아저씨다. 이 시간에 손전등을 들고."));
+			NSLOCTEXT("IGMissingFloor", "YudamMokFirstHeard", "관리인 아저씨인가? 이 시간에 왜 나왔지?"));
 	}
 
 	float LitDistance = 0.0f;

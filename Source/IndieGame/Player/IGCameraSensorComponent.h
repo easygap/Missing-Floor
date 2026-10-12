@@ -11,7 +11,7 @@ class UPostProcessComponent;
  * 1인칭 화면에 약한 렌즈 왜곡(M_PP_CameraSensor)을 입힌다.
  *
  * 소품의 표면과 글씨가 보이도록 노이즈와 전면 흐림은 쓰지 않는다.
- * 세기는 접근성 설정 「화면 질감」을 따른다. 매 프레임 갱신할 값은 없으며,
+ * 세기는 접근성 설정 「렌즈 왜곡」을 따른다. 매 프레임 갱신할 값은 없으며,
  * 설정이 바뀌면 플레이어가 RefreshFromSettings를 부른다.
  */
 UCLASS(ClassGroup = (IndieGame))

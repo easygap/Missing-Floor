@@ -20,6 +20,23 @@ class UIGStressComponent;
 class UInputAction;
 struct FInputActionValue;
 
+/**
+ * 그녀를 잡은 괴이. 괴이마다 잡히는 시점과 깨어나는 자리, 치르는 값이 다르다
+ * (STORY_BIBLE_MISSING_FLOOR.md §5.4). 침대로 돌아가는 일은 없다.
+ */
+UENUM()
+enum class EIGCaptureKind : uint8
+{
+	/** 위층 사람. 발목을 잡혀 바닥으로 끌려 내려가고, 지나온 길로 끌려간다. */
+	Listener,
+	/** 어둑시니. 시선이 저절로 들리고 빛과 소리가 빠져나간다. */
+	Eoduksini,
+	/** 문간의 손님. 종이가 안으로 날려 들어오고 목소리가 등 뒤에서 말을 맺는다. */
+	Guest,
+	/** 관리인. 얼굴에 들이댄 손전등에 눈이 멀고 손목을 잡힌다. 말은 없다(§8 3-1b). */
+	Manager
+};
+
 /** First-person player pawn with asset-driven Enhanced Input bindings. */
 UCLASS()
 class INDIEGAME_API AIGPlayerCharacter : public ACharacter
@@ -67,17 +84,44 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Player|Camera")
 	/**
-	 * 잡혔을 때의 시점. 고개가 괴물 얼굴로 꺾이고, 뒤로 넘어져 바닥에서 올려다보다
-	 * CutSeconds에 화면이 검게 끊긴다. CutSeconds를 비우면 0.95초다.
+	 * 잡혔을 때의 시점. 괴이마다 다르다. 위층 사람은 발목을 잡혀 바닥으로 끌려 내려가
+	 * 기어 올라오는 얼굴을 보고, 어둑시니는 시선이 저절로 들리며 빛과 소리가 같이
+	 * 빠지고, 손님은 문 쪽으로 고개가 돌아가고, 관리인은 손전등 빛에 하얗게 눈이
+	 * 먼다. 화면을 흔들지 않는다. CutSeconds에 끊긴다. 비우면 0.95초다.
 	 */
-	void PlayCaptureFeedback(float DurationSeconds = 1.2f, float CutSeconds = -1.0f);
+	void PlayCaptureFeedback(
+		float DurationSeconds = 1.2f,
+		float CutSeconds = -1.0f,
+		EIGCaptureKind Kind = EIGCaptureKind::Listener);
+	EIGCaptureKind GetCaptureKind() const { return CaptureKind; }
+	/**
+	 * 지금 포획이 끊기는 색. 관리인은 손전등 빛이라 노르스름한 흰색이고 나머지는
+	 * 검정이다. 깨어날 때도 같은 색에서 돌아온다. 점멸 감소에서는 늘 검정이다.
+	 */
+	FLinearColor GetCaptureCutColour() const;
+	/** 몸이 없는 괴이의 포획 시점이 바라볼 자리. 액터가 사라지면 마지막 자리를 본다. */
+	void SetCaptureLookTarget(const AActor* Actor, const FVector& Offset);
+	/**
+	 * 정신이 든다. 바닥에서 몸을 일으키는 동안 시점이 낮은 데서 올라온다. 조작은
+	 * 루프 감독이 돌려준다.
+	 */
+	void PlayComeTo(float Seconds);
+	/**
+	 * 지나온 자리(0.5초마다, 최근 2분). 잡힌 뒤 깨어날 자리를 여기서 고른다. 그녀가
+	 * 실제로 서 있던 곳이라 벽이나 가구 속으로 들어가지 않는다.
+	 * From에서 MinDistance 넘게 떨어진 가장 최근 자리를 찾는다.
+	 */
+	bool FindFootholdAway(const FVector& From, float MinDistance, float MaxAgeSeconds,
+		FVector& OutLocation, FRotator& OutRotation) const;
+	/** 방 밝기(손전등 뺌)가 MaxRoomDarkness 이하였던 가장 최근 자리. */
+	bool FindLitFoothold(float MaxRoomDarkness, float MaxAgeSeconds,
+		FVector& OutLocation, FRotator& OutRotation) const;
+	void ClearFootholds() { Footholds.Reset(); }
 	/** 넘어질 때 시점이 떨어지는 깊이와 뒤로 밀리는 거리(cm). 괴물이 얼굴을 들이밀 자리가 여기서 나온다. */
 	static constexpr float CaptureFallDropCentimeters = 112.0f;
 	static constexpr float CaptureFallBackCentimeters = 26.0f;
 	/** 잡힌 동안 좁아지는 시야각 배율(1이 평소). */
 	float GetCaptureFovScale() const { return CaptureFovScale; }
-	/** 0~1. 부딪힌 순간 치솟았다 가라앉는 화면 충격. 카메라 모디파이어가 후처리로 쓴다. */
-	float GetCaptureImpactAlpha() const { return CaptureImpactAlpha; }
 	/** 0~1. 끊기기 직전까지 조여 오는 시야. */
 	float GetCaptureTunnelAlpha() const { return CaptureTunnelAlpha; }
 	/**
@@ -123,7 +167,7 @@ public:
 	/** 접근성 설정의 시야각을 카메라에 건다. 설정이 바뀔 때마다 부른다. */
 	void RefreshFieldOfView();
 
-	/** 접근성 설정의 화면 질감을 후처리에 건다. 설정이 바뀔 때마다 부른다. */
+	/** 접근성 설정의 렌즈 왜곡을 후처리에 적용한다. 설정이 바뀔 때마다 부른다. */
 	void RefreshCameraTexture();
 	/**
 	 * 이번 프레임의 손맛 회전(노크 킥·포획 킥·공포 떨림). 카메라 컴포넌트에
@@ -344,12 +388,29 @@ private:
 	int32 ChaseForceFeedbackHandle = 0;
 	float CaptureFeedbackRemainingSeconds = 0.0f;
 	UPROPERTY(Transient) TWeakObjectPtr<class AIGListenerEntity> CaptureThreat;
+	EIGCaptureKind CaptureKind = EIGCaptureKind::Listener;
+	TWeakObjectPtr<const AActor> CaptureLookActor;
+	FVector CaptureLookOffset = FVector::ZeroVector;
+	FVector CaptureLookLast = FVector::ZeroVector;
+	bool bCaptureLookSet = false;
+	/** 정신이 드는 동안 남은 시간과 전체 길이. 시점이 바닥에서 올라온다. */
+	float ComeToRemainingSeconds = 0.0f;
+	float ComeToDurationSeconds = 0.0f;
+	struct FIGFoothold
+	{
+		FVector Location = FVector::ZeroVector;
+		FRotator Rotation = FRotator::ZeroRotator;
+		float RoomDarkness = 1.0f;
+		double Seconds = 0.0;
+	};
+	TArray<FIGFoothold> Footholds;
+	double LastFootholdSeconds = -1000.0;
+	void RecordFoothold();
 	FRotator CaptureStartRotation = FRotator::ZeroRotator;
 	uint64 CaptureForceFeedbackHandle = 0;
 	float CaptureCutSeconds = -1.0f;
 	bool bCaptureCutDone = false;
 	float CaptureFovScale = 1.0f;
-	float CaptureImpactAlpha = 0.0f;
 	float CaptureTunnelAlpha = 0.0f;
 	float ThreatVignetteTarget = 0.0f;
 	float ThreatVignetteAlpha = 0.0f;

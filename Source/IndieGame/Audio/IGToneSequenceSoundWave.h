@@ -357,8 +357,6 @@ public:
 	/** 포획 직전의 덮침. 저역과 천 스침, 목소리. 뒤에 드라이 노크 둘이 온다. */
 	static UIGToneSequenceSoundWave* CreateCaptureLunge(UObject* Outer);
 	static UIGToneSequenceSoundWave* CreateCaptureStruggle(UObject* Outer);
-	/** 포획 화면이 끊기는 순간. 바닥에 닿는 둔한 타격과 귀에 남는 높은 울림. */
-	static UIGToneSequenceSoundWave* CreateCaptureCut(UObject* Outer);
 
 	/**
 	 * 압박 층. 36Hz 저역과 2.4kHz 가는 휘파람, 느린 목울림. 6초 루프. 소리 자체는

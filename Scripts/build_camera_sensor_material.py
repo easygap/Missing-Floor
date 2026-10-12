@@ -2,7 +2,7 @@
 
 화면 가장자리의 약한 통 왜곡과 색 번짐만 남긴다. 전면 노이즈, 흐림,
 과도한 샤프닝은 재질의 작은 요철과 문서 글씨를 덮으므로 사용하지 않는다.
-톤매핑 뒤에서 동작하며 HUD에는 적용되지 않는다. 화면 질감을 0으로
+톤매핑 뒤에서 동작하며 HUD에는 적용되지 않는다. 렌즈 왜곡을 0으로
 내리면 UIGCameraSensorComponent가 후처리 패스 자체를 끈다.
 """
 
@@ -17,7 +17,7 @@ ASSETS = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
 NAME = "M_PP_CameraSensor"
 FOLDER = "/Game/Prototype/Materials"
 
-# 기본값이 곧 「화면 질감 100%」다. 조절은 Strength 하나로 한다.
+# 기본값이 곧 「렌즈 왜곡 100%」다. 조절은 Strength 하나로 한다.
 PARAMETERS = (
     ("Strength", 1.0),
     ("Distortion", 0.016),

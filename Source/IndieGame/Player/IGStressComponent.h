@@ -108,10 +108,6 @@ public:
 	 */
 	void ApplyRelief(float Ceiling, float Seconds);
 
-	/** Camera tremor in degrees, applied by the pawn on top of its own sway. */
-	UFUNCTION(BlueprintPure, Category = "Stress")
-	FRotator GetTremor() const { return Tremor; }
-
 	UPROPERTY(BlueprintAssignable, Category = "Stress|Events")
 	FIGStressChangedSignature OnStressChanged;
 
@@ -153,7 +149,6 @@ private:
 	void UpdateStress(float DeltaSeconds);
 	void UpdateHeartbeat(float DeltaSeconds);
 	void PlayHeartbeat(float EffectiveStress);
-	void UpdateTremor(float DeltaSeconds);
 	/** 숨의 루프. 스트레스·숨참·반동으로 볼륨, 숨을 참는 동안 0. */
 	void UpdateBreathLayer(float DeltaSeconds);
 	/** 2D 숨 한 번. CutSeconds가 양수면 그 뒤로 잘라 낸다 — 녹음이 길 때. */
@@ -202,6 +197,4 @@ private:
 	float HeartbeatReboundRemaining = 0.0f;
 	/** 지금 만드는 박동에 걸 반동 배율. UpdateHeartbeat이 정하고 PlayHeartbeat이 읽는다. */
 	float HeartbeatReboundScaleNow = 1.0f;
-	float TremorTime = 0.0f;
-	FRotator Tremor = FRotator::ZeroRotator;
 };

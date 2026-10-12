@@ -169,7 +169,7 @@ void AIGNeighbor303Probe::Tick(const float DeltaSeconds)
 	const FText Earplugs = NSLOCTEXT(
 		"IGMissingFloor",
 		"Neighbor303Earplugs",
-		"저 여기 2년 살았어요. 작년 여름에도 새벽마다 위에서 쿵쿵거렸어요. 귀마개 끼고 잤죠.");
+		"그 소리, 작년 여름에도 났어요. 저 귀마개 끼고 자요. 그래도 발소리는 좀 조심해 주세요.");
 
 	if (Phase >= 1 && Phase <= 4 && !Walker)
 	{

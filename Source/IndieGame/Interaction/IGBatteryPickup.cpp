@@ -23,7 +23,7 @@ void AIGBatteryPickup::CompleteInteraction_Implementation(const FIGInteractionCo
 		&& Torch->IsAvailable()
 		&& Torch->GetBatteryFraction() < IGBattery::SwapNowBelow;
 	ThoughtOnPickup = bSwapNow
-		? NSLOCTEXT("IGMissingFloor", "YudamBatterySwapped", "건전지다. 바로 갈아 끼웠다.")
+		? NSLOCTEXT("IGMissingFloor", "YudamBatterySwapped", "이걸로 좀 버티겠지.")
 		: NSLOCTEXT("IGMissingFloor", "YudamBatteryPocketed", "건전지다. 챙겨 두자.");
 
 	const bool bAlreadyTaken = WasPickedUp();

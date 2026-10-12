@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 param()
-# 화면 질감 후처리 재질(M_PP_CameraSensor)을 만든다. 게임 모듈이 필요 없는 재질이라
+# 렌즈 왜곡 후처리 재질(M_PP_CameraSensor)을 만든다. 게임 모듈이 필요 없는 재질이라
 # Import-BlenderAssets.ps1이 쓰는 콘텐츠 전용 프로젝트(ArtImport)에서 만들고 되가져온다.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -23,7 +23,7 @@ $log = Join-Path $root 'Saved/Logs/CameraSensorMaterial.log'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
 & $editor $project -unattended -nop4 -nosplash -nullrhi -nosound -RenderOffscreen -stdout -FullStdOutLogOutput "-abslog=$log" "-ExecutePythonScript=$script" | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'CAMERA_SENSOR_MATERIAL PASS')) {
-	throw "화면 질감 재질 생성 실패: $log"
+	throw "렌즈 왜곡 재질 생성 실패: $log"
 }
 Copy-Item -LiteralPath $stageAsset -Destination $repoAsset -Force
 Select-String -LiteralPath $log -Pattern 'CAMERA_SENSOR_MATERIAL PASS' | ForEach-Object { Write-Host $_.Line }

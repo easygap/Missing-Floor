@@ -208,6 +208,22 @@ bool AIGNightOneBeatDirector::Configure(
 	return true;
 }
 
+void AIGNightOneBeatDirector::FinishSightingAtHourBoundary()
+{
+	if (bSightingCompleted || (!bSightingStaged
+		&& !GetWorldTimerManager().IsTimerActive(SightingRetryTimer)))
+	{
+		return;
+	}
+	GetWorldTimerManager().ClearTimer(SightingRetryTimer);
+	GetWorldTimerManager().ClearTimer(SightingStepTimer);
+	GetWorldTimerManager().ClearTimer(SightingDescentTimer);
+	// 계단을 내려가지 않은 채 새벽을 맞거나 잡힐 수도 있다. 그때 첫 목격의
+	// 접촉 예외를 남기면 다음 밤에도 순찰 중인 몸에 닿아도 잡히지 않는다.
+	RestoreSightingEntity();
+	bSightingCompleted = true;
+}
+
 void AIGNightOneBeatDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(SightingFallbackTimer);

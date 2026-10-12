@@ -40,7 +40,7 @@ struct INDIEGAME_API FIGAccessibilitySettings
 	float ComfortVignetteStrength = 0.0f;
 
 	/**
-	 * 화면 질감. 렌즈 왜곡, 어두운 곳의 노이즈, 번지는 색을 얼마나 입힐지다.
+	 * 렌즈 왜곡. 화면 가장자리의 휘어짐과 색 번짐을 조절한다.
 	 * 기본 1이 의도한 화면이고, 눈이 피로한 사람은 0까지 내릴 수 있다.
 	 */
 	UPROPERTY(

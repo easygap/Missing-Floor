@@ -189,7 +189,7 @@ Assert-ContainsAll $playerSource @(
 	'MicrophoneCalibrationSeconds',
 	'MicrophoneReportCooldownSeconds',
 	'delete MicrophoneCaptureSynth',
-	'음성은 저장되지 않음'
+	'소리는 저장하지 않음'
 ) 'M6 ephemeral microphone envelope'
 Assert-ContainsAll $hudSource @(
 	'마이크 소리 사용',

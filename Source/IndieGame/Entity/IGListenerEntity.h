@@ -217,6 +217,18 @@ public:
 	void ResetToPatrolStart(bool bRaiseAggression);
 
 	/**
+	 * 잡은 뒤(누가 잡았든) 순찰 처음으로 돌아간다. 깨어난 사람 눈앞에 서 있지 않게
+	 * 하는 것이고, 시간을 되감는 것이 아니다. 먼지에 남은 길과 발자국, 노크 간격은
+	 * 그대로 두고, GraceSeconds 동안은 그녀가 내는 소리를 듣지 않고 몸이 닿아도
+	 * 잡지 않는다(§5.4). 건물과 연출이 내는 소리는 그대로 듣는다.
+	 */
+	void ReturnAfterCapture(float GraceSeconds);
+	/** 검사 전용. 지금 자리에서 그녀를 잡는다. */
+	void CaptureForProbe(APawn* Player) { BeginCapture(Player); }
+	/** 잡은 뒤 아직 듣지 않는 동안이다. */
+	bool IsInCaptureGrace() const;
+
+	/**
 	 * Day rest (§1: 낮 구간은 안전하다). Dormant, it is hidden, silent,
 	 * tick-free and deaf — the daytime building must never knock. Waking
 	 * puts it back at its patrol start with its earned impatience intact.
@@ -550,9 +562,9 @@ private:
 
 	EIGListenerBodyAnim ActiveBodyAnim = EIGListenerBodyAnim::None;
 	FVector CaptureViewTarget = FVector::ZeroVector;
-	/** 잡기 시작한 순간의 얼굴 위치. 여기서 CaptureViewTarget까지 달려든다. */
+	/** 잡기 시작한 순간의 얼굴 위치. 여기서 CaptureViewTarget까지 기어 올라온다. */
 	FVector CaptureFaceStart = FVector::ZeroVector;
-	/** 넘어진 눈의 위치와, 거기서 얼굴까지 이어지는 방향. 얼굴은 이 선 위에서 물러났다가 달려든다. */
+	/** 넘어진 눈의 위치와, 거기서 얼굴까지 이어지는 방향. 얼굴은 이 선 끝에서 멈춘다. */
 	FVector CaptureFallenEye = FVector::ZeroVector;
 	FVector CaptureStrikeLine = FVector::ForwardVector;
 	TWeakObjectPtr<class AIGPlayerCharacter> CaptureVictim;
@@ -691,6 +703,8 @@ private:
 	bool bBlockedByHomeDoor = false;
 	/** 문 앞을 떠난 뒤 집 안 소리를 흘려듣는 시한(게임 시간). */
 	double HomeDoorIgnoreUntil = -1000.0;
+	/** 잡은 뒤 깨어난 사람을 듣지도 잡지도 않는 시각까지(ReturnAfterCapture). */
+	double PerceptionGraceUntil = -1000.0;
 
 	/** 포획 때 덮침 녹음의 숨 꼬리를 자르는 타이머. 노크 둘이 그 숨에 묻혔다. */
 	FTimerHandle CaptureGrabTrimTimer;

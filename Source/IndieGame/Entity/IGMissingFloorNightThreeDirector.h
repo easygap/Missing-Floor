@@ -112,7 +112,7 @@ public:
 	 */
 	void ArmReturnPass();
 
-	/** 포획 리셋은 침대로 되돌린다. 그것이 도착으로 세어지면 안 된다. */
+	/** 잡혀서 403호 안에서 깨어난 것이 도착으로 세어지면 안 된다. */
 	void NotifyCaptureReset();
 
 	/** Fired once, when she is back inside 403. This is what ends night three. */
@@ -175,8 +175,11 @@ public:
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-private:
+public:
+	/** 계단 열쇠가 없으면 관리실 상판에 열쇠 꾸러미를 둔다. 관리인이 거둬 간 뒤에도 부른다. */
 	void RefreshKeyringAvailability();
+
+private:
 	void HandleKeyringTaken(AIGMissingFloorEvidence* Evidence);
 	void HandleValveOpened(AIGMissingFloorEvidence* Evidence);
 	void HandleWallListened(int32 BayIndex);

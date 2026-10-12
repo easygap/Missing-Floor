@@ -664,7 +664,6 @@ private:
 	FTimerHandle CaptureTimer;
 	FTimerHandle NightCaptureWarmupTimer;
 	FVector ProbeNoiseLocation = FVector::ZeroVector;
-	FVector ExpectedWakeLocation = FVector::ZeroVector;
 	/** Trail sample the beam-dust step lit up, so it can be cleaned up after. */
 	FVector ProbeDustTrailLocation = FVector::ZeroVector;
 	/** Measured P3 wall discrimination, for the PASS receipt. */

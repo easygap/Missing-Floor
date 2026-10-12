@@ -49,6 +49,9 @@ public:
 		AIGPlayerCharacter* InPlayer,
 		const TArray<FVector>& InCorridorPatrolPoints);
 
+	/** 밤이 끝나거나 다시 시작하면 첫 목격의 접촉 예외와 남은 타이머를 걷는다. */
+	void FinishSightingAtHourBoundary();
+
 	/** Probe queries. */
 	bool IsSightingStaged() const { return bSightingStaged; }
 	bool HasSightingCompleted() const { return bSightingCompleted; }

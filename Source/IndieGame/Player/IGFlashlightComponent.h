@@ -75,6 +75,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Flashlight")
 	void RefillBattery(float Fraction);
+	/** 어둑시니에게 잡혀 빛을 먹힌 만큼 건전지가 준다. */
+	void DrainBattery(const float Fraction) { RefillBattery(-FMath::Max(Fraction, 0.0f)); }
+
+	/**
+	 * 위층 사람에게 잡히며 손에서 떨어뜨렸다. 잡힌 자리의 바닥에 놓인 손전등
+	 * (AIGDroppedFlashlight)을 주울 때까지 쓸 수 없다. 소유 기록은 그대로다.
+	 */
+	void SetDropped(bool bInDropped);
+	bool IsDropped() const { return bDropped; }
 
 	/** 지금 건전지로 낼 수 있는 빛의 비율. 다 닳아도 바닥값 아래로는 내려가지 않는다. */
 	float GetCellOutput() const;
@@ -153,4 +162,5 @@ private:
 	uint32 NoiseCounter = 0;
 	bool bOn = false;
 	bool bAvailable = false;
+	bool bDropped = false;
 };

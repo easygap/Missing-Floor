@@ -117,8 +117,8 @@ Require-All $nightThree @(
 	'Narrative->MarkBeatPlayed(IGNightThree::PassByBeatId);',
 	'bWasWestOfHim = true;'
 ) '비트 3-7 booking'
-# 포획 리셋은 침대로 되돌린다. 도착으로 세면 잡히는 것이 목표 달성이 되고,
-# 형체도 복도에 다시 세워야 한다.
+# 잡혀서 옮겨진 것을 도착으로 세면 잡히는 것이 목표 달성이 되고, 형체도 복도에
+# 다시 세워야 한다.
 Require-All $nightThree @(
 	'void AIGMissingFloorNightThreeDirector::NotifyCaptureReset()',
 	'bMustLeaveHomeAgain = true;',

@@ -6,6 +6,7 @@
 #include "Sequence/IGNeighbor303Probe.h"
 #include "Sequence/IGNightFourHammerProbe.h"
 #include "Entity/IGStairNeighbor.h"
+#include "Sequence/IGCaptureVarietyProbe.h"
 #include "Sequence/IGGuestDoorsProbe.h"
 #include "Sequence/IGFireDoorProbe.h"
 #include "Sequence/IGStairSensorProbe.h"
@@ -75,6 +76,7 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "Narrative/IGStoryStateSubsystem.h"
 #include "Narrative/IGRecordingSubsystem.h"
 #include "Player/IGPlayerCharacter.h"
 #include "Player/IGInteractionComponent.h"
@@ -454,6 +456,16 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 			if (AIGGuestDoorsProbe* GuestDoorsProbe = GetWorld()->SpawnActor<AIGGuestDoorsProbe>())
 			{
 				GuestDoorsProbe->Configure(WorldScene.Get(), Player.Get(), Entity);
+			}
+			return;
+		}
+		// 괴이 넷에게 차례로 잡혀 보고, 잡힌 뒤가 저마다 다른지 보는 검사. 관리인은 검사가
+		// 직접 불러 세운다.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGCaptureVarietyProbe")))
+		{
+			if (AIGCaptureVarietyProbe* CaptureProbe = GetWorld()->SpawnActor<AIGCaptureVarietyProbe>())
+			{
+				CaptureProbe->Configure(WorldScene.Get(), Player.Get(), Entity);
 			}
 			return;
 		}
@@ -1087,7 +1099,6 @@ bool AIGListenerGreyboxDirector::SetupStage()
 	{
 		NightLoop->PrimeMercyNoteCaptureProbe();
 	}
-	ExpectedWakeLocation = PlayerCharacter->GetActorLocation();
 
 	// 자리를 먼저 잡아 두고 마스킹과 소리가 같은 값을 읽는다. 각자 계산하면
 	// 한쪽만 옮겨도 조용히 어긋난다.
@@ -2546,7 +2557,7 @@ void AIGListenerGreyboxDirector::UpdateArrivalSequence()
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ArrivalReadyForBed",
-				"내일 관리인한테 물어보자. 알람은 네 시 반. 오빠가 집에 돌아오던 시간이다."),
+				"오빠는 늘 네 시 반쯤 돌아왔지. 그때 한번 올라가 보자."),
 			5.0f);
 		RequestArrivalAutosave();
 	}
@@ -3013,7 +3024,7 @@ FText AIGListenerGreyboxDirector::GetNarinCounterLine() const
 	return NSLOCTEXT(
 		"IGMissingFloor",
 		"ArrivalNarinLine",
-		"아, 큰 가방 메고 다니시던 분? 작년 여름쯤부터 안 오시던데요. 403호로 오셨어요? 그 집은 올해만 벌써 세 번째네요. 옆집도 봄부터 비어 있고요.");
+		"큰 가방 메고 다니시던 분이죠? 작년 여름부터 못 봤어요. 근데 403호에 오셨구나. 올해만 세 번째예요, 그 집. 옆집은 봄부터 비어 있고요.");
 }
 
 void AIGListenerGreyboxDirector::RequestArrivalAutosave()
@@ -3448,6 +3459,10 @@ void AIGListenerGreyboxDirector::HandleHourActiveChanged(const bool bActive)
 	if (Entity)
 	{
 		Entity->SetDormant(!bActive);
+	}
+	if (NightOneBeats)
+	{
+		NightOneBeats->FinishSightingAtHourBoundary();
 	}
 	if (PuzzleOne)
 	{
@@ -4300,11 +4315,11 @@ void AIGListenerGreyboxDirector::HandleSleepRequested(
 		|| Narrative->HasBeatPlayed(AIGNightPhaseDirector::GoalBeatId(CurrentNight));
 	if (!bGoalMet)
 	{
-		// 못 채운 밤은 다음 저녁에 같은 밤이 온다. 그는 한 티어 더 급하다 —
-		// 잡히는 값이 죽음이 아니라 시간이려면 시간이 정말로 사라져야 한다(§5.4).
-		// 밤4의 05:30은 여기 오지 않는다. 벽이 닫힌 새벽은 엔딩 C가 갖는다.
+		// 못 채운 밤은 다음 저녁에 같은 밤이 온다. 그 밤에 한 일은 그대로 남고 그도 더
+		// 급해지지 않는다. 벌로 밤을 통째로 다시 시키는 것이 아니라, 못 끝낸 일을
+		// 이어서 하게 하는 것이다(§5.4). 밤4의 05:30은 여기 오지 않는다. 벽이 닫힌
+		// 새벽은 엔딩 C가 갖는다.
 		NextNight = CurrentNight;
-		Narrative->SetAggressionTier(Narrative->GetAggressionTier() + 1);
 	}
 	BeginNightAfterSleep(NextNight);
 }
@@ -4334,7 +4349,7 @@ void AIGListenerGreyboxDirector::BeginNightAfterSleep(const int32 NightIndex)
 			/*bShouldFadeAudio=*/false,
 			/*bHoldWhenFinished=*/true);
 	}
-	// 눕는 소리 하나. 포획 뒤 침대에서 깰 때와 같은 이불 소리다.
+	// 눕는 소리 하나. 잡혔다가 바닥에서 몸을 일으킬 때도 같은 천 소리를 쓴다.
 	if (PlayerCharacter)
 	{
 		IGAudio::SpawnOneShotAt(
@@ -4367,7 +4382,7 @@ void AIGListenerGreyboxDirector::WakeIntoNight()
 	if (!bProbeRequested && PlayerCharacter && NightLoop
 		&& NightLoop->HasWakeTransform())
 	{
-		// 포획 뒤에 깨는 자리와 같은 자리다. 밤은 언제나 침대에서 시작한다.
+		// 밤은 언제나 침대에서 시작한다. 잡혔을 때는 여기로 오지 않는다(§5.4).
 		const FTransform& Wake = NightLoop->GetWakeTransform();
 		PlayerCharacter->TeleportTo(
 			Wake.GetLocation(), Wake.Rotator(), false, true);
@@ -4427,7 +4442,7 @@ void AIGListenerGreyboxDirector::WakeIntoNight()
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"NightFourHammerThought",
-					"낮에 철물점에서 사 온 망치를 챙겼다."),
+					"낮에 사 온 망치로 해 보자."),
 				4.0f);
 		}
 		// 벽 앞의 한 줄과 여는 드릴은 HandleHourActiveChanged가 건다. 잠을
@@ -4632,7 +4647,7 @@ void AIGListenerGreyboxDirector::ReachForNightOneTorch()
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"NightTorchThought",
-			"손전등은 머리맡에 꺼내 뒀다."),
+			"손전등… 머리맡에 뒀지."),
 		2.4f);
 	// 손이 닿는 만큼 늦게 딸깍. 스위치 소리는 F로 켤 때와 같다.
 	GetWorldTimerManager().SetTimer(
@@ -4913,7 +4928,7 @@ void AIGListenerGreyboxDirector::PlayNightFourMokDrill()
 			NightOpeningThoughtTimer,
 			FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
-				// 포획 암전이 덮었으면 버린다. 침대에서 깨자마자 드릴 이야기를 하게
+				// 포획 암전이 덮었으면 버린다. 정신이 들자마자 드릴 이야기를 하게
 				// 된다. 비트를 찍지 않으니 다음에 밤4가 열릴 때 다시 온다.
 				UIGMissingFloorNarrativeSubsystem* Story = GetNarrative();
 				if (!NightPhase || !NightPhase->IsHourActive() || !Story
@@ -5241,7 +5256,7 @@ FText AIGListenerGreyboxDirector::GetHwangDoorLine() const
 		return NSLOCTEXT(
 			"IGMissingFloor",
 			"Hwang401HintP5",
-			"내일 아침에 또 벽을 막는대요. 물탱크 청소할 땐 배관 소리가 어찌나 큰지, 벽을 쳐도 안 들리던데.");
+			"물탱크 청소할 때는 배관이 꽤 시끄러워요. 그거라도 틀어 놔 봐요. 누가 뭐라 하면 내가 얘기할게요.");
 	}
 	if (bInWall && !bAnswered)
 	{
@@ -5507,8 +5522,8 @@ bool AIGListenerGreyboxDirector::TryPlayHwangPermission()
 		Narrative->GetNightIndex()));
 	const FText Speaker =
 		NSLOCTEXT("IGMissingFloor", "HwangSpeaker", "황순금");
-	// 물값 한 줄이 공용 설비를 여는 허락이다. P5 힌트는 이번에는 건너뛰고 다음
-	// 노크부터 준다.
+	// 오빠라는 말을 처음 들었을 때는 그 일에만 답한다.
+	// 물탱크를 쓰자는 제안과 허락은 다음 노크의 P5 힌트에서 한다.
 	AIGHorrorHUD::PushDialogue(
 		this,
 		NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
@@ -5522,14 +5537,14 @@ bool AIGListenerGreyboxDirector::TryPlayHwangPermission()
 	AIGHorrorHUD::PushDialogue(
 		this,
 		Speaker,
-		NSLOCTEXT("IGMissingFloor", "Hwang401IsItYourBrother", "그게 아가씨 오빠였어요?"),
+		NSLOCTEXT("IGMissingFloor", "Hwang401IsItYourBrother", "아이고… 그 사람이 오빠였어요?"),
 		EIGDialogueChannel::Conversation,
 		0.0f,
 		EIGDialoguePriority::Story);
 	AIGHorrorHUD::PushDialogue(
 		this,
 		Speaker,
-		NSLOCTEXT("IGMissingFloor", "Hwang401Permission", "꺼내 줘요. 물 필요하면 써요. 그깟 물값, 내가 낼 테니까."),
+		NSLOCTEXT("IGMissingFloor", "Hwang401Permission", "꺼내 줘요. 거기 혼자 두지 말고."),
 		EIGDialogueChannel::Conversation,
 		0.0f,
 		EIGDialoguePriority::Story);
@@ -5589,7 +5604,7 @@ void AIGListenerGreyboxDirector::PollNightFourWallCover()
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"NightFourWallNeedsCover",
-			"지금 치면 건물 사람들이 다 듣겠어. 소리를 덮을 게 필요해."),
+			"지금 치면 금방 들키겠어. 소리를 좀 줄여야 해."),
 		3.5f);
 }
 
@@ -6558,11 +6573,13 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 	case EProbeStep::ResetAfterCapture:
 	{
 		AIGPlayerCharacter* PlayerCharacter = Player.Get();
-		const bool bPlayerBackAtBed =
+		// 침대로 돌려보내지 않는다. 지나온 길에서, 그런 자리가 없으면 잡힌 자리에서
+		// 깬다(§5.4). 감독이 고른 그 자리에 서 있어야 한다.
+		const bool bPlayerAtWake =
 			PlayerCharacter
-			&& FVector::Dist(
+			&& FVector::Dist2D(
 				PlayerCharacter->GetActorLocation(),
-				ExpectedWakeLocation) <= 200.0f;
+				NightLoop->GetLastWakeLocation()) <= 40.0f;
 		const bool bTierRaised = Entity->GetAggressionTier() == 1;
 		const bool bCaptureHandprintLeft =
 			NightLoop->GetCaptureHandprintCount() >= 1;
@@ -6577,7 +6594,7 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 				&& FVector::Dist(
 					NightLoop->GetMercyNoteLocation(),
 					AIGNightLoopDirector::GetMercyNoteRestLocation()) <= 1.0f);
-		if (bPlayerBackAtBed
+		if (bPlayerAtWake
 			&& bTierRaised
 			&& bCaptureHandprintLeft
 			&& bWakeRecoveryFinished
@@ -6601,8 +6618,8 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 			if (bMercyNoteProbeRequested)
 			{
 				FailProbe(FString::Printf(
-					TEXT("reset incomplete (atBed=%d tier=%d handprints=%d recovery=%d input=%d mercy=%d)"),
-					bPlayerBackAtBed ? 1 : 0,
+					TEXT("reset incomplete (atWake=%d tier=%d handprints=%d recovery=%d input=%d mercy=%d)"),
+					bPlayerAtWake ? 1 : 0,
 					Entity->GetAggressionTier(),
 					NightLoop->GetCaptureHandprintCount(),
 					bWakeRecoveryFinished ? 1 : 0,
@@ -6612,8 +6629,8 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 			else
 			{
 				FailProbe(FString::Printf(
-					TEXT("reset incomplete (atBed=%d tier=%d handprints=%d recovery=%d input=%d)"),
-					bPlayerBackAtBed ? 1 : 0,
+					TEXT("reset incomplete (atWake=%d tier=%d handprints=%d recovery=%d input=%d)"),
+					bPlayerAtWake ? 1 : 0,
 					Entity->GetAggressionTier(),
 					NightLoop->GetCaptureHandprintCount(),
 					bWakeRecoveryFinished ? 1 : 0,
@@ -6921,12 +6938,18 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 			StepDeadlineSeconds = 0.0f;
 			break;
 		}
-		if (StepDeadlineSeconds > 8.0f)
+		// 그녀가 지나간 순간 그가 참에서 막 듣기 시작했을 수 있다. 두드림(2.1초)과 듣기
+		// (티어 1에서 6초)를 다 마치고 계단을 기어 오르는 시간까지 기다린다.
+		if (StepDeadlineSeconds > 16.0f)
 		{
+			const FVector At = Entity->GetActorLocation();
 			FailProbe(FString::Printf(
-				TEXT("sighting cameo did not end (completed=%d back=%d)"),
+				TEXT("sighting cameo did not end (completed=%d back=%d state=%d at=(%.0f,%.0f,%.0f) grace=%d)"),
 				bCompleted ? 1 : 0,
-				bBackOnRoute ? 1 : 0));
+				bBackOnRoute ? 1 : 0,
+				static_cast<int32>(Entity->GetListenerState()),
+				At.X, At.Y, At.Z,
+				Entity->IsInCaptureGrace() ? 1 : 0));
 		}
 		break;
 	}
@@ -8380,12 +8403,18 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 		// The mechanically safe order must produce a continuous 0.40 mask and
 		// no pressure-alarm branch. Each control remains a separately persisted
 		// first activation rather than one three-stage scripted switch.
+		// 결말 C 재도전으로 돌아온 두 번째 통과는 P5를 이미 풀었다. 조작부를 다시 돌리지
+		// 않고, 남아 있던 결과로 물길 소리가 다시 도는지만 본다.
 		for (AIGMissingFloorEvidence* Control : {
 			NightFour->GetCleaningDrain(),
 			NightFour->GetFloatBypass(),
 			NightFour->GetTransferPump(),
 		})
 		{
+			if (bNightFourFailureRetryVerified)
+			{
+				break;
+			}
 			if (!Control || !Control->IsInteractionEnabled())
 			{
 				FailProbe(TEXT("a P5 cleaning-circuit control was unavailable"));
@@ -8422,9 +8451,9 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 		}
 		if (!bNightFourFailureRetryVerified)
 		{
-			// 엔딩 C는 일반 포획 리셋이나 새벽 완료가 아니라 밤 4 한정 재시도다.
+			// 엔딩 C는 일반 포획이나 새벽 완료가 아니라 밤 4 한정 재시도다.
 			// 성공 공동 경로보다 먼저 한 번 실행하고, 다음 프로브 구간에서
-			// 초기화된 조작부로 P5를 다시 구성한다.
+			// 남겨 둔 P5로 물길 소리가 다시 도는지 본다.
 			FailureRetryCaptureCountBefore = Narrative->GetCaptureCount();
 			Narrative->SetAggressionTier(3);
 			Entity->SetAggressionTier(3);
@@ -8480,10 +8509,10 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 			&& Narrative->GetAggressionTier() == 1
 			&& Narrative->GetCaptureCount() == FailureRetryCaptureCountBefore + 1
 			&& Narrative->GetEndingChoice().IsNone()
-			&& Narrative->GetNightFourControlOrder().IsEmpty()
+			&& Narrative->GetNightFourControlOrder().Num() == 3
 			&& Narrative->GetNightFourWallStrikeCount() == 0
 			&& !Narrative->IsNightFourWallOpened()
-			&& !Narrative->IsPuzzleSolved(FName(TEXT("P5")))
+			&& Narrative->IsPuzzleSolved(FName(TEXT("P5")))
 			&& Narrative->WasFirstReportMade()
 			&& Narrative->HasTruth(EIGMissingFloorTruth::WaitingForAnAnswer)
 			&& !Scene->IsMissingFloorCavityOpen();
@@ -9056,8 +9085,11 @@ void AIGListenerGreyboxDirector::StartArrivalCapture()
 bool AIGListenerGreyboxDirector::AdvanceTrailerCapture()
 {
 	// 장면 표. Night가 0이면 입주 날 저녁, 그 밖에는 그 밤의 04:30이다. bCamera가
-	// 거짓이면 플레이어 시점이라 손전등과 손떨림이 같이 찍힌다. Entity는 0이면
-	// 잠들고, 1이면 A에 세워 두고, 2면 A에서 B로 기어 온다.
+	// 거짓이면 플레이어 시점이라 손전등이 같이 찍힌다. Entity는 0이면 잠들고, 1이면
+	// A에 세워 두고, 2면 A에서 B로 기어 오고, 3이면 계단참에 세우고, 4면 그는 잠들고
+	// 어둑시니가 A에 선다.
+	// 카메라는 흔들지 않는다(2026-10-08). 손떨림 흉내, 걸음 흔들림, 숨 흔들림을 모두
+	// 뺐다. 흔드는 화면은 무섭지 않고 어지럽다. 붙잡히는 장면만 포획 시점이 움직인다.
 	struct FTrailerShot
 	{
 		const TCHAR* Name;
@@ -9075,23 +9107,28 @@ bool AIGListenerGreyboxDirector::AdvanceTrailerCapture()
 		FVector EntityB;
 		float EntityYaw;
 	};
-	// 예고편은 짧게 끊지 않고 걷는 사람의 시선으로 길게 간다(2026-09-29 재편집).
+	// 예고편은 짧게 끊지 않고 한 사람의 시선으로 길게 간다(2026-09-29 재편집, 2026-10-08 다시 찍음).
 	static const FTrailerShot Shots[] = {
 		{TEXT("alley"), 0, false, {705,-505,98}, {795,-508,98}, {1,-2,0}, {2,1,0}, 90, 5.0f, false, 0, {}, {}, 0},
-		{TEXT("bedroom-dusk"), 0, false, {80,-100,998}, {70,-92,998}, {-20,132,0}, {-15,146,0}, 90, 5.0f, false, 0, {}, {}, 0},
 		// 엘리베이터 앞에서 서쪽으로 걸으며 왼쪽 현관문들을 흘끗 본다.
 		{TEXT("corridor-day"), 0, false, {430,-310,998}, {170,-300,998}, {-4,180,0}, {-5,171,0}, 90, 7.0f, false, 0, {}, {}, 0},
 		// 402호 문. 스티커에서 메모를 지나 떼지 않은 전단까지 훑어 내려간다.
 		{TEXT("door-402"), 0, false, {-38,-302,998}, {-36,-297,998}, {-10,93,0}, {-40,89,0}, 90, 4.5f, false, 0, {}, {}, 0},
 		{TEXT("bedroom-night"), 2, false, {80,-100,998}, {84,-104,998}, {-14,130,0}, {26,138,0}, 90, 6.0f, false, 0, {}, {}, 0},
+		// 새벽의 403호 현관. 손전등으로 닫힌 철문을 비춘 채 아주 천천히 다가간다. 노크와
+		// 문밖의 목소리는 소리와 글자로 얹는다.
+		{TEXT("door-403-night"), 2, false, {10,-70,998}, {22,-86,998}, {-7,-56,0}, {-6,-57,0}, 90, 7.0f, true, 0, {}, {}, 0},
 		{TEXT("corridor-night"), 2, false, {380,-305,998}, {200,-305,998}, {-6,180,0}, {-4,176,0}, 90, 7.0f, true, 0, {}, {}, 0},
+		// 등을 끈 복도 서쪽 끝, 한 등만 남은 빛을 등지고 어둑시니가 서 있다. 손전등은 꺼져
+		// 있다. 쳐다보는 동안 커지며 다가온다.
+		{TEXT("eoduksini-corridor"), 2, false, {420,-305,998}, {416,-305,998}, {1,180,0}, {5,180,0}, 90, 6.5f, false, 4, {-210,-305,900}, {}, 0},
+		// 복도 끝에서 기어 와 발밑에서 붙잡고, 손전등 빛 속에 얼굴을 들이민 채 듣다가 바닥
+		// 노크에 끊기기까지 한 번에 찍힌다. 따로 찍던 붙잡힘 장면은 이 장면이 대신한다.
 		{TEXT("listener-approach"), 2, false, {430,-305,998}, {450,-305,998}, {-9,180,0}, {-11,180,0}, 90, 7.0f, true, 2, {-280,-305,960}, {120,-305,960}, 0},
 		// 순찰 끝이 플레이어에 닿아 실제로 잡힌다. 다가오는 몸과 포획, 끊기는 순간까지 한 번에 찍힌다.
 		// 순찰이 짧아야 기다림 없이 닿는다. 순찰 끝(400)이 플레이어(430) 바로 앞이다.
-		{TEXT("capture-front"), 2, false, {430,-305,998}, {436,-305,998}, {-9,180,0}, {-12,180,0}, 90, 7.0f, true, 2, {150,-305,960}, {400,-305,960}, 0},
 		// 4층 참 난간에서 3.5층 참을 내려다본다. 그는 북쪽 벽에 귀를 대고 있다.
 		{TEXT("stair-landing"), 2, false, {-522,-272,997}, {-522,-268,997}, {-38,90,0}, {-34,92,0}, 90, 4.0f, true, 3, {}, {}, 90},
-		{TEXT("meter-cabinet"), 2, false, {505,-300,92}, {515,-296,92}, {-10,-62,0}, {-8,-58,0}, 90, 3.5f, true, 0, {}, {}, 0},
 		{TEXT("booth-cctv"), 2, false, {165,-190,98}, {165,-178,96}, {-35,90,0}, {-31,90,0}, 90, 4.0f, true, 0, {}, {}, 0},
 	};
 	constexpr float FrameRate = 30.0f;
@@ -9143,9 +9180,22 @@ bool AIGListenerGreyboxDirector::AdvanceTrailerCapture()
 		{
 			PuzzleTwo->GetBoothDoor()->ForceOpenState(true);
 		}
+		// 지난 장면의 어둑시니와 꺼 둔 복도 등을 돌려놓는다.
+		if (NightThreats)
+		{
+			NightThreats->HideEoduksiniForMedia();
+		}
+		if (AIGPrologueWorldScene* SceneForLights = WorldScene.Get())
+		{
+			for (int32 Index = 0; Index < SceneForLights->GetCorridorFixtureCount(); ++Index)
+			{
+				// 어둑시니 장면은 서쪽 끝 등 하나만 남겨 몸을 그 빛에 세운다.
+				SceneForLights->SetFixtureLive(Index, Shot.EntityMode != 4 || Index == 0, true);
+			}
+		}
 		if (Entity)
 		{
-			Entity->SetDormant(Shot.EntityMode == 0);
+			Entity->SetDormant(Shot.EntityMode == 0 || Shot.EntityMode == 4);
 			if (Shot.EntityMode == 1 || Shot.EntityMode == 2)
 			{
 				CaptureParkEntity(Shot.EntityA, Shot.EntityYaw);
@@ -9161,7 +9211,19 @@ bool AIGListenerGreyboxDirector::AdvanceTrailerCapture()
 				Entity->SetPatrolPoints({AIGNightOneBeatDirector::GetSightingStagePoint(),
 					AIGNightOneBeatDirector::GetSightingShufflePoint()});
 			}
-			Entity->SetActorTickEnabled(Shot.EntityMode != 0);
+			// 기어 오는 장면은 녹화가 시작될 때 움직이기 시작한다. 준비 시간 동안 순찰을 돌면
+			// 준비가 긴 단독 촬영에서는 이미 발밑에 와 있었다.
+			Entity->SetActorTickEnabled(Shot.EntityMode == 1 || Shot.EntityMode == 3);
+		}
+		// 플레이어 시점의 걸음·숨 흔들림을 끈다. 붙잡히면 포획 시점이 다시 켠다.
+		PlayerCharacter->SetCameraMotionEnabled(false);
+		// 손전등을 챙긴 기록부터 남긴다. 그래야 신발장 위의 손전등이 사라져, 손에 든
+		// 손전등과 한 화면에 같이 찍히지 않는다.
+		if (UIGStoryStateSubsystem* Story = GetGameInstance()
+			? GetGameInstance()->GetSubsystem<UIGStoryStateSubsystem>()
+			: nullptr)
+		{
+			Story->AddState(UIGFlashlightComponent::GetOwnershipTag());
 		}
 		if (UIGFlashlightComponent* Torch = PlayerCharacter->GetFlashlight())
 		{
@@ -9203,32 +9265,36 @@ bool AIGListenerGreyboxDirector::AdvanceTrailerCapture()
 	// 준비 프레임 동안에는 시작 자세로 두고 빛과 노출이 가라앉기를 기다린다.
 	const int32 RecordIndex = TrailerShotFrame - WarmupFrames;
 	// 그는 소리를 들어야 움직인다. 노크와 듣기 사이에 멈춰 있는 동안 촬영이 지나가면
-	// 장면마다 결과가 달라지므로, 녹화를 시작하는 순간 플레이어 자리에서 소리를 낸다.
-	// 붙잡히는 장면은 크게(쫓아온다), 다가오는 장면은 작게(살피러 온다).
+	// 장면마다 결과가 달라지므로, 녹화를 시작하는 순간 플레이어 자리에서 작은 소리를
+	// 낸다. 살피러 와서 발밑의 그녀에게 닿는다.
 	if (RecordIndex == 0 && NoiseSubsystem && Shot.EntityMode == 2)
 	{
-		const bool bCaptureShot = FCString::Strcmp(Shot.Name, TEXT("capture-front")) == 0;
-		NoiseSubsystem->ReportNoiseUnmasked(
-			PlayerCharacter->GetActorLocation(), bCaptureShot ? 1.0f : 0.55f, PlayerCharacter);
+		if (Entity)
+		{
+			Entity->SetActorTickEnabled(true);
+		}
+		NoiseSubsystem->ReportNoiseUnmasked(PlayerCharacter->GetActorLocation(), 0.55f, PlayerCharacter);
+	}
+	// 어둑시니는 녹화 1초 전에 세운다. 서고 나서 숨을 한 번 들이쉬는 사이가 화면에 들어온다.
+	if (RecordIndex == -30 && Shot.EntityMode == 4 && NightThreats)
+	{
+		NightThreats->ShowEoduksiniForMedia(Shot.EntityA);
+		UE_LOG(LogTemp, Display, TEXT("TRAILER_EODUKSINI room_darkness=%.2f manifested=%d"),
+			PlayerCharacter->GetRoomDarkness(), NightThreats->IsEoduksiniManifested() ? 1 : 0);
 	}
 	const float Alpha = RecordIndex <= 0 ? 0.0f
 		: FMath::Clamp(RecordIndex / FMath::Max(1.0f, RecordFrames - 1.0f), 0.0f, 1.0f);
 	const float Eased = FMath::InterpEaseInOut(0.0f, 1.0f, Alpha, 2.0f);
 	const FVector Location = FMath::Lerp(Shot.From, Shot.To, Eased);
-	FRotator Rotation = FMath::Lerp(Shot.RotFrom, Shot.RotTo, Eased);
-	if (!Shot.bCamera)
-	{
-		// 손에 든 카메라처럼 아주 조금 흔들린다.
-		const float Time = TrailerShotFrame / FrameRate;
-		Rotation.Pitch += 0.22f * FMath::Sin(Time * 1.7f) + 0.08f * FMath::Sin(Time * 4.3f + 1.1f);
-		Rotation.Yaw += 0.26f * FMath::Sin(Time * 1.1f + 0.4f) + 0.07f * FMath::Sin(Time * 3.7f);
-	}
+	const FRotator Rotation = FMath::Lerp(Shot.RotFrom, Shot.RotTo, Eased);
 	if (ACameraActor* Camera = TrailerCamera.Get())
 	{
 		Camera->SetActorLocationAndRotation(Location, Rotation);
 	}
-	else
+	else if (!NightLoop || !NightLoop->IsCaptureResetInFlight())
 	{
+		// 붙잡힌 뒤로는 포획 시점이 몸과 고개를 쥔다. 장면표가 덮어쓰면 끌려 내려가는
+		// 높이와 돌아가는 고개가 지워진다.
 		PlayerCharacter->SetActorLocation(Location, false, nullptr, ETeleportType::TeleportPhysics);
 		Controller->SetControlRotation(Rotation);
 	}
@@ -11147,6 +11213,11 @@ void AIGListenerGreyboxDirector::AdvanceNightCapture()
 						TextureRole, Streaming.NumResidentLODs, Streaming.NumRequestedLODs, Streaming.MaxNumLODs,
 						Texture->ShouldMipLevelsBeForcedResident());
 				}
+				else
+				{
+					bTexturesReady = false;
+					UE_LOG(LogTemp, Error, TEXT("PHYSICAL_CAPTURE_TEXTURE missing=%s"), TextureRole);
+				}
 			}
 			UE_LOG(LogTemp, Display, TEXT("PHYSICAL_CAPTURE_CONTACT state=%d dormant=%d physical=%d player=%s face=%s eye=%s"),
 				static_cast<int32>(Entity->GetListenerState()), Entity->IsDormant(), Player->HasPhysicalCaptureView(),
@@ -11154,7 +11225,17 @@ void AIGListenerGreyboxDirector::AdvanceNightCapture()
 				*Player->GetPawnViewLocation().ToString());
 			if (Entity->GetListenerState() != EIGListenerState::CaptureHold || !Player->HasPhysicalCaptureView() || !bTexturesReady)
 			{
-				UE_LOG(LogTemp, Error, TEXT("PHYSICAL_CAPTURE FAIL contact or texture streaming"));
+				// 접촉 실패와 스트리밍 실패를 구분해 남긴다. 가구나 연출 상태가 손을
+				// 막았는데 텍스처 문제로 오인하면 화질만 낮추고 원인은 놓치게 된다.
+				FHitResult ReachHit;
+				FCollisionQueryParams ReachParams(SCENE_QUERY_STAT(IGCaptureProbeReach), false, Entity);
+				ReachParams.AddIgnoredActor(Player.Get());
+				const bool bBlocked = GetWorld()->LineTraceSingleByChannel(ReachHit,
+					Entity->GetActorLocation(), Player->GetActorLocation(), ECC_Visibility, ReachParams);
+				UE_LOG(LogTemp, Error, TEXT("PHYSICAL_CAPTURE FAIL textures=%d enabled=%d entity=%s blocked=%d actor=%s component=%s sighting=%d completed=%d"),
+					bTexturesReady, Entity->GetTuning().bCaptureEnabled, *Entity->GetActorLocation().ToString(),
+					bBlocked, *GetNameSafe(ReachHit.GetActor()), *GetNameSafe(ReachHit.GetComponent()),
+					NightOneBeats && NightOneBeats->IsSightingStaged(), NightOneBeats && NightOneBeats->HasSightingCompleted());
 				RequestExit(true);
 			}
 		}
@@ -11451,7 +11532,7 @@ void AIGListenerGreyboxDirector::HandleStairNeighborMet(AIGStairNeighbor* Neighb
 	Say(Speaker, NSLOCTEXT(
 		"IGMissingFloor",
 		"Neighbor303Earplugs",
-		"저 여기 2년 살았어요. 작년 여름에도 새벽마다 위에서 쿵쿵거렸어요. 귀마개 끼고 잤죠."));
+		"그 소리, 작년 여름에도 났어요. 저 귀마개 끼고 자요. 그래도 발소리는 좀 조심해 주세요."));
 	if (!GetWorldTimerManager().IsTimerActive(StairNeighborTimer))
 	{
 		GetWorldTimerManager().SetTimer(

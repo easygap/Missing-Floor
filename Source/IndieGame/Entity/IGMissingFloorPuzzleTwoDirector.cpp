@@ -1390,7 +1390,7 @@ void AIGMissingFloorPuzzleTwoDirector::HandleFoamExamined(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"P2FoamThought",
-			"문틈을 다 막아 놨네. 밖에서 불러도 안 들리겠어."),
+			"문틈까지 죄다 막아 놨네. 소리 때문에 그런가?"),
 		4.6f);
 }
 

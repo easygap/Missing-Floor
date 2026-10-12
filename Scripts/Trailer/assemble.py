@@ -1,9 +1,11 @@
 """실제 게임에서 30fps로 찍은 프레임을 이어 붙여 예고편을 만든다.
 
-구성은 참고작 두 편과 예고편 편집자들의 조언을 따른다. 설명 자막 없이 소리로 연다.
-어두운 방에서 천장을 올려다보는 장면으로 시작해, 낮의 빌라를 한 사람의 걸음으로
-보여 주고, 밤의 복도에서 붙잡히는 순간 끊는다. 색 보정과 입자는 따로 얹지 않는다.
-화면 질감은 게임 자체의 것이다.
+첫 화면부터 게임이다(2026-10-08 다시 엮음). 어두운 방에서 천장을 올려다보는 장면에
+천장의 노크와 그 자막이 같이 온다. 소리 없이 자동 재생돼도 자막이 소리를 알려 준다.
+낮의 빌라를 한 사람의 걸음으로 보여 주고, 새벽의 현관 너머 아는 목소리, 불 꺼진 복도의
+어둑시니, 기어 오는 위층 사람으로 간다. 붙잡히는 장면은 한 번에 찍힌 그대로 쓰고 바닥
+노크에 끊는다. 마지막은 제목과 받는 곳이다. 카메라를 흔들지 않고, 색 보정과 입자는 따로
+얹지 않는다. 화면 질감은 게임 자체의 것이다.
 
     python Scripts/Trailer/assemble.py --marks          # 편집표(edl.json)만 쓴다
     python Scripts/Trailer/assemble.py ko               # MissingFloor-Trailer.mp4
@@ -21,31 +23,44 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / 'Saved/Trailer'
 FPS = 30
 SIZE = (1920, 1080)
+# 기어 오는 장면은 붙잡히고 끊기기까지 한 번에 찍힌다. 끊긴 뒤 다섯 프레임까지 쓴다.
+APPROACH_FIRST = 0
+APPROACH_GRAB = 67
+APPROACH_CUT = 111
+APPROACH_SECONDS = 3.9
 # (시작 초, 길이 초, 촬영 폴더, 첫 프레임). 빈 폴더명은 암전이다.
 SEGMENTS = [
-    (0.0, 2.6, '', 0),
-    (2.6, 5.8, 'bedroom-night', 0),
-    (8.4, 0.8, '', 0),
-    (9.2, 6.7, 'corridor-day', 0),
-    (15.9, 4.5, 'door-402', 0),
-    (20.4, 4.5, 'alley', 5),
-    (24.9, 3.5, 'meter-cabinet', 0),
-    (28.4, 3.5, 'booth-cctv', 10),
-    (31.9, 0.8, '', 0),
-    (32.7, 6.4, 'corridor-night', 6),
-    (39.1, 4.0, 'stair-landing', 0),
-    (43.1, 3.0, 'listener-approach', 0),
-    (46.1, 1.4, 'capture-front', 4),
-    (47.5, 9.5, '', 0),
+    (0.0, 6.0, 'bedroom-night', 0),
+    (6.0, 0.6, '', 0),
+    (6.6, 4.6, 'alley', 5),
+    (11.2, 5.6, 'corridor-day', 0),
+    (16.8, 4.0, 'door-402', 0),
+    (20.8, 3.6, 'booth-cctv', 10),
+    (24.4, 0.6, '', 0),
+    (25.0, 7.0, 'door-403-night', 0),
+    (32.0, 5.0, 'corridor-night', 6),
+    (37.0, 6.0, 'eoduksini-corridor', 0),
+    (43.0, 0.6, '', 0),
+    (43.6, 3.6, 'stair-landing', 0),
+    (47.2, APPROACH_SECONDS, 'listener-approach', APPROACH_FIRST),
+    (47.2 + APPROACH_SECONDS, 53.6 - 47.2 - APPROACH_SECONDS, '', 0),
+    (53.6, 8.4, '', 0),
 ]
+# 장면별 고정 화각(배율, 중심 x, 중심 y). 어둑시니는 복도 끝 등 하나를 등지고 서서 원래 화각으로는
+# 작은 화면에서 몇 픽셀밖에 안 된다. 1.6배로 잘라 망원으로 찍은 것처럼 쓴다. 움직이지는 않는다.
+FRAMING = {'eoduksini-corridor': (1.6, 960, 500)}
 # (글자 판, 시작, 끝). 두 언어가 같은 자리를 쓴다.
-CARDS = [('knock', 1.0, 3.9), ('topfloor', 4.6, 8.1), ('title', 49.5, 57.0)]
-LENGTH = 57.0
-# 붙잡힘(grab)은 capture-front 24번째 프레임, 고개가 꺾이는 순간이다.
+CARDS = [('knock', 0.8, 3.6), ('topfloor', 3.7, 6.0), ('door', 27.0, 31.6), ('title', 53.6, 62.0)]
+LENGTH = 62.0
+# 붙잡힘(grab)은 시점이 끌려 내려가기 시작하는 프레임, 끊김(cut)은 얼굴이 멈춰 듣다가
+# 검게 끊기는 프레임이다. listener-approach의 APPROACH_GRAB·APPROACH_CUT 프레임에서 잰다.
 MARKS = {
-    'first_knock': 0.8, 'wake': 2.6, 'day': 9.2, 'door': 15.9, 'alley': 20.4, 'meter': 24.9,
-    'booth': 28.4, 'night': 32.7, 'stair': 39.1, 'approach': 43.1, 'rush': 46.1, 'grab': 46.77,
-    'cut': 47.5, 'title': 49.5, 'answer': 52.3,
+    'first_knock': 0.6, 'creak': 3.4, 'alley': 6.6, 'day': 11.2, 'door402': 16.8, 'booth': 20.8,
+    'door403': 25.0, 'door_knock': 25.7, 'door_voice': 27.0, 'night': 32.0, 'eoduksini': 37.0,
+    'eoduksini_end': 43.0, 'stair': 43.6, 'approach': 47.2,
+    'grab': 47.2 + (APPROACH_GRAB - APPROACH_FIRST) / 30.0,
+    'cut': 47.2 + (APPROACH_CUT - APPROACH_FIRST) / 30.0,
+    'title': 53.6, 'answer': 56.2,
 }
 OUTPUT = {'ko': 'MissingFloor-Trailer.mp4', 'en': 'MissingFloor-Trailer-en.mp4'}
 
@@ -81,6 +96,12 @@ def compose(frame_index, lang):
                     if source.size != SIZE:
                         raise ValueError(f'촬영 해상도가 다릅니다: {shot}, {source.size}')
                     img = source.convert('RGBA')
+                if shot in FRAMING:
+                    zoom, cx, cy = FRAMING[shot]
+                    w, h = round(SIZE[0] / zoom), round(SIZE[1] / zoom)
+                    left = min(max(cx - w // 2, 0), SIZE[0] - w)
+                    top = min(max(cy - h // 2, 0), SIZE[1] - h)
+                    img = img.crop((left, top, left + w, top + h)).resize(SIZE, Image.Resampling.LANCZOS)
             break
     for name, start, end in CARDS:
         if start <= t < end:

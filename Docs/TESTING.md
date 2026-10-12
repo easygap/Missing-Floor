@@ -60,7 +60,7 @@ Missing Floor는 정식 출시 전에 두 가지를 확인해야 합니다. 여�
 [성능 기준](PERFORMANCE.md)과, 플레이 기록은 `Scripts/summarize_playtest_records.py`로 모아
 [출시 기준](MISSING_FLOOR_ACCEPTANCE.md)과 비교합니다.
 
-## Helping test (English)
+## Help test the game (English)
 
 Open the 테스트 도구 (Test Tools) folder in the extracted ZIP.
 
@@ -69,8 +69,14 @@ Open the 테스트 도구 (Test Tools) folder in the extracted ZIP.
   fixed night route three times and writes `MissingFloor-performance-<date>.zip` to your
   desktop. Attach it to a [performance report](https://github.com/easygap/Missing-Floor/issues/new?template=performance_report.yml).
 - **First playthrough (about 90 minutes, first-time players only):** start the game with
-  `플레이테스트로 시작.bat` and play normally. When you quit, the PlayRecords folder opens.
-  Attach the `playrecord-<date>.json` file to a [playtest record](https://github.com/easygap/Missing-Floor/issues/new?template=playtest_record.yml).
+  `플레이테스트로 시작.bat` and play without a walkthrough. You can stop whenever you like;
+  use the same file when you return. Each session creates a new record. When you quit,
+  the PlayRecords folder opens. Attach all your `playrecord-<date>.json` files to a
+  [playtest record](https://github.com/easygap/Missing-Floor/issues/new?template=playtest_record.yml).
 
-Both files contain hardware names, game settings and timings only. No names, accounts,
-screenshots or audio are recorded.
+The performance ZIP contains your PC specifications, driver and Windows versions,
+power settings, game settings, and frame times, including a dxdiag report. Playtest
+records include time spent on each night, how often you get caught, your in-game position every five
+seconds, journal and hint use, when you first use certain controls, frame times, and
+PC specifications. They do not record your name, account, photos, or audio. Files stay
+on your PC until you choose to share them.

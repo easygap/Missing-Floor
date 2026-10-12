@@ -80,6 +80,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Night")
 	float GetHourElapsedSeconds() const { return HourElapsedSeconds; }
 
+	/**
+	 * 잡혀서 정신을 잃은 동안 흐른 시간. 그만큼 시계를 앞으로 민다(§5.4). 깨자마자
+	 * 새벽이 와 눈이 감기면 깨어난 게 아니라서 05:30 앞 30초는 남긴다. 실제로 민
+	 * 초를 돌려준다.
+	 */
+	float ConsumeHourSeconds(float Seconds);
+
 	/** Minutes left in story time, for the objective line outside the hour. */
 	UFUNCTION(BlueprintPure, Category = "Night")
 	int32 GetStoryMinutesRemaining() const;

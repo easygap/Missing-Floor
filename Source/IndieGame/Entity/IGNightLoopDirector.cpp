@@ -3,7 +3,9 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGToneSequenceSoundWave.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Core/IGPrologueWorldScene.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -13,13 +15,17 @@
 #include "Entity/IGMissingFloorNightFourDirector.h"
 #include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
+#include "Entity/IGNightPhaseDirector.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "IndieGame.h"
+#include "Interaction/IGDroppedFlashlight.h"
 #include "Materials/MaterialInterface.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "Player/IGFlashlightComponent.h"
 #include "Player/IGHorrorHUD.h"
 #include "Player/IGPlayerCharacter.h"
+#include "Player/IGPlayerController.h"
 #include "Player/IGStressComponent.h"
 #include "TimerManager.h"
 
@@ -32,9 +38,52 @@ namespace IGNightLoop
 	const FVector MercyNoteRestLocation(-150.0f, -269.5f, 900.12f);
 	constexpr float MercyNoteStartYaw = -0.5f;
 	constexpr float MercyNoteRestYaw = -3.5f;
-	// §6. 침대에서 눈을 뜬 뒤 조작이 돌아오기까지. 화면은 그 뒤로도 천천히 밝아지지만
-	// 그동안 둘러보고 걸을 수 있다. 암전 1.25초와 합쳐 1.6초다.
+	// §6. 눈을 뜬 뒤 둘러볼 수 있기까지. 화면은 그 뒤로도 천천히 밝아진다. 바닥에서
+	// 몸을 일으키는 동안(ComeToSeconds)은 걷기만 막는다.
 	constexpr float MaxWakeLockSeconds = 0.35f;
+
+	/**
+	 * 괴이마다 끊기는 때와 깨어나는 모양. 순서는 EIGCaptureKind와 같다.
+	 * Cut은 잡히고 화면이 끊기기까지, Hold는 끊긴 뒤 다른 자리로 옮기기까지,
+	 * ComeTo는 바닥에서 몸을 일으키는 시간(0이면 선 채로 정신이 든다), Lost는
+	 * 정신을 잃은 동안 흐른 시간이다. 손목시계가 그만큼 건너뛴다.
+	 */
+	struct FCaptureSpec
+	{
+		float CutSeconds;
+		float HoldSeconds;
+		float ComeToSeconds;
+		float LostSeconds;
+	};
+	constexpr FCaptureSpec CaptureSpecs[] = {
+		// 위층 사람. 몸싸움 소리의 첫 노크(1.48초)에 끊기고 둘째 노크는 검은 화면에서 듣는다.
+		{1.48f, 0.92f, 1.5f, 120.0f},
+		// 어둑시니. 고개가 1.2초에 걸쳐 들리고, 빛과 소리가 다 빠진 뒤 끊긴다.
+		{1.70f, 1.00f, 1.6f, 90.0f},
+		// 손님. 돌아보면 문간에 종이 몸이 서 있고, 문이 닫히는 소리에 끊긴다.
+		{1.30f, 0.80f, 1.3f, 60.0f},
+		// 관리인. 손전등에 눈이 멀고 손목을 잡힌다. 403호까지 끌려가는 동안 눈은 하얗다.
+		{1.20f, 1.60f, 0.0f, 180.0f},
+	};
+	const FCaptureSpec& SpecFor(const EIGCaptureKind Kind)
+	{
+		const int32 Index = FMath::Clamp(
+			static_cast<int32>(Kind), 0, static_cast<int32>(UE_ARRAY_COUNT(CaptureSpecs)) - 1);
+		return CaptureSpecs[Index];
+	}
+	// 위층 사람은 지나온 길로 이만큼 넘게 끌고 간다. 그만큼 지나온 자리가 없으면
+	// 절반이라도 끌고, 그것도 없으면 잡힌 자리에서 깬다.
+	constexpr float DragMinDistance = 300.0f;
+	constexpr float FootholdMaxAgeSeconds = 120.0f;
+	// 어둑시니는 마지막으로 불빛 아래 섰던 자리로 돌려보낸다(방 어둠 0.45 이하).
+	constexpr float LitRoomDarkness = 0.45f;
+	constexpr float LitFootholdMaxAgeSeconds = 240.0f;
+	constexpr float EoduksiniBatteryCost = 0.35f;
+	// 깨어난 뒤 위층 사람이 듣지도 잡지도 않는 시간.
+	constexpr float ListenerGraceSeconds = 12.0f;
+	// 깨어난 뒤 속말이 나오기까지. 눈이 다 뜨이고 몸을 일으킨 뒤다.
+	constexpr float WakeThoughtDelaySeconds = 2.4f;
+	const FName ComeToLockName(TEXT("CaptureComeTo"));
 }
 
 AIGNightLoopDirector::AIGNightLoopDirector()
@@ -131,14 +180,29 @@ void AIGNightLoopDirector::HandlePlayerCaptured(APawn* Player)
 		&& Narrative->GetAggressionTier() >= 3
 		&& Narrative->IsNightFourMaskRunning())
 	{
-		// 이 포획은 엔딩 C가 단독으로 처리한다. 일반 침대 리셋까지 시작하면
+		// 이 포획은 엔딩 C가 단독으로 처리한다. 일반 포획 흐름까지 시작하면
 		// 하나의 멀티캐스트에서 서로 충돌하는 두 타임라인이 진행된다.
 		return;
 	}
-	BeginCaptureReset(Character, false);
+	BeginCaptureReset(Character, EIGCaptureKind::Listener, nullptr);
 }
 
-void AIGNightLoopDirector::RequestExternalCapture(APawn* Player)
+FTransform AIGNightLoopDirector::GetHomeEntryWake()
+{
+	// 문짝 가운데에서 75cm 안쪽. 문은 안쪽(+Y)으로 열리지만 닫힌 뒤에 옮긴다. 높이는
+	// 깨울 때 바닥을 재서 맞춘다.
+	return FTransform(
+		FRotator(0.0f, -90.0f, 0.0f),
+		FVector(
+			AIGPrologueWorldScene::HomeDoorX + AIGPrologueWorldScene::WideDoorLeafWidth * 0.5f,
+			AIGPrologueWorldScene::HomeDoorY + 75.0f,
+			AIGPrologueWorldScene::FourthFloorZ + 100.0f));
+}
+
+void AIGNightLoopDirector::RequestExternalCapture(
+	APawn* Player,
+	const EIGCaptureKind Kind,
+	const FTransform* WakeAt)
 {
 	AIGPlayerCharacter* Character = Cast<AIGPlayerCharacter>(Player);
 	if (bResetInFlight || !Character)
@@ -147,8 +211,8 @@ void AIGNightLoopDirector::RequestExternalCapture(APawn* Player)
 	}
 	// 밤4 가면 대치 중에는 위층 사람에게 잡힌 것과 똑같이 다룬다(HandlePlayerCaptured).
 	// 괴이 감독은 정전 뒤 망치질 동안에만 나온다(어둑시니, 철문 밖의 부름). 공격성이 3에
-	// 닿았으면 결말 C가 혼자 맡고, 아니면 침대로 돌아간다. 둘을 같이 걸면 타임라인 둘이
-	// 부딪친다.
+	// 닿았으면 결말 C가 혼자 맡고, 아니면 평소처럼 깨어난다. 둘을 같이 걸면 타임라인
+	// 둘이 부딪친다.
 	if (const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 		Narrative && Narrative->GetNightIndex() == 4 && Narrative->IsNightFourMaskRunning()
 		&& Narrative->GetAggressionTier() >= 3)
@@ -159,30 +223,36 @@ void AIGNightLoopDirector::RequestExternalCapture(APawn* Player)
 		}
 		return;
 	}
-	BeginCaptureReset(Character, true);
+	BeginCaptureReset(Character, Kind, WakeAt);
 }
 
-void AIGNightLoopDirector::BeginCaptureReset(AIGPlayerCharacter* Character, const bool bExternal)
+void AIGNightLoopDirector::BeginCaptureReset(
+	AIGPlayerCharacter* Character,
+	const EIGCaptureKind Kind,
+	const FTransform* WakeAt)
 {
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 	bResetInFlight = true;
-	bExternalCaptureInFlight = bExternal;
+	CaptureKindInFlight = Kind;
 	LastCaptureSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 	const int32 PersistedCaptureCount = Narrative
 		? Narrative->GetCaptureCount()
 		: 0;
 	CaptureCount = FMath::Max(CaptureCount + 1, PersistedCaptureCount + 1);
 	CapturedPlayer = Character;
+	LastCaptureSpot = Character->GetActorLocation();
+	// 깰 자리는 끊기기 전에 정한다. 끊긴 뒤에는 몸이 이미 쓰러져 있다.
+	CaptureWake = WakeAt ? *WakeAt : ChooseCaptureWake(*Character, Kind);
 	Character->GetCharacterMovement()->StopMovementImmediately();
-	if (bExternal)
+	if (Kind == EIGCaptureKind::Listener)
+	{
+		SpawnCaptureHandprint(Character);
+	}
+	else
 	{
 		// 석고 손자국은 위층 사람의 것이다. 지난번 포획의 몸이 남아 있으면 그 몸이
 		// 다시 덮치는 화면이 나오므로 함께 비운다.
 		Character->SetCaptureThreat(nullptr);
-	}
-	else
-	{
-		SpawnCaptureHandprint(Character);
 	}
 
 	// Without an authored wake point the first capture teaches us one: the
@@ -194,21 +264,20 @@ void AIGNightLoopDirector::BeginCaptureReset(AIGPlayerCharacter* Character, cons
 		bWakeTransformSet = true;
 	}
 
+	const IGNightLoop::FCaptureSpec& Spec = IGNightLoop::SpecFor(Kind);
 	if (APlayerController* Controller =
 		Cast<APlayerController>(Character->GetController()))
 	{
-		// 처음 잡힐 때만 조금 길게 보여 준다. 되풀이될수록 짧게 끊어 같은 장면에
-		// 지치지 않게 한다. 끊긴 뒤의 암전과 소리는 그대로다.
-		const float CutSeconds = CaptureCount <= 1 ? 0.95f : (CaptureCount == 2 ? 0.75f : 0.55f);
-		Character->PlayCaptureFeedback(FadeOutSeconds, CutSeconds);
-		Character->DisableInput(Controller);
+		// 남아 있던 페이드를 먼저 걷는다. 포획 시점이 거는 빛 빠짐과 눈부심이 그 뒤에 온다.
 		if (Controller->PlayerCameraManager)
 		{
 			Controller->PlayerCameraManager->StopCameraFade();
 		}
+		Character->PlayCaptureFeedback(Spec.CutSeconds + Spec.HoldSeconds, Spec.CutSeconds, Kind);
+		Character->DisableInput(Controller);
 	}
-	// 화면은 캐릭터가 끊는다(PlayCaptureFeedback). 몸이 없는 포획처럼 캐릭터가
-	// 끊지 못한 경우에만 여기서 짧게 닫는다. 이미 검으면 건드리지 않는다.
+	// 화면은 캐릭터가 끊는다(PlayCaptureFeedback). 캐릭터가 끊지 못한 경우에만 여기서
+	// 짧게 닫는다. 이미 덮였으면 건드리지 않는다.
 	GetWorldTimerManager().SetTimer(CaptureFadeTimer,
 		FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
@@ -219,30 +288,156 @@ void AIGNightLoopDirector::BeginCaptureReset(AIGPlayerCharacter* Character, cons
 					if (PC->PlayerCameraManager && PC->PlayerCameraManager->FadeAmount < 0.99f)
 					{
 						PC->PlayerCameraManager->StartCameraFade(0.f, 1.f,
-							.15f, FLinearColor::Black, false, true);
+							.15f, Pawn->GetCaptureCutColour(), false, true);
 					}
 				}
 			}
-		}), 1.0f, false);
+		}), Spec.CutSeconds + 0.1f, false);
 
 	GetWorldTimerManager().SetTimer(
 		ResetTimer,
 		this,
 		&AIGNightLoopDirector::FinishReset,
-		FMath::Max(FadeOutSeconds, 0.05f),
+		FMath::Max(Spec.CutSeconds + Spec.HoldSeconds, 0.05f),
 		false);
+}
+
+FTransform AIGNightLoopDirector::ChooseCaptureWake(
+	const AIGPlayerCharacter& Character,
+	const EIGCaptureKind Kind) const
+{
+	const FVector Spot = Character.GetActorLocation();
+	FVector Location = Spot;
+	FRotator Rotation(0.0f, Character.GetControlRotation().Yaw, 0.0f);
+	bool bFound = Kind == EIGCaptureKind::Eoduksini
+		&& Character.FindLitFoothold(
+			IGNightLoop::LitRoomDarkness, IGNightLoop::LitFootholdMaxAgeSeconds, Location, Rotation);
+	if (!bFound)
+	{
+		bFound = Character.FindFootholdAway(
+				Spot, IGNightLoop::DragMinDistance, IGNightLoop::FootholdMaxAgeSeconds, Location, Rotation)
+			|| Character.FindFootholdAway(
+				Spot, IGNightLoop::DragMinDistance * 0.5f, IGNightLoop::FootholdMaxAgeSeconds, Location, Rotation);
+	}
+	if (bFound && Kind == EIGCaptureKind::Listener)
+	{
+		// 끌려온 쪽, 잡힌 자리를 보고 깬다. 떨어뜨린 손전등의 빛이 거기 있다.
+		const FVector Back = Spot - Location;
+		if (!Back.IsNearlyZero(1.0f))
+		{
+			Rotation = FRotator(0.0f, Back.Rotation().Yaw, 0.0f);
+		}
+	}
+	return FTransform(Rotation, Location);
+}
+
+void AIGNightLoopDirector::DropFlashlightAt(AIGPlayerCharacter& Character)
+{
+	UIGFlashlightComponent* Torch = Character.GetFlashlight();
+	UWorld* World = GetWorld();
+	if (!World || !Torch || !Torch->IsAvailable() || DroppedFlashlight.IsValid())
+	{
+		return;
+	}
+	const FVector Spot = Character.GetActorLocation();
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGCaptureDroppedTorch), false, &Character);
+	Params.AddIgnoredActor(this);
+	if (const AIGListenerEntity* Entity = ListenerEntity.Get())
+	{
+		Params.AddIgnoredActor(Entity);
+	}
+	FHitResult Floor;
+	if (!World->LineTraceSingleByChannel(
+			Floor, Spot, Spot - FVector(0.0f, 0.0f, 300.0f), ECC_Visibility, Params))
+	{
+		return;
+	}
+	// 렌즈가 깨어날 자리 쪽을 보게 눕힌다. 그쪽에서 빛이 보여야 찾으러 온다. 정면으로
+	// 겨누면 눈부시기만 해서 조금 비튼다.
+	const FVector Toward = (CaptureWake.GetLocation() - Spot).GetSafeNormal2D();
+	const float Yaw = Toward.IsNearlyZero()
+		? Character.GetActorRotation().Yaw + 150.0f
+		: Toward.Rotation().Yaw + 20.0f;
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AIGDroppedFlashlight* Dropped = World->SpawnActor<AIGDroppedFlashlight>(
+		AIGDroppedFlashlight::StaticClass(),
+		FTransform(FRotator(0.0f, Yaw, 0.0f), Floor.ImpactPoint),
+		SpawnParameters);
+	if (!Dropped)
+	{
+		return;
+	}
+	Dropped->Configure(Torch->IsOn());
+	Dropped->PlaceOnFloor(Floor.ImpactPoint);
+	Torch->SetDropped(true);
+	DroppedFlashlight = Dropped;
+}
+
+void AIGNightLoopDirector::ReleaseComeToLock()
+{
+	GetWorldTimerManager().ClearTimer(ComeToTimer);
+	if (!bComeToLockHeld)
+	{
+		return;
+	}
+	bComeToLockHeld = false;
+	const UWorld* World = GetWorld();
+	if (AIGPlayerController* Controller = World
+		? Cast<AIGPlayerController>(World->GetFirstPlayerController())
+		: nullptr)
+	{
+		Controller->RemoveInputLock(IGNightLoop::ComeToLockName);
+	}
 }
 
 void AIGNightLoopDirector::FinishReset()
 {
 	GetWorldTimerManager().ClearTimer(CaptureFadeTimer);
+	const EIGCaptureKind Kind = CaptureKindInFlight;
+	const IGNightLoop::FCaptureSpec& Spec = IGNightLoop::SpecFor(Kind);
 	bool bWakeRecoveryScheduled = false;
+	bool bTorchDropped = false;
 	AIGPlayerCharacter* Character = CapturedPlayer.Get();
 	if (Character)
 	{
+		// 잡힌 자리에서 끝낼 일. 몸을 옮기기 전, 아직 그 자리에 있을 때 한다.
+		if (Kind == EIGCaptureKind::Listener)
+		{
+			DropFlashlightAt(*Character);
+			bTorchDropped = DroppedFlashlight.IsValid();
+		}
+		else if (Kind == EIGCaptureKind::Eoduksini)
+		{
+			if (UIGFlashlightComponent* Torch = Character->GetFlashlight())
+			{
+				Torch->DrainBattery(IGNightLoop::EoduksiniBatteryCost);
+			}
+		}
+
+		// 정해 둔 자리에 바닥을 재서 세운다. 지나온 자리는 실제로 서 있던 높이라 그대로
+		// 맞고, 손님과 관리인이 준 현관은 여기서 바닥에 붙는다.
+		FVector WakeLocation = CaptureWake.GetLocation();
+		if (const UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
+		{
+			FCollisionQueryParams FloorParams(SCENE_QUERY_STAT(IGCaptureWakeFloor), false, Character);
+			FloorParams.AddIgnoredActor(this);
+			FHitResult Floor;
+			if (GetWorld()->LineTraceSingleByChannel(
+					Floor,
+					WakeLocation + FVector(0.0f, 0.0f, 40.0f),
+					WakeLocation - FVector(0.0f, 0.0f, 260.0f),
+					ECC_Visibility,
+					FloorParams))
+			{
+				WakeLocation.Z = Floor.ImpactPoint.Z + Capsule->GetScaledCapsuleHalfHeight() + 0.5f;
+			}
+		}
+		CaptureWake.SetLocation(WakeLocation);
 		Character->TeleportTo(
-			WakeTransform.GetLocation(),
-			WakeTransform.Rotator(),
+			WakeLocation,
+			CaptureWake.Rotator(),
 			false,
 			true);
 		if (UCharacterMovementComponent* Movement =
@@ -254,7 +449,7 @@ void AIGNightLoopDirector::FinishReset()
 		if (APlayerController* Controller =
 			Cast<APlayerController>(Character->GetController()))
 		{
-			Controller->SetControlRotation(WakeTransform.Rotator());
+			Controller->SetControlRotation(CaptureWake.Rotator());
 			const float WakeEchoSeconds = GetWakeEchoSeconds();
 			const float WakeRecoverySeconds = GetWakeRecoverySeconds();
 			if (AIGHorrorHUD* HorrorHUD = Cast<AIGHorrorHUD>(Controller->GetHUD()))
@@ -266,21 +461,39 @@ void AIGNightLoopDirector::FinishReset()
 			}
 			if (Controller->PlayerCameraManager)
 			{
+				// 끊긴 색에서 돌아온다. 관리인의 손전등에 하얗게 먼 눈은 하얀 데서 천천히
+				// 돌아오고, 어둑시니가 가져간 소리는 빛과 함께 돌아온다.
 				Controller->PlayerCameraManager->StartCameraFade(
-					1.0f, 0.0f, GetWakeFadeInSeconds(), FLinearColor::Black,
-					/*bShouldFadeAudio=*/false, /*bHoldWhenFinished=*/false);
+					1.0f, 0.0f, GetWakeFadeInSeconds(), Character->GetCaptureCutColour(),
+					/*bShouldFadeAudio=*/Kind == EIGCaptureKind::Eoduksini,
+					/*bHoldWhenFinished=*/false);
 			}
-
-			// A single duvet settle anchors the teleport at the bed. It must not
-			// repeat the two capture knocks or add a failure sting.
-			IGAudio::SpawnOneShotAt(
-				this,
-				UIGToneSequenceSoundWave::CreateClothSettle(this),
-				WakeTransform.GetLocation(),
-				0.72f,
-				0.94f,
-				75.0f,
-				480.0f);
+			if (Spec.ComeToSeconds > 0.0f)
+			{
+				// 바닥에서 몸을 일으킨다. 둘러볼 수는 있고 걷지는 못한다.
+				Character->PlayComeTo(Spec.ComeToSeconds);
+				if (AIGPlayerController* IGController = Cast<AIGPlayerController>(Controller))
+				{
+					IGController->AddInputLock(
+						IGNightLoop::ComeToLockName, /*bLockMove=*/true, /*bLockLook=*/false);
+					bComeToLockHeld = true;
+					GetWorldTimerManager().SetTimer(
+						ComeToTimer,
+						this,
+						&AIGNightLoopDirector::ReleaseComeToLock,
+						Spec.ComeToSeconds,
+						false);
+				}
+				// 바닥에서 옷이 쓸리는 소리 하나. 실패의 효과음은 없다.
+				IGAudio::SpawnOneShotAt(
+					this,
+					UIGToneSequenceSoundWave::CreateClothSettle(this),
+					WakeLocation,
+					0.72f,
+					0.94f,
+					75.0f,
+					480.0f);
+			}
 			GetWorldTimerManager().SetTimer(
 				WakeRecoveryTimer,
 				this,
@@ -293,24 +506,25 @@ void AIGNightLoopDirector::FinishReset()
 
 	if (AIGListenerEntity* Entity = ListenerEntity.Get())
 	{
-		// The tier lives in the narrative snapshot, not on the pawn, so a
-		// quit-and-resume cannot hand the player back a patient pursuer.
-		// 다른 괴이에게 잡힌 것은 그의 성과가 아니다. 단계는 그대로 두고 자리만 되돌린다.
-		if (bExternalCaptureInFlight)
+		// 단계는 서사 기록에 있다. 그만두고 다시 불러와도 느긋한 그가 돌아오지 않는다.
+		// 다른 괴이에게 잡힌 것은 그의 성과가 아니다. 단계는 그대로 두고 자리만 돌린다.
+		if (Kind == EIGCaptureKind::Listener)
 		{
-			Entity->ResetToPatrolStart(/*bRaiseAggression=*/false);
+			UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+			Entity->SetAggressionTier(Narrative
+				? Narrative->RecordCapture()
+				: Entity->GetAggressionTier() + 1);
 		}
-		else if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
-		{
-			Entity->SetAggressionTier(Narrative->RecordCapture());
-			Entity->ResetToPatrolStart(/*bRaiseAggression=*/false);
-		}
-		else
-		{
-			Entity->ResetToPatrolStart(/*bRaiseAggression=*/true);
-		}
+		Entity->ReturnAfterCapture(IGNightLoop::ListenerGraceSeconds);
 	}
-	bExternalCaptureInFlight = false;
+
+	// 정신을 잃은 동안 흐른 시간. 깨어나며 손목시계를 보면 그만큼 지나 있다.
+	LastLostSeconds = 0.0f;
+	for (TActorIterator<AIGNightPhaseDirector> It(GetWorld()); It; ++It)
+	{
+		LastLostSeconds = It->ConsumeHourSeconds(Spec.LostSeconds);
+		break;
+	}
 
 	QueueMercyNoteReveal();
 
@@ -324,22 +538,24 @@ void AIGNightLoopDirector::FinishReset()
 			It->NotifyCaptureReset();
 			break;
 		}
-		// §8 비트 2-5: the reset puts her back in her own bed, and that must not
-		// count as having carried the ledger home. She owes the night one more
-		// trip out of 403 and back.
+		// §8 비트 2-5: 정신을 잃고 옮겨진 것은 장부를 들고 돌아온 것이 아니다. 403호
+		// 안에서 깨어났으면 한 번 나갔다 와야 한다.
 		TActorIterator<AIGMissingFloorNightTwoBeatDirector> ReturnBeat(World);
 		if (ReturnBeat)
 		{
 			ReturnBeat->NotifyCaptureReset();
 		}
-		// §8 비트 3-7 owes the same debt, and it also has to put him back in the
-		// corridor: the reset sent him to his patrol start along with her.
+		// §8 비트 3-7도 같은 빚을 진다. 그는 순찰 처음으로 돌아갔으니 복도에 다시 세운다.
 		TActorIterator<AIGMissingFloorNightThreeDirector> PassBeat(World);
 		if (PassBeat)
 		{
 			PassBeat->NotifyCaptureReset();
 		}
 	}
+
+	// 잡은 괴이가 제 흔적을 남긴다(손님의 전단과 걸쇠, 관리인이 가져간 열쇠). 화면은
+	// 아직 덮여 있다.
+	OnCaptureSettled.Broadcast(Kind, LastCaptureSpot);
 
 	if (bWakeRecoveryScheduled && Character)
 	{
@@ -348,6 +564,29 @@ void AIGNightLoopDirector::FinishReset()
 		if (UIGStressComponent* Stress = Character->GetStress())
 		{
 			Stress->PlayGasp(/*bIgnoreCooldown=*/true);
+		}
+		// 무엇을 잃었는지 한 줄. 손님과 관리인은 저마다 남긴 것으로 말한다.
+		FText Thought;
+		if (Kind == EIGCaptureKind::Listener)
+		{
+			Thought = bTorchDropped
+				? NSLOCTEXT("IGMissingFloor", "YudamWakeTorchDropped", "손전등을 저기 떨어뜨렸네.")
+				: NSLOCTEXT("IGMissingFloor", "YudamWakeDragged", "여기까지 끌려왔네.");
+		}
+		else if (Kind == EIGCaptureKind::Eoduksini)
+		{
+			Thought = NSLOCTEXT("IGMissingFloor", "YudamWakeUnderLight", "내가 언제 여기까지 왔지?");
+		}
+		if (!Thought.IsEmpty())
+		{
+			GetWorldTimerManager().SetTimer(
+				WakeThoughtTimer,
+				FTimerDelegate::CreateWeakLambda(this, [this, Thought]()
+				{
+					AIGHorrorHUD::PushThought(this, Thought, 2.8f);
+				}),
+				IGNightLoop::WakeThoughtDelaySeconds,
+				false);
 		}
 	}
 
@@ -418,6 +657,7 @@ void AIGNightLoopDirector::FinishWakeRecovery()
 void AIGNightLoopDirector::AbortCaptureBlackout(const TCHAR* Reason)
 {
 	GetWorldTimerManager().ClearTimer(CaptureFadeTimer);
+	ReleaseComeToLock();
 	UWorld* World = GetWorld();
 	AIGPlayerCharacter* Character = CapturedPlayer.Get();
 	APlayerController* Controller = Character
@@ -448,6 +688,8 @@ void AIGNightLoopDirector::AbortCaptureBlackout(const TCHAR* Reason)
 void AIGNightLoopDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(CaptureFadeTimer);
+	GetWorldTimerManager().ClearTimer(WakeThoughtTimer);
+	ReleaseComeToLock();
 	// 리셋 도중에 디렉터가 사라지면 타이머와 함께 복귀도 사라진다.
 	if (bResetInFlight && EndPlayReason != EEndPlayReason::LevelTransition
 		&& EndPlayReason != EEndPlayReason::EndPlayInEditor
@@ -780,7 +1022,7 @@ float AIGNightLoopDirector::GetWakeRecoverySeconds() const
 {
 	// 예전에는 화면이 다 밝아질 때까지 조작을 잠갔다. 첫 포획은 암전까지 합쳐 5초
 	// 넘게 손을 놓아야 했고, 잡힐 때마다 그 시간을 다시 기다렸다. 이제 눈을 뜨는
-	// 순간부터 둘러보고 걸을 수 있다. 밝아지는 페이드는 그대로 흐른다.
+	// 순간부터 둘러볼 수 있다. 바닥에서 깬 몸은 일어서는 동안만 걷지 못한다.
 	return FMath::Min(
 		FMath::Max(GetWakeFadeInSeconds(), GetWakeEchoSeconds()),
 		IGNightLoop::MaxWakeLockSeconds);

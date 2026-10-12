@@ -5472,7 +5472,7 @@ void AIGHorrorHUD::DrawAccessibilityPanel()
 		NSLOCTEXT("IGHUD", "DifficultyDescQuiet", "위층 사람이 소리를 잘 알아채지 못하고, 쫓아오는 속도도 느려집니다."),
 		NSLOCTEXT("IGHUD", "DifficultyDescStandard", "작은 소리에도 주의하며 돌아다녀야 합니다. 기본 난이도입니다."),
 		NSLOCTEXT("IGHUD", "DifficultyDescHasty", "위층 사람이 작은 소리도 잘 듣고 오래 쫓아옵니다."),
-		NSLOCTEXT("IGHUD", "DifficultyDescListenOnly", "위층 사람이 소리를 듣고 다가오지만 쫓거나 붙잡지는 않습니다. 퍼즐과 결말은 그대로 즐길 수 있습니다.")
+		NSLOCTEXT("IGHUD", "DifficultyDescListenOnly", "위층 사람이 소리를 듣고 다가오지만 쫓거나 붙잡지는 않습니다. 모든 퍼즐과 결말을 볼 수 있습니다.")
 	};
 	const auto InputMode = [](const bool bToggle)
 	{
@@ -5493,7 +5493,7 @@ void AIGHorrorHUD::DrawAccessibilityPanel()
 		NSLOCTEXT("IGHUD", "A11yReducedFlicker", "빛 깜빡임 줄이기").ToString(),
 		NSLOCTEXT("IGHUD", "A11yFieldOfView", "시야각").ToString(),
 		NSLOCTEXT("IGHUD", "A11yVignette", "화면 가장자리 어둡게").ToString(),
-		NSLOCTEXT("IGHUD", "A11yCameraTexture", "화면 질감").ToString(),
+		NSLOCTEXT("IGHUD", "A11yCameraTexture", "렌즈 왜곡").ToString(),
 		NSLOCTEXT("IGHUD", "A11yCenterDot", "화면 가운데 점").ToString(),
 		NSLOCTEXT("IGHUD", "A11yFearDirection", "소리가 나는 방향 표시").ToString(),
 		NSLOCTEXT("IGHUD", "A11yKnockRing", "두드리는 소리를 화면에 표시").ToString(),
@@ -5556,13 +5556,13 @@ void AIGHorrorHUD::DrawAccessibilityPanel()
 	const FText Descriptions[] =
 	{
 		DifficultyDescriptions[static_cast<int32>(Difficulty)],
-		NSLOCTEXT("IGHUD", "A11yHintsDesc", "힌트 키를 누를 때마다 지금 어디를 보면 되는지 조금씩 더 자세히 알려 줍니다. 끄면 힌트 키를 눌러도 아무 일도 일어나지 않습니다."),
+		NSLOCTEXT("IGHUD", "A11yHintsDesc", "힌트 키를 누르면 다음에 살펴볼 곳을 알려 줍니다. 다시 누르면 더 자세한 힌트가 나옵니다."),
 		NSLOCTEXT("IGHUD", "A11yReducedMotionDesc", "걷거나 쫓길 때 화면이 덜 흔들리게 합니다."),
 		NSLOCTEXT("IGHUD", "A11yReducedFlickerDesc", "손전등과 조명이 빠르게 깜빡이는 효과를 줄입니다."),
-		NSLOCTEXT("IGHUD", "A11yFieldOfViewDesc", "한 화면에 보이는 범위를 조절합니다. 화면이 답답하거나 어지럽다면 편한 값으로 맞춰 보세요."),
+		NSLOCTEXT("IGHUD", "A11yFieldOfViewDesc", "한 화면에 얼마나 넓게 보일지 조절합니다. 시야가 좁게 느껴지거나 어지럽다면 값을 바꿔 보세요."),
 		NSLOCTEXT("IGHUD", "A11yVignetteDesc", "화면 가장자리를 어둡게 합니다. 움직일 때 주변 풍경이 덜 보이게 할 수 있습니다."),
 		NSLOCTEXT("IGHUD", "A11yCameraTextureDesc", "화면 가장자리에 약한 렌즈 왜곡 효과를 더합니다. 눈이 피로하면 낮춰 주세요."),
-		NSLOCTEXT("IGHUD", "A11yCenterDotDesc", "평소에는 조사할 물건을 겨눌 때만 화면 가운데에 점이 뜹니다. 어지럽다면 항상 띄워 두세요. 화면을 볼 때 기준점이 됩니다."),
+		NSLOCTEXT("IGHUD", "A11yCenterDotDesc", "조사할 물건을 보면 화면 가운데에 점이 뜹니다. 어지럽다면 항상 표시하도록 바꿔 보세요. 시선을 둘 곳이 생깁니다."),
 		NSLOCTEXT("IGHUD", "A11yFearDirectionDesc", "중요한 소리가 나면 화면 가장자리에 그 방향을 표시합니다."),
 		NSLOCTEXT("IGHUD", "A11yKnockRingDesc", "위층 사람이 낸 소리는 얇은 원으로, 내가 낸 소리는 굵은 원으로 표시합니다."),
 		NSLOCTEXT("IGHUD", "A11yKnockHapticDesc", "위층 사람이 소리를 내면 게임패드가 진동합니다. 멀리서 나는 소리일수록 진동도 약해집니다."),
@@ -5574,11 +5574,11 @@ void AIGHorrorHUD::DrawAccessibilityPanel()
 		NSLOCTEXT("IGHUD", "A11yCaptionSafeAreaDesc", "값을 줄이면 자막이 화면 안쪽에 표시됩니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionDurationDesc", "자막이 사라지는 시간을 조절합니다. 읽을 시간이 부족하면 값을 높여 주세요."),
 		NSLOCTEXT("IGHUD", "A11yCrouchInputDesc", "앉기 키를 한 번 눌러 전환하거나, 누르고 있는 동안만 유지하도록 선택합니다."),
-		NSLOCTEXT("IGHUD", "A11yHoldInputDesc", "상호작용을 길게 누르는 대신 한 번 눌러 시작하고 다시 눌러 취소할 수 있습니다."),
+		NSLOCTEXT("IGHUD", "A11yHoldInputDesc", "버튼을 길게 누르기 어렵다면 한 번 눌러 시작하고 다시 눌러 취소하도록 바꿀 수 있습니다."),
 		NSLOCTEXT("IGHUD", "A11yHoldDurationDesc", "문을 열거나 조사할 때 버튼을 얼마나 오래 누를지 정합니다."),
-		NSLOCTEXT("IGHUD", "A11yPromptKeysDesc", "항상으로 두면 조사 안내 앞에 누를 키를 늘 붙입니다. 익힐 때까지로 두면 같은 동작을 세 번 한 뒤부터는 키 이름을 빼고 보여 줍니다."),
+		NSLOCTEXT("IGHUD", "A11yPromptKeysDesc", "항상으로 두면 누를 키를 계속 표시합니다. 익힐 때까지로 두면 같은 동작을 세 번 한 뒤부터 키 이름을 숨깁니다."),
 		NSLOCTEXT("IGHUD", "A11yHapticsDesc", "게임패드 진동을 켜거나 끕니다."),
-		NSLOCTEXT("IGHUD", "A11yMicrophoneDesc", "켜면 내 목소리와 주변 소리에 위층 사람이 반응합니다. 꺼 두면 마이크를 사용하지 않습니다."),
+		NSLOCTEXT("IGHUD", "A11yMicrophoneDesc", "켜면 마이크로 들어오는 내 목소리와 주변 소리에 위층 사람이 반응합니다."),
 		NSLOCTEXT("IGHUD", "A11yResetDesc", "이 화면의 설정을 처음 상태로 되돌립니다."),
 		NSLOCTEXT("IGHUD", "A11yCloseDesc", "설정을 저장하고 이전 화면으로 돌아갑니다.")
 	};
@@ -6384,7 +6384,7 @@ void AIGHorrorHUD::DrawAudioCalibrationPanel()
 		GetFittedTextScale(
 			KnockLabel, EIGHudTextRole::Prompt, Scale, LeftColumnWidth, 0.7f * Scale));
 	const FText KnockInstruction =
-		NSLOCTEXT("IGHUD", "AudioCalibrationKnockInstruction", "두드리는 소리가 또렷하게 들리면서도\n깜짝 놀라지 않을 만큼 맞춰 주세요.");
+		NSLOCTEXT("IGHUD", "AudioCalibrationKnockInstruction", "두드리는 소리가 잘 들리면서\n귀에 부담이 없는 크기로 맞춰 주세요.");
 	DrawLeftAlignedText(
 		KnockInstruction,
 		FVector2D(LeftX, ContentY + 38.0f * Scale),
@@ -6748,8 +6748,8 @@ void AIGHorrorHUD::DrawDisplaySettingsPanel()
 		Metrics,
 		bDisplaySettingsAwaitingConfirmation
 			? bUsingGamepad
-				? NSLOCTEXT("IGHUD", "DisplaySettingsConfirmControlsGamepad", "A 유지  ·  B/View 자동 복원  ·  아래 항목에서 되돌리기")
-				: NSLOCTEXT("IGHUD", "DisplaySettingsConfirmControlsKeyboard", "Enter/클릭 유지  ·  Esc 자동 복원  ·  아래 항목에서 되돌리기")
+				? NSLOCTEXT("IGHUD", "DisplaySettingsConfirmControlsGamepad", "A 유지  ·  B/View 되돌리기  ·  아래 메뉴에서도 선택 가능")
+				: NSLOCTEXT("IGHUD", "DisplaySettingsConfirmControlsKeyboard", "Enter/클릭 유지  ·  Esc 되돌리기  ·  아래 메뉴에서도 선택 가능")
 			: bUsingGamepad
 				? NSLOCTEXT(
 					"IGHUD",

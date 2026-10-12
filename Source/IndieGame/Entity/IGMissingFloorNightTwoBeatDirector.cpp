@@ -866,7 +866,7 @@ void AIGMissingFloorNightTwoBeatDirector::AdvanceReturn()
 		break;
 
 	case EIGNightTwoReturnStage::Chased:
-		// 리셋으로 침대에 돌아온 것은 도착이 아니다. 한 번 밖으로 나가야
+		// 잡혀서 403호 안에서 깨어난 것은 도착이 아니다. 한 번 밖으로 나가야
 		// 그 빚이 청산된다.
 		if (bMustLeaveHomeAgain)
 		{

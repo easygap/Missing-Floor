@@ -334,7 +334,10 @@ def build_cop(out_root):
         dv = radius_px / COP_SIZE[1]
         project_uv(button, (-r, -0.01, z - r), (r, -0.006, z + r), rect=(bu - du, bv - dv, bu + du, bv + dv))
         parts.append(button)
+    # UE에서는 인쇄가 좌우로 뒤집혀 보이므로 글자 UV만 보정한다.
+    # 버튼과 점등 위치는 실제 조작 영역에 맞춘 그대로 둔다.
     return ig.build_asset("SM_ElevatorCop", "prop", parts, out_root, collision_parts=None, texture_size=1024,
+                          mirror_print_uv=True,
                           notes="칸 조작반 18 x 92 cm. 원본 ElevatorCopFaceplate_20261006. 위에서부터 5·4·3·2·1·B1, "
                                 "열림·닫힘·비상. 표시창 숫자는 씬 글자. 원점 판 아래 가운데, 앞 -Y.")
 
@@ -373,6 +376,7 @@ def build_full_lamp(out_root):
     v1 = 1.0 - LAMP_PX[1] / LAMP_SIZE[1]
     project_uv(plate, (-w * 0.5, -0.004, 0.0), (w * 0.5, 0.0, h), rect=(u0, v0, u1, v1))
     return ig.build_asset("SM_ElevatorFullLamp", "prop", [plate], out_root, collision_parts=None, texture_size=512,
+                          mirror_print_uv=True,
                           notes="칸 「만원」 표시등. 바탕 ElevatorFullLampOff_20261007, 발광 ElevatorFullLampLit_20261007. "
                                 "씬이 EmissiveStrength로 켜고 끈다. 원점 판 뒷면 아래 가운데, 앞 -Y.")
 
