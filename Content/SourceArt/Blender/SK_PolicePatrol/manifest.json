@@ -1,0 +1,59 @@
+{
+  "name": "SK_PolicePatrol",
+  "mesh_class": "hero",
+  "fbx": "SK_PolicePatrol.fbx",
+  "textures": {
+    "D": "SK_PolicePatrol_D.png",
+    "N": "SK_PolicePatrol_N.png",
+    "ORM": "SK_PolicePatrol_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 14000,
+  "bounds_m": {
+    "min": [
+      -0.1653,
+      -0.479,
+      0.0001
+    ],
+    "max": [
+      0.165,
+      0.4791,
+      1.749
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "셋째 아침 5층 현장 확인에 오는 순찰 경찰관(30대 중반, 175 cm). 원본 PolicePatrolFront_20261012(gpt-image, 팔을 40도 벌린 A자) → TRELLIS.2 → rig_walker --profile officer. 서 있고 걸을 때는 팔을 허벅지 옆으로 모은다. Idle·Walk 루프, LookBack·Knock·Listen 1회.",
+  "skeletal": true,
+  "animations": {
+    "Idle": {
+      "frames": 120,
+      "fps": 30,
+      "loop": true
+    },
+    "Walk": {
+      "frames": 32,
+      "fps": 30,
+      "loop": true
+    },
+    "LookBack": {
+      "frames": 75,
+      "fps": 30,
+      "loop": false
+    },
+    "Knock": {
+      "frames": 66,
+      "fps": 30,
+      "loop": false
+    },
+    "Listen": {
+      "frames": 60,
+      "fps": 30,
+      "loop": false
+    }
+  },
+  "generated_from": "../Generated/PolicePatrol/trellis1024-s56/raw/pbr_00002_.glb"
+}

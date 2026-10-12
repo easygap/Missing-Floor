@@ -7364,15 +7364,33 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 		BathroomSwitch->BindLight(BathroomLight);
 	}
 
-	// 403호 현관문 안쪽 걸쇠. 손잡이 위, 문틀 쪽 끝에서 8 cm.
+	// 403호 현관문 안쪽 걸쇠. 손잡이 위 145 cm, 문짝 안쪽 면(Y -222.1)에 단 빗장이다. 5층 철문과
+	// 같은 저작 메시를 쓴다. 몸통 끝이 문틀 쪽 끝(X 184)에서 6 cm 앞이고, 걸면 막대가 4.5 cm
+	// 나가 문설주 안쪽 면(X 183)의 받이쇠에 들어간다. 메시가 없으면 예전 상자 걸쇠를 단다.
 	if (HomeDoor)
 	{
+		UStaticMesh* BoltHousing = PropMesh(TEXT("SM_DoorBarrelBolt"));
+		UStaticMesh* BoltPin = PropMesh(TEXT("SM_DoorBarrelBoltPin"));
+		const bool bAuthoredBolt = BoltHousing && BoltPin;
 		if (AIGDoorLatch* Latch = World->SpawnActor<AIGDoorLatch>(
 				AIGDoorLatch::StaticClass(),
-				FTransform(FRotator::ZeroRotator, FVector(176.0f, -221.5f, 1045.0f)),
+				FTransform(FRotator::ZeroRotator, bAuthoredBolt
+					? FVector(172.0f, -222.1f, 1045.0f)
+					: FVector(176.0f, -221.5f, 1045.0f)),
 				SpawnParameters))
 		{
-			Latch->Configure(HomeDoor, CubeMesh, TexMat(TEXT("M_MetalUV"), MetalFrameMaterial));
+			if (bAuthoredBolt)
+			{
+				Latch->ConfigureAuthored(HomeDoor, BoltHousing, BoltPin, 4.5f, FText::GetEmpty(), FText::GetEmpty());
+				TObjectPtr<USceneComponent> PreviousParent = ActiveParent;
+				ActiveParent = nullptr;
+				CreateProp(TEXT("SM_DoorBarrelBoltKeeper"), FVector(183.0f, -220.95f, 1045.0f), nullptr, 0.0f, 1.0f, false);
+				ActiveParent = PreviousParent;
+			}
+			else
+			{
+				Latch->Configure(HomeDoor, CubeMesh, TexMat(TEXT("M_MetalUV"), MetalFrameMaterial));
+			}
 		}
 	}
 }

@@ -1,0 +1,37 @@
+{
+  "name": "SK_PaperGuest",
+  "mesh_class": "hero",
+  "fbx": "SK_PaperGuest.fbx",
+  "textures": {
+    "D": "SK_PaperGuest_D.png",
+    "N": "SK_PaperGuest_N.png",
+    "ORM": "SK_PaperGuest_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 12000,
+  "bounds_m": {
+    "min": [
+      -0.2965,
+      -0.3456,
+      0.0004
+    ],
+    "max": [
+      0.2962,
+      0.3458,
+      2.0005
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "문 밖 손님(종이 몸). 원본 PaperGuestFront_20261012(gpt-image) → TRELLIS.2 → rig_eoduksini --keep-color. 종이 색을 살리고 거칠기만 무광으로. 뼈 넷(root·spine·arm_l·arm_r), 게임이 허리를 직접 숙인다.",
+  "skeletal": true,
+  "animations": {},
+  "bones": {
+    "waist_cm": 108.0,
+    "armpit_cm": 138.0
+  },
+  "generated_from": "../Generated/PaperGuest/trellis1024-s56/raw/pbr_00001_.glb"
+}

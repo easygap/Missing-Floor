@@ -23,6 +23,10 @@ rig_crawler.py가 기는 몸을 다뤘다면 여기는 서서 걷는 몸이다. 
 열쇠 꾸러미 규칙을 빼고 두 팔을 다 흔들며, 동작은 Idle·Walk(루프)와 LookBack(1회,
 어깨 너머로 고개를 돌려 뒤를 본다) 셋이다.
 
+--profile officer는 resident에 벽을 살피는 동작 둘을 더한다(셋째 아침 5층에 오는 순찰
+경찰관). Knock(1회, 오른손으로 벽을 세 번 두드리고 손을 벽 가까이에 둔다)과 Listen(1회,
+상체를 숙이고 고개를 돌려 벽에 귀를 댄다)이다.
+
     blender -b --factory-startup --python Scripts/blender/rig_walker.py -- \\
         --glb Content/SourceArt/Generated/YudamReflection/trellis1024-s56/raw/pbr_00001_.glb \\
         --name SK_YudamReflection --height 162 --yaw 90 --profile resident
@@ -65,8 +69,11 @@ FPS = 30
 # IGManagerPatrol의 TorchOffset은 이 손에서 렌즈까지 앞으로 더 나간 자리다.
 TORCH_HAND = Vector((0.30, 0.19, 0.98))
 
-# patrol(목한수) 또는 resident(빈손으로 선 사람). main()이 인자에서 정한다.
+# patrol(목한수), resident(빈손으로 선 사람), officer(빈손 + 벽 살피기). main()이 인자에서 정한다.
 PROFILE = "patrol"
+EMPTY_HANDED = ("resident", "officer")
+# officer는 A자로 벌려 뽑은 팔을 서 있을 때 허벅지 옆으로 모은다(m). main()이 손목 자리로 정한다.
+OFFICER_HANG = 0.0
 
 
 def parse_args():
@@ -83,7 +90,7 @@ def parse_args():
     parser.add_argument("--out", default=None)
     parser.add_argument("--no-bake", action="store_true")
     parser.add_argument("--notes", default="")
-    parser.add_argument("--profile", choices=["patrol", "resident"], default="patrol")
+    parser.add_argument("--profile", choices=["patrol", "resident", "officer"], default="patrol")
     parser.add_argument("--tint-box", action="append", default=[],
                         help="xmin,xmax,zmin,zmax,색상(도),채도 배율,명도 배율. 앞이 +X인 저작 좌표(m)에서 "
                              "이 상자 안의 색만 굽기 전에 바꾼다. 시안에 없던 뒷면을 생성기가 지어낸 색을 고칠 때")
@@ -315,11 +322,18 @@ def region_bones(co, marks):
     shoulder, elbow, wrist, tip = marks["arms"][side]
     # 등에 멘 가방은 겨드랑이 옆까지 넓어 팔 틈 바깥에 걸린다. 팔을 따라가면 걸을 때마다
     # 옆판이 겨드랑이에서 부풀어 나온다(303호). 등판에서 9 cm 넘게 뒤에 있는 것은 몸통이다.
-    if PROFILE == "resident" and co.x < marks["spine_03"].x - 0.09 and 0.47 * height < co.z < 0.84 * height:
+    if PROFILE in EMPTY_HANDED and co.x < marks["spine_03"].x - 0.09 and 0.47 * height < co.z < 0.84 * height:
         return TORSO_BONES
     reach = tip + (tip - wrist).normalized() * 0.12
     near_arm = min(_segment_distance(co, shoulder, elbow), _segment_distance(co, elbow, wrist),
                    _segment_distance(co, wrist, reach))
+    # 경찰관은 벽을 두드리느라 팔을 크게 든다. 엉덩이 옆에 내려온 손 안쪽이 틈 안에 걸려
+    # 다리 뼈를 따르면, 손을 들 때 손에서 허리까지 막이 늘어난다. 팔뼈에 바짝 붙은 정점은
+    # 틈 안쪽이라도 팔로 본다.
+    if PROFILE == "officer" and near_arm < 0.06 and abs(co.y) > gap - 0.08 and 0.30 * height < co.z < 0.84 * height:
+        if co.z < wrist.z - 0.015 and _segment_distance(co, wrist, reach) < 0.13:
+            return (f"hand_{side}",)
+        return (f"clavicle_{side}", f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", "spine_03")
     # 팔은 몸통 틈 바깥에서 팔뼈에 가까운 정점만이다. 허리 높이의 통바지 옆선도
     # 틈보다 넓어서, 틈만 보면 바지 자락이 손을 따라 판처럼 뜯겨 나온다.
     if abs(co.y) > gap - 0.02 and near_arm < 0.11 and 0.30 * height < co.z < 0.84 * height:
@@ -460,7 +474,7 @@ def author_walk(arm, name, frames, stride, lift, bob, lean, arm_swing, crouch):
         # 빈손인 사람은 오른팔도 반대 박자로 흔든다.
         swing = math.sin(math.tau * t)
         swing_arm(arm, "l", f, arm_swing * swing, 0.03 * abs(swing))
-        if PROFILE == "resident":
+        if PROFILE in EMPTY_HANDED:
             swing_arm(arm, "r", f, -arm_swing * swing, 0.03 * abs(swing))
         else:
             hold_torch(arm, f, bob=0.012 * math.sin(phase2 + 1.2), sweep=0.02 * math.sin(math.tau * t))
@@ -474,6 +488,10 @@ def swing_arm(arm, side, frame, forward, lift):
     wrist = rest(arm, f"lowerarm_{side}")
     elbow = rest(arm, f"upperarm_{side}")
     target = wrist + Vector((forward, -0.02 * sign, lift))
+    if PROFILE == "officer":
+        # 시안을 A자로 뽑았다. 손이 엉덩이 가까이 오면 생성 형상이 팔 안쪽과 옆구리 사이를
+        # 막으로 메워서다. 서 있고 걸을 때는 그 팔을 허벅지 옆으로 모은다.
+        target += Vector((0.0, -OFFICER_HANG * sign, -0.04))
     solve_limb(arm, f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", target,
                elbow + Vector((-0.3, 0.05 * sign, 0.0)), frame)
 
@@ -510,6 +528,63 @@ def author_look_back(arm, frames=75):
         key_rot(arm, "head", f, ry=-95.0 * ease, rx=-4.0 * ease)
         swing_arm(arm, "l", f, 0.0, 0.0)
         swing_arm(arm, "r", f, 0.0, 0.0)
+        plant_feet(arm, f)
+    for fc in action_fcurves(action):
+        for kp in fc.keyframe_points:
+            kp.interpolation = "BEZIER"
+    return action
+
+
+def author_knock(arm, frames=66):
+    """오른손으로 벽을 세 번 두드린다. 14프레임에 손을 올리고, 18·26·34프레임부터 한 번씩
+    손등이 벽에 닿았다 떨어진다(닿는 순간은 22·30·38프레임). 손은 내리지 않고 벽 앞에 둔다.
+
+    FBX 좌표라 오른쪽이 -Y다. 벽은 어깨에서 앞으로 30 cm, 명치 높이. 위팔은 30도쯤만 앞으로
+    내고 아래팔을 접는다. 생성 형상은 팔 안쪽과 옆구리 사이를 얇은 막으로 메워 두어서, 팔을
+    어깨 높이까지 들면 그 막이 손에서 허리까지 늘어난다.
+    """
+    action = new_action(arm, "Knock", frames)
+    shoulder = rest(arm, "upperarm_r", "head")
+    wall = Vector((shoulder.x + 0.30, shoulder.y + 0.02, shoulder.z - 0.26))
+    ready = wall - Vector((0.05, 0.0, 0.0))
+    for f in range(0, frames + 1):
+        a = min(1.0, f / 14.0)
+        ease = a * a * (3.0 - 2.0 * a)
+        tap = 0.0
+        for start in (18, 26, 34):
+            if start <= f < start + 8:
+                tap = math.sin((f - start) / 8.0 * math.pi) * 0.05
+        target = rest(arm, "lowerarm_r").lerp(ready, ease) + Vector((tap, 0.0, 0.0))
+        solve_limb(arm, "upperarm_r", "lowerarm_r", "hand_r", target,
+                   shoulder + Vector((-0.25, -0.30, -0.35)), f,
+                   end_direction=Vector((0.90, 0.0, 0.35)))
+        key_rot(arm, "spine_02", f, rx=3.0 * ease)
+        key_rot(arm, "head", f, rx=2.0 * ease)
+        swing_arm(arm, "l", f, 0.0, 0.0)
+        plant_feet(arm, f)
+    for fc in action_fcurves(action):
+        for kp in fc.keyframe_points:
+            kp.interpolation = "BEZIER"
+    return action
+
+
+def author_listen(arm, frames=60):
+    """벽에 귀를 대 본다. 24프레임에 걸쳐 상체를 숙이며 고개를 돌리고, 오른손은 벽을 짚는다."""
+    action = new_action(arm, "Listen", frames)
+    shoulder = rest(arm, "upperarm_r", "head")
+    palm = Vector((shoulder.x + 0.30, shoulder.y + 0.02, shoulder.z - 0.20))
+    for f in range(0, frames + 1, 2):
+        a = min(1.0, f / 24.0)
+        ease = a * a * (3.0 - 2.0 * a)
+        key_rot(arm, "spine_01", f, rx=5.0 * ease)
+        key_rot(arm, "spine_02", f, rx=9.0 * ease, ry=-6.0 * ease)
+        key_rot(arm, "neck", f, ry=-20.0 * ease)
+        key_rot(arm, "head", f, ry=-58.0 * ease, rx=6.0 * ease)
+        target = rest(arm, "lowerarm_r").lerp(palm, ease)
+        solve_limb(arm, "upperarm_r", "lowerarm_r", "hand_r", target,
+                   shoulder + Vector((-0.25, -0.30, -0.35)), f,
+                   end_direction=Vector((0.55, 0.0, 0.83)))
+        swing_arm(arm, "l", f, 0.0, 0.0)
         plant_feet(arm, f)
     for fc in action_fcurves(action):
         for kp in fc.keyframe_points:
@@ -713,16 +788,25 @@ def main():
         ig.assign_material(low, mat)
 
     marks = find_landmarks(low)
+    if PROFILE == "officer":
+        global OFFICER_HANG
+        wrist_y = abs(marks["arms"]["r"][2].y)
+        OFFICER_HANG = max(0.0, wrist_y - (marks["gap"] + 0.03))
+        ig.log(f"{name}: officer arms gather in by {OFFICER_HANG * 100:.1f} cm "
+               f"(wrist |y| {wrist_y * 100:.1f} cm, arm gap {marks['gap'] * 100:.1f} cm)")
     arm = build_armature(name, marks)
     skin(low, arm, marks)
 
-    if PROFILE == "resident":
+    if PROFILE in EMPTY_HANDED:
         actions = {
             "Idle": author_resident_idle(arm),
             "Walk": author_walk(arm, "Walk", 32, stride=0.50, lift=0.04, bob=0.012, lean=2.0,
                                 arm_swing=0.12, crouch=0.02),
             "LookBack": author_look_back(arm),
         }
+        if PROFILE == "officer":
+            actions["Knock"] = author_knock(arm)
+            actions["Listen"] = author_listen(arm)
     else:
         actions = patrol_actions(arm)
     set_action_frame(arm, actions["Idle"], 1)
@@ -734,9 +818,14 @@ def main():
         set_action_frame(arm, actions["Walk"], frame)
         ig.render_preview(low, os.path.join(out_dir, f"{name}_walk_f{frame:02d}.png"),
                           camera_yaw_deg=-90.0, camera_pitch_deg=4.0)
-    if PROFILE == "resident":
+    if PROFILE in EMPTY_HANDED:
         set_action_frame(arm, actions["LookBack"], 60)
         ig.render_preview(low, os.path.join(out_dir, f"{name}_lookback.png"), camera_yaw_deg=160.0, camera_pitch_deg=4.0)
+        if PROFILE == "officer":
+            set_action_frame(arm, actions["Knock"], 30)
+            ig.render_preview(low, os.path.join(out_dir, f"{name}_knock.png"), camera_yaw_deg=-70.0, camera_pitch_deg=4.0)
+            set_action_frame(arm, actions["Listen"], 50)
+            ig.render_preview(low, os.path.join(out_dir, f"{name}_listen.png"), camera_yaw_deg=-70.0, camera_pitch_deg=4.0)
     else:
         for frame in (0, 12):
             set_action_frame(arm, actions["Run"], frame)
@@ -767,7 +856,7 @@ def main():
         data = json.load(handle)
     data["skeletal"] = True
     data["animations"] = {key: {"frames": int(a.frame_range[1]), "fps": FPS,
-                                "loop": key not in ("Grab", "LookBack")} for key, a in actions.items()}
+                                "loop": key not in ("Grab", "LookBack", "Knock", "Listen")} for key, a in actions.items()}
     data["generated_from"] = os.path.relpath(os.path.abspath(args.glb), out_root).replace("\\", "/")
     with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(data, handle, indent=2, ensure_ascii=False)

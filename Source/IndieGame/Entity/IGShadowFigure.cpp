@@ -25,6 +25,10 @@ namespace IGShadow
 	constexpr float TrembleHz = 7.0f;
 	// 어둑시니의 빚은 몸(rig_eoduksini.py). 허리에서 숙이는 spine과 어깨에 매달린 두 팔.
 	const TCHAR* const SculptedBodyPath = TEXT("/Game/Meshes/SK_Eoduksini.SK_Eoduksini");
+	// 종이 손님의 빚은 몸(rig_eoduksini.py --keep-color). 뼈 이름은 어둑시니와 같다.
+	const TCHAR* const PaperBodyPath = TEXT("/Game/Meshes/SK_PaperGuest.SK_PaperGuest");
+	// 그 몸의 얼굴 앞(컴포넌트 공간, cm). 머리 앞면이 X 11.5, 얼굴 가운데가 188 cm다.
+	const FVector PaperFaceLocation(11.8f, 0.0f, 188.0f);
 	// 숙이는 동안 늘어진 팔이 앞으로 나오는 비율. 다 숙이면 손끝이 6도쯤 앞으로 온다.
 	constexpr float ArmReachRatio = 0.2f;
 	// 다 숙이면 머리가 쉬는 자세의 경계 상자보다 50 cm 앞으로 나간다. 상자를 그만큼
@@ -108,6 +112,30 @@ void AIGShadowFigure::DressAsPaper()
 		return;
 	}
 	bPaper = true;
+	// 빚은 몸이 있으면 그것을 입히고 얼굴에 403호 문의 자석만 붙인다. 손님은 오빠와
+	// 상관없는 이 건물의 것이라, 몸의 종이에는 단서가 적힌 종이가 없다.
+	if (AttachSculptedBody(IGShadow::PaperBodyPath))
+	{
+		if (UStaticMesh* Magnet = LoadObject<UStaticMesh>(
+				nullptr, TEXT("/Game/Meshes/SM_DoorDeliveryMagnet.SM_DoorDeliveryMagnet"), nullptr, LOAD_NoWarn))
+		{
+			UStaticMeshComponent* Face = NewObject<UStaticMeshComponent>(this, TEXT("PaperFace"));
+			Face->SetupAttachment(SculptedBody.Get());
+			Face->SetStaticMesh(Magnet);
+			// 자석의 앞면은 -Y다. 몸의 앞(+X)을 보게 돌리고, 9×6.5 cm를 얼굴만 하게 키운다.
+			SculptedFaceRest = FTransform(FRotator(0.0f, 90.0f, 0.0f), IGShadow::PaperFaceLocation, FVector(1.8f));
+			Face->SetRelativeTransform(SculptedFaceRest);
+			Face->SetMobility(EComponentMobility::Movable);
+			Face->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+			Face->SetCanEverAffectNavigation(false);
+			Face->SetCastShadow(false);
+			Face->RegisterComponent();
+			SculptedFace = Face;
+		}
+		ApplyPose();
+		SetActorHiddenInGame(!bManifested);
+		return;
+	}
 	auto Load = [](const TCHAR* Path) -> UMaterialInterface*
 	{
 		return LoadObject<UMaterialInterface>(nullptr, Path, nullptr, LOAD_NoWarn);
@@ -237,19 +265,28 @@ void AIGShadowFigure::DressAsEoduksini()
 	{
 		return;
 	}
-	USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, IGShadow::SculptedBodyPath, nullptr, LOAD_NoWarn);
+	if (AttachSculptedBody(IGShadow::SculptedBodyPath))
+	{
+		ApplyPose();
+		SetActorHiddenInGame(!bManifested);
+	}
+}
+
+bool AIGShadowFigure::AttachSculptedBody(const TCHAR* Path)
+{
+	USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, Path, nullptr, LOAD_NoWarn);
 	if (!Mesh)
 	{
-		UE_LOG(LogIndieGame, Warning, TEXT("SK_Eoduksini missing; eoduksini keeps the primitive outline"));
-		return;
+		UE_LOG(LogIndieGame, Warning, TEXT("%s missing; the figure keeps the primitive outline"), Path);
+		return false;
 	}
 	const FReferenceSkeleton& Skeleton = Mesh->GetRefSkeleton();
 	const int32 SpineIndex = Skeleton.FindBoneIndex(IGShadow::SpineBone());
 	const int32 ArmIndex[2] = {Skeleton.FindBoneIndex(IGShadow::ArmBone(0)), Skeleton.FindBoneIndex(IGShadow::ArmBone(1))};
 	if (SpineIndex == INDEX_NONE || ArmIndex[0] == INDEX_NONE || ArmIndex[1] == INDEX_NONE)
 	{
-		UE_LOG(LogIndieGame, Warning, TEXT("SK_Eoduksini lacks spine/arm bones; eoduksini keeps the primitive outline"));
-		return;
+		UE_LOG(LogIndieGame, Warning, TEXT("%s lacks spine/arm bones; the figure keeps the primitive outline"), Path);
+		return false;
 	}
 	SpineRest = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, SpineIndex);
 	for (int32 Side = 0; Side < 2; ++Side)
@@ -279,8 +316,7 @@ void AIGShadowFigure::DressAsEoduksini()
 			Part->SetVisibility(false);
 		}
 	}
-	ApplyPose();
-	SetActorHiddenInGame(!bManifested);
+	return true;
 }
 
 void AIGShadowFigure::Manifest(const FVector& Location, const float YawDegrees, const float Growth)
@@ -383,6 +419,11 @@ void AIGShadowFigure::PoseSculptedBody(const float LeanDegrees, const float Trem
 	FTransform Waist = SpineRest;
 	Waist.SetRotation(Lean * SpineRest.GetRotation());
 	SculptedBody->SetBoneTransformByName(IGShadow::SpineBone(), Waist, EBoneSpaces::ComponentSpace);
+	if (SculptedFace)
+	{
+		// 얼굴 자석은 허리 뼈에 붙은 것처럼 같이 숙인다.
+		SculptedFace->SetRelativeTransform(SculptedFaceRest.GetRelativeTransform(SpineRest) * Waist);
+	}
 	// 팔은 숙인 어깨를 따라 나오되 상체만큼 돌지 않고 아래로 늘어진다. 손끝만 조금 앞으로 온다.
 	// 아래로 향한 팔은 피치를 올려야 손끝이 앞으로 나온다.
 	const FQuat Reach(FRotator(LeanDegrees * IGShadow::ArmReachRatio, 0.0f, TrembleDegrees));

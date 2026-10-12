@@ -15,6 +15,9 @@
 
     blender -b --factory-startup --python Scripts/blender/rig_eoduksini.py -- \\
         --glb Content/SourceArt/Generated/Eoduksini/trellis1024-s56/raw/pbr_00001_.glb
+
+문 밖 손님(종이 몸)도 같은 뼈 넷으로 숙인다. --name SK_PaperGuest --keep-color로 돌리면
+종이 색을 살리고 거칠기만 무광으로 둔다.
 """
 
 import argparse
@@ -59,6 +62,8 @@ def parse_args():
     parser.add_argument("--out", default=None)
     parser.add_argument("--no-bake", action="store_true")
     parser.add_argument("--notes", default="")
+    parser.add_argument("--keep-color", action="store_true",
+                        help="원본 색을 젖은 검정으로 바꾸지 않는다(종이 손님). 거칠기는 무광 바닥 0.72")
     return parser.parse_args(argv)
 
 
@@ -379,8 +384,11 @@ def main():
     bmesh.ops.recalc_face_normals(source_mesh, faces=list(source_mesh.faces))
     source_mesh.to_mesh(high.data)
     source_mesh.free()
-    ig.prepare_organic_source(high, roughness_floor=0.0)
-    wet_black(high)
+    if args.keep_color:
+        ig.prepare_organic_source(high, roughness_floor=0.72)
+    else:
+        ig.prepare_organic_source(high, roughness_floor=0.0)
+        wet_black(high)
     lo, hi = ig.bounds(high)
     ig.log(f"{name}: scale x{scale:.4f} -> {(hi - lo).x * 100:.1f} x {(hi - lo).y * 100:.1f} x {(hi - lo).z * 100:.1f} cm")
 

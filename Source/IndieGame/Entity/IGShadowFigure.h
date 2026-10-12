@@ -42,9 +42,9 @@ public:
 	void SetTrembling(bool bInTrembling) { bTrembling = bInTrembling; }
 
 	/**
-	 * 손님의 몸으로 갈아입힌다. 공동현관 옆의 「원룸 있습니다」 전단, 입주민 안내문,
-	 * 누렇게 바랜 빈 종이가 겹겹이 붙어 사람 꼴을 이룬다. 얼굴 자리에는 403호 문의
-	 * 통닭집 자석이 붙어 있다. 한 번만 입힌다.
+	 * 손님의 몸으로 갈아입힌다. 문마다 붙어 있던 전단과 스티커, 부재중 쪽지가 겹겹이 붙어
+	 * 사람 꼴을 이룬 빚은 몸(SK_PaperGuest)이 서고, 얼굴 자리에는 403호 문의 통닭집 자석이
+	 * 붙는다. 몸을 못 읽으면 도형 윤곽에 종이 낱장을 붙인다. 한 번만 입힌다.
 	 */
 	void DressAsPaper();
 	bool IsPaper() const { return bPaper; }
@@ -62,6 +62,8 @@ public:
 	FVector GetChestLocation() const;
 
 private:
+	/** 빚은 몸을 붙이고 도형 윤곽을 숨긴다. 몸이 없거나 뼈가 모자라면 false다. */
+	bool AttachSculptedBody(const TCHAR* Path);
 	void ApplyPose();
 	/** 빚은 몸의 허리를 숙이고 팔을 늘어뜨린다. 각도는 도 단위다. */
 	void PoseSculptedBody(float LeanDegrees, float TrembleDegrees);
@@ -94,9 +96,14 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPoseableMeshComponent> SculptedBody;
 
+	/** 종이 손님의 얼굴 자석. 빚은 몸에 붙고 허리 뼈를 따라 같이 숙인다. */
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> SculptedFace;
+
 	/** 빚은 몸의 쉬는 자세(컴포넌트 공간). 숙일 때마다 여기서부터 돌린다. */
 	FTransform SpineRest;
 	FTransform ArmRest[2];
+	FTransform SculptedFaceRest;
 
 	FVector TargetLocation = FVector::ZeroVector;
 	float MoveSpeed = 0.0f;

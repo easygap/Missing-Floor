@@ -44,6 +44,8 @@
 | `/Game/Meshes/SM_Note303{First,Second,Third,Last}` | 직접 제작 (gpt-image 손글씨·인쇄면 → Blender 판·테이프 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Note303{First,Second,Third,Last}_20261007.png`(+JSON), `Scripts/blender/build_notes303.py` | 303호가 403호 현관문 바깥에 붙이는 쪽지 넷. 종이 글자와 읽기 화면 문구가 같다. 마지막 쪽지는 에필로그 「403호 문」 그림을 찍을 때만 문에 붙인다 |
 | `/Game/Meshes/SK_Neighbor303`, `A_Neighbor303_{Idle,Walk,LookBack}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile resident`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/Neighbor303Front_20261008.png`(+JSON), `Content/SourceArt/Generated/Neighbor303/` | 셋째 낮 계단에서 마주치는 303호. 가방 뒷면은 굽기 전에 검게 했다 |
 | `/Game/Meshes/SK_Eoduksini`, `SK_Eoduksini_Skeleton`, `/Game/Prototype/Materials/MI_Eoduksini`, `/Game/Prototype/Textures/T_Eoduksini_{D,N,ORM}` | 직접 제작 (gpt-image 점토 원형 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/EoduksiniClay_20261008.png`(+JSON), `Content/SourceArt/Generated/Eoduksini/` | 어둑시니 몸. 동작 없이 뼈 넷만 있고, 게임이 허리와 팔을 직접 돌린다 |
+| `/Game/Meshes/SK_PolicePatrol`, `SK_PolicePatrol_Skeleton`, `A_PolicePatrol_{Idle,Walk,LookBack,Knock,Listen}`, `/Game/Prototype/Materials/MI_PolicePatrol`, `/Game/Prototype/Textures/T_PolicePatrol_{D,N,ORM}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile officer`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PolicePatrolFront_20261012.png`(+JSON), `Content/SourceArt/Generated/PolicePatrol/` | 셋째 아침 5층 현장 확인에 오는 순찰 경찰관. 벽을 세 번 두드리는 동작과 귀를 대는 동작이 있다 |
+| `/Game/Meshes/SK_PaperGuest`, `SK_PaperGuest_Skeleton`, `/Game/Prototype/Materials/MI_PaperGuest`, `/Game/Prototype/Textures/T_PaperGuest_{D,N,ORM}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py --keep-color`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PaperGuestFront_20261012.png`(+JSON), `Content/SourceArt/Generated/PaperGuest/` | 문 밖 손님의 종이 몸. 원기둥에 종이를 붙인 예전 몸을 바꿨다. 얼굴 자리에 SM_DoorDeliveryMagnet이 붙는다 |
 | `/Game/UI/Textures/T_EpilogueDoorNote_D` | 직접 제작 (게임 안 렌더 `Run-EpilogueDoorStill.ps1`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/T_EpilogueDoorNote_D.png` | 에필로그 「403호 문」 정지 화면. 마지막 쪽지만 붙은 403호 문이고, 호수 표찰은 들지 않는다 |
 | `/Game/Prototype/Textures/T_StairWetBootprints_M`, `/Game/Prototype/Materials/M_StairWetBootprints` | 직접 제작 (gpt-image 마스크 → 회색조 축소, 데칼 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 가공(회색조·512px·흐림 1.2px) | `Content/SourceArt/AI/StairWetBootprints_20261007.png`(+JSON), `Scripts/import_stair_bootprints.py` | 「뒤따르는 발」이 남기는 젖은 작업화 자국 |
 | `/Game/Meshes/SM_PocketFlashlight`, `SM_ServicePressurePanel` | 직접 제작 (gpt-image 형태 참고·바탕 그림 → Blender 모델링·베이크) | 프로젝트 소유 | 2026-10-02 | 원본 | `Content/SourceArt/AI/PocketFlashlight_20261002.png`, `PlasterPressure_20261002.png`(+JSON), `Scripts/blender/build_pocket_flashlight.py`, `build_service_pressure_panel.py` | 현관 손전등과 들뜬 보수판 |
@@ -669,3 +671,34 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 런타임: 에필로그 HUD가 원본 비례로 판을 그리고 머리글·본문·각주를 얹는다. 월드에 놓이지 않는다
 - 권리/참조: 프로젝트 안의 메시와 텍스처만 찍혔다. 문 위 호수 표찰은 화면 밖이고, 쪽지와 통닭집 자석의 글씨는
   화면 크기에서 읽히지 않는다
+
+## 2026-10-12 현장 확인의 경찰관
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), ComfyUI 네이티브 TRELLIS.2
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/PolicePatrolFront_20261012.png`
+    `5F07E9072F8024161BE1AEE8E225F86EB53DB87B52917E052DD1771B7FB3BB39`
+- 파생: 처음에는 팔을 25도 벌린 안을 뽑았는데, 손이 엉덩이 가까이 와서 TRELLIS가 팔 안쪽과 옆구리 사이를
+  얇은 면으로 메웠고 벽을 두드리려고 팔을 들면 그 면이 손에서 허리까지 늘어났다. 팔을 40도 벌린 A자 자세로
+  다시 뽑아 TRELLIS.2(1024, 시드 56)로 형상을 만들고 `rig_walker.py --profile officer`로 리깅했다. 서 있고 걸을
+  때는 벌린 팔을 허벅지 옆으로 모은다. 노크(66프레임, 주먹이 22·30·38프레임에 벽에 닿는다)와 귀 대기(60프레임)는
+  한 번씩 튼다
+- 런타임: AIGSiteCheckVisit가 옥상 계단 길 위로 옮기며 Idle·Walk를 틀고, 5층 가운데 칸 앞에서 Knock·Listen을
+  튼다. 충돌은 플레이어 몸만 막는 캡슐 하나다
+- 권리/참조: 특정 인물을 본뜨지 않은 가상의 30대 순찰 경찰관이다. 제복과 조끼, 모자에 글자와 숫자가 없다
+- 프롬프트 전문: 같은 이름의 JSON
+
+## 2026-10-12 문 밖 손님의 종이 몸
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), ComfyUI 네이티브 TRELLIS.2
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/PaperGuestFront_20261012.png`
+    `7ED0CB52EA66AFBC414C3FE4D059BC5C3963E5C97067684AF622DCF962A1A421`
+- 파생: 정면 안과 4분의 3 각도 안을 같이 뽑아 정면 쪽을 골랐다. TRELLIS.2(1024, 시드 56)로 뽑은 형상을
+  `rig_eoduksini.py --keep-color`로 다듬어 뼈 넷(root·spine·arm_l·arm_r)을 달았다. 어둑시니와 달리 종이 색을
+  살리고 거칠기만 무광(0.72 이상)으로 올렸다
+- 런타임: AIGShadowFigure가 종이 몸으로 띄워 허리를 숙이고, 얼굴 자리에 광고 자석 메시를 1.8배로 붙인다. 몸을
+  못 불러오면 예전 종이 낱장 몸으로 돌아간다
+- 권리/참조: 한국 아파트 현관문에 쌓이는 전단과 자석, 안내문을 겹친 가상의 존재다. 종이의 인쇄는 읽히지 않는
+  색 덩어리와 그림 기호다
+- 프롬프트 전문: 같은 이름의 JSON

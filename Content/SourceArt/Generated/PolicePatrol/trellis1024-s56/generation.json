@@ -1,0 +1,184 @@
+{
+  "name": "PolicePatrol",
+  "trial": "trellis1024-s56",
+  "status": "Generated",
+  "source": "Content/SourceArt/AI/PolicePatrolFront_20261012.png",
+  "sourceSha256": "5f07e9072f8024161be1aee8e225f86eb53db87b52917e052dd1771b7fb3bb39",
+  "route": "trellis",
+  "resolution": 1024,
+  "seed": 56,
+  "postprocess": "pbr",
+  "decimateFaces": 200000,
+  "textureSize": 2048,
+  "server": {
+    "url": "http://127.0.0.1:8199",
+    "version": "0.34.6",
+    "device": "cuda:0 NVIDIA GeForce RTX 3060 : cudaMallocAsync"
+  },
+  "startedAt": "2026-10-12T03:31:50.902231+00:00",
+  "license": "TRELLIS.2 / Pixal3D weights: Comfy-Org repackage, MIT/permissive; DINOv3, MoGe, BiRefNet: see lunia_z SourceArt/Manifests/ComfyNative.20260908.json",
+  "runtimeReady": false,
+  "promptId": "fa4bbecd-e487-421e-8ee3-571c007037a3",
+  "elapsedSeconds": 70.2,
+  "finishedAt": "2026-10-12T03:33:01.136794+00:00",
+  "files": [
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/base-color_00001_.png",
+      "bytes": 2675471,
+      "sha256": "3beb3b391a6e9591ccce6915f9744a41e554558393da4698b554de563ec68c94"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/base-color_00002_.png",
+      "bytes": 3100849,
+      "sha256": "cec034434851f3f33fa31d6daa65cd04443de3a562e6ea0be14687dd3c82705e"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/cleaned-colored_00001_.glb",
+      "bytes": 6010788,
+      "sha256": "26b2c8899ebd60ecffe0ae0d2ffdbdfc6462841332c8be2be36c8afaae45d3f6"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/cleaned-colored_00002_.glb",
+      "bytes": 6015332,
+      "sha256": "77c8c8f3b8b9eb0da9dcba60a99abe8822d21bf56f0184e2241ac53296e13dba"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/colored_00001_.glb",
+      "bytes": 71812808,
+      "sha256": "8fad0c8e8d023502d050cf52b8a77d630402563221024715cc313e96f54f4e24",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/colored_00002_.glb",
+      "bytes": 69007068,
+      "sha256": "9d21a135cf5783e795e871cd7ed54bdcd9789d7a22763c47c5cf3027d43c5e00",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/conditioning_00001_.png",
+      "bytes": 358893,
+      "sha256": "195388c9bb52771e2344ff87bfe50a0cabb2b62ad244867b0f833fca76a6a877"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/conditioning_00002_.png",
+      "bytes": 358911,
+      "sha256": "ade5c6c81dd9b6f8f2144c66700ec77956b039599e5b5a751c1ef768ebc8cceb"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/metallic_00001_.png",
+      "bytes": 125332,
+      "sha256": "c70854d487abf25d0a35019f2114513922476dad942b58fdcddcc442839189ef"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/metallic_00002_.png",
+      "bytes": 556543,
+      "sha256": "72c6aa255cd79683512ed40a900c33214bdac726e925201a8032e808f1aeed3a"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/pbr_00001_.glb",
+      "bytes": 8584884,
+      "sha256": "0e802ee9aae83ed6a1df101aae758f4a9f66e252aef50ff8d58127261892fc60"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/pbr_00002_.glb",
+      "bytes": 9099144,
+      "sha256": "b21409f51305a9b8a025534a57202a7d3395259b80482d1cd06a81027ae3fcfe"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/roughness_00001_.png",
+      "bytes": 1184821,
+      "sha256": "baf5dfea2108257614e280d730da1a82633c199ef45a8ef61b35bd56a9e070f3"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/roughness_00002_.png",
+      "bytes": 914360,
+      "sha256": "efc7fdcb443ecaefdcda8000ec92b3193174c212b895c37f89dd5b7fa1bd778e"
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/shape_00001_.glb",
+      "bytes": 57468280,
+      "sha256": "7639a512c5286077267b8f1d565c95ad233d9effeeac9849f49fe4e97cc5d8a4",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/PolicePatrol/trellis1024-s56/raw/shape_00002_.glb",
+      "bytes": 55218164,
+      "sha256": "9f175085746f59d9f78f954b8eb3956ebf8aed888a799f38c9dd6d448951d5e7",
+      "pruned": true
+    }
+  ],
+  "outputs": {
+    "5": {
+      "images": [
+        {
+          "filename": "conditioning_00002_.png",
+          "subfolder": "ig3d\\PolicePatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "28": {
+      "3d": [
+        {
+          "filename": "shape_00002_.glb",
+          "subfolder": "ig3d\\PolicePatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "33": {
+      "3d": [
+        {
+          "filename": "colored_00002_.glb",
+          "subfolder": "ig3d\\PolicePatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "38": {
+      "3d": [
+        {
+          "filename": "cleaned-colored_00002_.glb",
+          "subfolder": "ig3d\\PolicePatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "45": {
+      "images": [
+        {
+          "filename": "roughness_00002_.png",
+          "subfolder": "ig3d\\PolicePatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "43": {
+      "images": [
+        {
+          "filename": "base-color_00002_.png",
+          "subfolder": "ig3d\\PolicePatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "44": {
+      "images": [
+        {
+          "filename": "metallic_00002_.png",
+          "subfolder": "ig3d\\PolicePatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    },
+    "42": {
+      "3d": [
+        {
+          "filename": "pbr_00002_.glb",
+          "subfolder": "ig3d\\PolicePatrol\\trellis1024-s56",
+          "type": "output"
+        }
+      ]
+    }
+  }
+}
