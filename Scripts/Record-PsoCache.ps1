@@ -10,7 +10,8 @@
 	게임은 첫 실행 때 미리 컴파일한다.
 
 	기록 장면은 타이틀·설정, 입주 낮, README 장면 경로, 밤 경로(High·Low),
-	결말, 다섯째 밤, 계단 센서등, 밤4 망치질과 정전, 낮 장면, 403호 욕실, 에필로그다.
+	결말, 다섯째 밤, 계단 센서등, 밤4 망치질과 정전, 낮 장면, 403호 욕실, 에필로그,
+	셋째 아침 경찰 현장 확인, 5층 철문간의 종이 손님이다.
 	장면을 새로 만들면 여기에 더하고 이 스크립트를 다시 돌린다.
 
 .NOTES
@@ -90,7 +91,9 @@ $sessions = @(
 	@{ Name = 'NightFourHammer'; Quality = 2; Args = @('-IGListenerGreybox', '-IGNightFourHammerProbe', '-IGNightFourHammerShots', '-IGSkipFrontend') },
 	@{ Name = 'DayScenes'; Quality = 2; Args = @('-IGListenerGreybox', '-IGDayScenesProbe', '-IGDayScenesShots', '-IGSkipFrontend') },
 	@{ Name = 'Bathroom'; Quality = 2; Args = @('-IGListenerGreybox', '-IGBathroomProbe', '-IGBathroomShots', '-IGSkipFrontend') },
-	@{ Name = 'Epilogue'; Quality = 2; Args = @('-IGListenerGreybox', '-IGEpiloguePreview=A', '-IGSkipFrontend') }
+	@{ Name = 'Epilogue'; Quality = 2; Args = @('-IGListenerGreybox', '-IGEpiloguePreview=A', '-IGSkipFrontend') },
+	@{ Name = 'SiteCheck'; Quality = 2; Args = @('-IGListenerGreybox', '-IGSiteCheckProbe', '-IGSiteCheckShots', '-IGSkipFrontend') },
+	@{ Name = 'GuestDoors'; Quality = 2; Args = @('-IGListenerGreybox', '-IGGuestDoorsProbe', '-IGGuestDoorsShots', '-IGGuestLure', '-IGSkipFrontend') }
 )
 $records = [Collections.Generic.List[string]]::new()
 foreach ($session in $sessions) {
