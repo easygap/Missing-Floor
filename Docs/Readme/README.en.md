@@ -8,9 +8,9 @@ Missing Floor is a first-person horror game set in an old apartment building in 
 
 ![A four-story building at the end of a wet alley, two windows lit](../Media/readme/title-menu-first-run-1080-en.webp)
 
-The current build is 0.2.4 for Windows. Text is available in English, Korean, Japanese, and Simplified and Traditional Chinese.
+The current build is 0.9.0 for Windows. Text is available in English, Korean, Japanese, and Simplified and Traditional Chinese.
 
-[Download the playtest (Windows, 0.2.4)](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [Trailer](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-Trailer-en.mp4) · [Controls](#controls)
+[Download the playtest (Windows, 0.9.0)](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip) · [Trailer](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-Trailer-en.mp4) · [Controls](#controls)
 
 ## Day
 
@@ -60,9 +60,9 @@ Getting caught doesn't send you back to the start of the night. You come to wher
 
 ## Download
 
-The current playtest is 0.2.4. Some of the above arrives in the next playtest: hiding, the latch and fire doors, batteries, the threats other than the one upstairs, and coming to somewhere other than your bed after being caught. In 0.2.4 you still wake in your bed in 403. The second and third floors open in the next version as well.
+The current playtest is 0.9.0, a candidate for 1.0 that is being checked on more PCs and with first-time players before the full release.
 
-1. Download the [Windows ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip).
+1. Download the [Windows ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip).
 2. Extract everything and run `MissingFloor.exe`. The `Engine` and `IndieGame` folders have to stay next to it.
 3. Select Start Game. Progress saves automatically, and Continue picks up where you left off.
 

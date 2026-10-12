@@ -8,9 +8,9 @@
 
 ![雨后小巷尽头的四层公寓楼，只有两扇窗亮着灯](../Media/readme/title-menu-first-run-1080-zh-Hans.webp)
 
-目前能玩的是 0.2.4 测试版（Windows），支持简体中文、繁体中文、韩语、英语和日语。
+目前能玩的是 0.9.0 测试版（Windows），支持简体中文、繁体中文、韩语、英语和日语。
 
-[下载测试版（Windows，0.2.4）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [预告片（英文字幕）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-Trailer-en.mp4) · [操作说明](#操作说明)
+[下载测试版（Windows，0.9.0）](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip) · [预告片（英文字幕）](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-Trailer-en.mp4) · [操作说明](#操作说明)
 
 ## 白天
 
@@ -60,9 +60,9 @@
 
 ## 下载
 
-目前发布的是 0.2.4 测试版。上面写到的内容里，躲藏、门闩和防火门、换电池、楼上的人以外的东西，以及被抓后在别处醒来，会在下一个测试版加入。在 0.2.4 中，被抓后还是会在403室的床上醒来。二楼和三楼也从下个版本开始可以去。
+目前发布的是 0.9.0 测试版。这是正式 1.0 之前的候选版本，想先在更多电脑上、请第一次玩的人试一试。
 
-1. 下载 [Windows 版 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip)。
+1. 下载 [Windows 版 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip)。
 2. 全部解压后运行 `MissingFloor.exe`。同一文件夹里的 `Engine` 和 `IndieGame` 文件夹要放在一起才能启动。
 3. 选择“开始游戏”。进度会自动保存，之后选“继续游戏”就能接着玩。
 

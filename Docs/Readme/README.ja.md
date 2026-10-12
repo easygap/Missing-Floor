@@ -8,9 +8,9 @@
 
 ![雨上がりの路地の奥に建つ4階建ての集合住宅。窓の明かりは二つだけ](../Media/readme/title-menu-first-run-1080-ja.webp)
 
-いま遊べるのはテスト版0.2.4（Windows）です。日本語、韓国語、英語、中国語（簡体字・繁体字）に対応しています。
+いま遊べるのはテスト版0.9.0（Windows）です。日本語、韓国語、英語、中国語（簡体字・繁体字）に対応しています。
 
-[テスト版をダウンロード（Windows・0.2.4）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [トレーラー（英語字幕）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-Trailer-en.mp4) · [操作方法](#操作方法)
+[テスト版をダウンロード（Windows・0.9.0）](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip) · [トレーラー（英語字幕）](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-Trailer-en.mp4) · [操作方法](#操作方法)
 
 ## 昼
 
@@ -60,9 +60,9 @@
 
 ## ダウンロード
 
-いま配布しているのはテスト版0.2.4です。上に書いたもののうち、隠れること、掛け金と防火扉、電池の交換、「上の階の人」以外のもの、捕まったあと別の場所で目を覚ますことは次のテスト版で入ります。0.2.4では、捕まると403号室のベッドで目を覚まします。2階と3階も次の版から行けるようになります。
+いま配布しているのはテスト版0.9.0です。正式な1.0の前に、いろいろなPCと初めて遊ぶ方に確かめてもらうための候補版です。
 
-1. [Windows用のZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip)をダウンロードします。
+1. [Windows用のZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip)をダウンロードします。
 2. すべて展開して`MissingFloor.exe`を起動します。同じフォルダーにある`Engine`と`IndieGame`フォルダーがないと起動しません。
 3. 「ゲームを始める」を選びます。進行は自動で保存され、次からは「つづきから」で再開できます。
 
