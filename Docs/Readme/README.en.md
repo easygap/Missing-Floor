@@ -18,7 +18,7 @@ At 4:30 a.m. on the first night, three knocks come from the ceiling. Unit 403 is
 
 In daylight you follow your brother's trail around the building and the alley. Mrs. Hwang in 401 has lived here for thirty years. Narin, who works at the convenience store across the alley, knows everyone's business.
 
-![The fourth-floor corridor. Gas inspection stickers and old flyers on every door.](../Media/readme/game-corridor-day.webp)
+![The fourth-floor corridor. Gas inspection stickers and old flyers on every door.](../Media/readme/game-corridor-day-en.webp)
 
 <table>
   <tr>
@@ -34,13 +34,13 @@ Signs and notices stay in Korean. Story documents can be read in English when yo
 
 <table>
   <tr>
-    <td width="50%"><img src="../Media/readme/p1-meter-cabinet.webp" alt="Electricity meters and reading cards for each unit"></td>
+    <td width="50%"><img src="../Media/readme/p1-meter-cabinet-en.webp" alt="Electricity meters and reading cards for each unit"></td>
     <td width="50%"><img src="../Media/readme/game-booth.webp" alt="The management office desk with the ledger and CCTV monitor"></td>
   </tr>
   <tr><td>Meter cabinet</td><td>Management office</td></tr>
 </table>
 
-[Walking through the building and the neighborhood (GIF, 3.3 MB)](../Media/readme/readme-route-preview.gif)
+[Walking through the building and the neighborhood (GIF, 3.0 MB)](../Media/readme/readme-route-preview-en.gif)
 
 ## 4:30 a.m.
 
@@ -48,13 +48,13 @@ From 4:30 to 5:30 the building is locked, and the one upstairs crawls the corrid
 
 Stand in the dark too long and a black shape appears, and it grows the longer you look at it. If a familiar voice calls from outside your front door, don't open it.
 
-![A dark corridor. Light from a neighbor's unit leaks under a door.](../Media/readme/game-corridor-night.webp)
+![A dark corridor. Light from a neighbor's unit leaks under a door.](../Media/readme/game-corridor-night-en.webp)
 
 You can hide in the wardrobe or under the bed, and block the way with the front-door latch or the stairwell fire doors. Flashlight batteries come from the convenience store.
 
 Getting caught doesn't send you back to the start of the night. You come to wherever you were dragged, a few minutes later. What you lose depends on what caught you. If it was the one upstairs, your flashlight is lying on the floor where it grabbed you, and you have to go back there for it.
 
-![Unit 403, boxes still half unpacked. You can hide under the bed.](../Media/readme/game-bedroom.webp)
+![Unit 403, boxes still half unpacked. You can hide under the bed.](../Media/readme/game-bedroom-en.webp)
 
 [A chase in the corridor (GIF, 3.6 MB)](../Media/readme/night-listener-chase.gif)
 

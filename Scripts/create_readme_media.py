@@ -24,6 +24,16 @@ CAPTURES = (
 )
 
 
+def localized(filename: str, culture: str | None) -> str:
+    # 번역 README의 GIF는 그 언어로 찍은 컷(game-이름-언어.png)을 쓴다. 화면 글자가 없는
+    # 컷은 언어별로 남기지 않으니 한국어 원본을 같이 쓴다.
+    if culture:
+        candidate = filename[:-len(".png")] + f"-{culture}.png"
+        if (MEDIA_ROOT / candidate).is_file():
+            return candidate
+    return filename
+
+
 def load_capture(filename: str) -> Image.Image:
     source_path = MEDIA_ROOT / filename
     if not source_path.is_file():
@@ -45,8 +55,9 @@ def build_global_palette(frames: list[Image.Image]) -> Image.Image:
     return atlas.quantize(colors=PALETTE_COLORS, method=Image.Quantize.MEDIANCUT)
 
 
-def build_route_preview() -> int:
-    captures = [load_capture(filename) for filename in CAPTURES]
+def build_route_preview(culture: str | None = None) -> tuple[int, Path]:
+    captures = [load_capture(localized(filename, culture)) for filename in CAPTURES]
+    output_path = MEDIA_ROOT / f"readme-route-preview-{culture}.gif" if culture else OUTPUT_PATH
     palette = build_global_palette(captures)
 
     rgb_frames: list[Image.Image] = []
@@ -68,7 +79,7 @@ def build_route_preview() -> int:
         for frame in rgb_frames
     ]
     gif_frames[0].save(
-        OUTPUT_PATH,
+        output_path,
         save_all=True,
         append_images=gif_frames[1:],
         duration=durations,
@@ -77,7 +88,7 @@ def build_route_preview() -> int:
         disposal=2,
         comment=b"Actual in-game capture route preview",
     )
-    return len(gif_frames)
+    return len(gif_frames), output_path
 
 
 def build_chase() -> None:
@@ -97,10 +108,16 @@ def build_chase() -> None:
 
 def main() -> None:
     # --chase면 추격 GIF만 다시 만든다. 낮 동선 GIF는 README 캡처가 바뀔 때만 만든다.
+    # --culture ja면 일본어 README에 거는 동선 GIF(readme-route-preview-ja.gif)만 만든다.
     import sys
+    if '--culture' in sys.argv:
+        culture = sys.argv[sys.argv.index('--culture') + 1]
+        frames, output = build_route_preview(culture)
+        print(f"README_MEDIA PASS captures={len(CAPTURES)} frames={frames} output={output}")
+        return
     if '--chase' not in sys.argv:
-        frames = build_route_preview()
-        print(f"README_MEDIA PASS captures={len(CAPTURES)} frames={frames} output={OUTPUT_PATH}")
+        frames, output = build_route_preview()
+        print(f"README_MEDIA PASS captures={len(CAPTURES)} frames={frames} output={output}")
     build_chase()
     print("README_MEDIA PASS chase=night-listener-chase.gif")
 

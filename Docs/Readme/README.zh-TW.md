@@ -18,7 +18,7 @@
 
 天亮後，就沿著哥哥留下的痕跡在樓裡和小巷裡走動。401室的奶奶在這棟樓住了三十年，在小巷對面便利商店上班的娜琳對街坊的事很清楚。
 
-![403室所在的四樓走廊，每扇門上都貼著瓦斯檢查貼紙和沒撕掉的傳單](../Media/readme/game-corridor-day.webp)
+![403室所在的四樓走廊，每扇門上都貼著瓦斯檢查貼紙和沒撕掉的傳單](../Media/readme/game-corridor-day-zh-Hant.webp)
 
 <table>
   <tr>
@@ -34,13 +34,13 @@
 
 <table>
   <tr>
-    <td width="50%"><img src="../Media/readme/p1-meter-cabinet.webp" alt="各戶的電表和抄表單"></td>
+    <td width="50%"><img src="../Media/readme/p1-meter-cabinet-zh-Hant.webp" alt="各戶的電表和抄表單"></td>
     <td width="50%"><img src="../Media/readme/game-booth.webp" alt="擺著帳本和監視器螢幕的管理室桌子"></td>
   </tr>
   <tr><td>一樓電表箱</td><td>管理室</td></tr>
 </table>
 
-[在樓裡和附近走動的畫面（GIF，3.3 MB）](../Media/readme/readme-route-preview.gif)
+[在樓裡和附近走動的畫面（GIF，3.0 MB）](../Media/readme/readme-route-preview-zh-Hant.gif)
 
 ## 凌晨四點半
 
@@ -48,13 +48,13 @@
 
 在沒開燈的地方待太久，會出現一個黑影，越盯著它看就越大。門外就算傳來熟人的聲音，也不能開門。
 
-![熄了燈的走廊，鄰居家的燈光從門縫底下透出來](../Media/readme/game-corridor-night.webp)
+![熄了燈的走廊，鄰居家的燈光從門縫底下透出來](../Media/readme/game-corridor-night-zh-Hant.webp)
 
 可以躲進衣櫃或床底下，也可以用玄關門閂和樓梯間的防火門擋住去路。手電筒的電池白天在便利商店買。
 
 被抓到也不會從那一晚的開頭重來。醒過來時人在被拖走的地方，中間已經過了幾分鐘。被什麼抓到，失去的東西就不一樣。被樓上的人抓到時，手電筒會掉在被抓的地方，得回到那裡去撿。
 
-![還沒整理完的403室，可以躲進床底下](../Media/readme/game-bedroom.webp)
+![還沒整理完的403室，可以躲進床底下](../Media/readme/game-bedroom-zh-Hant.webp)
 
 [在走廊裡被追趕的畫面（GIF，3.6 MB）](../Media/readme/night-listener-chase.gif)
 

@@ -82,12 +82,15 @@ STILLS = (
 )
 
 # 번역 README에 거는 플레이 화면. Run-ReadmeCapture.ps1 -Culture ja처럼 그 언어로
-# 켜고 찍은 것만 있다. 아직 찍지 않은 언어는 건너뛴다. 그 전까지 번역 README는
-# 자막과 조작 안내가 없는 화면만 건다.
+# 켜고 찍은 것만 있다. 자막이나 조작 안내가 찍히는 컷(방, 낮·새벽 복도, 계량기함)만
+# 언어별로 남기고, 글자가 없는 컷은 한국어 원본을 같이 쓴다. 계량기함은 README 촬영에
+# 없어서 밤 촬영을 그 컷까지만 돌려 찍는다(-IGNightCapture -IGNightCaptureStopAfter=5
+# -IGCulture=ja, 결과를 p1-meter-cabinet-ja.png로 옮긴다).
 LOCALIZED_CULTURES = ("en", "ja", "zh-Hans", "zh-Hant")
 LOCALIZED_SHOTS = (
     "game-bedroom", "game-corridor-day", "game-alley", "game-store",
     "game-corridor-night", "game-booth", "game-bedroom-dawn", "game-alley-dawn",
+    "p1-meter-cabinet",
 )
 
 
@@ -112,6 +115,16 @@ ANIMATIONS = (
     # 낮 동선은 본문에 걸지 않고 링크로만 준다. 누른 사람만 받는다.
     ("readme-route-preview.gif", 640, 10),
 )
+
+
+
+def localized_animations():
+    # 번역 README의 동선 GIF. create_readme_media.py --culture ja로 만든 것이 있으면 줄인다.
+    for culture in LOCALIZED_CULTURES:
+        name = "readme-route-preview-%s.gif" % culture
+        if os.path.exists(os.path.join(MEDIA, name)):
+            yield (name, 640, 10)
+
 
 MAX_WIDTH = 1600
 QUALITY = 86
@@ -162,7 +175,7 @@ def main():
         if target_size >= source_size:
             raise SystemExit("파생본이 원본보다 크다: %s" % name)
     if shutil.which("ffmpeg"):
-        for name, width, fps in ANIMATIONS:
+        for name, width, fps in ANIMATIONS + tuple(localized_animations()):
             source, target = optimize_animation(name, width, fps)
             source_size, target_size = os.path.getsize(source), os.path.getsize(target)
             before += source_size

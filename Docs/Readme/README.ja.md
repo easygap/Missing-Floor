@@ -18,7 +18,7 @@
 
 明るくなったら、兄の足取りを追って建物と路地を歩き回ります。401号室のおばあさんはこの建物に30年住んでいて、路地の向かいのコンビニで働くナリンは近所の事情にくわしい人です。
 
-![403号室がある4階の廊下。どのドアにもガス点検のシールと剥がされていないチラシ](../Media/readme/game-corridor-day.webp)
+![403号室がある4階の廊下。どのドアにもガス点検のシールと剥がされていないチラシ](../Media/readme/game-corridor-day-ja.webp)
 
 <table>
   <tr>
@@ -34,13 +34,13 @@
 
 <table>
   <tr>
-    <td width="50%"><img src="../Media/readme/p1-meter-cabinet.webp" alt="部屋ごとの電気メーターと検針票"></td>
+    <td width="50%"><img src="../Media/readme/p1-meter-cabinet-ja.webp" alt="部屋ごとの電気メーターと検針票"></td>
     <td width="50%"><img src="../Media/readme/game-booth.webp" alt="帳簿と防犯カメラのモニターが置かれた管理人室の机"></td>
   </tr>
   <tr><td>1階のメーターボックス</td><td>管理人室</td></tr>
 </table>
 
-[建物と近所を歩く場面（GIF・3.3 MB）](../Media/readme/readme-route-preview.gif)
+[建物と近所を歩く場面（GIF・3.0 MB）](../Media/readme/readme-route-preview-ja.gif)
 
 ## 午前4時半
 
@@ -48,13 +48,13 @@
 
 明かりのない場所に長くいると黒い人影が現れ、見つめるほど大きくなります。玄関の外から聞き覚えのある声がしても、ドアを開けてはいけません。
 
-![明かりの消えた廊下。ドアの下から隣の部屋の明かりが漏れている](../Media/readme/game-corridor-night.webp)
+![明かりの消えた廊下。ドアの下から隣の部屋の明かりが漏れている](../Media/readme/game-corridor-night-ja.webp)
 
 クローゼットやベッドの下に隠れたり、玄関の掛け金と階段の防火扉で行く手をふさいだりできます。懐中電灯の電池は昼のうちにコンビニで買えます。
 
 捕まっても、その夜を最初からやり直すことはありません。気がつくと引きずられていった場所にいて、そのあいだに何分か過ぎています。何に捕まったかで失うものが違います。「上の階の人」に捕まると、懐中電灯は捕まった場所の床に落ちていて、そこまで拾いに戻ることになります。
 
-![荷ほどきの終わらない403号室。ベッドの下に隠れられる](../Media/readme/game-bedroom.webp)
+![荷ほどきの終わらない403号室。ベッドの下に隠れられる](../Media/readme/game-bedroom-ja.webp)
 
 [廊下で追われる場面（GIF・3.6 MB）](../Media/readme/night-listener-chase.gif)
 

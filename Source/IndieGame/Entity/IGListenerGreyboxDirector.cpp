@@ -9889,6 +9889,23 @@ void AIGListenerGreyboxDirector::StartNightCapture()
 	{
 		SceneNow->SuspendCorridorFlicker(true);
 	}
+	// 손전등은 신발장 위에서 챙겨야 쓸 수 있다. 밤 촬영은 그 저녁을 건너뛰고 들어오므로
+	// 챙긴 채 밤을 맞은 것으로 둔다. 안 그러면 밤 시작이 켜 주는 손전등이 없어서 계량기함처럼
+	// 손전등 빛으로 보는 컷이 검게 찍히고, 성능 경로도 실제 밤과 다른 조명으로 잰다.
+	if (UIGStoryStateSubsystem* Story = GetGameInstance()
+		? GetGameInstance()->GetSubsystem<UIGStoryStateSubsystem>()
+		: nullptr)
+	{
+		Story->AddState(UIGFlashlightComponent::GetOwnershipTag());
+	}
+	if (AIGPlayerCharacter* PlayerCharacter = Player.Get())
+	{
+		if (UIGFlashlightComponent* Torch = PlayerCharacter->GetFlashlight())
+		{
+			Torch->RefreshOwnership();
+			Torch->SetOn(true);
+		}
+	}
 
 	int32 StartStep = 0;
 	FParse::Value(

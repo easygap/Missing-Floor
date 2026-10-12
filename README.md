@@ -38,7 +38,7 @@
   <tr><td>1층 계량기함</td><td>관리실</td></tr>
 </table>
 
-[집과 동네를 걷는 장면 (GIF, 3.3 MB)](Docs/Media/readme/readme-route-preview.gif)
+[집과 동네를 걷는 장면 (GIF, 3.1 MB)](Docs/Media/readme/readme-route-preview.gif)
 
 ## 새벽 네 시 반
 
