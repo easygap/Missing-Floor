@@ -244,9 +244,9 @@ $mercyHeader = Read-ProjectText 'Source/IndieGame/Entity/IGMissingFloorMercyDire
 $mercySource = Read-ProjectText 'Source/IndieGame/Entity/IGMissingFloorMercyDirector.cpp'
 $tuningSource = Read-ProjectText 'Source/IndieGame/Entity/IGListenerTuning.cpp'
 
-# 20.3-1 — 2회 연속 리셋에 환경 힌트 하나.
+# 20.3-1 — 2회 연속 잡히면 환경 힌트 하나.
 $resetRow = [regex]::Match(
-	$story, '\*\*관찰 재료 증가\*\*[^\r\n]*?(?<count>[0-9]+)회 연속 리셋 시 환경 힌트 (?<hints>[0-9]+)개')
+	$story, '\*\*관찰 재료 증가\*\*[^\r\n]*?(?<count>[0-9]+)회 연속 잡히면 환경 힌트 (?<hints>[0-9]+)개')
 $assertionCount++
 if (-not $resetRow.Success) {
 	throw 'The §20.3-1 reset-hint row could not be read.'
@@ -787,7 +787,7 @@ if ($immersionRows.Count -ne 10) {
 # 표의 각 줄이 실제로 그 문장인지도 본다. 하나를 조용히 갈아 끼우면 나머지
 # 검사들이 무엇을 지키는지 알 수 없게 된다.
 foreach ($expected in @(
-	'포획 리셋·낮밤 전환의 로딩 화면',
+	'잡힌 뒤·낮밤 전환의 로딩 화면',
 	'튜토리얼 팝업·키 안내 오버레이',
 	'퍼센트·게이지·카운터',
 	'업적 토스트',

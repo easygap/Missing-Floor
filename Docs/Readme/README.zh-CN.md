@@ -98,7 +98,7 @@
 
 ## 素材来源
 
-音效来自 OpenGameArt 和 Kenney，地面和墙面纹理来自 ambientCG，实物扫描道具来自 Poly Haven，均为 CC0 素材。字体是 Pretendard 和 Gowun Batang（SIL Open Font License 1.1）。部分印刷品和参考图是用 AI 生成后再手工修改的图片。详细来源和使用条件见[素材清单](../ASSET_POLICY.md)（韩文）。
+音效来自 OpenGameArt 和 Kenney，地面和墙面纹理来自 ambientCG，实物扫描道具来自 Poly Haven，均为 CC0 素材。字体是 Pretendard 和 Gowun Batang（SIL Open Font License 1.1）。游戏里也有用 AI 做的东西。部分印刷品、标识和纹理是用 AI 生成后再手工修改的图片。楼上的人、黑影、管理员、303室的邻居等人物和怪异的身体，以及小巷里的猫和外卖摩托车，是先用 TRELLIS.2 把 AI 图片转成 3D，再在 Blender 里修整并加上骨骼。其他不少道具也是参照 AI 生成的草图在 Blender 里做的。详细来源和使用条件见[素材清单](../ASSET_POLICY.md)（韩文）。
 
 ## 问题反馈
 

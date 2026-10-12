@@ -98,7 +98,7 @@
 
 ## 使用素材
 
-効果音はOpenGameArtとKenney、床と壁のテクスチャはambientCG、実物をスキャンした小物はPoly HavenのCC0素材です。フォントはPretendardとGowun Batang（SIL Open Font License 1.1）です。印刷物と参考画像の一部は、AIで作った画像に手を入れたものです。詳しい出典と利用条件は[素材の一覧](../ASSET_POLICY.md)（韓国語）にあります。
+効果音はOpenGameArtとKenney、床と壁のテクスチャはambientCG、実物をスキャンした小物はPoly HavenのCC0素材です。フォントはPretendardとGowun Batang（SIL Open Font License 1.1）です。AIで作ったものも入っています。印刷物や標識、テクスチャの一部は、AIで作った画像に手を入れたものです。「上の階の人」や黒い人影、管理人、303号室の住人といった人や怪異の体と、路地の猫、配達バイクは、AIの画像をTRELLIS.2で3Dにしてから、Blenderで整えて動かせるようにしました。ほかの小物も多くは、AIで作った下絵をもとにBlenderで作っています。詳しい出典と利用条件は[素材の一覧](../ASSET_POLICY.md)（韓国語）にあります。
 
 ## 不具合・感想
 
