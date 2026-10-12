@@ -10,7 +10,7 @@
 
 目前能玩的是 0.2.4 测试版（Windows），支持简体中文、繁体中文、韩语、英语和日语。
 
-[下载测试版（Windows，0.2.4）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [预告片](https://github.com/easygap/Missing-Floor/releases/download/v0.2.3/MissingFloor-Trailer.mp4) · [操作说明](#操作说明)
+[下载测试版（Windows，0.2.4）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [预告片（英文字幕）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-Trailer-en.mp4) · [操作说明](#操作说明)
 
 ## 白天
 

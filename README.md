@@ -10,7 +10,7 @@
 
 지금 받을 수 있는 버전은 0.2.4(Windows)입니다. 한국어, 영어, 일본어, 중국어 간체·번체로 할 수 있습니다.
 
-[플레이 테스트 받기 (Windows, 0.2.4)](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [예고편](https://github.com/easygap/Missing-Floor/releases/download/v0.2.3/MissingFloor-Trailer.mp4) · [조작](#조작)
+[플레이 테스트 받기 (Windows, 0.2.4)](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [예고편](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-Trailer.mp4) · [조작](#조작)
 
 ## 낮
 

@@ -10,7 +10,7 @@
 
 いま遊べるのはテスト版0.2.4（Windows）です。日本語、韓国語、英語、中国語（簡体字・繁体字）に対応しています。
 
-[テスト版をダウンロード（Windows・0.2.4）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [トレーラー](https://github.com/easygap/Missing-Floor/releases/download/v0.2.3/MissingFloor-Trailer.mp4) · [操作方法](#操作方法)
+[テスト版をダウンロード（Windows・0.2.4）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [トレーラー（英語字幕）](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-Trailer-en.mp4) · [操作方法](#操作方法)
 
 ## 昼
 

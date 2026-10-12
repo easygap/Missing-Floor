@@ -10,7 +10,7 @@ Missing Floor is a first-person horror game set in an old apartment building in 
 
 The current build is 0.2.4 for Windows. Text is available in English, Korean, Japanese, and Simplified and Traditional Chinese.
 
-[Download the playtest (Windows, 0.2.4)](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [Trailer](https://github.com/easygap/Missing-Floor/releases/download/v0.2.3/MissingFloor-Trailer.mp4) · [Controls](#controls)
+[Download the playtest (Windows, 0.2.4)](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-0.2.4-Windows.zip) · [Trailer](https://github.com/easygap/Missing-Floor/releases/download/v0.2.4/MissingFloor-Trailer-en.mp4) · [Controls](#controls)
 
 ## Day
 
