@@ -236,6 +236,12 @@ namespace
 					NSLOCTEXT("IGHint", "DayTwoMissed2", "401호 할머니께 여쭤보자."),
 					NSLOCTEXT("IGHint", "DayTwoMissed3", "밤이 되면 관리실에 들렀다가 403호로 돌아오자.") });
 		case 3:
+			if (Beat(N, TEXT("Night3.SiteCheckDispatched")) && !Beat(N, TEXT("Night3.SiteCheck")))
+			{
+				return Make(TEXT("Hint.Day3.Police"), {
+					NSLOCTEXT("IGHint", "DayThreePolice1", "경찰이 온다고 했어."),
+					NSLOCTEXT("IGHint", "DayThreePolice2", "옥상으로 올라가서 5층 철문 안에서 기다리자.") });
+			}
 			if (Beat(N, TEXT("Day.EvictionPosted"))
 				&& !N->HasSource(ETruth::StillCoveringIt, ESource::EvictionWarning))
 			{

@@ -4,7 +4,9 @@
 #include "Sequence/IGDayScenesProbe.h"
 #include "Sequence/IGEpiloguePreviewProbe.h"
 #include "Sequence/IGNeighbor303Probe.h"
+#include "Sequence/IGSiteCheckProbe.h"
 #include "Sequence/IGNightFourHammerProbe.h"
+#include "Entity/IGSiteCheckVisit.h"
 #include "Entity/IGStairNeighbor.h"
 #include "Sequence/IGCaptureVarietyProbe.h"
 #include "Sequence/IGGuestDoorsProbe.h"
@@ -115,6 +117,8 @@ namespace IGListenerGreybox
 	/** 황순금이 한 번씩 하는 말. 입주 저녁의 어둠 이야기와 둘째 낮의 손 있는 날. */
 	const FName HwangWarningBeat(TEXT("Arrival.HwangWarning"));
 	const FName HwangSonDayBeat(TEXT("Day.Hwang.SonDay"));
+	/** 첫째 밤 옥상 드릴의 까닭을 401호가 말해 준 낮. 한 번만. */
+	const FName HwangDrillBeat(TEXT("Day.Hwang.Drill"));
 	/** 셋째 낮 계단에서 303호와 마주쳐 말을 나눴다. */
 	const FName StairNeighborBeat(TEXT("Day.Neighbor303.Stairs"));
 	/** 403호 안(욕실까지). 쪽지 붙이는 소리는 여기서만 들려준다. */
@@ -446,6 +450,16 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 			if (AIGNeighbor303Probe* NeighborProbe = GetWorld()->SpawnActor<AIGNeighbor303Probe>())
 			{
 				NeighborProbe->Configure(WorldScene.Get(), Player.Get(), Entity, this);
+			}
+			return;
+		}
+		// 셋째 아침 5층에 오는 경찰과 관리인을 겪는 검사. 밤의 관리인은 세워 둔다.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGSiteCheckProbe")))
+		{
+			if (ManagerPatrol) { ManagerPatrol->SetActorTickEnabled(false); }
+			if (AIGSiteCheckProbe* SiteCheckProbe = GetWorld()->SpawnActor<AIGSiteCheckProbe>())
+			{
+				SiteCheckProbe->Configure(WorldScene.Get(), Player.Get(), Entity, this);
 			}
 			return;
 		}
@@ -933,6 +947,14 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 	GetWorldTimerManager().ClearTimer(StairNeighborTimer);
 	StairNeighborDueAt = -1.0;
 	StairNeighborThoughtAt = -1.0;
+	if (IsValid(SiteCheckVisit))
+	{
+		SiteCheckVisit->Destroy();
+	}
+	SiteCheckVisit = nullptr;
+	GetWorldTimerManager().ClearTimer(SiteCheckTimer);
+	SiteCheckDueAt = -1.0;
+	bSiteCheckPending = false;
 
 	// 험은 액터가 아니라 구독이다. 지우지 않으면 시도마다 하나씩 쌓인다.
 	if (UWorld* World = GetWorld())
@@ -2594,6 +2616,17 @@ namespace IGListenerGreybox
 	 * 옥상 문을 묻는다. 질문과 대답이 이 한 조건을 같이 봐야 짝이 맞는다.
 	 */
 	const FName NarinRoofBeat(TEXT("Day3.NarinRoof"));
+
+	/**
+	 * 둘째 낮에 한 번. 실종 단서가 아니라 단골이던 오빠의 버릇을 듣는다(§16.1).
+	 * 우유는 늘 두 개였고, 하나는 동생 몫이었다.
+	 */
+	const FName NarinMilkBeat(TEXT("Day2.NarinMilk"));
+	static bool IsNarinMilkTalkDue(const UIGMissingFloorNarrativeSubsystem& Narrative)
+	{
+		return Narrative.GetNightIndex() == 1
+			&& !Narrative.HasBeatPlayed(NarinMilkBeat);
+	}
 	static bool IsNarinRoofTalkDue(const UIGMissingFloorNarrativeSubsystem& Narrative)
 	{
 		return Narrative.GetNightIndex() == 2
@@ -2628,6 +2661,8 @@ void AIGListenerGreyboxDirector::HandleArrivalEvidence(
 		const bool bDeliveryQuestion = IGListenerGreybox::IsNarinDeliveryTalkDue(*Narrative);
 		const bool bRoofQuestion = !bDeliveryQuestion
 			&& IGListenerGreybox::IsNarinRoofTalkDue(*Narrative);
+		const bool bMilkTalk = !bDeliveryQuestion && !bRoofQuestion
+			&& IGListenerGreybox::IsNarinMilkTalkDue(*Narrative);
 		AIGHorrorHUD::PushDialogue(this,
 			NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
 			bDeliveryQuestion
@@ -2652,6 +2687,23 @@ void AIGListenerGreyboxDirector::HandleArrivalEvidence(
 		if (bRoofQuestion)
 		{
 			Narrative->MarkBeatPlayed(IGListenerGreybox::NarinRoofBeat);
+		}
+		if (bMilkTalk)
+		{
+			Narrative->MarkBeatPlayed(IGListenerGreybox::NarinMilkBeat);
+			// 나린의 말이 읽힐 무렵 떠올린다. 같이 띄우면 두 줄이 한꺼번에 뜬다.
+			FTimerHandle MilkThoughtTimer;
+			GetWorldTimerManager().SetTimer(
+				MilkThoughtTimer,
+				FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					AIGHorrorHUD::PushThought(
+						this,
+						NSLOCTEXT("IGMissingFloor", "YudamNarinMilkThought", "하나는 나 주던 거네. 올 때마다 들고 왔는데."),
+						3.4f);
+				}),
+				4.6f,
+				false);
 		}
 	}
 	// 손 소리는 다음 날 다시 볼 때도 난다. 그래서 밤 번호로 돌려보내기 전에,
@@ -3006,6 +3058,13 @@ FText AIGListenerGreyboxDirector::GetNarinCounterLine() const
 			"IGMissingFloor",
 			"NarinLineRoof",
 			"옥상요? 작년 여름에 건물주 아저씨가 자물쇠를 싹 바꿨대요. 열쇠는 관리실에나 있을걸요.");
+	}
+	if (Narrative && IGListenerGreybox::IsNarinMilkTalkDue(*Narrative))
+	{
+		return NSLOCTEXT(
+			"IGMissingFloor",
+			"NarinLineMilk",
+			"아직 소식 없으세요? 아, 오빠분 올 때마다 바나나우유를 두 개씩 사 가셨어요. 하나는 꼭 가방 앞주머니에 넣고요.");
 	}
 	if (NightIndex >= 1)
 	{
@@ -3743,8 +3802,17 @@ namespace IGListenerGreybox
 	constexpr float ReportLeadGapSeconds = 0.5f;
 	/** 보낸 문자가 사라지고 접수 문자가 오기까지. */
 	constexpr float ReportReceiptGapSeconds = 1.4f;
-	/** 접수 문자 뒤 경찰의 현장 확인 문자까지. 낮이 한 번 흐를 만큼. */
-	constexpr float SiteCheckGapSeconds = 28.0f;
+	/** 접수 문자 뒤 경찰의 출동 문자까지. */
+	constexpr float SiteCheckGapSeconds = 12.0f;
+	/** 출동 문자를 보낸 회차. 목표 줄이 「옥상에서 경찰 만나기」로 바뀐다. */
+	const FName SiteCheckDispatchBeat(TEXT("Night3.SiteCheckDispatched"));
+	/** 출동 문자 뒤 두 사람이 옥상 계단 밑에 나타나기까지. 그녀가 먼저 올라갈 만큼. */
+	constexpr float SiteCheckArriveSeconds = 35.0f;
+	/** 다시 불러온 게임은 문자 없이 조금 뒤에 온다. */
+	constexpr float SiteCheckResumeSeconds = 8.0f;
+	constexpr float SiteCheckPollSeconds = 0.5f;
+	/** 확인이 끝나고 요구서 차례를 보기까지. 관리인이 옥상에서 내려올 시간이다. */
+	constexpr float SiteCheckAfterSeconds = 12.0f;
 	/** 현장 확인 문자 뒤 요구서가 붙기까지. 경찰이 다녀간 것을 관리인도 봤다. */
 	constexpr float EvictionPostGapSeconds = 7.0f;
 	/** 403호로 돌아오기를 기다리며 다시 보는 간격. */
@@ -3956,6 +4024,12 @@ void AIGListenerGreyboxDirector::AdvanceFirstReportTexts()
 		ReportPendingGapSeconds = IGListenerGreybox::SiteCheckGapSeconds;
 		break;
 	case EFirstReportText::SiteCheck:
+		// 경찰이 직접 와서 5층 벽을 본다. 확인이 끝나면 HandleSiteCheckChecked가 줄기를
+		// 다시 민다. 두 사람을 못 세우는 빌드는 예전처럼 결과 문자만 받는다.
+		if (BeginSiteCheckVisit())
+		{
+			return;
+		}
 		PlayFirstReportSiteCheck();
 		ReportPendingGapSeconds = IGListenerGreybox::EvictionPostGapSeconds;
 		break;
@@ -4076,6 +4150,161 @@ void AIGListenerGreyboxDirector::PlayFirstReportSiteCheck()
 		EIGDialogueChannel::Device,
 		0.0f,
 		EIGDialoguePriority::Story);
+}
+
+bool AIGListenerGreyboxDirector::SpawnSiteCheckVisit()
+{
+	if (SiteCheckVisit)
+	{
+		return true;
+	}
+	UWorld* World = GetWorld();
+	if (!World || bSiteCheckUnavailable)
+	{
+		return false;
+	}
+	FActorSpawnParameters Parameters;
+	Parameters.Name = TEXT("MissingFloorSiteCheckVisit");
+	Parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AIGSiteCheckVisit* Visit = World->SpawnActor<AIGSiteCheckVisit>(
+		AIGSiteCheckVisit::StaticClass(), FTransform::Identity, Parameters);
+	if (!Visit || !Visit->LoadBodies())
+	{
+		if (Visit)
+		{
+			Visit->Destroy();
+		}
+		bSiteCheckUnavailable = true;
+		return false;
+	}
+	Visit->SetGates(
+		NightThree ? NightThree->GetStairGate() : nullptr,
+		NightThree ? NightThree->GetAnnexGate() : nullptr);
+	Visit->OnChecked.AddUObject(this, &AIGListenerGreyboxDirector::HandleSiteCheckChecked);
+	SiteCheckVisit = Visit;
+	return true;
+}
+
+bool AIGListenerGreyboxDirector::BeginSiteCheckVisit()
+{
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	UWorld* World = GetWorld();
+	if (!Narrative || !World || Narrative->HasBeatPlayed(IGListenerGreybox::SiteCheckBeat))
+	{
+		return false;
+	}
+	if (bSiteCheckPending)
+	{
+		// 이미 오는 중이다.
+		return true;
+	}
+	if (!SpawnSiteCheckVisit() || SiteCheckVisit->GetStage() != AIGSiteCheckVisit::EStage::Hidden)
+	{
+		return false;
+	}
+	bSiteCheckPending = true;
+	const double Now = World->GetTimeSeconds();
+	// 출동 문자. 접수만 하고 끝나는 신고가 아니다. 순찰 경찰관이 실제로 온다.
+	const bool bFirstDispatch = Narrative->MarkBeatPlayed(IGListenerGreybox::SiteCheckDispatchBeat);
+	if (bFirstDispatch)
+	{
+		PlayPhoneTextBuzz();
+		AIGHorrorHUD::PushDialogue(
+			this,
+			NSLOCTEXT("IGMissingFloor", "SiteCheckSpeaker", "무영경찰서 실종수사팀"),
+			NSLOCTEXT(
+				"IGMissingFloor",
+				"FirstReportDispatch",
+				"순찰 경찰관이 지금 그쪽으로 가고 있습니다. 옥상은 관리인분이 열어 주기로 했어요."),
+			EIGDialogueChannel::Device,
+			0.0f,
+			EIGDialoguePriority::Story);
+		AIGHorrorHUD::PushThought(
+			this,
+			NSLOCTEXT("IGMissingFloor", "SiteCheckGoUpThought", "옥상에 먼저 올라가 있자."),
+			2.6f);
+	}
+	SiteCheckDueAt = Now + (bFirstDispatch
+		? IGListenerGreybox::SiteCheckArriveSeconds
+		: IGListenerGreybox::SiteCheckResumeSeconds);
+	GetWorldTimerManager().SetTimer(
+		SiteCheckTimer,
+		this,
+		&AIGListenerGreyboxDirector::RefreshSiteCheckVisit,
+		IGListenerGreybox::SiteCheckPollSeconds,
+		true);
+	UE_LOG(LogTemp, Display, TEXT("SITECHECK dispatched first=%d due=%.1f"), bFirstDispatch ? 1 : 0, SiteCheckDueAt - Now);
+	return true;
+}
+
+void AIGListenerGreyboxDirector::StartSiteCheckVisitForTesting()
+{
+	if (BeginSiteCheckVisit())
+	{
+		SiteCheckDueAt = GetWorld()->GetTimeSeconds();
+		RefreshSiteCheckVisit();
+	}
+}
+
+void AIGListenerGreyboxDirector::RefreshSiteCheckVisit()
+{
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const UWorld* World = GetWorld();
+	const bool bDayThree = Narrative && World && Narrative->GetNightIndex() == 3 && !Narrative->IsHourSealed()
+		&& !(NightPhase && NightPhase->IsHourActive());
+	if (!bDayThree)
+	{
+		// 밤이 왔거나 다른 날이다. 나와 있으면 그 자리에서 없앤다.
+		if (SiteCheckVisit)
+		{
+			SiteCheckVisit->Vanish();
+		}
+		SiteCheckDueAt = -1.0;
+		bSiteCheckPending = false;
+		GetWorldTimerManager().ClearTimer(SiteCheckTimer);
+		return;
+	}
+	AIGSiteCheckVisit* Visit = SiteCheckVisit.Get();
+	if (!Visit)
+	{
+		GetWorldTimerManager().ClearTimer(SiteCheckTimer);
+		return;
+	}
+	// 4층 복도 끝이 보이는 자리에 서 있으면 거기서 사람이 솟는다. 볼 수 없을 때 나온다.
+	if (SiteCheckDueAt >= 0.0 && World->GetTimeSeconds() >= SiteCheckDueAt
+		&& Visit->GetStage() == AIGSiteCheckVisit::EStage::Hidden && Visit->TryBegin())
+	{
+		SiteCheckDueAt = -1.0;
+	}
+	if (Visit->GetStage() == AIGSiteCheckVisit::EStage::Gone && !bSiteCheckPending)
+	{
+		GetWorldTimerManager().ClearTimer(SiteCheckTimer);
+	}
+}
+
+void AIGListenerGreyboxDirector::HandleSiteCheckChecked(AIGSiteCheckVisit* Visit, const bool bWitnessed)
+{
+	bSiteCheckPending = false;
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative)
+	{
+		return;
+	}
+	// 곁에서 봤으면 경찰관이 그 자리에서 말한다. 못 봤으면 결과가 문자로 온다.
+	if (bWitnessed)
+	{
+		Narrative->MarkBeatPlayed(IGListenerGreybox::SiteCheckBeat);
+	}
+	else
+	{
+		PlayFirstReportSiteCheck();
+	}
+	UE_LOG(LogTemp, Display, TEXT("SITECHECK beat witnessed=%d"), bWitnessed ? 1 : 0);
+	// 요구서는 관리인이 옥상에서 내려와 403호 문에 붙인다. 그녀가 방에 있을 때다.
+	if (!bProbeRequested)
+	{
+		ScheduleFirstReportTexts(IGListenerGreybox::SiteCheckAfterSeconds);
+	}
 }
 
 void AIGListenerGreyboxDirector::PlayPhoneTextBuzz()
@@ -4268,7 +4497,15 @@ void AIGListenerGreyboxDirector::HandleSleepRequested(
 			}
 			const IGListenerGreybox::EFirstReportText Next =
 				IGListenerGreybox::NextFirstReportText(*Narrative, NightFour.Get());
-			if (Next == IGListenerGreybox::EFirstReportText::None)
+			if (bSiteCheckPending)
+			{
+				// 경찰이 오는 중이다. 안 올라가도 두 사람은 2분쯤 기다리다 저희끼리 확인한다.
+				AIGHorrorHUD::PushThought(
+					this,
+					NSLOCTEXT("IGMissingFloor", "SiteCheckSleepBlocked", "경찰이 온다고 했잖아. 옥상에 가 봐야지."),
+					2.6f);
+			}
+			else if (Next == IGListenerGreybox::EFirstReportText::None)
 			{
 				AIGHorrorHUD::PushThought(
 					this,
@@ -5476,6 +5713,36 @@ void AIGListenerGreyboxDirector::HandleUnit401Knocked(
 			EIGDialogueChannel::Conversation,
 			0.0f,
 			EIGDialoguePriority::Story);
+		// 첫째 밤 옥상 드릴의 까닭(§3.3). 403호에 새 사람이 들면 그는 첫 새벽에 올라가
+		// 이음매를 한 번 더 조인다. 30년 산 401호는 그걸 안다. 둘째 낮, 드릴을 들은 판에 한 번.
+		if (Narrative && Narrative->GetNightIndex() == 1
+			&& Narrative->HasBeatPlayed(FName(TEXT("Night1.RoofDriver")))
+			&& Narrative->MarkBeatPlayed(IGListenerGreybox::HwangDrillBeat))
+		{
+			AIGHorrorHUD::PushDialogue(
+				this,
+				Speaker,
+				NSLOCTEXT(
+					"IGMissingFloor",
+					"Hwang401Drill",
+					"새벽에 옥상에서 드릴 소리 났죠? 403호에 새 사람 들 때마다 그 양반이 그래요. 첫날 새벽엔 꼭 올라가요."),
+				EIGDialogueChannel::Conversation,
+				0.0f,
+				EIGDialoguePriority::Story);
+			// 두 줄이 읽힐 무렵 떠올린다.
+			FTimerHandle DrillThoughtTimer;
+			GetWorldTimerManager().SetTimer(
+				DrillThoughtTimer,
+				FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					AIGHorrorHUD::PushThought(
+						this,
+						NSLOCTEXT("IGMissingFloor", "YudamHwangDrillThought", "새 사람이 들 때마다? 뭘 막으러 올라가나?"),
+						3.2f);
+				}),
+				9.0f,
+				false);
+		}
 		// 입주 저녁의 인사 뒤에 한 번. 첫째 밤 계단 센서등이 꺼질 때 이 말이 떠오른다.
 		if (Narrative && Narrative->GetNightIndex() <= 0
 			&& Narrative->MarkBeatPlayed(IGListenerGreybox::HwangWarningBeat))
@@ -8561,16 +8828,19 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 		// The final choices are intentionally held behind the six-second
 		// flashlight read, silence, Mok line and harmless entity pass. Waiting
 		// here proves the authored sequence can finish without camera automation;
-		// the 28-second ceiling also covers all three gaze fallbacks and the
-		// complete silence, dialogue, entity-pass and blackout tail.
+		// the ceiling also covers all three gaze fallbacks and the complete
+		// silence, dialogue, entity-pass and blackout tail. 28초였는데 2026-10-12부터
+		// 목한수가 「내가 민 거 아니야」(31자, 3.85초)를 더 하고 존재는 그 줄이 끝난 뒤에
+		// 들어오므로 32초로 늘렸다. 걸린 시간을 남겨 다음에 줄을 더할 때 여유를 본다.
 		if (!NightFour->IsFinalConfrontationComplete())
 		{
-			if (StepDeadlineSeconds > 28.0f)
+			if (StepDeadlineSeconds > 32.0f)
 			{
 				FailProbe(TEXT("night-4 reveal/confrontation sequence stalled"));
 			}
 			return;
 		}
+		UE_LOG(LogTemp, Display, TEXT("MISSINGFLOOR_N4REVEAL seconds=%.1f ceiling=32.0"), StepDeadlineSeconds);
 		if (!NightFour->GetEndingATarget()
 			|| NightFour->GetEndingATarget()->IsHidden()
 			|| !NightFour->GetEndingATarget()->IsInteractionEnabled()

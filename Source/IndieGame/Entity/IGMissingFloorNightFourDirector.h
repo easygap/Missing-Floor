@@ -219,6 +219,7 @@ private:
 	void BeginVigilDawn();
 	void PlayVigilLatch();
 	void PlayVigilRingback();
+	void PlayVigilManagerLeaves();
 	void EndEndingBVigil();
 	/** 5타 뒤 잠깐. 손전등이 죽었다 살아나는 사이에 판이 내려앉는다. */
 	void OpenWallAfterFinalStrike();
@@ -236,6 +237,7 @@ private:
 	 * 괴이 감독의 손님이 맡는다. 부름이 왔든 못 왔든 벽 안의 대답 시각을 잡는다.
 	 */
 	void BeginHammerCallAtDoor();
+	void PlayNeighbor303Call();
 	/** 벽 안에서 둘, 쉬고, 하나. 밤3의 대답과 같은 손이다. 이때 망치를 다시 든다. */
 	void PlayWallAnswerBetweenStrikes();
 	/** 인터록이 선 동안 배관이 잦아드는 소리. 세 번 울고 조용해진다. */
@@ -342,6 +344,8 @@ private:
 	bool bMokPresentationVisible = false;
 	bool bFailureEndingActive = false;
 	bool bFailureRetryEnabled = false;
+	/** 붙잡히지 않고 벽이 닫힌 채 새벽이 와서 온 결말 C다. */
+	bool bFailureAtDawn = false;
 	bool bControlLockoutActive = false;
 	bool bEvictionAnnounced = false;
 	bool bAwaitingInterlude = false;
@@ -376,6 +380,7 @@ private:
 	TWeakObjectPtr<class AIGPlayerCharacter> VigilPlayer;
 	FTimerHandle VigilReplyTimer;
 	FTimerHandle VigilDawnTimer;
+	FTimerHandle VigilLeaveTimer;
 
 	/** 5타를 친 뒤 판이 실제로 내려앉기 전까지. 이 사이에는 더 칠 수 없다. */
 	bool bWallOpeningPending = false;
@@ -390,6 +395,8 @@ private:
 	int32 PowerCutStepIndex = 0;
 	/** 4타에 401호가 답하기까지. 망치 꼬리가 걷힌 뒤에 온다. */
 	FTimerHandle Unit401ReplyTimer;
+	FTimerHandle Neighbor303CallTimer;
+	int32 Neighbor303CallStage = 0;
 	/** 넷째 타 뒤 손이 저려 잠깐 못 친다. 그 사이 철문 밖의 부름과 벽 안의 대답이 온다. */
 	bool bHammerHeldForCall = false;
 	FTimerHandle HammerCallTimer;

@@ -546,7 +546,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"TuningHammerThought",
-			"오빠 거다. 여기 있었네."),
+			"오빠 거다. 어릴 때 조율 일에 따라가면 이걸로 한 시간 내내 같은 음만 맞췄는데."),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
 		0.0f,

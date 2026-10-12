@@ -686,6 +686,11 @@ $reviewedTickingFiles = @(
 	'IGCaptureVarietyProbe.cpp',
 	# 셋째 낮의 303호. 계단을 오르내리거나 서서 말하는 동안에만 켜고, 건물을 나가면 끈다.
 	'IGStairNeighbor.cpp',
+	# 셋째 아침의 경찰관과 관리인. 옥상으로 올라와 벽을 보고 떠나는 동안에만 켜고,
+	# 둘이 사라지고 관리인이 연 문을 닫으면 끈다.
+	'IGSiteCheckVisit.cpp',
+	# -IGSiteCheckProbe에서만 생성한다. 경찰의 현장 확인을 옆에서 보거나 403호에서 기다리고 종료한다.
+	'IGSiteCheckProbe.cpp',
 	# 들뜬 보수판. 눌렸다 튀어나오는 1.6초 동안만 켜고 끝나면 끈다.
 	'IGResonantPanel.cpp',
 	# 전용 인자로만 생성한다. 실제 오디오 페이드와 충돌을 순서대로 확인한 뒤 종료한다.

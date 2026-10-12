@@ -138,6 +138,16 @@ namespace IGNightFour
 	constexpr float PowerCutFirstStepSeconds = 0.8f;
 	constexpr float PowerCutStepIntervalSeconds = 0.5f;
 
+	/**
+	 * 2타 뒤 3층에서 303호가 문을 연다(§9 공통 사실). 늘 쪽지로 시끄럽다고만 하던 집이
+	 * 처음으로 괜찮냐고 묻는다. 올라오지는 않고 119를 누르지만, 그 시간에는 신호가 없어
+	 * 05:30에야 이어진다. 망치 꼬리가 걷힌 뒤 문이 열리고, 말 둘은 그 사이를 띄운다.
+	 */
+	constexpr float Neighbor303DoorDelaySeconds = 2.6f;
+	constexpr float Neighbor303FirstLineSeconds = 0.9f;
+	constexpr float Neighbor303SecondLineSeconds = 3.8f;
+	const FVector Neighbor303Voice(78.0f, -300.0f, 760.0f);
+
 	/** 4타에 401호가 답하기까지. 망치의 1.1초 꼬리 뒤, 알아듣고 손을 드는 시간. */
 	constexpr float Unit401ReplyDelaySeconds = 1.25f;
 	/**
@@ -215,6 +225,13 @@ namespace IGNightFour
 	/** 05:30. 침묵이 걷히고 잠금이 풀리기까지, 풀린 뒤 전화가 걸리기까지. */
 	constexpr float VigilLatchDelaySeconds = 0.8f;
 	constexpr float VigilRingbackDelaySeconds = 1.1f;
+	/**
+	 * 연결음이 울리고 나서 1층 주차장 쪽 철문이 닫히기까지. 그녀가 벽 곁에 남은 사이
+	 * 아무도 관리실을 보지 않고, 목한수는 그 틈에 나간다(§9). A의 그녀는 공동현관을
+	 * 열러 내려가다 안쪽 방 문틈의 불빛을 경찰에게 가리킨다.
+	 */
+	constexpr float VigilManagerLeavesSeconds = 1.5f;
+	const FVector ParkingSteelDoorLocation(-230.0f, -295.0f, 110.0f);
 
 	static FRotator DetailCardRotation(
 		const FVector& ScreenRight,
@@ -1718,6 +1735,20 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 			IGNightFour::ConfrontationReplySeconds,
 			EIGDialoguePriority::Critical);
 	}
+	// 추궁이 있든 없든, 열린 벽 앞에서 그는 제 몫부터 던다(§3.3 회계). 7월 26일에 민
+	// 사람이 403호에 살던 서일영이라는 것이 여기서 처음 말로 나온다. 게시글과 마지막
+	// 글(T3·T4)을 못 본 회차도 반전을 여기서 받는다. 이 말도 폰에 담긴다(§9).
+	const FText MokRetort = NSLOCTEXT(
+		"IGMissingFloor",
+		"MokHansooRetort",
+		"내가 민 거 아니야. 403호 살던 그 사람이 밀었어. 난 치우기만 했다고.");
+	AIGHorrorHUD::PushDialogue(
+		this,
+		NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
+		MokRetort,
+		EIGDialogueChannel::Conversation,
+		3.0f,
+		EIGDialoguePriority::Critical);
 	// 그가 지나가기 전에 댄 줄이 다 끝나야 한다. 존재가 먼저 들어오면
 	// 대치가 대화가 아니라 배경이 된다. 줄마다 실제로 화면에 머무는 시간을
 	// 잰다 — 한 줄에 3.05초를 곱하던 값은 마흔 글자짜리 줄이 5초를 쓰는
@@ -1744,7 +1775,8 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 		}
 	}
 	const float SpokenSeconds = (AIGHorrorHUD::EstimateDialogueSeconds(MokLine, 3.0f)
-		+ ReplySeconds) * CaptionScale;
+		+ ReplySeconds
+		+ AIGHorrorHUD::EstimateDialogueSeconds(MokRetort, 3.0f)) * CaptionScale;
 	ReplySeconds = FMath::Max(
 		0.0f,
 		SpokenSeconds + IGNightFour::EntityPassAfterLinesSeconds
@@ -2667,11 +2699,21 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 					? NSLOCTEXT("IGMissingFloor", "NightFourStrikeSecond", "조금만 더.")
 					: NSLOCTEXT("IGMissingFloor", "NightFourStrikeFourth", "손이 저리다. 한 번만 더."),
 			2.2f);
+		if (StrikeCount == 2 && !IGNightFour::IsImmediateFinaleRun())
+		{
+			Neighbor303CallStage = 0;
+			GetWorldTimerManager().SetTimer(
+				Neighbor303CallTimer,
+				this,
+				&AIGMissingFloorNightFourDirector::PlayNeighbor303Call,
+				IGNightFour::Neighbor303DoorDelaySeconds,
+				false);
+		}
 		if (StrikeCount == 4)
 		{
 			// 401호가 듣고 있다. 망치 소리에 그 노인이 아래에서 답한다 — 둘,
 			// 쉬고, 하나. 7월 29일에 한 번 했던 것을 다시. 이 밤에 사람 쪽에서
-			// 오는 유일한 소리다. 망치와 같은 프레임에 내면 앞의 둘이 건물
+			// 오는 유일한 대답이다(303호는 2타 뒤에 묻기만 하고 119를 누른다). 망치와 같은 프레임에 내면 앞의 둘이 건물
 			// 울림에 통째로 묻힌다. 꼬리가 걷힌 뒤에 온다.
 			GetWorldTimerManager().SetTimer(
 				Unit401ReplyTimer,
@@ -2748,6 +2790,80 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 		}
 	}
 	RefreshPresentation();
+}
+
+void AIGMissingFloorNightFourDirector::PlayNeighbor303Call()
+{
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative || !bHourCurrentlyActive || bFailureEndingActive
+		|| bWallOpeningPending || Narrative->IsNightFourWallOpened())
+	{
+		return;
+	}
+	const auto Rearm = [this](const float Seconds)
+	{
+		GetWorldTimerManager().SetTimer(
+			Neighbor303CallTimer,
+			this,
+			&AIGMissingFloorNightFourDirector::PlayNeighbor303Call,
+			Seconds,
+			false);
+	};
+	// 두 층 아래라 거리 감쇠는 걷고 층 가림만 남긴다(401호의 대답과 같은 꼴).
+	switch (Neighbor303CallStage++)
+	{
+	case 0:
+		IGAudio::SpawnOneShotAt(
+			this,
+			IGAudio::SampleOr(TEXT("Door_Steel_Open"), [this]() -> USoundBase*
+			{
+				return UIGToneSequenceSoundWave::CreateDoorThud(this);
+			}),
+			IGNightFour::Neighbor303Voice,
+			0.55f,
+			1.0f,
+			1100.0f,
+			2600.0f,
+			EIGAudioBus::World);
+		AIGHorrorHUD::PushAudioCaptionAt(
+			this,
+			NSLOCTEXT("IGMissingFloor", "Neighbor303DoorCaption", "303호 현관문이 열리는 소리"),
+			2.4f,
+			IGNightFour::Neighbor303Voice);
+		Rearm(IGNightFour::Neighbor303FirstLineSeconds);
+		break;
+	case 1:
+	case 2:
+	{
+		const bool bFirst = Neighbor303CallStage == 2;
+		AIGHorrorHUD::PushDialogue(
+			this,
+			NSLOCTEXT("IGMissingFloor", "Neighbor303Speaker", "303호"),
+			bFirst
+				? NSLOCTEXT("IGMissingFloor", "Neighbor303CallsUp", "위에 누구 있어요? 괜찮아요?")
+				: NSLOCTEXT("IGMissingFloor", "Neighbor303NoSignal", "119 눌렀는데 왜 안 걸려."),
+			EIGDialogueChannel::Conversation,
+			3.2f,
+			EIGDialoguePriority::Story);
+		// 말은 자막이 맡고 귀에는 계단을 타고 오는 웅얼거림만 온다(확장 계획 §3.3과 같은 규칙).
+		IGAudio::SpawnOneShotAt(
+			this,
+			UIGToneSequenceSoundWave::CreateDoorMurmur(this),
+			IGNightFour::Neighbor303Voice,
+			bFirst ? 0.62f : 0.42f,
+			1.18f,
+			1100.0f,
+			2600.0f,
+			EIGAudioBus::World);
+		if (bFirst)
+		{
+			Rearm(IGNightFour::Neighbor303SecondLineSeconds);
+		}
+		break;
+	}
+	default:
+		break;
+	}
 }
 
 void AIGMissingFloorNightFourDirector::BeginHammerCallAtDoor()
@@ -3480,6 +3596,14 @@ void AIGMissingFloorNightFourDirector::PlayVigilRingback()
 		3.0f,
 		IGNightFour::EndingPhoneRest);
 	EndEndingBVigil();
+	// 연결음이 우는 동안 아래에서 철문이 한 번 닫힌다. 에필로그의 「소재 파악 중」이
+	// 이 소리다. 늦게 신고해서가 아니라 곁에 남은 값이다.
+	GetWorldTimerManager().SetTimer(
+		VigilLeaveTimer,
+		this,
+		&AIGMissingFloorNightFourDirector::PlayVigilManagerLeaves,
+		IGNightFour::VigilManagerLeavesSeconds,
+		false);
 	// 결말은 여기서 알린다. 그레이박스는 연결음이 이어지는 3.4초를 기다렸다가
 	// 에필로그를 연다. 연결음이 울리는 동안에도 이동할 수 있다.
 	if (!bResolvedBroadcast)
@@ -3487,6 +3611,27 @@ void AIGMissingFloorNightFourDirector::PlayVigilRingback()
 		bResolvedBroadcast = true;
 		OnResolved.Broadcast();
 	}
+}
+
+void AIGMissingFloorNightFourDirector::PlayVigilManagerLeaves()
+{
+	IGAudio::SpawnOneShotAt(
+		this,
+		IGAudio::SampleOr(TEXT("Door_Steel_Close"), [this]() -> USoundBase*
+		{
+			return UIGToneSequenceSoundWave::CreateDoorThud(this);
+		}),
+		IGNightFour::ParkingSteelDoorLocation,
+		0.32f,
+		0.94f,
+		300.0f,
+		2400.0f,
+		EIGAudioBus::World);
+	AIGHorrorHUD::PushAudioCaptionAt(
+		this,
+		NSLOCTEXT("IGMissingFloor", "EndingBParkingDoorCaption", "주차장 쪽 철문이 닫히는 소리"),
+		2.6f,
+		IGNightFour::ParkingSteelDoorLocation);
 }
 
 void AIGMissingFloorNightFourDirector::EndEndingBVigil()
@@ -3556,6 +3701,7 @@ bool AIGMissingFloorNightFourDirector::CommitFailureEnding(
 	}
 	bFailureEndingActive = true;
 	bFailureRetryEnabled = false;
+	bFailureAtDawn = !bRecordCapture;
 	// The dawn route is not a catch. Recording one there would raise the tier
 	// and inflate the capture count in a mode that has no captures at all.
 	if (bRecordCapture)
@@ -3682,7 +3828,7 @@ void AIGMissingFloorNightFourDirector::BeginFailureListing()
 		? Cast<AIGHorrorHUD>(Controller->GetHUD())
 		: nullptr)
 	{
-		Hud->BeginMissingFloorFailureEnding();
+		Hud->BeginMissingFloorFailureEnding(0.0f, bFailureAtDawn);
 	}
 	IGAudio::SpawnOneShotAt(
 		this,

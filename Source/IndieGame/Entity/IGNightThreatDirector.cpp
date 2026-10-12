@@ -15,6 +15,7 @@
 #include "Environment/IGStairSensorLights.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGManagerPatrol.h"
+#include "Entity/IGStairwellPresence.h"
 #include "Entity/IGMissingFloorEpilogueDirector.h"
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
@@ -39,6 +40,8 @@
 namespace IGNightThreat
 {
 	constexpr float UpdateSeconds = 0.1f;
+	/** 계단의 뒤따르는 발이 끝나고 다른 괴이가 오기까지 쉬는 시간. */
+	constexpr double StairwellAfterglowSeconds = 60.0;
 	// §7. 잡혔다 깬 뒤 이만큼은 아무것도 오지 않는다.
 	constexpr double CaptureGraceSeconds = 40.0;
 
@@ -457,6 +460,11 @@ bool AIGNightThreatDirector::IsQuietWindow() const
 	}
 	// 밤3의 관리인이 쫓거나 찾는 동안에도 끼어들지 않는다. 한 번에 하나다.
 	if (AIGManagerPatrol::IsAnyPursuing(World))
+	{
+		return false;
+	}
+	// 밤2 계단의 뒤따르는 발. 따라오는 동안과 끝나고 1분은 다른 것이 오지 않는다.
+	if (AIGStairwellPresence::IsActiveOrRecent(World, IGNightThreat::StairwellAfterglowSeconds))
 	{
 		return false;
 	}

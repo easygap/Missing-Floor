@@ -40,6 +40,9 @@ public:
 	/** 검사용. 셋째 낮의 신고 문자를 건너뛰고 303호를 바로 올려 보낸다. 셋째 낮이어야 한다. */
 	void StartStairNeighborForTesting();
 	class AIGStairNeighbor* GetStairNeighborForTesting() const { return StairNeighbor.Get(); }
+	/** 검사용. 신고 문자를 건너뛰고 경찰 현장 확인을 바로 시작한다. 셋째 낮이어야 한다. */
+	void StartSiteCheckVisitForTesting();
+	class AIGSiteCheckVisit* GetSiteCheckVisitForTesting() const { return SiteCheckVisit.Get(); }
 
 	virtual FText GetObjectiveText() const override;
 	virtual float GetObjectiveProgress() const override;
@@ -230,6 +233,15 @@ private:
 	void PlayFirstReportReceipt();
 	/** 날이 밝은 5층을 경찰이 보고 간 결과. 전화 대신 문자로 온다(§4.6). */
 	void PlayFirstReportSiteCheck();
+	/**
+	 * 경찰이 직접 와서 5층 벽을 본다(2026-10-12). 출동 문자를 보내고 두 사람을 옥상으로
+	 * 올려 보낸다. 이미 오는 중이면 아무것도 안 한다. 서두르면(잠자리에 들려 하면) 그녀를
+	 * 기다리지 않고 확인한다. 몸을 못 불러오면 false이고 예전처럼 문자만 온다.
+	 */
+	bool BeginSiteCheckVisit();
+	bool SpawnSiteCheckVisit();
+	void RefreshSiteCheckVisit();
+	void HandleSiteCheckChecked(class AIGSiteCheckVisit* Visit, bool bWitnessed);
 	/** 문자 한 통에 주머니 속 폰이 운다. */
 	void PlayPhoneTextBuzz();
 	/** 요구서를 읽었다. 담당자에게 사진을 보내는 문자가 뒤따른다. */
@@ -438,6 +450,16 @@ private:
 	/** 내려가는 그녀 뒤에 유담이 속말을 할 때. 음수면 할 말이 없다. */
 	double StairNeighborThoughtAt = -1.0;
 	bool bStairNeighborUnavailable = false;
+
+	/** 셋째 아침 5층에 오는 경찰과 관리인. 출동 문자를 보낼 때 세운다. */
+	UPROPERTY(Transient)
+	TObjectPtr<class AIGSiteCheckVisit> SiteCheckVisit;
+	FTimerHandle SiteCheckTimer;
+	/** 옥상 계단 밑에 나타날 때. 음수면 아직 부르지 않았다. */
+	double SiteCheckDueAt = -1.0;
+	/** 현장 확인을 기다리는 중이다. 신고 문자 줄기는 그동안 멈춰 있다. */
+	bool bSiteCheckPending = false;
+	bool bSiteCheckUnavailable = false;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AIGPlayerCharacter> Player;

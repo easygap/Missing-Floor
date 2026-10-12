@@ -872,7 +872,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildServiceBayLines() const
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
 		"EpilogueServiceBay2",
-		"할머니와 새벽에 두 번 더 올라왔다. 둘이서 벽을 두드렸다."));
+		"오빠를 벽에서 꺼낸 뒤에도 할머니와 새벽에 두 번 올라왔다. 둘이서 빈 벽을 두드렸다."));
 	if (Narrative
 		&& Narrative->HasWitness(EIGMissingFloorWitness::RooftopCigarettePack))
 	{
@@ -927,7 +927,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 			: NSLOCTEXT(
 				"IGMissingFloor",
 				"EpilogueNewsMokA",
-				"경찰, 건물주 목씨 상대로 사건 경위 조사"));
+				"경찰, 관리실에 있던 건물주 목씨 상대로 사건 경위 조사"));
 
 	// §13의 회수다. 나린의 제보는 어느 회차에도 빠지지 않는다.
 	if (Narrative

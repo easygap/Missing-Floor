@@ -380,8 +380,12 @@ public:
 		SensoryInterludeSkipHoldSeconds = FMath::Max(RequiredHoldSeconds, 0.25f);
 		bSensoryInterludeSkipToggleMode = bToggleMode;
 	}
-	/** 서사가 소유하는 실패 연출이며 입력 처리는 밤 디렉터에 남긴다. */
-	void BeginMissingFloorFailureEnding(float InitialElapsedSeconds = 0.0f);
+	/**
+	 * 서사가 소유하는 실패 연출이며 입력 처리는 밤 디렉터에 남긴다. bWallStillClosed는
+	 * 붙잡히지 않고 벽이 닫힌 채 새벽을 맞은 길이다. 그 길의 후기는 두 사람의 노크를 말하지
+	 * 않는다. 유담은 벽 안에 없다.
+	 */
+	void BeginMissingFloorFailureEnding(float InitialElapsedSeconds = 0.0f, bool bWallStillClosed = false);
 	void SetMissingFloorFailureRetryEnabled(bool bEnabled)
 	{
 		bMissingFloorFailureRetryEnabled = bEnabled;
@@ -965,6 +969,8 @@ private:
 	/** 건너뛰기 칩이 처음 뜬 시각(FPlatformTime). 4초 뒤 걷히고, 누르는 동안만 다시 선다. */
 	double SensoryInterludeSkipShownAt = -1.0;
 	bool bMissingFloorFailureEndingVisible = false;
+	/** 결말 C가 붙잡힌 길이 아니라 벽이 닫힌 새벽의 길이다. */
+	bool bMissingFloorFailureEndingAtDawn = false;
 	bool bMissingFloorFailureRetryEnabled = false;
 	double MissingFloorFailureEndingStartedAt = 0.0;
 	EIGMissingFloorEpilogueScene MissingFloorEpilogueScene =

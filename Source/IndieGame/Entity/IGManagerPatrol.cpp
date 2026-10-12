@@ -1425,7 +1425,7 @@ void AIGManagerPatrol::UpdateSenses(const float DeltaSeconds)
 	if (bBodyShown && DistanceToPlayer < 1400.0f)
 	{
 		ThinkOnce(TEXT("Night3.MokFirstHeard"),
-			NSLOCTEXT("IGMissingFloor", "YudamMokFirstHeard", "관리인 아저씨인가? 이 시간에 왜 나왔지?"));
+			NSLOCTEXT("IGMissingFloor", "YudamMokFirstHeard", "관리인 아저씨네. 어제 관리실 들어간 걸 알아챘나?"));
 	}
 
 	float LitDistance = 0.0f;

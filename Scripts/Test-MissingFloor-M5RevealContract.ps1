@@ -213,7 +213,8 @@ Assert-ContainsAll $listenerSource @(
 ) 'M5 listener pass'
 Assert-ContainsAll $greyboxSource @(
 	'if (!NightFour->IsFinalConfrontationComplete())',
-	'StepDeadlineSeconds > 28.0f',
+	'StepDeadlineSeconds > 32.0f',
+	'MISSINGFLOOR_N4REVEAL seconds=',
 	'night-4 reveal/confrontation sequence stalled'
 ) 'M5 runtime probe'
 Assert-ContainsAll $greyboxSource @(

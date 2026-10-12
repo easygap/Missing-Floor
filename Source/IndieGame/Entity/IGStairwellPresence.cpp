@@ -16,6 +16,7 @@
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
 #include "Entity/IGNightLoopDirector.h"
+#include "Entity/IGNightThreatDirector.h"
 #include "GameFramework/PlayerController.h"
 #include "IndieGame.h"
 #include "Interaction/IGReadableNote.h"
@@ -304,6 +305,23 @@ bool AIGStairwellPresence::IsListenerClear(const bool bStarting) const
 	return true;
 }
 
+bool AIGStairwellPresence::IsActiveOrRecent(const UWorld* World, const double WithinSeconds)
+{
+	if (!World)
+	{
+		return false;
+	}
+	for (TActorIterator<AIGStairwellPresence> It(const_cast<UWorld*>(World)); It; ++It)
+	{
+		if (It->IsEncounterActive()
+			|| (It->EndedAt >= 0.0 && World->GetTimeSeconds() - It->EndedAt < WithinSeconds))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool AIGStairwellPresence::CanBegin() const
 {
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
@@ -330,6 +348,14 @@ bool AIGStairwellPresence::CanBegin() const
 		for (TActorIterator<AIGMissingFloorNightTwoBeatDirector> It(GetWorld()); It; ++It)
 		{
 			if (It->GetReturnStage() != EIGNightTwoReturnStage::Idle)
+			{
+				return false;
+			}
+		}
+		// 손님이 문을 두드리고 있거나 어둑시니가 서 있으면 기다린다. 한 번에 하나다.
+		for (TActorIterator<AIGNightThreatDirector> It(GetWorld()); It; ++It)
+		{
+			if (It->GetGuestStage() != EIGGuestStage::Idle || It->IsEoduksiniManifested())
 			{
 				return false;
 			}
@@ -544,6 +570,10 @@ void AIGStairwellPresence::Finish()
 	}
 	const bool bWasActive = IsEncounterActive();
 	Stage = EStage::Spent;
+	if (bWasActive && GetWorld())
+	{
+		EndedAt = GetWorld()->GetTimeSeconds();
+	}
 	StepDelay = -1.0f;
 	bExtraPending = false;
 	if (bWasActive && !Figure->bHiddenInGame)
@@ -576,6 +606,7 @@ void AIGStairwellPresence::Tick(const float DeltaSeconds)
 		// 붙잡혔다. 그 일과 함께 이 일도 없던 것이 된다.
 		Figure->SetHiddenInGame(true);
 		Stage = EStage::Spent;
+		EndedAt = GetWorld()->GetTimeSeconds();
 		SetActorTickEnabled(false);
 		return;
 	}

@@ -41,6 +41,12 @@ public:
 	 */
 	static void BuildDescentRoute(TArray<FVector>& OutRoute);
 	bool IsEncounterActive() const { return Stage == EStage::Following || Stage == EStage::Watched || Stage == EStage::Withdrawing; }
+	/**
+	 * 뒤따르는 발이 지금 있거나 WithinSeconds 안에 끝났다. 손님과 어둑시니는 그동안 오지
+	 * 않는다(EXPANSION_PLAN §7). 밤2의 계단에서 내려온 사람이 곧바로 문 두드리는 소리를
+	 * 들으면 무서운 게 아니라 바쁘다.
+	 */
+	static bool IsActiveOrRecent(const UWorld* World, double WithinSeconds);
 	/** 검사용. 조건을 건너뛰고 다음 걸음에서 시작한다. */
 	void ForceArm() { bForceArmed = true; }
 	FVector GetFigureFeet() const;
@@ -138,6 +144,8 @@ private:
 	bool bTwitched = false;
 	bool bLifted = false;
 	bool bForceArmed = false;
+	/** 따라오던 일이 끝난 때(월드 초). 음수면 아직이다. */
+	double EndedAt = -1.0;
 	/** 검사로 시작한 판. 새벽·밤 조건으로 물러나지 않는다. */
 	bool bForcedRun = false;
 	bool bConfigured = false;

@@ -1825,9 +1825,11 @@ void AIGHorrorHUD::PresentChapterCard(
 }
 
 void AIGHorrorHUD::BeginMissingFloorFailureEnding(
-	const float InitialElapsedSeconds)
+	const float InitialElapsedSeconds,
+	const bool bWallStillClosed)
 {
 	bMissingFloorFailureEndingVisible = true;
+	bMissingFloorFailureEndingAtDawn = bWallStillClosed;
 	bMissingFloorFailureRetryEnabled = false;
 	MissingFloorFailureEndingStartedAt = GetWorld()
 		? GetWorld()->GetTimeSeconds()
@@ -3649,8 +3651,11 @@ bool AIGHorrorHUD::DrawMissingFloorFailureEnding(const double CurrentTime)
 		const float CommentTextWidth = ContentWidth - CommentInset * 2.0f;
 		const FText CommentOne =
 			NSLOCTEXT("IGHUD", "EndingCCommentLineOne", "이 집 새벽마다 뭐 두드리는 소리 나요.");
-		const FText CommentTwo =
-			NSLOCTEXT("IGHUD", "EndingCCommentLineTwo", "두 명이서 하는 것 같아요.");
+		// 붙잡힌 길이면 노크하는 사람이 둘로 늘었다. 벽이 닫힌 채 새벽이 온 길이면 유담은
+		// 벽 안에 없고, 다음 세입자도 관리인에게서 같은 말을 듣는다.
+		const FText CommentTwo = bMissingFloorFailureEndingAtDawn
+			? NSLOCTEXT("IGHUD", "EndingCCommentLineTwoDawn", "관리인 아저씨는 물탱크 배관 소리래요.")
+			: NSLOCTEXT("IGHUD", "EndingCCommentLineTwo", "두 명이서 하는 것 같아요.");
 		// 한 사람이 쓴 두 줄이라 글자 크기를 같이 맞춘다.
 		const float CommentScale = FMath::Min(
 			FitScale(CommentOne, EIGHudTextRole::Dialogue, 0.84f * TypeScale, CommentTextWidth),

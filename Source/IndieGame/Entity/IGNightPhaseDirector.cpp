@@ -751,7 +751,10 @@ FText AIGNightPhaseDirector::GetObjectiveText() const
 			}
 			if (!Narrative->HasBeatPlayed(TEXT("Night3.SiteCheck")))
 			{
-				return NSLOCTEXT("IGMissingFloor", "DayObjectiveReport", "신고 문자 확인하기");
+				// 출동 문자를 받았으면 경찰이 옥상으로 온다.
+				return Narrative->HasBeatPlayed(TEXT("Night3.SiteCheckDispatched"))
+					? NSLOCTEXT("IGMissingFloor", "DayObjectivePolice", "옥상에서 경찰 만나기")
+					: NSLOCTEXT("IGMissingFloor", "DayObjectiveReport", "신고 문자 확인하기");
 			}
 			if (!Narrative->HasBeatPlayed(TEXT("Day.EvictionPosted")))
 			{

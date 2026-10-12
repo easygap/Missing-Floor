@@ -98,7 +98,7 @@ Assert-ContainsAll $controllerSource @(
 ) 'Fifth-dawn input routing'
 Assert-ContainsAll $hudHeader @(
 	'SetSensoryInterludeSkipState(',
-	'BeginMissingFloorFailureEnding(float InitialElapsedSeconds = 0.0f)',
+	'BeginMissingFloorFailureEnding(float InitialElapsedSeconds = 0.0f, bool bWallStillClosed = false)',
 	'SetMissingFloorFailureRetryEnabled'
 ) 'Release HUD header'
 Assert-ContainsAll $hudSource @(
@@ -110,6 +110,8 @@ Assert-ContainsAll $hudSource @(
 	'"채광 좋은 남향, 즉시 입주 가능"',
 	'"이 집 새벽마다 뭐 두드리는 소리 나요."',
 	'"두 명이서 하는 것 같아요."',
+	'"관리인 아저씨는 물탱크 배관 소리래요."',
+	'bMissingFloorFailureEndingAtDawn',
 	'"{0}  넷째 밤 다시 시작"',
 	'GetBoundKeyLabel(EIGBindableAction::Interact, bUsingGamepad)',
 	'RecordLayoutValidationRect(PanelPosition, PanelPosition + PanelSize)'
