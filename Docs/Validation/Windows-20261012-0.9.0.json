@@ -7,8 +7,8 @@
   "hasLocalChanges": false,
   "releaseComplete": false,
   "shippingReleaseCertified": false,
-  "scope": "같은 개발 PC의 배포본 자동 검사와 오프스크린 성능 측정이다. 실제 창의 화면 출력 비용, 여섯 장비의 출시 인증과 처음 하는 사람의 완주 검수를 포함하지 않는다.",
-  "measurementEnvironment": "성능 측정은 다른 Unreal 프로세스와 Blender가 없을 때 시작했다. 밤 경로는 10월 12일부터 손전등을 챙긴 상태로 돈다. 재부팅하거나 드라이버 셰이더 캐시를 지우지는 않았다.",
+  "scope": "같은 개발 PC의 배포본 자동 검사와 성능 측정이다. 오프스크린과 실제 창(PresentMon 1.8.0)을 모두 쟀다. 여섯 장비의 출시 인증과 처음 하는 사람의 완주 검수는 포함하지 않는다.",
+  "measurementEnvironment": "성능 측정은 다른 Unreal 프로세스와 Blender가 없을 때 시작했다. 공유 PC라 측정 중에 옆 작업의 Unreal·Blender가 잠깐씩 떴고, 그 기록을 profileNotes에 남겼다. 밤 경로는 10월 12일부터 손전등을 챙긴 상태로 돈다. 재부팅하거나 드라이버 셰이더 캐시를 지우지는 않았다.",
   "package": {
     "gameFileCount": 89,
     "gameBytes": 882850270,
@@ -203,12 +203,242 @@
         "os": "10.0.26200.1.768.64bit",
         "rhi": "D3D12"
       }
+    },
+    {
+      "group": "1080p-q2",
+      "batch": "first",
+      "run": 1,
+      "warmupSeconds": 120,
+      "presentationMode": "Windowed",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 12.117,
+      "onePercentLowFps": 48.126,
+      "gpuP95Ms": 11.337,
+      "maxFrameMs": 29.485,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": false,
+      "slowestStage": {
+        "stage": "14",
+        "frameP95Ms": 18.153,
+        "gpuP95Ms": 16.05
+      },
+      "presentedFrames": 17820,
+      "displayedFrames": 14745,
+      "telemetryStatus": "OBSERVED_WITH_TIMING_ANOMALY",
+      "sampledPeakDedicatedVramGb": 3.203756,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q2",
+      "batch": "first",
+      "run": 2,
+      "warmupSeconds": 120,
+      "presentationMode": "Windowed",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 11.946,
+      "onePercentLowFps": 71.457,
+      "gpuP95Ms": 11.293,
+      "maxFrameMs": 25.561,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": true,
+      "slowestStage": {
+        "stage": "5",
+        "frameP95Ms": 13.931,
+        "gpuP95Ms": 12.896
+      },
+      "presentedFrames": 13744,
+      "displayedFrames": 2943,
+      "telemetryStatus": "OBSERVED_WITH_TIMING_ANOMALY",
+      "sampledPeakDedicatedVramGb": 3.20401,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q2",
+      "batch": "first",
+      "run": 3,
+      "warmupSeconds": 120,
+      "presentationMode": "Windowed",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 13.063,
+      "onePercentLowFps": 38.885,
+      "gpuP95Ms": 12.146,
+      "maxFrameMs": 34.704,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": false,
+      "slowestStage": {
+        "stage": "5",
+        "frameP95Ms": 30.571,
+        "gpuP95Ms": 28.857
+      },
+      "presentedFrames": 13838,
+      "displayedFrames": 2806,
+      "telemetryStatus": "OBSERVED_WITH_TIMING_ANOMALY",
+      "sampledPeakDedicatedVramGb": 3.204248,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q1",
+      "batch": "first",
+      "run": 1,
+      "warmupSeconds": 120,
+      "presentationMode": "Windowed",
+      "resolution": "1080p",
+      "quality": 1,
+      "targetFps": 30,
+      "frameP95Ms": 9.456,
+      "onePercentLowFps": 75.14,
+      "gpuP95Ms": 8.838,
+      "maxFrameMs": 26.442,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": true,
+      "slowestStage": {
+        "stage": "16",
+        "frameP95Ms": 17.637,
+        "gpuP95Ms": 16.663
+      },
+      "presentedFrames": 15791,
+      "displayedFrames": 2605,
+      "telemetryStatus": "OBSERVED_WITH_TIMING_ANOMALY",
+      "sampledPeakDedicatedVramGb": 2.703585,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q2",
+      "batch": "second",
+      "run": 1,
+      "warmupSeconds": 120,
+      "presentationMode": "Windowed",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 12.374,
+      "onePercentLowFps": 36.285,
+      "gpuP95Ms": 11.566,
+      "maxFrameMs": 32.266,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": false,
+      "slowestStage": {
+        "stage": "15",
+        "frameP95Ms": 29.416,
+        "gpuP95Ms": 27.064
+      },
+      "presentedFrames": 13714,
+      "displayedFrames": 2638,
+      "telemetryStatus": "OBSERVED",
+      "sampledPeakDedicatedVramGb": 3.205235,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q2",
+      "batch": "second",
+      "run": 2,
+      "warmupSeconds": 120,
+      "presentationMode": "Windowed",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 12.477,
+      "onePercentLowFps": 58.691,
+      "gpuP95Ms": 11.647,
+      "maxFrameMs": 25.031,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": true,
+      "slowestStage": {
+        "stage": "5",
+        "frameP95Ms": 13.889,
+        "gpuP95Ms": 13.311
+      },
+      "presentedFrames": 14192,
+      "displayedFrames": 3743,
+      "telemetryStatus": "OBSERVED_WITH_TIMING_ANOMALY",
+      "sampledPeakDedicatedVramGb": 3.205251,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
+    },
+    {
+      "group": "1080p-q2",
+      "batch": "second",
+      "run": 3,
+      "warmupSeconds": 120,
+      "presentationMode": "Windowed",
+      "resolution": "1080p",
+      "quality": 2,
+      "targetFps": 60,
+      "frameP95Ms": 11.999,
+      "onePercentLowFps": 75.068,
+      "gpuP95Ms": 11.393,
+      "maxFrameMs": 15.415,
+      "framesOver50ms": 0,
+      "framesOver100ms": 0,
+      "frameGatePassed": true,
+      "slowestStage": {
+        "stage": "5",
+        "frameP95Ms": 13.155,
+        "gpuP95Ms": 12.467
+      },
+      "presentedFrames": 15718,
+      "displayedFrames": 3660,
+      "telemetryStatus": "OBSERVED_WITH_TIMING_ANOMALY",
+      "sampledPeakDedicatedVramGb": 3.209318,
+      "hardware": {
+        "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+        "gpu": "NVIDIA GeForce RTX 3060",
+        "driver": "595.79",
+        "os": "10.0.26200.1.768.64bit",
+        "rhi": "D3D12"
+      }
     }
   ],
   "remainingValidation": [
     "여섯 장비(최소·권장, Windows 10·11, NVIDIA·AMD)의 성능 측정",
     "처음 하는 다섯 사람의 완주 기록",
-    "실제 창 모드에서 PresentMon으로 잰 화면 출력 비용",
     "원어민의 번역 검수(영어·일본어·중국어 간체·번체)"
   ],
   "sources": [
@@ -296,6 +526,105 @@
       "path": "Saved/Validation/Perf090-1080p-q1-20261012-145550/Run1/summary.json",
       "bytes": 8679,
       "sha256": "7978a7b7d656f5d6c3ffb84e4a75b13454692dab4b9443378b84b70c4918bc84"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-164308/summary.json",
+      "bytes": 4754,
+      "sha256": "3806ff0a5254743e5958ce6015e420e8d5ef3df7e7ce788a14a3da6ebf003396"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-164308/Run1/summary.json",
+      "bytes": 8725,
+      "sha256": "fa5979f665d64712e0dea51da9ea5d5194a3640e0c9f986d32a53ba58fe74067"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-164308/Run1/windows-telemetry-summary.json",
+      "bytes": 3050,
+      "sha256": "ebecee7e73c6f3c756a63de55fc554646f820aba98ec97140c7d888d515954f9"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-164308/Run2/summary.json",
+      "bytes": 8725,
+      "sha256": "d07177971dcb89fc2fa89c32b93d5156d839586466c2e86a24e14caf70c53831"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-164308/Run2/windows-telemetry-summary.json",
+      "bytes": 2971,
+      "sha256": "d26707b953b383106d877a5999a3c3e1795def59401385bb89e04f9506092f81"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-164308/Run3/summary.json",
+      "bytes": 8742,
+      "sha256": "d5fa010823c161db39a104cf128b647e3a5f5c87e54d00c28dc68d4bf145a4e2"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-164308/Run3/windows-telemetry-summary.json",
+      "bytes": 2970,
+      "sha256": "102bef85b4716fa5c2da4b1b1aa6dddca12290e0bc2b610b3ed9c0373c3f96bf"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q1-windowed-20261012-164308/summary.json",
+      "bytes": 3043,
+      "sha256": "524f23971216ca365ed80b490a27f13a59f0d7c055b2b85b9e6f98d9c7bde213"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q1-windowed-20261012-164308/Run1/summary.json",
+      "bytes": 8672,
+      "sha256": "53c08966a6822bd36aafadeccb84049a94f7c44c91e5ae1a52bcb3cce4ccdcce"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q1-windowed-20261012-164308/Run1/windows-telemetry-summary.json",
+      "bytes": 2970,
+      "sha256": "6a1871552b109744baf4660454af16c6c119c6fa3c32f24fbfff3ffc9eb768e5"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-165855/summary.json",
+      "bytes": 4753,
+      "sha256": "8e844d67f9aad689dfa2cd01fe516711e5ef2026d5bb1e8293b44e12e9dc9961"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-165855/Run1/summary.json",
+      "bytes": 8734,
+      "sha256": "101282684b846f2164af633896fd27cb9279145c6db23fa7cc2f19214d4b30d5"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-165855/Run1/windows-telemetry-summary.json",
+      "bytes": 3133,
+      "sha256": "e01ea5eece8b3f5ae5b906d0ca45a4767d985c497bc23979e2352b86a1f1b259"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-165855/Run2/summary.json",
+      "bytes": 8724,
+      "sha256": "877231db748ec6d430d188047cec9cc66ca299027133d7de549573b394aab35a"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-165855/Run2/windows-telemetry-summary.json",
+      "bytes": 3054,
+      "sha256": "17cad902b636022386c9465cdc753ac3b6a31a517fd932ccdbad87af53200143"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-165855/Run3/summary.json",
+      "bytes": 8738,
+      "sha256": "70953069a8e0371e96d030c98204a9ce088f7745a7a36410b3157c384f699ffe"
+    },
+    {
+      "path": "Saved/Validation/Perf090-1080p-q2-windowed-20261012-165855/Run3/windows-telemetry-summary.json",
+      "bytes": 2970,
+      "sha256": "f8dd45c7013fb655116b2fc46671bd329e787a5b0a6ed46c6556b1c614db5b5d"
     }
-  ]
+  ],
+  "windowedMeasurement": {
+    "presentMon": "PresentMon 1.8.0 (Unreal Engine 5.8에 들어 있는 Engine/Binaries/ThirdParty/PresentMon/Win64/PresentMon-1.8.0-x64.exe)",
+    "presentMonNote": "10월 1일에 쓴 PresentMon 2.6.0은 이 PC에 없었다. NVIDIA FrameView의 PresentMon은 관리자 권한 없이는 메시지 없이 종료됐다. 1.8.0은 Performance Log Users 권한으로 돌았다",
+    "telemetryNote": "PresentMon 1.8.0 캡처는 표시 간격 두 개가 캡처 범위를 벗어나 OBSERVED_WITH_TIMING_ANOMALY로 남는다. 합격 판정은 게임 경로 시계의 프레임 시간으로 하고, 화면 출력 표본은 관측값으로만 쓴다",
+    "secondBatchGpuProcessLog": {
+      "command": "nvidia-smi pmon -s u -d 1",
+      "bytes": 2101477,
+      "sha256": "225bd576200b7d0053f92b9d33392484364df30f692d5941b80a15140253aa76"
+    }
+  },
+  "profileNotes": {
+    "1080p-q2-windowed/first": "세 번 중 첫째와 셋째가 1% low 50fps에 못 미쳤다(48.1, 38.9). 느려진 구간이 회차마다 달랐고(첫째 12~16단계, 셋째 5~8단계) 그동안 GPU 시간이 두 배 가까이 됐다. 이 묶음 동안 옆 작업의 Blender가 새로 떴다",
+    "1080p-q2-windowed/second": "Unreal·Blender가 1분 동안 없을 때 다시 쟀다. 둘째와 셋째는 통과했고(1% low 58.7, 75.1), 첫째는 36.3이었다. 첫째 회차 끝 무렵(시작 뒤 164~166초, 15·16단계) nvidia-smi pmon에 옆 작업의 UnrealEditor가 GPU를 58%까지 쓴 것이 남았고, 그 두 단계의 GPU p95가 24~27ms로 뛰었다. 다른 회차의 같은 단계는 12ms 안팎이다"
+  }
 }
