@@ -37,6 +37,8 @@ public:
 	bool Configure(AIGPrologueWorldScene* InScene);
 	void SetHourActive(bool bHourActive);
 	bool ValidateFixtures() const;
+	/** 검사용. 지금 저장 상태로 대치에서 유담이 할 말을 고른다. */
+	void BuildConfrontationReplyLinesForTesting(TArray<FText>& OutLines) const { BuildConfrontationReplyLines(OutLines); }
 
 	AIGMissingFloorEvidence* GetEvictionNotice() const { return EvictionNotice; }
 	/**

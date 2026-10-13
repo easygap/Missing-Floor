@@ -2,7 +2,9 @@
 param(
 	[ValidateSet('A', 'B')][string]$Ending = 'A',
 	# en·ja·zh-Hans·zh-Hant로 찍으면 장면 글이 번역에서 넘치는지 본다. 프로필 언어는 그대로다.
-	[string]$Culture
+	[string]$Culture,
+	# 목격과 이웃 비트를 다 채운 회차로 찍는다. 장면마다 가장 긴 글이 나온다.
+	[switch]$AllSeen
 )
 
 # 결말 에필로그를 밤4 없이 바로 실제 시간으로 흘리며 장면마다 한 장씩 찍는다(A 99초, B 83초).
@@ -19,6 +21,7 @@ $settingsPath = Join-Path $projectRoot 'Saved/Config/WindowsEditor/GameUserSetti
 $settingsBytes = if (Test-Path -LiteralPath $settingsPath) { [IO.File]::ReadAllBytes($settingsPath) } else { $null }
 $extra = @()
 if (-not [string]::IsNullOrWhiteSpace($Culture)) { $extra += ('-IGCulture=' + $Culture) }
+if ($AllSeen) { $extra += '-IGEpiloguePreviewAllSeen' }
 try {
 	& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen -d3d12 -nosound `
 		-Windowed -ResX=1600 -ResY=900 -ForceRes -IGListenerGreybox "-IGEpiloguePreview=$Ending" -IGSkipFrontend `

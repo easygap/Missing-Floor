@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Entity/IGWalkerKit.h"
 #include "IGSiteCheckVisit.generated.h"
 
 class AIGSiteCheckVisit;
@@ -104,8 +105,8 @@ private:
 		/** 동작 배속 1일 때 몸이 나아가는 빠르기(cm/s)와 한 걸음 시간. */
 		float CycleSpeed = 100.0f;
 		float HalfCycleSeconds = 0.5f;
-		TArray<FVector> Route;
-		TArray<float> RouteDistance;
+		/** 옥상 계단은 디딤판 22 cm에 단 17 cm라, 수평 1 cm에 0.3 cm 넘게 오르면 계단이다. */
+		FIGWalkerRoute Path;
 		float Travelled = 0.0f;
 		float StepPhase = 0.0f;
 		uint32 StepSeed = 0u;
@@ -116,7 +117,7 @@ private:
 
 	void SetRoute(FWalker& Walker, const TArray<FVector>& Points) const;
 	FVector RoutePoint(const FWalker& Walker, float Distance, FVector* OutDirection = nullptr, bool* bOutOnStair = nullptr) const;
-	static float RouteLength(const FWalker& Walker) { return Walker.RouteDistance.IsEmpty() ? 0.0f : Walker.RouteDistance.Last(); }
+	static float RouteLength(const FWalker& Walker) { return Walker.Path.Length(); }
 	/** 한 프레임 걷는다. 다 왔으면 true. */
 	bool Walk(FWalker& Walker, float DeltaSeconds, bool bHold);
 	void PlayBody(FWalker& Walker, UAnimSequence* Sequence, float Rate, bool bLoop = true);

@@ -17,6 +17,7 @@
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGNightLoopDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
+#include "Entity/IGWalkerKit.h"
 #include "GameFramework/Controller.h"
 #include "Engine/SkeletalMesh.h"
 #include "Interaction/IGFireDoorWedge.h"
@@ -108,6 +109,19 @@ namespace IGManagerPatrol
 
 	/** 소리가 들리는 거리. 자막도 이 안에서만 띄운다. */
 	constexpr float AudibleDistance = 1600.0f;
+
+	// 열쇠 찾기(밤3, 한 번). 도어락 번호를 누르고 문이 걸리는지 보기까지, 열쇠를 꺼내 자물쇠를
+	// 돌리기까지, 문간에서 비추는 시간, 걸린 문 앞에서 서 있는 시간, 문을 닫고 돌아서기까지.
+	constexpr double HuntKeypadSeconds = 2.0;
+	constexpr double HuntKeysToSwingSeconds = 1.1;
+	constexpr double HuntThresholdSeconds = 3.2;
+	constexpr double HuntCaughtWaitSeconds = 2.4;
+	constexpr double HuntCloseWaitSeconds = 1.2;
+	/** 문간에서 좌우로 훑는 폭. */
+	constexpr float HuntSweepDegrees = 40.0f;
+	/** 유담이 이보다 가까이 있으면 옥상 철문을 닫지 않는다. 닫으면 문간에 선 몸을 문짝이 뚫고 지나간다. */
+	constexpr float HuntDoorCloseClearance = 260.0f;
+	const FName KeyHuntBeat(TEXT("Night3.MokKeyHunt"));
 }
 
 AIGManagerPatrol::AIGManagerPatrol()
@@ -301,11 +315,12 @@ void AIGManagerPatrol::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 // -- 길 ----------------------------------------------------------------------
 
-int32 AIGManagerPatrol::AddNode(const FVector& Feet, const bool bOnStair)
+int32 AIGManagerPatrol::AddNode(const FVector& Feet, const bool bOnStair, const bool bHuntOnly)
 {
 	FPatrolNode& Node = Nodes.AddDefaulted_GetRef();
 	Node.Feet = Feet;
 	Node.bOnStair = bOnStair;
+	Node.bHuntOnly = bHuntOnly;
 	return Nodes.Num() - 1;
 }
 
@@ -391,6 +406,53 @@ void AIGManagerPatrol::BuildGraph()
 	AddStop(East3, 2.5f, 0.0f, true);
 	AddStop(FourthFloorDoorNode, IGManagerPatrol::StareSeconds, 0.0f, true);
 	AddStop(RestNode, 0.0f, 0.0f, false);
+
+	// 열쇠를 찾으러 갈 때만 밟는 길(밤3, 한 번). 4층 복도 서쪽 끝 옥상 계단 밑에서 403호 문
+	// 동쪽까지, 옥상 계단과 옥상 철문, 물탱크 통로, 5층 철문 앞이다. 403호 문은 바깥으로 열려
+	// 문짝이 복도 서쪽을 쓸고 지나서 문 동쪽에 선다. 옥상 철문은 계단 쪽으로 열려서 문선
+	// 110 cm 아래 단에서 연다. 5층 철문은 안으로 열려 문 앞 한 걸음에 선다. 손전등을 든 손이
+	// 몸 앞 40 cm라 그보다 붙어 서면 닫힌 문짝 너머를 비춘다.
+	const float FourthZ = AIGPrologueWorldScene::GetStoreyFloorZ(3);
+	const int32 RoofStairFoot = AddNode(FVector(-262.0f, -292.0f, FourthZ), false, true);
+	Home403Node = AddNode(FVector(240.0f, -295.0f, FourthZ), false, true);
+	const int32 LowerFlight = AddNode(FVector(-277.5f, -238.0f, FourthZ), true, true);
+	const int32 HalfLanding = AddNode(FVector(-277.5f, -150.0f, FourthZ + 72.0f), true, true);
+	const int32 HalfLandingEnd = AddNode(FVector(-277.5f, -125.0f, FourthZ + 72.0f), true, true);
+	const int32 UpperFlight = AddNode(FVector(-277.5f, -100.0f, 980.0f), true, true);
+	const int32 RoofDoorInside = AddNode(FVector(-277.5f, 110.0f, 1142.3f), true, true);
+	const int32 TopTread = AddNode(FVector(-277.5f, 208.5f, 1200.0f), true, true);
+	const int32 RoofOutside = AddNode(FVector(-277.5f, 245.0f, 1200.0f), false, true);
+	const int32 PassageWest = AddNode(FVector(-200.0f, 225.0f, 1200.0f), false, true);
+	const int32 PassageEast = AddNode(FVector(130.0f, 220.0f, 1200.0f), false, true);
+	AnnexFrontNode = AddNode(FVector(130.0f, 390.0f, 1200.0f), false, true);
+	LinkNodes(Doorways[3], RoofStairFoot);
+	LinkNodes(RoofStairFoot, Home403Node);
+	LinkNodes(RoofStairFoot, LowerFlight);
+	LinkNodes(LowerFlight, HalfLanding);
+	LinkNodes(HalfLanding, HalfLandingEnd);
+	LinkNodes(HalfLandingEnd, UpperFlight);
+	LinkNodes(UpperFlight, RoofDoorInside);
+	LinkNodes(RoofDoorInside, TopTread);
+	LinkNodes(TopTread, RoofOutside);
+	LinkNodes(RoofOutside, PassageWest);
+	LinkNodes(PassageWest, PassageEast);
+	LinkNodes(PassageEast, AnnexFrontNode);
+
+	HuntStops.Reset();
+	const auto AddHuntStop = [this](const int32 Node, const EHuntAction Action)
+	{
+		FHuntStop& Stop = HuntStops.AddDefaulted_GetRef();
+		Stop.Node = Node;
+		Stop.Action = Action;
+	};
+	AddHuntStop(FourthFloorDoorNode, EHuntAction::None);
+	AddHuntStop(Home403Node, EHuntAction::HomeDoor);
+	AddHuntStop(RoofStairFoot, EHuntAction::None);
+	AddHuntStop(RoofDoorInside, EHuntAction::RoofDoorOpen);
+	AddHuntStop(RoofOutside, EHuntAction::RoofSweep);
+	AddHuntStop(AnnexFrontNode, EHuntAction::AnnexDoor);
+	AddHuntStop(RoofDoorInside, EHuntAction::RoofDoorClose);
+	AddHuntStop(RestNode, EHuntAction::None);
 }
 
 bool AIGManagerPatrol::FindPath(const int32 From, const int32 To, TArray<int32>& OutPath) const
@@ -425,6 +487,10 @@ bool AIGManagerPatrol::FindPath(const int32 From, const int32 To, TArray<int32>&
 		Done[Best] = true;
 		for (const int32 Next : Nodes[Best].Links)
 		{
+			if (Nodes[Next].bHuntOnly && !bKeyHunt)
+			{
+				continue;
+			}
 			const float Candidate = Cost[Best] + FVector::Dist(Nodes[Best].Feet, Nodes[Next].Feet);
 			if (Candidate < Cost[Next])
 			{
@@ -454,6 +520,10 @@ int32 AIGManagerPatrol::FindNearestNode(const FVector& Feet) const
 	float BestSeenScore = TNumericLimits<float>::Max();
 	for (int32 Index = 0; Index < Nodes.Num(); ++Index)
 	{
+		if (Nodes[Index].bHuntOnly && !bKeyHunt)
+		{
+			continue;
+		}
 		const FVector Delta = Nodes[Index].Feet - Feet;
 		// 높이 차를 세 배로 친다. 바로 위층 노드가 가까워 보여도 고르지 않는다.
 		const float Score = FMath::Square(Delta.X) + FMath::Square(Delta.Y) + FMath::Square(Delta.Z * 3.0f);
@@ -547,6 +617,9 @@ void AIGManagerPatrol::RefreshDuty()
 void AIGManagerPatrol::GoOnDuty()
 {
 	bOnDuty = true;
+	bKeyHunt = false;
+	bHuntAction = false;
+	bSawInAnnex = false;
 	RoundCount = 0;
 	Exposure = 0.0f;
 	bSawPlayerHide = false;
@@ -561,6 +634,9 @@ void AIGManagerPatrol::GoOnDuty()
 void AIGManagerPatrol::GoOffDuty()
 {
 	bOnDuty = false;
+	bKeyHunt = false;
+	bHuntAction = false;
+	bSawInAnnex = false;
 	State = EIGManagerPatrolState::Resting;
 	ShowBody(false);
 	SetActorTickEnabled(false);
@@ -643,6 +719,12 @@ void AIGManagerPatrol::StartRound()
 {
 	++RoundCount;
 	RouteCursor = 0;
+	LeaveRoom();
+	SetDestination(Route.IsValidIndex(0) ? Route[0].Node : RestNode);
+}
+
+void AIGManagerPatrol::LeaveRoom()
+{
 	Exposure = 0.0f;
 	State = EIGManagerPatrolState::Patrolling;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
@@ -655,11 +737,14 @@ void AIGManagerPatrol::StartRound()
 		NSLOCTEXT("IGMissingFloor", "CaptionMokDoor", "[관리실 문이 열리는 소리]"),
 		GetFeet(), LastAlarmCaptionSeconds, 0.0f);
 	PlayKeys(false);
-	SetDestination(Route.IsValidIndex(0) ? Route[0].Node : RestNode);
 }
 
 void AIGManagerPatrol::EnterRestingAtDoor(const float RestSeconds)
 {
+	// 열쇠 찾기는 안쪽 방으로 돌아오면 끝난다. 다음부터는 평소 길이다.
+	bKeyHunt = false;
+	bHuntAction = false;
+	bSawInAnnex = false;
 	State = EIGManagerPatrolState::Resting;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
 	RestUntilSeconds = StateStartSeconds + RestSeconds;
@@ -684,9 +769,11 @@ void AIGManagerPatrol::BeginInvestigation(const FVector& Where, const bool bAlar
 	}
 	State = EIGManagerPatrolState::Investigating;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
-	const FVector Target = IsForbiddenFourthFloor(Where)
+	const FVector Target = IsForbiddenNow(Where)
 		? Nodes[FourthFloorDoorNode].Feet
-		: Where;
+		: (IsInsideAnnex(Where) && Nodes.IsValidIndex(AnnexFrontNode) && bKeyHunt)
+			? Nodes[AnnexFrontNode].Feet
+			: Where;
 	SetDestination(FindNearestNode(Target));
 	// 노드에서 소리 난 자리까지는 같은 층이고 막힌 데가 없을 때만 곧장 걷는다.
 	if (!Path.IsEmpty() && FMath::Abs(Nodes[Path.Last()].Feet.Z - Target.Z) < 40.0f
@@ -744,9 +831,11 @@ void AIGManagerPatrol::BeginSearch()
 	State = EIGManagerPatrolState::Searching;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
 	bSawPlayerHide = false;
-	const FVector Target = IsForbiddenFourthFloor(LastKnownPlayerFeet)
+	const FVector Target = IsForbiddenNow(LastKnownPlayerFeet)
 		? Nodes[GetFourthFloorStandNode()].Feet
-		: LastKnownPlayerFeet;
+		: (IsInsideAnnex(LastKnownPlayerFeet) && Nodes.IsValidIndex(AnnexFrontNode) && bKeyHunt)
+			? Nodes[AnnexFrontNode].Feet
+			: LastKnownPlayerFeet;
 	QueueSearchStops(Target);
 	SetDestination(FindNearestNode(Target));
 	DwellRemaining = IGManagerPatrol::SearchDwellSeconds;
@@ -768,8 +857,10 @@ void AIGManagerPatrol::QueueSearchStops(const FVector& Around)
 	for (int32 Index = 0; Index < Nodes.Num(); ++Index)
 	{
 		if (Index == Start || Index == RestNode || Nodes[Index].bOnStair
+			|| (Nodes[Index].bHuntOnly && !bKeyHunt)
 			|| FMath::Abs(Nodes[Index].Feet.Z - Nodes[Start].Feet.Z) > 40.0f
-			|| IsForbiddenFourthFloor(Nodes[Index].Feet))
+			|| IsForbiddenNow(Nodes[Index].Feet)
+			|| IsInsideAnnex(Nodes[Index].Feet))
 		{
 			continue;
 		}
@@ -1017,6 +1108,11 @@ void AIGManagerPatrol::Tick(const float DeltaSeconds)
 	{
 		return;
 	}
+	if (bKeyHunt && bHuntAction && State == EIGManagerPatrolState::Patrolling)
+	{
+		TickHuntAction(DeltaSeconds);
+		return;
+	}
 	if (DwellRemaining > 0.0f && PathCursor >= Path.Num() && !bHasFinalTarget)
 	{
 		TickDwell(DeltaSeconds);
@@ -1040,6 +1136,12 @@ void AIGManagerPatrol::TickResting(const float DeltaSeconds)
 		|| FVector::Dist(GetPlayerFeet(), Nodes[RestNode].Feet) < 500.0f)
 	{
 		RestUntilSeconds = GetWorld()->GetTimeSeconds() + 2.0f;
+		return;
+	}
+	// 나서는 길에 책상을 본다. 열쇠 꾸러미가 없으면 평소 길을 버리고 찾으러 간다.
+	if (ShouldStartKeyHunt())
+	{
+		StartKeyHunt();
 		return;
 	}
 	StartRound();
@@ -1087,6 +1189,28 @@ void AIGManagerPatrol::TickWalking(const float DeltaSeconds, const float Speed)
 		return;
 	case EIGManagerPatrolState::Patrolling:
 	{
+		if (bKeyHunt)
+		{
+			// 열쇠 찾기 마지막 지점은 관리실 문이다. 유담이 보고 있으면 문으로 들어가지 않는다.
+			if (HuntStops.IsValidIndex(HuntCursor) && HuntStops[HuntCursor].Node == RestNode)
+			{
+				if (IsPlayerWatching(GetFeet()))
+				{
+					return;
+				}
+				IGAudio::SpawnOneShotAt(
+					this, UIGToneSequenceSoundWave::CreateDoorCreak(this, true),
+					GetFeet() + FVector(0.0f, 30.0f, 110.0f), 0.5f, 0.92f, 200.0f, 1500.0f, EIGAudioBus::World);
+				UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT done"));
+				EnterRestingAtDoor(IGManagerPatrol::RoundRestSeconds);
+				return;
+			}
+			if (!bHuntAction)
+			{
+				BeginHuntAction();
+			}
+			return;
+		}
 		const FRouteStop& Stop = Route[FMath::Clamp(RouteCursor, 0, Route.Num() - 1)];
 		if (Stop.Node == RestNode)
 		{
@@ -1156,32 +1280,13 @@ AIGSwingDoor* AIGManagerPatrol::FindFireDoorAhead(const FVector& From, const FVe
 	for (const TWeakObjectPtr<AIGSwingDoor>& Candidate : FireDoors)
 	{
 		AIGSwingDoor* Door = Candidate.Get();
-		if (!Door || (Door->IsOpen() && !Door->IsSwinging()))
+		// 4층 문은 평소 열지 않는다(닫힌 문이 핑계가 된다). 열쇠를 찾으러 갈 때는 연다.
+		if (!Door || (Door->GetActorLocation().Z > IGManagerPatrol::FourthFloorFireDoorZ && !bKeyHunt))
 		{
 			continue;
 		}
-		// 문짝은 경첩에서 +Y로 120 cm, 닫히면 경첩과 같은 X 평면이다. 위층 사람과 같은 판정이다.
-		const FVector Hinge = Door->GetActorLocation();
-		if (Hinge.Z > IGManagerPatrol::FourthFloorFireDoorZ
-			|| (FMath::Abs(From.Z - Hinge.Z) > 150.0f && FMath::Abs(To.Z - Hinge.Z) > 150.0f))
-		{
-			continue;
-		}
-		// 문짝이 도는 동안은 문 앞 한 걸음 안에서도 선다. 다 열린 문은 남쪽 벽에 붙어 있다.
-		const float FromSide = From.X - Hinge.X;
-		const float ToSide = To.X - Hinge.X;
-		if (Door->IsSwinging() && FMath::Abs(FromSide) < 60.0f
-			&& From.Y > Hinge.Y - 20.0f && From.Y < Hinge.Y + 140.0f)
-		{
-			return Door;
-		}
-		if (FromSide * ToSide > 0.0f || FMath::IsNearlyEqual(FromSide, ToSide))
-		{
-			continue;
-		}
-		const float Alpha = FromSide / (FromSide - ToSide);
-		const float CrossY = FMath::Lerp(From.Y, To.Y, Alpha);
-		if (CrossY > Hinge.Y - 20.0f && CrossY < Hinge.Y + 140.0f)
+		// 위층 사람·303호와 같은 판정이다. 다 열린 문은 남쪽 벽에 붙어 길을 막지 않는다.
+		if (IGWalker::IsStairDoorAhead(*Door, From, To))
 		{
 			return Door;
 		}
@@ -1269,11 +1374,14 @@ void AIGManagerPatrol::TickDwell(const float DeltaSeconds)
 			DwellElapsed = 0.0f;
 			return;
 		}
-		// 아무것도 없었다. 원래 돌던 길의 다음 자리로 간다.
+		// 아무것도 없었다. 원래 돌던 길의 다음 자리로 간다. 열쇠를 찾던 중이면 그 자리로.
 		State = EIGManagerPatrolState::Patrolling;
 		StateStartSeconds = GetWorld()->GetTimeSeconds();
 		Exposure = 0.0f;
-		SetDestination(Route[FMath::Clamp(RouteCursor, 0, Route.Num() - 1)].Node);
+		bHuntAction = false;
+		SetDestination(bKeyHunt && HuntStops.IsValidIndex(HuntCursor)
+			? HuntStops[HuntCursor].Node
+			: Route[FMath::Clamp(RouteCursor, 0, Route.Num() - 1)].Node);
 		return;
 	}
 	case EIGManagerPatrolState::Staring:
@@ -1354,8 +1462,32 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 		return;
 	}
 
+	// 5층 안으로는 따라 들어가지 않는다. 문 앞까지 와서 비추다가 문을 쾅 닫고 내려간다.
+	// 열쇠를 찾으러 온 길이 아니면 그 문 앞으로 가는 길도 없다. 그냥 돌아간다.
+	if (IsInsideAnnex(PlayerFeet))
+	{
+		if (!bKeyHunt || !Nodes.IsValidIndex(AnnexFrontNode))
+		{
+			BeginRetreat(IGManagerPatrol::KnockRestSeconds);
+			return;
+		}
+		const FVector Front = Nodes[AnnexFrontNode].Feet;
+		if (FVector::Dist2D(Feet, Front) < 20.0f && FMath::Abs(Feet.Z - Front.Z) < 40.0f)
+		{
+			SlamAnnexAndFlee();
+			return;
+		}
+		if (Path.IsEmpty() || Path.Last() != AnnexFrontNode)
+		{
+			SetDestination(AnnexFrontNode);
+		}
+		TickWalking(DeltaSeconds, IGManagerPatrol::ChaseSpeed);
+		AimTorch(Character->GetActorLocation(), DeltaSeconds);
+		return;
+	}
+
 	// 4층 복도로는 따라가지 않는다. 목에서 서서 비춘다.
-	if (IsForbiddenFourthFloor(PlayerFeet))
+	if (IsForbiddenNow(PlayerFeet))
 	{
 		const int32 StandNode = GetFourthFloorStandNode();
 		if (FVector::Dist(Feet, Nodes[StandNode].Feet) < 10.0f)
@@ -1408,6 +1540,398 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 	AimTorch(Character->GetActorLocation(), DeltaSeconds);
 }
 
+// -- 열쇠 찾기 ---------------------------------------------------------------
+
+bool AIGManagerPatrol::ShouldStartKeyHunt() const
+{
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	UIGStoryStateSubsystem* Story = GetGameInstance()
+		? GetGameInstance()->GetSubsystem<UIGStoryStateSubsystem>()
+		: nullptr;
+	const FGameplayTag KeyTag = FGameplayTag::RequestGameplayTag(
+		FName(TEXT("State.MissingFloor.HasStairKey")), false);
+	return Narrative && Story && KeyTag.IsValid() && Story->HasState(KeyTag)
+		&& !Narrative->HasBeatPlayed(IGManagerPatrol::KeyHuntBeat)
+		&& Nodes.IsValidIndex(Home403Node)
+		&& Nodes.IsValidIndex(AnnexFrontNode)
+		&& !HuntStops.IsEmpty();
+}
+
+void AIGManagerPatrol::StartKeyHuntForTesting()
+{
+	if (!bOnDuty || HuntStops.IsEmpty())
+	{
+		return;
+	}
+	if (State != EIGManagerPatrolState::Resting)
+	{
+		EnterRestingAtDoor(0.0f);
+	}
+	StartKeyHunt();
+}
+
+void AIGManagerPatrol::ResolveHuntDoors()
+{
+	if (const AIGPrologueWorldScene* Building = Scene.Get())
+	{
+		HomeDoor = Building->GetHomeDoor();
+	}
+	for (TActorIterator<AIGMissingFloorNightThreeDirector> It(GetWorld()); It; ++It)
+	{
+		RoofDoor = It->GetStairGate();
+		AnnexDoor = It->GetAnnexGate();
+		break;
+	}
+}
+
+void AIGManagerPatrol::StartKeyHunt()
+{
+	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
+	{
+		Narrative->MarkBeatPlayed(IGManagerPatrol::KeyHuntBeat);
+	}
+	ResolveHuntDoors();
+	bKeyHunt = true;
+	bHuntAction = false;
+	bSawInAnnex = false;
+	HuntCursor = 0;
+	UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT start"));
+	LeaveRoom();
+	SetDestination(HuntStops[0].Node);
+}
+
+void AIGManagerPatrol::AdvanceKeyHunt()
+{
+	bHuntAction = false;
+	++HuntCursor;
+	if (!HuntStops.IsValidIndex(HuntCursor))
+	{
+		BeginRetreat(IGManagerPatrol::RoundRestSeconds);
+		return;
+	}
+	// 4층 복도로 들어간다. 유담이 소리가 들리는 거리에 있으면 관리인이 뭘 찾으러 왔는지 알아챈다.
+	if (HuntStops[HuntCursor].Node == Home403Node
+		&& FVector::Dist(GetFeet(), GetPlayerFeet()) < IGManagerPatrol::AudibleDistance)
+	{
+		ThinkOnce(TEXT("Night3.MokKeyHunt.Fourth"),
+			NSLOCTEXT("IGMissingFloor", "YudamMokKeyHunt", "4층까지 올라오네. 열쇠 찾으러 온 거야."));
+	}
+	UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT stop=%d"), HuntCursor);
+	SetDestination(HuntStops[HuntCursor].Node);
+}
+
+void AIGManagerPatrol::BeginHuntAction()
+{
+	if (!HuntStops.IsValidIndex(HuntCursor) || HuntStops[HuntCursor].Action == EHuntAction::None)
+	{
+		AdvanceKeyHunt();
+		return;
+	}
+	bHuntAction = true;
+	HuntActionStep = 0;
+	HuntActionStart = GetWorld()->GetTimeSeconds();
+}
+
+void AIGManagerPatrol::TickHuntAction(const float DeltaSeconds)
+{
+	using namespace IGManagerPatrol;
+	const double Now = GetWorld()->GetTimeSeconds();
+	const double Elapsed = Now - HuntActionStart;
+	const auto NextStep = [this, Now](const int32 Step)
+	{
+		HuntActionStep = Step;
+		HuntActionStart = Now;
+	};
+	// 걸린 문. 열쇠나 번호가 맞아도 안쪽 걸쇠·빗장이 문을 한 뼘에서 잡는다. 두 번 덜컥거린다.
+	const auto RattleCaught = [this](AIGSwingDoor& Door, const FText& Text)
+	{
+		for (int32 Rattle = 0; Rattle < 2; ++Rattle)
+		{
+			FTimerHandle RattleTimer;
+			GetWorldTimerManager().SetTimer(
+				RattleTimer,
+				FTimerDelegate::CreateWeakLambda(this, [this, Where = Door.GetLatchSoundLocation()]()
+				{
+					IGAudio::SpawnOneShotAt(
+						this,
+						IGAudio::SampleOr(TEXT("Lock_Rattle"),
+							[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateLockedRattle(this); }),
+						Where, 0.9f, FMath::FRandRange(0.94f, 1.04f), 160.0f, 1400.0f, EIGAudioBus::World);
+				}),
+				0.05f + 0.55f * Rattle,
+				false);
+		}
+		AIGHorrorHUD::PushAudioCaptionAt(this, Text, 2.2f, Door.GetLatchSoundLocation());
+	};
+	// 문간에서 안을 비춘다. 손전등이 좌우로 훑고, 그 안에 서 있는 사람은 들킨다(감지는 Tick에서 한다).
+	const auto SweepInto = [this, DeltaSeconds, Elapsed](const FVector& Inside)
+	{
+		const FVector Eye = GetFeet() + FVector(0.0f, 0.0f, 150.0f);
+		const float Sweep = FMath::Sin(static_cast<float>(Elapsed) * 1.4f) * HuntSweepDegrees;
+		const FVector Direction = (Inside - Eye).RotateAngleAxis(Sweep, FVector::UpVector);
+		FaceYaw((Inside - Eye).Rotation().Yaw, DeltaSeconds, 120.0f);
+		AimTorch(Eye + Direction, DeltaSeconds);
+	};
+	AnimateGait(DeltaSeconds, 0.0f);
+	switch (HuntStops[HuntCursor].Action)
+	{
+	case EHuntAction::HomeDoor:
+	{
+		AIGSwingDoor* Door = HomeDoor.Get();
+		if (!Door)
+		{
+			AdvanceKeyHunt();
+			return;
+		}
+		const FVector Latch = Door->GetLatchSoundLocation();
+		if (HuntActionStep == 0)
+		{
+			// 새 세입자 도어락 번호는 관리인이 정해 준 것이다. 번호를 누른다.
+			FaceYaw((Latch - GetFeet()).Rotation().Yaw, DeltaSeconds);
+			IGAudio::SpawnOneShotAt(
+				this, UIGToneSequenceSoundWave::CreateDoorlockCode(this, true),
+				Latch + FVector(0.0f, -6.0f, 0.0f), 0.6f, 1.0f, 120.0f, 1400.0f, EIGAudioBus::World);
+			Caption(
+				NSLOCTEXT("IGMissingFloor", "CaptionGuestKeypad", "[밖에서 도어락 번호를 누른다]"),
+				Latch, LastAlarmCaptionSeconds, 0.0f);
+			NextStep(1);
+			return;
+		}
+		if (HuntActionStep == 1)
+		{
+			FaceYaw((Latch - GetFeet()).Rotation().Yaw, DeltaSeconds);
+			if (Elapsed < HuntKeypadSeconds)
+			{
+				return;
+			}
+			if (!Door->IsOpen() && Door->IsLatched())
+			{
+				RattleCaught(*Door, NSLOCTEXT("IGMissingFloor", "CaptionGuestLatch", "[걸쇠에 문이 걸려 덜컥거린다]"));
+				if (AIGPlayerCharacter* Character = Player.Get();
+					Character && FVector::Dist2D(Character->GetActorLocation(), Latch) < 700.0f
+					&& FMath::Abs(Character->GetActorLocation().Z - Latch.Z) < 200.0f)
+				{
+					if (UIGStressComponent* Stress = Character->GetStress())
+					{
+						Stress->ApplyScare(0.45f);
+					}
+					Character->PlayScareKick(1.4f);
+				}
+				UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT home latched"));
+				NextStep(10);
+				return;
+			}
+			if (!Door->IsOpen())
+			{
+				Door->BeginScriptedSwing(true);
+			}
+			UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT home opened"));
+			NextStep(2);
+			return;
+		}
+		if (HuntActionStep == 2)
+		{
+			SweepInto(FVector(110.0f, -110.0f, AIGPrologueWorldScene::FourthFloorZ + 95.0f));
+			if (Elapsed >= HuntThresholdSeconds)
+			{
+				if (Door->IsOpen() && !Door->IsSwinging()
+					&& FVector::Dist(GetPlayerFeet(), Door->GetActorLocation()) > HuntDoorCloseClearance)
+				{
+					Door->BeginScriptedSwing(false);
+				}
+				NextStep(3);
+			}
+			return;
+		}
+		if ((HuntActionStep == 3 && Elapsed >= HuntCloseWaitSeconds)
+			|| (HuntActionStep == 10 && Elapsed >= HuntCaughtWaitSeconds))
+		{
+			AdvanceKeyHunt();
+		}
+		return;
+	}
+
+	case EHuntAction::RoofDoorOpen:
+	{
+		AIGSwingDoor* Door = RoofDoor.Get();
+		if (!Door)
+		{
+			AdvanceKeyHunt();
+			return;
+		}
+		FaceYaw(90.0f, DeltaSeconds);
+		if (Door->IsOpen())
+		{
+			// 열렸거나 열리는 중이다. 다 열리면 나선다.
+			if (!Door->IsSwinging())
+			{
+				AdvanceKeyHunt();
+			}
+			return;
+		}
+		if (HuntActionStep == 0)
+		{
+			PlayKeys(true);
+			NextStep(1);
+			return;
+		}
+		if (HuntActionStep == 1 && Elapsed >= HuntKeysToSwingSeconds)
+		{
+			Door->BeginScriptedSwing(true);
+			UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT roof door opened"));
+			NextStep(2);
+		}
+		return;
+	}
+
+	case EHuntAction::RoofSweep:
+		// 물탱크 통로를 동쪽으로 훑는다.
+		SweepInto(GetFeet() + FVector(600.0f, -20.0f, 120.0f));
+		if (Elapsed >= HuntThresholdSeconds)
+		{
+			AdvanceKeyHunt();
+		}
+		return;
+
+	case EHuntAction::AnnexDoor:
+	{
+		AIGSwingDoor* Door = AnnexDoor.Get();
+		if (!Door)
+		{
+			AdvanceKeyHunt();
+			return;
+		}
+		const FVector Inside(110.0f, 660.0f, 1290.0f);
+		if (HuntActionStep == 0)
+		{
+			FaceYaw(90.0f, DeltaSeconds);
+			if (Door->IsOpen())
+			{
+				NextStep(2);
+				return;
+			}
+			PlayKeys(true);
+			NextStep(1);
+			return;
+		}
+		if (HuntActionStep == 1)
+		{
+			FaceYaw(90.0f, DeltaSeconds);
+			if (Elapsed < HuntKeysToSwingSeconds)
+			{
+				return;
+			}
+			if (Door->IsLatched())
+			{
+				// 열쇠는 돌았는데 안쪽 빗장에 걸린다. 관리인은 더 밀지 않는다.
+				RattleCaught(*Door, NSLOCTEXT("IGMissingFloor", "CaptionGuestBolt", "[빗장에 걸려 문이 덜컹거린다]"));
+				UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT annex bolted"));
+				NextStep(10);
+				return;
+			}
+			Door->BeginScriptedSwing(true);
+			UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT annex opened"));
+			NextStep(2);
+			return;
+		}
+		if (HuntActionStep == 2)
+		{
+			// 문간에서만 비춘다. 5층 안으로는 끝까지 들어가지 않는다.
+			SweepInto(Inside);
+			if (Elapsed >= HuntThresholdSeconds)
+			{
+				if (Door->IsOpen() && !Door->IsSwinging())
+				{
+					Door->BeginScriptedSwing(false);
+				}
+				NextStep(3);
+			}
+			return;
+		}
+		if (HuntActionStep == 3 && Elapsed >= HuntCloseWaitSeconds)
+		{
+			AdvanceKeyHunt();
+			return;
+		}
+		if (HuntActionStep == 10 && Elapsed >= HuntCaughtWaitSeconds)
+		{
+			if (IsInsideAnnex(GetPlayerFeet()))
+			{
+				ThinkOnce(TEXT("Night3.MokBoltHeld"),
+					NSLOCTEXT("IGMissingFloor", "YudamMokBoltHeld", "빗장 걸어 두길 잘했다."));
+			}
+			AdvanceKeyHunt();
+		}
+		return;
+	}
+
+	case EHuntAction::RoofDoorClose:
+	{
+		AIGSwingDoor* Door = RoofDoor.Get();
+		if (!Door)
+		{
+			AdvanceKeyHunt();
+			return;
+		}
+		FaceYaw(90.0f, DeltaSeconds);
+		if (HuntActionStep == 0)
+		{
+			// 내려가면서 문단속을 한다. 유담이 문간 가까이 있으면 닫지 않는다.
+			if (Door->IsOpen() && !Door->IsSwinging()
+				&& FVector::Dist(GetPlayerFeet(), Door->GetActorLocation()) > HuntDoorCloseClearance)
+			{
+				Door->BeginScriptedSwing(false);
+				UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT roof door closed"));
+			}
+			NextStep(1);
+			return;
+		}
+		if (!Door->IsSwinging())
+		{
+			AdvanceKeyHunt();
+		}
+		return;
+	}
+
+	default:
+		AdvanceKeyHunt();
+		return;
+	}
+}
+
+void AIGManagerPatrol::SlamAnnexAndFlee()
+{
+	// 문을 쾅 닫고 서둘러 내려간다. 안에 있는 사람은 잡지 않는다.
+	bSawInAnnex = false;
+	if (AIGSwingDoor* Door = AnnexDoor.Get(); Door && Door->IsOpen() && !Door->IsSwinging())
+	{
+		Door->BeginScriptedSwingWithLoudness(false, 0.42f, 0.55f, false);
+		Caption(
+			NSLOCTEXT("IGMissingFloor", "CaptionMokSlamsAnnex", "[철문이 쾅 닫히는 소리]"),
+			Door->GetLatchSoundLocation(), LastAlarmCaptionSeconds, 0.0f);
+	}
+	ThinkOnce(TEXT("Night3.MokAvoidsAnnex"),
+		NSLOCTEXT("IGMissingFloor", "YudamMokAvoidsAnnex", "5층에는 안 들어와."));
+	Caption(
+		NSLOCTEXT("IGMissingFloor", "CaptionMokHurries", "[슬리퍼 소리가 급히 멀어진다]"),
+		GetFeet(), LastAlarmCaptionSeconds, 0.0f);
+	UE_LOG(LogTemp, Display, TEXT("MANAGER_KEYHUNT annex slammed"));
+	BeginRetreat(IGManagerPatrol::KnockRestSeconds);
+}
+
+bool AIGManagerPatrol::IsForbiddenNow(const FVector& Feet) const
+{
+	return !bKeyHunt && IsForbiddenFourthFloor(Feet);
+}
+
+bool AIGManagerPatrol::IsInsideAnnex(const FVector& Feet)
+{
+	// 5층 증축부 안(씬 BuildFifthFloorAnnex). 문선 Y 452.5 안쪽이다.
+	return Feet.X > -390.0f && Feet.X < 390.0f
+		&& Feet.Y > 460.0f && Feet.Y < 940.0f
+		&& Feet.Z > 1150.0f && Feet.Z < 1450.0f;
+}
+
 // -- 감각 --------------------------------------------------------------------
 
 void AIGManagerPatrol::UpdateSenses(const float DeltaSeconds)
@@ -1447,8 +1971,26 @@ void AIGManagerPatrol::UpdateSenses(const float DeltaSeconds)
 	{
 		return;
 	}
-	// 4층 복도에 선 그녀는 비추기만 한다. 그 복도로는 들어가지 않는다.
-	if (Exposure >= 1.0f && !IsForbiddenFourthFloor(GetPlayerFeet()))
+	// 열쇠를 찾다가 5층 문간에서 안을 비췄는데 유담이 서 있다. 안으로 들어가지도, 확인하러
+	// 다가가지도 않는다. 문이 다 열리면 쾅 닫고 서둘러 내려간다.
+	const AIGSwingDoor* Gate = AnnexDoor.Get();
+	if (bKeyHunt && (bLit || bClose) && Gate && Gate->IsOpen() && IsInsideAnnex(GetPlayerFeet())
+		&& Nodes.IsValidIndex(AnnexFrontNode)
+		&& FVector::Dist2D(Feet, Nodes[AnnexFrontNode].Feet) < 60.0f
+		&& FMath::Abs(Feet.Z - Nodes[AnnexFrontNode].Feet.Z) < 40.0f)
+	{
+		bSawInAnnex = true;
+	}
+	if (bSawInAnnex)
+	{
+		if (!Gate || !Gate->IsSwinging())
+		{
+			SlamAnnexAndFlee();
+		}
+		return;
+	}
+	// 4층 복도에 있는 유담은 비추기만 하고 복도로는 들어가지 않는다(열쇠를 찾을 때만 예외).
+	if (Exposure >= 1.0f && !IsForbiddenNow(GetPlayerFeet()))
 	{
 		BeginChase();
 		return;
@@ -1819,20 +2361,7 @@ void AIGManagerPatrol::PlayStep()
 {
 	const FVector Feet = GetFeet();
 	// 밟은 표면을 본다. 계단 철판이면 쇳소리, 나머지는 슬리퍼를 끄는 소리다.
-	bool bMetal = false;
-	if (const UWorld* World = GetWorld())
-	{
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(IGManagerPatrolStep), false, this);
-		FHitResult Hit;
-		if (World->LineTraceSingleByChannel(
-				Hit, Feet + FVector(0.0f, 0.0f, 30.0f), Feet - FVector(0.0f, 0.0f, 40.0f),
-				ECC_Visibility, Params)
-			&& Hit.GetComponent()
-			&& Hit.GetComponent()->ComponentHasTag(FName(TEXT("Footstep.MetalStair"))))
-		{
-			bMetal = true;
-		}
-	}
+	const bool bMetal = IGWalker::FindSurface(GetWorld(), Feet, this) == EIGFootstepSurface::MetalStair;
 	StepSeed = StepSeed * 1664525u + 1013904223u;
 	const float Loud = State == EIGManagerPatrolState::Chasing || State == EIGManagerPatrolState::Retreating
 		? 0.72f : 0.5f;

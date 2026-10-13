@@ -46,6 +46,7 @@
 | `/Game/Meshes/SK_Eoduksini`, `SK_Eoduksini_Skeleton`, `/Game/Prototype/Materials/MI_Eoduksini`, `/Game/Prototype/Textures/T_Eoduksini_{D,N,ORM}` | 직접 제작 (gpt-image 점토 원형 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/EoduksiniClay_20261008.png`(+JSON), `Content/SourceArt/Generated/Eoduksini/` | 어둑시니 몸. 동작 없이 뼈 넷만 있고, 게임이 허리와 팔을 직접 돌린다 |
 | `/Game/Meshes/SK_PolicePatrol`, `SK_PolicePatrol_Skeleton`, `A_PolicePatrol_{Idle,Walk,LookBack,Knock,Listen}`, `/Game/Prototype/Materials/MI_PolicePatrol`, `/Game/Prototype/Textures/T_PolicePatrol_{D,N,ORM}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile officer`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PolicePatrolFront_20261012.png`(+JSON), `Content/SourceArt/Generated/PolicePatrol/` | 셋째 아침 5층 현장 확인에 오는 순찰 경찰관. 벽을 세 번 두드리는 동작과 귀를 대는 동작이 있다 |
 | `/Game/Meshes/SK_PaperGuest`, `SK_PaperGuest_Skeleton`, `/Game/Prototype/Materials/MI_PaperGuest`, `/Game/Prototype/Textures/T_PaperGuest_{D,N,ORM}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py --keep-color`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PaperGuestFront_20261012.png`(+JSON), `Content/SourceArt/Generated/PaperGuest/` | 문 밖 손님의 종이 몸. 원기둥에 종이를 붙인 예전 몸을 바꿨다. 얼굴 자리에 SM_DoorDeliveryMagnet이 붙는다 |
+| `/Game/Meshes/SM_SeoVoiceRecorder`, `/Game/Prototype/Materials/MI_SeoVoiceRecorder`, `/Game/Prototype/Textures/T_SeoVoiceRecorder_{D,N,ORM}` | 직접 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/SeoVoiceRecorder_20261012.png`(+JSON), `Scripts/blender/build_seo_recorder.py` | 5층 첫 판재 더미 밑에 끈만 나와 있는 서일영 소형 녹음기. 윗면에만 석고 가루가 있고 스피커 구멍은 점 격자로 구웠다 |
 | `/Game/UI/Textures/T_EpilogueDoorNote_D` | 직접 제작 (게임 안 렌더 `Run-EpilogueDoorStill.ps1`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/T_EpilogueDoorNote_D.png` | 에필로그 「403호 문」 정지 화면. 마지막 쪽지만 붙은 403호 문이고, 호수 표찰은 들지 않는다 |
 | `/Game/Prototype/Textures/T_StairWetBootprints_M`, `/Game/Prototype/Materials/M_StairWetBootprints` | 직접 제작 (gpt-image 마스크 → 회색조 축소, 데칼 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 가공(회색조·512px·흐림 1.2px) | `Content/SourceArt/AI/StairWetBootprints_20261007.png`(+JSON), `Scripts/import_stair_bootprints.py` | 「뒤따르는 발」이 남기는 젖은 작업화 자국 |
 | `/Game/Meshes/SM_PocketFlashlight`, `SM_ServicePressurePanel` | 직접 제작 (gpt-image 형태 참고·바탕 그림 → Blender 모델링·베이크) | 프로젝트 소유 | 2026-10-02 | 원본 | `Content/SourceArt/AI/PocketFlashlight_20261002.png`, `PlasterPressure_20261002.png`(+JSON), `Scripts/blender/build_pocket_flashlight.py`, `build_service_pressure_panel.py` | 현관 손전등과 들뜬 보수판 |
@@ -701,4 +702,19 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   못 불러오면 예전 종이 낱장 몸으로 돌아간다
 - 권리/참조: 한국 아파트 현관문에 쌓이는 전단과 자석, 안내문을 겹친 가상의 존재다. 종이의 인쇄는 읽히지 않는
   색 덩어리와 그림 기호다
+- 프롬프트 전문: 같은 이름의 JSON
+
+## 2026-10-12 서일영의 녹음기
+
+- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), Blender 5.2 절차 모델링
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/SeoVoiceRecorder_20261012.png`
+    `360049F919248D5EC00241CE17495BF924CE8F2C10EF0EBB4DA25144E9AC1F7E`
+- 파생: 시안은 형태와 색 참고로만 쓰고 텍스처로는 쓰지 않았다. `build_seo_recorder.py`가 몸통(11 x 3.8 x 1.5 cm),
+  액정, 녹음 버튼, 회색 버튼 3개, 스피커 그릴, 납작하게 눌린 손목끈을 만들고 512px D/N/ORM으로 굽는다. 석고 가루는
+  위를 향한 면에만 2~3 cm 크기의 부드러운 얼룩으로 올리고, 스피커 구멍은 2.6 mm 간격 점 격자로 굽는다.
+  얇은 판에 준 베벨이 두께의 절반을 넘으면 면이 뒤집혀 AO가 0으로 구워져서 베벨 폭을 줄였다. 삼각형 1,572개, 머티리얼 1개
+- 런타임: AIGSeoRecorder가 5층 첫 판재 더미 남쪽 끝 받침목 사이에 눕혀 둔다. 그림자와 디스턴스 필드 조명은 끄고
+  12 m 안에서만 렌더링한다. 줍기 판정은 판재 밖으로 나온 끝과 끈을 덮는 박스로 따로 둔다
+- 권리/참조: 특정 제품을 따라 만들지 않은 흔한 소형 녹음기다. 몸통에 글자나 상표가 없다
 - 프롬프트 전문: 같은 이름의 JSON

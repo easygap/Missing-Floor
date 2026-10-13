@@ -1680,6 +1680,18 @@
         10.0
       ]
     },
+    "SM_SeoVoiceRecorder": {
+      "origin": [
+        -3.0001,
+        0.5479,
+        0.82
+      ],
+      "extent": [
+        8.5101,
+        2.4479,
+        0.82
+      ]
+    },
     "SM_ServiceBell": {
       "origin": [
         0.0,

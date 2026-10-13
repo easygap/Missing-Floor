@@ -40,6 +40,8 @@ public:
 	 * C는 매물 화면과 재도전을 스스로 소유하므로 여기로 오지 않는다.
 	 */
 	bool StartEpilogue(AIGPlayerCharacter* InPlayer, FName EndingId);
+	/** 검사용. 지금 저장 상태로 보도 자막을 만든다. */
+	TArray<FText> BuildNewsLinesForTesting() const { return BuildNewsLines(); }
 
 	bool IsActive() const { return bActive; }
 	FName GetEndingId() const { return ActiveEndingId; }

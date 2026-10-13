@@ -691,6 +691,10 @@ $reviewedTickingFiles = @(
 	'IGSiteCheckVisit.cpp',
 	# -IGSiteCheckProbe에서만 생성한다. 경찰의 현장 확인을 옆에서 보거나 403호에서 기다리고 종료한다.
 	'IGSiteCheckProbe.cpp',
+	# -IGSeoRecorderProbe에서만 생성한다. 5층 녹음기를 끝까지 듣고 골목 약봉투를 집어 본 뒤 종료한다.
+	'IGSeoRecorderProbe.cpp',
+	# -IGManagerKeyHuntProbe에서만 생성한다. 관리인이 열쇠를 찾으러 403호·옥상·5층 문을 도는 길을 보고 종료한다.
+	'IGManagerKeyHuntProbe.cpp',
 	# 들뜬 보수판. 눌렸다 튀어나오는 1.6초 동안만 켜고 끝나면 끈다.
 	'IGResonantPanel.cpp',
 	# 전용 인자로만 생성한다. 실제 오디오 페이드와 충돌을 순서대로 확인한 뒤 종료한다.

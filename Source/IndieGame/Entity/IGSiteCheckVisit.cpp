@@ -9,10 +9,12 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Core/IGOnScreen.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
+#include "Entity/IGWalkerKit.h"
 #include "Environment/IGDustSubsystem.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
@@ -262,53 +264,15 @@ FVector AIGSiteCheckVisit::GetManagerFeet() const
 
 void AIGSiteCheckVisit::SetRoute(FWalker& Walker, const TArray<FVector>& Points) const
 {
-	Walker.Route = Points;
-	Walker.RouteDistance.Reset();
-	float Total = 0.0f;
-	Walker.RouteDistance.Add(0.0f);
-	for (int32 Index = 1; Index < Walker.Route.Num(); ++Index)
-	{
-		Total += FVector::Dist(Walker.Route[Index - 1], Walker.Route[Index]);
-		Walker.RouteDistance.Add(Total);
-	}
+	Walker.Path.StairSlope = IGSiteCheckVisit::StairSlope;
+	Walker.Path.Set(Points);
 	Walker.Travelled = 0.0f;
 }
 
 FVector AIGSiteCheckVisit::RoutePoint(
 	const FWalker& Walker, const float Distance, FVector* OutDirection, bool* bOutOnStair) const
 {
-	if (Walker.Route.IsEmpty())
-	{
-		return Walker.Feet->GetComponentLocation();
-	}
-	if (Walker.Route.Num() == 1)
-	{
-		return Walker.Route[0];
-	}
-	int32 Segment = Walker.Route.Num() - 2;
-	for (int32 Index = 0; Index + 1 < Walker.Route.Num(); ++Index)
-	{
-		if (Distance <= Walker.RouteDistance[Index + 1])
-		{
-			Segment = Index;
-			break;
-		}
-	}
-	const FVector& From = Walker.Route[Segment];
-	const FVector& To = Walker.Route[Segment + 1];
-	const float Length = Walker.RouteDistance[Segment + 1] - Walker.RouteDistance[Segment];
-	const float Alpha = Length > KINDA_SMALL_NUMBER
-		? FMath::Clamp((Distance - Walker.RouteDistance[Segment]) / Length, 0.0f, 1.0f)
-		: 1.0f;
-	if (OutDirection)
-	{
-		*OutDirection = (To - From).GetSafeNormal();
-	}
-	if (bOutOnStair)
-	{
-		*bOutOnStair = FMath::Abs(To.Z - From.Z) > IGSiteCheckVisit::StairSlope * FVector::Dist2D(From, To);
-	}
-	return FMath::Lerp(From, To, Alpha);
+	return Walker.Path.At(Distance, Walker.Feet->GetComponentLocation(), OutDirection, bOutOnStair);
 }
 
 void AIGSiteCheckVisit::Place(FWalker& Walker, const FVector& Feet, const float Yaw) const
@@ -332,26 +296,13 @@ void AIGSiteCheckVisit::Show(FWalker& Walker, const bool bVisible)
 
 void AIGSiteCheckVisit::PlayBody(FWalker& Walker, UAnimSequence* Sequence, const float Rate, const bool bLoop)
 {
-	if (!Sequence)
-	{
-		return;
-	}
-	if (Walker.ActiveAnim != Sequence)
-	{
-		Walker.Body->PlayAnimation(Sequence, bLoop);
-		Walker.ActiveAnim = Sequence;
-	}
-	Walker.Body->SetPlayRate(Rate);
+	IGWalker::PlayBody(Walker.Body, Walker.ActiveAnim, Sequence, Rate, bLoop);
 }
 
 void AIGSiteCheckVisit::Turn(FWalker& Walker, const float TargetYaw, const float DeltaSeconds, const float Speed) const
 {
-	FRotator Rotation = Walker.Feet->GetComponentRotation();
-	const float Delta = FMath::FindDeltaAngleDegrees(Rotation.Yaw, TargetYaw);
-	Rotation.Yaw += Delta * FMath::Clamp(DeltaSeconds * Speed, 0.0f, 1.0f);
-	Rotation.Pitch = 0.0f;
-	Rotation.Roll = 0.0f;
-	Walker.Feet->SetWorldRotation(Rotation);
+	Walker.Feet->SetWorldRotation(FRotator(
+		0.0f, IGWalker::TurnYaw(Walker.Feet->GetComponentRotation().Yaw, TargetYaw, DeltaSeconds, Speed), 0.0f));
 }
 
 void AIGSiteCheckVisit::TurnToward(FWalker& Walker, const FVector& Target, const float DeltaSeconds, const float Speed) const
@@ -482,9 +433,9 @@ bool AIGSiteCheckVisit::TryBegin()
 
 	FVector Direction = FVector::ForwardVector;
 	RoutePoint(Manager, 0.0f, &Direction);
-	Place(Manager, Manager.Route[0], Direction.GetSafeNormal2D().Rotation().Yaw);
+	Place(Manager, Manager.Path.Points[0], Direction.GetSafeNormal2D().Rotation().Yaw);
 	RoutePoint(Officer, 0.0f, &Direction);
-	Place(Officer, Officer.Route[0], Direction.GetSafeNormal2D().Rotation().Yaw);
+	Place(Officer, Officer.Path.Points[0], Direction.GetSafeNormal2D().Rotation().Yaw);
 	Show(Manager, true);
 	Show(Officer, true);
 	PlayBody(Manager, Manager.IdleAnim, 1.0f);
@@ -504,8 +455,8 @@ void AIGSiteCheckVisit::Hurry()
 	const double Now = GetWorld()->GetTimeSeconds();
 	if (Stage == EStage::Climbing
 		&& !IsPlayerOnRoof()
-		&& !Officer.Body->WasRecentlyRendered(0.3f)
-		&& !Manager.Body->WasRecentlyRendered(0.3f))
+		&& !IGOnScreen::WasRecentlySeen(Officer.Body, 0.3f)
+		&& !IGOnScreen::WasRecentlySeen(Manager.Body, 0.3f))
 	{
 		// 아무도 안 보는 계단 위다. 문을 열어 두고 제자리로 옮긴다.
 		for (const TWeakObjectPtr<AIGSwingDoor>& Gate : {StairGate, AnnexGate})
@@ -740,9 +691,7 @@ bool AIGSiteCheckVisit::Walk(FWalker& Walker, const float DeltaSeconds, const bo
 		: IGSiteCheckVisit::FlatSpeed / Walker.CycleSpeed;
 	PlayBody(Walker, Walker.WalkAnim, Rate);
 	Walker.bWalking = true;
-	const float Before = Walker.StepPhase;
-	Walker.StepPhase += DeltaSeconds * Rate / Walker.HalfCycleSeconds;
-	if (FMath::FloorToInt(Walker.StepPhase) != FMath::FloorToInt(Before))
+	if (IGWalker::AdvanceStepPhase(Walker.StepPhase, DeltaSeconds, Rate, Walker.HalfCycleSeconds))
 	{
 		PlayStep(Walker, bOnStair);
 	}
@@ -752,47 +701,12 @@ bool AIGSiteCheckVisit::Walk(FWalker& Walker, const float DeltaSeconds, const bo
 void AIGSiteCheckVisit::PlayStep(FWalker& Walker, const bool bOnStair)
 {
 	const FVector Feet = Walker.Feet->GetComponentLocation();
-	// 밟은 표면을 본다. 옥상 계단은 철판, 옥상은 방수층, 5층은 석고 분진이다.
-	EIGFootstepSurface Surface = EIGFootstepSurface::Concrete;
-	FCollisionQueryParams Query(SCENE_QUERY_STAT(IGSiteCheckStep), false, this);
-	FHitResult Hit;
-	if (GetWorld()->LineTraceSingleByChannel(
-			Hit, Feet + FVector(0.0f, 0.0f, 30.0f), Feet - FVector(0.0f, 0.0f, 40.0f), ECC_Visibility, Query)
-		&& Hit.GetComponent())
-	{
-		const UPrimitiveComponent* Floor = Hit.GetComponent();
-		if (Floor->ComponentHasTag(FName(TEXT("Footstep.MetalStair"))))
-		{
-			Surface = EIGFootstepSurface::MetalStair;
-		}
-		else if (Floor->ComponentHasTag(FName(TEXT("Footstep.Rooftop"))))
-		{
-			Surface = EIGFootstepSurface::Rooftop;
-		}
-		else if (Floor->ComponentHasTag(FName(TEXT("Footstep.GypsumDebris"))))
-		{
-			Surface = EIGFootstepSurface::GypsumDebris;
-		}
-	}
-	const TCHAR* Prefix = TEXT("Foot_Concrete");
-	int32 Variants = 5;
-	switch (Surface)
-	{
-	case EIGFootstepSurface::MetalStair: Prefix = TEXT("Foot_MetalStair"); break;
-	case EIGFootstepSurface::Rooftop: Prefix = TEXT("Foot_Rooftop"); Variants = 3; break;
-	case EIGFootstepSurface::GypsumDebris: Prefix = TEXT("Foot_Gypsum"); break;
-	default: break;
-	}
-	Walker.StepSeed = Walker.StepSeed * 1664525u + 1013904223u;
-	USoundBase* Sound = IGAudio::SampleVariantOr(Prefix, Variants, Walker.StepSeed,
-		[this, Surface]() -> USoundBase*
-		{
-			return UIGToneSequenceSoundWave::CreateSurfaceFootstep(this, Surface, 0.8f, 0.55f);
-		});
-	// 구둣발이라 운동화보다 조금 크다.
-	IGAudio::SpawnExpendableOneShotAt(
-		this, Sound, Feet + FVector(0.0f, 0.0f, 6.0f), Surface == EIGFootstepSurface::MetalStair ? 0.42f : 0.34f,
-		0.95f + static_cast<float>(Walker.StepSeed % 9u) * 0.01f, 150.0f, 1500.0f, EIGAudioBus::World);
+	// 밟은 표면을 본다. 옥상 계단은 철판, 옥상은 방수층, 5층은 석고 분진이다. 구둣발이라
+	// 운동화보다 조금 크다.
+	const EIGFootstepSurface Surface = IGWalker::FindSurface(GetWorld(), Feet, this);
+	IGWalker::PlayFootstep(
+		this, Surface, Walker.StepSeed, Feet, Surface == EIGFootstepSurface::MetalStair ? 0.42f : 0.34f,
+		0.95f, 0.8f, 0.55f);
 	++StepCount;
 	// 5층 바닥의 분진에는 신발 자국이 남는다. 다른 바닥은 분진 영역이 알아서 거른다.
 	if (UIGDustSubsystem* Dust = GetWorld()->GetSubsystem<UIGDustSubsystem>())
@@ -803,7 +717,7 @@ void AIGSiteCheckVisit::PlayStep(FWalker& Walker, const bool bOnStair)
 	}
 	// 철판 계단을 오르는 구둣발이 처음 들리고 몸은 안 보이면 한 번 자막을 단다.
 	if (Stage == EStage::Climbing && bOnStair && Surface == EIGFootstepSurface::MetalStair && !bCaptionedSteps
-		&& !Walker.Body->WasRecentlyRendered(0.2f))
+		&& !IGOnScreen::WasRecentlySeen(Walker.Body, 0.2f))
 	{
 		FVector PlayerFeet;
 		if (GetPlayerFeet(PlayerFeet) && FVector::Dist(PlayerFeet, Feet) < 1100.0f)
@@ -1141,7 +1055,7 @@ void AIGSiteCheckVisit::TickLingering(const float DeltaSeconds, const double Now
 			0.32f, 1.0f, 80.0f, 900.0f, EIGAudioBus::World);
 	}
 	// 그녀가 옥상을 떠났다. 5층은 아래에서 안 보인다.
-	if (!IsPlayerOnRoof() && !Officer.Body->WasRecentlyRendered(0.3f) && !Manager.Body->WasRecentlyRendered(0.3f))
+	if (!IsPlayerOnRoof() && !IGOnScreen::WasRecentlySeen(Officer.Body, 0.3f) && !IGOnScreen::WasRecentlySeen(Manager.Body, 0.3f))
 	{
 		Withdraw();
 		return;
@@ -1206,7 +1120,7 @@ void AIGSiteCheckVisit::TickLeaving(const float DeltaSeconds, const double Now)
 		{
 			continue;
 		}
-		if (Walker->Body->WasRecentlyRendered(0.25f))
+		if (IGOnScreen::WasRecentlySeen(Walker->Body, 0.25f))
 		{
 			Walker->LastSeenAt = Now;
 			continue;

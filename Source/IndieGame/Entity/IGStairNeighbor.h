@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Entity/IGWalkerKit.h"
 #include "IGStairNeighbor.generated.h"
 
 class AIGStairNeighbor;
@@ -86,7 +87,7 @@ public:
 private:
 	void SetRoute(const TArray<FVector>& Points);
 	FVector RoutePoint(float Distance, FVector* OutDirection = nullptr, bool* bOutOnStair = nullptr) const;
-	float GetRouteLength() const { return RouteDistance.IsEmpty() ? 0.0f : RouteDistance.Last(); }
+	float GetRouteLength() const { return Path.Length(); }
 	void Walk(float DeltaSeconds);
 	bool CheckMeet(double Now);
 	bool CanSeePlayer() const;
@@ -117,13 +118,11 @@ private:
 	TObjectPtr<UAnimSequence> ActiveAnim;
 
 	EStage Stage = EStage::Hidden;
-	/** 지금 걷는 길과 그 길의 누적 거리(cm). */
-	TArray<FVector> Route;
-	TArray<float> RouteDistance;
+	/** 지금 걷는 길. 높이가 30 cm 넘게 바뀌는 구간이 계단이다. */
+	FIGWalkerRoute Path;
 	float Travelled = 0.0f;
 	/** 올라온 길. 도중에 멈췄다 내려갈 때 거꾸로 걷는다. */
-	TArray<FVector> ArrivalRoute;
-	TArray<float> ArrivalDistance;
+	FIGWalkerRoute ArrivalPath;
 	float ArrivalTravelled = 0.0f;
 	/** 다 내려간 뒤 그녀 눈에 아직 보이면 조금 더 걷는다. */
 	float ExitWalkSeconds = 0.0f;

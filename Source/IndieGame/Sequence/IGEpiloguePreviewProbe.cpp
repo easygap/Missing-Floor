@@ -1,12 +1,16 @@
 ﻿#include "Sequence/IGEpiloguePreviewProbe.h"
 
+#include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Entity/IGMissingFloorEpilogueDirector.h"
 #include "EngineUtils.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
 #include "IndieGame.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
+#include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Player/IGPlayerCharacter.h"
 #include "ShaderCompiler.h"
 #include "UnrealClient.h"
@@ -59,6 +63,24 @@ void AIGEpiloguePreviewProbe::Tick(const float DeltaSeconds)
 			Epilogue = *It;
 		}
 		bStarted = true;
+		// -IGEpiloguePreviewAllSeen: 목격과 이웃 비트를 다 채워 장면마다 가장 긴 글을 본다.
+		// 번역에서 글이 넘치는지는 가장 긴 판으로 재야 한다.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGEpiloguePreviewAllSeen")))
+		{
+			UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+			if (UIGMissingFloorNarrativeSubsystem* Narrative = GameInstance
+				? GameInstance->GetSubsystem<UIGMissingFloorNarrativeSubsystem>()
+				: nullptr)
+			{
+				for (uint8 Raw = 1; Raw <= static_cast<uint8>(EIGMissingFloorWitness::SeoVoiceRecorder); ++Raw)
+				{
+					Narrative->RecordWitness(static_cast<EIGMissingFloorWitness>(Raw));
+				}
+				Narrative->MarkBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro")));
+				Narrative->MarkBeatPlayed(FName(TEXT("Day.Jeongwoo.Guest")));
+				UE_LOG(LogIndieGame, Display, TEXT("EPILOGUE_PREVIEW all witnesses seen"));
+			}
+		}
 		if (!Epilogue.IsValid() || !Epilogue->StartEpilogue(Player.Get(), EndingId))
 		{
 			UE_LOG(LogIndieGame, Display, TEXT("EPILOGUE_PREVIEW could not start %s"), *EndingId.ToString());

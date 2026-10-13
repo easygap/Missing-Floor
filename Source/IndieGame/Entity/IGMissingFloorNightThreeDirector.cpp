@@ -17,8 +17,10 @@
 #include "Entity/IGMissingFloorPuzzleTwoDirector.h"
 #include "Entity/IGNightPhaseDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
+#include "Entity/IGSeoRecorder.h"
 #include "GameFramework/PlayerController.h"
 #include "Interaction/IGDoorLatch.h"
+#include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGReadableNote.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Interaction/IGZoneTrigger.h"
@@ -628,6 +630,30 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			TunerCartPush->OnExamined.AddUObject(
 				this, &AIGMissingFloorNightThreeDirector::HandleTunerCartPushed);
 		}
+
+		// 카트 뒤, 북서쪽 구석과의 틈에 웅크린다(EXPANSION_PLAN §5의 5층 자리). 앞면은 철문
+		// 쪽(남동, yaw -45)을 본다. 카트 앞면 가운데가 자리의 원점이고, 눈은 그 뒤 75 cm에서
+		// 카트 윗면(78 cm) 너머로 문간을 내다본다. 나오는 자리는 카트 남쪽이다. 카트를 밀어
+		// 보는 상자(카트 몸통)와 겹치지 않게, 숨는 상자는 카트 윗면 위에 둔다.
+		SpawnParameters.Name = TEXT("MissingFloorCartHidingSpot");
+		CartHidingSpot = World->SpawnActor<AIGHidingSpot>(
+			AIGHidingSpot::StaticClass(),
+			FTransform(FRotator(0.0f, -45.0f, 0.0f), FVector(-258.8f, 843.8f, 1200.0f)),
+			SpawnParameters);
+		if (CartHidingSpot)
+		{
+			CartHidingSpot->Configure(
+				EIGHidingView::UnderBed,
+				FVector(-75.0f, 0.0f, 86.0f),
+				FVector(55.0f, -45.0f, 0.0f),
+				FVector(-30.0f, 0.0f, 96.0f),
+				FVector(30.0f, 35.0f, 16.0f),
+				50.0f,
+				12.0f,
+				true);
+			CartHidingSpot->SetInteractionPrompt(
+				NSLOCTEXT("IGMissingFloor", "HideBehindCartPrompt", "카트 뒤에 숨기"));
+		}
 	}
 
 	SpawnParameters.Name = TEXT("MissingFloorRiserValve");
@@ -677,6 +703,19 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		/*bPresentationVisible=*/false);
 	ImpactMark->OnExamined.AddUObject(
 		this, &AIGMissingFloorNightThreeDirector::HandleImpactMarkExamined);
+
+	// 같은 판재 더미 밑. 그 새벽 서일영이 켜 두고 올라온 녹음기다(§3.4). 메시가 없으면
+	// 세우지 않는다. 선택적 목격이라 없어도 밤3은 그대로 풀린다.
+	SpawnParameters.Name = TEXT("MissingFloorSeoRecorder");
+	SeoRecorder = World->SpawnActor<AIGSeoRecorder>(
+		AIGSeoRecorder::StaticClass(),
+		FTransform(FRotator::ZeroRotator, AIGSeoRecorder::GetRestingLocation()),
+		SpawnParameters);
+	if (SeoRecorder && !SeoRecorder->Configure())
+	{
+		SeoRecorder->Destroy();
+		SeoRecorder = nullptr;
+	}
 
 	// Per-bay verbs: an ear (quiet, needs the water) and a fist (loud,
 	// needs nothing but nerve). Same answer, two prices — §7's promise.
@@ -1148,6 +1187,10 @@ void AIGMissingFloorNightThreeDirector::SetHourActive(const bool bHourActive)
 	RefreshKeyringAvailability();
 	RefreshTuningHammerAvailability();
 	bHourCurrentlyActive = bHourActive;
+	if (SeoRecorder)
+	{
+		SeoRecorder->SetHourActive(bHourActive);
+	}
 	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 	// 대답은 한 번 받으면 끝이다. 저장에서 이어 붙인 세션은 이 플래그가 비어
 	// 있어서, 수첩을 다시 읽으면 벽이 다시 열리고 P4가 헛돈다.
@@ -3088,6 +3131,22 @@ void AIGMissingFloorNightThreeDirector::TickDistantSeo()
 			? IGNightThree::DistantSeoStreetRetreatLocation
 			: IGNightThree::DistantSeoRetreatLocation;
 		StepAt(Feet, 0.34f);
+		// 급히 돌아서다 손에 든 약봉투를 떨어뜨린다. 서 있던 자리에 남는다.
+		IGAudio::SpawnOneShotAt(
+			this,
+			UIGToneSequenceSoundWave::CreatePaperDoorSlide(this),
+			FVector(Feet.X, Feet.Y, 4.0f),
+			0.42f,
+			0.92f,
+			200.0f,
+			1800.0f,
+			EIGAudioBus::World);
+		AIGHorrorHUD::PushAudioCaptionAt(
+			this,
+			NSLOCTEXT("IGMissingFloor", "DistantSeoDropCaption", "종이 떨어지는 소리"),
+			1.8f,
+			Feet);
+		OnDistantSeoDropped.Broadcast();
 		GetWorldTimerManager().SetTimer(
 			SeoWatchTimer,
 			this,
@@ -3149,6 +3208,8 @@ void AIGMissingFloorNightThreeDirector::HideDistantSeo(const bool bSeenOnce)
 		{
 			Narrative->MarkBeatPlayed(IGNightThree::DistantSeoBeatId);
 		}
+		// 눈을 돌린 사이에 없어졌어도 약봉투는 그 자리에 있다.
+		OnDistantSeoDropped.Broadcast();
 		return;
 	}
 	// 알아보지 못했으면 다음에 편의점에 들를 때 다시 선다.

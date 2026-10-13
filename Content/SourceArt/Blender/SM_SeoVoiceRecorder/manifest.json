@@ -1,0 +1,52 @@
+{
+  "name": "SM_SeoVoiceRecorder",
+  "mesh_class": "prop",
+  "fbx": "SM_SeoVoiceRecorder.fbx",
+  "textures": {
+    "D": "SM_SeoVoiceRecorder_D.png",
+    "N": "SM_SeoVoiceRecorder_N.png",
+    "ORM": "SM_SeoVoiceRecorder_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 1572,
+  "bounds_m": {
+    "min": [
+      -0.1151,
+      -0.019,
+      0.0
+    ],
+    "max": [
+      0.0551,
+      0.03,
+      0.0164
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "생성 참고 이미지를 보고 메시와 절차 재질로 재구성한 소형 녹음기. 몸통 11 x 3.8 x 1.5 cm, 액정 쪽 +X, 손목끈 -X, 화면이 +Z로 바닥에 누운 자세, 바닥 원점(끈 포함 외곽의 가운데). 윗면에만 석고 가루, 스피커 구멍은 점 격자로 굽는다. 512px D/N/ORM, 재질 1개, UCX 1개(몸통).",
+  "lod_plan": [
+    {
+      "level": 1,
+      "triangle_ratio": 0.45,
+      "screen_size": 0.2
+    },
+    {
+      "level": 2,
+      "triangle_ratio": 0.18,
+      "screen_size": 0.06
+    },
+    {
+      "level": 3,
+      "triangle_ratio": 0.07,
+      "screen_size": 0.015
+    }
+  ],
+  "texture_size": 512,
+  "collision_hulls": 1,
+  "source_image": "Content/SourceArt/AI/SeoVoiceRecorder_20261012.png",
+  "source_usage": "형태와 색 참고. 원본 이미지를 텍스처로 사용하지 않음.",
+  "source_sha256": "360049f919248d5ec00241ce17495bf924ce8f2c10ef0ebb4da25144e9ac1f7e"
+}

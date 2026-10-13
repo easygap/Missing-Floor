@@ -10,6 +10,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Core/IGOnScreen.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
@@ -1185,7 +1186,7 @@ void AIGNeighborhoodLifeDirector::UpdateScooters(
 				? ScooterBodies[SlotIndex].Get() : nullptr;
 			if (Body && Body->IsVisible() && Body->GetStaticMesh() == RiddenScooterMesh && !bParkedRiderPresent
 				&& (Runtime.ParkedSeconds > 6.0f
-					|| (Runtime.ParkedSeconds > 2.0f && !Body->WasRecentlyRendered(0.2f))))
+					|| (Runtime.ParkedSeconds > 2.0f && !IGOnScreen::WasRecentlySeen(Body, 0.2f))))
 			{
 				SetScooterVisible(SlotIndex, true, false);
 			}
@@ -1418,7 +1419,7 @@ void AIGNeighborhoodLifeDirector::AdvanceScooter(
 	}
 	if (bBlocked && Runtime.Speed < 12.0f && !Runtime.bParkAtEnd && Runtime.BlockedSeconds > 12.0f
 		&& ScooterBodies.IsValidIndex(SlotIndex)
-		&& !ScooterBodies[SlotIndex]->WasRecentlyRendered(0.3f))
+		&& !IGOnScreen::WasRecentlySeen(ScooterBodies[SlotIndex], 0.3f))
 	{
 		// 끝내 비켜 주지 않는다. 라이더는 돌아서 다른 길로 갔다(보지 않는 사이에 거둔다).
 		DeactivateScooter(SlotIndex);
@@ -1731,7 +1732,7 @@ void AIGNeighborhoodLifeDirector::RefreshParkedRider(const int32 SlotIndex, cons
 	const UStaticMeshComponent* Body = ScooterBodies[SlotIndex];
 	const bool bSeated = Body && Body->GetStaticMesh() == RiddenScooterMesh;
 	if (!Body || !RiddenScooterMesh || bSeated == bParkedRiderPresent
-		|| (!bForce && Body->WasRecentlyRendered(0.3f)))
+		|| (!bForce && IGOnScreen::WasRecentlySeen(Body, 0.3f)))
 	{
 		return;
 	}
@@ -1762,7 +1763,7 @@ void AIGNeighborhoodLifeDirector::SetParkedRiderPresent(const bool bPresent)
 	}
 	// 보이지 않으면 다시 세워 방향까지 맞춘다. 보이는 동안에는 메시만 나중에 바꾼다.
 	const UStaticMeshComponent* Body = ScooterBodies.IsValidIndex(ParkedSlot) ? ScooterBodies[ParkedSlot].Get() : nullptr;
-	if (Body && !Body->WasRecentlyRendered(0.3f))
+	if (Body && !IGOnScreen::WasRecentlySeen(Body, 0.3f))
 	{
 		DeactivateScooter(ParkedSlot);
 		RefreshParkedScooterPresence();

@@ -206,6 +206,8 @@ namespace IGMissingFloorNarrative
 			return TEXT("Heard.RoofDoorWind");
 		case EIGMissingFloorWitness::BoothInnerRoomHum:
 			return TEXT("Heard.BoothInnerRoomHum");
+		case EIGMissingFloorWitness::SeoVoiceRecorder:
+			return TEXT("Heard.SeoVoiceRecorder");
 		default:
 			return nullptr;
 		}
@@ -742,7 +744,7 @@ void UIGMissingFloorNarrativeSubsystem::NormalizeSnapshot()
 			const FName Candidate = Snapshot.Night.Witnesses[Index];
 			bool bRecognized = false;
 			for (uint8 Raw = 1;
-				Raw <= static_cast<uint8>(EIGMissingFloorWitness::BoothInnerRoomHum);
+				Raw <= static_cast<uint8>(EIGMissingFloorWitness::SeoVoiceRecorder);
 				++Raw)
 			{
 				if (Candidate == GetWitnessId(static_cast<EIGMissingFloorWitness>(Raw)))

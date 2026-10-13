@@ -8,10 +8,12 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Core/IGOnScreen.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Entity/IGWalkerKit.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
 #include "Interaction/IGFireDoorWedge.h"
@@ -134,52 +136,14 @@ bool AIGStairNeighbor::CanWatchThirdFloorDoor(const FVector& PlayerFeet)
 
 void AIGStairNeighbor::SetRoute(const TArray<FVector>& Points)
 {
-	Route = Points;
-	RouteDistance.Reset();
-	float Total = 0.0f;
-	RouteDistance.Add(0.0f);
-	for (int32 Index = 1; Index < Route.Num(); ++Index)
-	{
-		Total += FVector::Dist(Route[Index - 1], Route[Index]);
-		RouteDistance.Add(Total);
-	}
+	Path.StairRise = IGStairNeighbor::StairSegmentRise;
+	Path.Set(Points);
 	Travelled = 0.0f;
 }
 
 FVector AIGStairNeighbor::RoutePoint(const float Distance, FVector* OutDirection, bool* bOutOnStair) const
 {
-	if (Route.IsEmpty())
-	{
-		return GetActorLocation();
-	}
-	if (Route.Num() == 1)
-	{
-		return Route[0];
-	}
-	int32 Segment = Route.Num() - 2;
-	for (int32 Index = 0; Index + 1 < Route.Num(); ++Index)
-	{
-		if (Distance <= RouteDistance[Index + 1])
-		{
-			Segment = Index;
-			break;
-		}
-	}
-	const FVector& From = Route[Segment];
-	const FVector& To = Route[Segment + 1];
-	const float Length = RouteDistance[Segment + 1] - RouteDistance[Segment];
-	const float Alpha = Length > KINDA_SMALL_NUMBER
-		? FMath::Clamp((Distance - RouteDistance[Segment]) / Length, 0.0f, 1.0f)
-		: 1.0f;
-	if (OutDirection)
-	{
-		*OutDirection = (To - From).GetSafeNormal();
-	}
-	if (bOutOnStair)
-	{
-		*bOutOnStair = FMath::Abs(To.Z - From.Z) > IGStairNeighbor::StairSegmentRise;
-	}
-	return FMath::Lerp(From, To, Alpha);
+	return Path.At(Distance, GetActorLocation(), OutDirection, bOutOnStair);
 }
 
 void AIGStairNeighbor::BeginArrival()
@@ -196,8 +160,7 @@ void AIGStairNeighbor::BeginArrival()
 	Points.Append(Climb);
 	Points.Add(GetWaitingFeet());
 	SetRoute(Points);
-	ArrivalRoute = Route;
-	ArrivalDistance = RouteDistance;
+	ArrivalPath = Path;
 	ArrivalTravelled = 0.0f;
 	FVector Direction = FVector::ForwardVector;
 	SetActorLocationAndRotation(RoutePoint(0.0f, &Direction), FRotator(0.0f, Direction.GetSafeNormal2D().Rotation().Yaw, 0.0f));
@@ -223,16 +186,16 @@ void AIGStairNeighbor::Leave()
 	TArray<FVector> Points;
 	Points.Add(GetActorLocation());
 	int32 Segment = 0;
-	for (int32 Index = 0; Index + 1 < ArrivalDistance.Num(); ++Index)
+	for (int32 Index = 0; Index + 1 < ArrivalPath.Distances.Num(); ++Index)
 	{
-		if (ArrivalTravelled >= ArrivalDistance[Index])
+		if (ArrivalTravelled >= ArrivalPath.Distances[Index])
 		{
 			Segment = Index;
 		}
 	}
 	for (int32 Index = FMath::Max(Segment, 1); Index >= 1; --Index)
 	{
-		Points.Add(ArrivalRoute[Index]);
+		Points.Add(ArrivalPath.Points[Index]);
 	}
 	// 3층 계단 목에서 1층 출입구까지. 한 층의 길은 [아래층 출입구, …, 위층 출입구]다.
 	for (int32 Floor = 1; Floor >= 0; --Floor)
@@ -281,26 +244,12 @@ void AIGStairNeighbor::Show(const bool bVisible)
 
 void AIGStairNeighbor::PlayBody(UAnimSequence* Sequence, const float Rate)
 {
-	if (!Sequence)
-	{
-		return;
-	}
-	if (ActiveAnim != Sequence)
-	{
-		Body->PlayAnimation(Sequence, true);
-		ActiveAnim = Sequence;
-	}
-	Body->SetPlayRate(Rate);
+	IGWalker::PlayBody(Body.Get(), ActiveAnim, Sequence, Rate);
 }
 
 void AIGStairNeighbor::TurnTowards(const float TargetYaw, const float DeltaSeconds, const float Speed)
 {
-	FRotator Rotation = GetActorRotation();
-	const float Delta = FMath::FindDeltaAngleDegrees(Rotation.Yaw, TargetYaw);
-	Rotation.Yaw += Delta * FMath::Clamp(DeltaSeconds * Speed, 0.0f, 1.0f);
-	Rotation.Pitch = 0.0f;
-	Rotation.Roll = 0.0f;
-	SetActorRotation(Rotation);
+	SetActorRotation(FRotator(0.0f, IGWalker::TurnYaw(GetActorRotation().Yaw, TargetYaw, DeltaSeconds, Speed), 0.0f));
 }
 
 FVector AIGStairNeighbor::GetPlayerEyes(const APawn& Pawn) const
@@ -443,7 +392,7 @@ void AIGStairNeighbor::Tick(const float DeltaSeconds)
 		if (Travelled >= GetRouteLength())
 		{
 			// 그녀가 아직 보고 있으면 조금 더 걸어 연결통로로 빠진다.
-			if (Body->WasRecentlyRendered(0.25f) && ExitWalkSeconds < IGStairNeighbor::ExitWalkMaxSeconds)
+			if (IGOnScreen::WasRecentlySeen(Body, 0.25f) && ExitWalkSeconds < IGStairNeighbor::ExitWalkMaxSeconds)
 			{
 				ExitWalkSeconds += DeltaSeconds;
 				const FVector Forward = GetActorForwardVector().GetSafeNormal2D();
@@ -474,25 +423,7 @@ void AIGStairNeighbor::Walk(const float DeltaSeconds)
 	for (TActorIterator<AIGFireDoorWedge> It(GetWorld()); It; ++It)
 	{
 		AIGSwingDoor* Door = It->GetDoor();
-		if (!Door || (Door->IsOpen() && !Door->IsSwinging()))
-		{
-			continue;
-		}
-		const FVector Hinge = Door->GetActorLocation();
-		if (FMath::Abs(From.Z - Hinge.Z) > 150.0f && FMath::Abs(To.Z - Hinge.Z) > 150.0f)
-		{
-			continue;
-		}
-		const float FromSide = From.X - Hinge.X;
-		const float ToSide = To.X - Hinge.X;
-		bool bAhead = Door->IsSwinging() && FMath::Abs(FromSide) < 60.0f
-			&& From.Y > Hinge.Y - 20.0f && From.Y < Hinge.Y + 140.0f;
-		if (!bAhead && FromSide * ToSide < 0.0f)
-		{
-			const float CrossY = FMath::Lerp(From.Y, To.Y, FromSide / (FromSide - ToSide));
-			bAhead = CrossY > Hinge.Y - 20.0f && CrossY < Hinge.Y + 140.0f;
-		}
-		if (bAhead)
+		if (Door && IGWalker::IsStairDoorAhead(*Door, From, To))
 		{
 			if (Door->IsFullyClosed())
 			{
@@ -522,9 +453,7 @@ void AIGStairNeighbor::Walk(const float DeltaSeconds)
 		? IGStairNeighbor::StairAnimRate
 		: IGStairNeighbor::FlatSpeed / IGStairNeighbor::WalkCycleSpeed;
 	PlayBody(WalkAnim, Rate);
-	const float Before = StepPhase;
-	StepPhase += DeltaSeconds * Rate / IGStairNeighbor::HalfCycleSeconds;
-	if (FMath::FloorToInt(StepPhase) != FMath::FloorToInt(Before))
+	if (IGWalker::AdvanceStepPhase(StepPhase, DeltaSeconds, Rate, IGStairNeighbor::HalfCycleSeconds))
 	{
 		PlayStep(bOnStair);
 	}
@@ -534,34 +463,19 @@ void AIGStairNeighbor::PlayStep(const bool bOnStair)
 {
 	const FVector Feet = GetActorLocation();
 	// 밟은 표면을 본다. 계단 철판이면 쇳소리, 나머지는 운동화가 돌바닥을 딛는 소리다.
-	bool bMetal = false;
-	FCollisionQueryParams Query(SCENE_QUERY_STAT(IGStairNeighborStep), false, this);
-	FHitResult Hit;
-	if (GetWorld()->LineTraceSingleByChannel(
-			Hit, Feet + FVector(0.0f, 0.0f, 30.0f), Feet - FVector(0.0f, 0.0f, 40.0f), ECC_Visibility, Query)
-		&& Hit.GetComponent()
-		&& Hit.GetComponent()->ComponentHasTag(FName(TEXT("Footstep.MetalStair"))))
-	{
-		bMetal = true;
-	}
-	StepSeed = StepSeed * 1664525u + 1013904223u;
-	USoundBase* Sound = bMetal
-		? IGAudio::SampleVariantOr(TEXT("Foot_MetalStair"), 5, StepSeed,
-			[this]() -> USoundBase*
-			{
-				return UIGToneSequenceSoundWave::CreateSurfaceFootstep(this, EIGFootstepSurface::MetalStair, 0.82f, 0.6f);
-			})
-		: IGAudio::SampleVariantOr(TEXT("Foot_Concrete"), 5, StepSeed,
-			[this]() -> USoundBase*
-			{
-				return UIGToneSequenceSoundWave::CreateSurfaceFootstep(this, EIGFootstepSurface::Concrete, 0.7f, 0.5f);
-			});
-	IGAudio::SpawnExpendableOneShotAt(
-		this, Sound, Feet + FVector(0.0f, 0.0f, 6.0f), bMetal ? 0.4f : 0.32f,
-		0.97f + static_cast<float>(StepSeed % 9u) * 0.01f, 150.0f, 1500.0f, EIGAudioBus::World);
+	const bool bMetal = IGWalker::FindSurface(GetWorld(), Feet, this) == EIGFootstepSurface::MetalStair;
+	IGWalker::PlayFootstep(
+		this,
+		bMetal ? EIGFootstepSurface::MetalStair : EIGFootstepSurface::Concrete,
+		StepSeed,
+		Feet,
+		bMetal ? 0.4f : 0.32f,
+		0.97f,
+		bMetal ? 0.82f : 0.7f,
+		bMetal ? 0.6f : 0.5f);
 	++StepCount;
 	// 올라오는 철판 발소리가 처음 들리고 몸은 아직 안 보이면 한 번 자막을 단다.
-	if (Stage == EStage::Arriving && bMetal && bOnStair && !bCaptionedSteps && !Body->WasRecentlyRendered(0.2f))
+	if (Stage == EStage::Arriving && bMetal && bOnStair && !bCaptionedSteps && !IGOnScreen::WasRecentlySeen(Body, 0.2f))
 	{
 		FVector PlayerFeet;
 		if (GetPlayerFeet(PlayerFeet) && PlayerFeet.Z > Feet.Z + 60.0f && FVector::Dist2D(PlayerFeet, Feet) < 900.0f)

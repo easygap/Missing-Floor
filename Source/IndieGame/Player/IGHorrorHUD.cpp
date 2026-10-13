@@ -2724,9 +2724,12 @@ void AIGHorrorHUD::DrawHUD()
 			// 글자 높이와 하단 조작 안내 여백을 빼고 화면 안에 남긴다.
 			const float PromptHeight = MeasureTextHeight(
 				Prompt.ToString(), GetFontForRole(EIGHudTextRole::Prompt), 1.f);
+			// 상황 안내는 이 아래에서 갱신돼서 같은 프레임에 뜬다. 투명도만 보고 자리를 비우면
+			// 첫 프레임에 둘이 겹쳤다가 다음 프레임에 안내 문구가 위로 튄다. 띄울 안내가
+			// 정해지면 바로 자리를 비워 둔다.
 			const float LowerGuideReserve = ControlsAlpha > 0.01f
 				? 138.f
-				: (ContextTips.Alpha() > 0.01f ? 100.f : 54.f);
+				: (ContextTips.GetCurrent() != EIGContextTip::None ? 100.f : 54.f);
 			float PromptBottomEdge = Canvas->ClipY - LowerGuideReserve;
 			if (bDialogueVisible)
 			{

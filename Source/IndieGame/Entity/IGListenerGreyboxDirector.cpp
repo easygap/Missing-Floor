@@ -4,6 +4,8 @@
 #include "Sequence/IGDayScenesProbe.h"
 #include "Sequence/IGEpiloguePreviewProbe.h"
 #include "Sequence/IGNeighbor303Probe.h"
+#include "Sequence/IGManagerKeyHuntProbe.h"
+#include "Sequence/IGSeoRecorderProbe.h"
 #include "Sequence/IGSiteCheckProbe.h"
 #include "Sequence/IGNightFourHammerProbe.h"
 #include "Entity/IGSiteCheckVisit.h"
@@ -450,6 +452,25 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 			if (AIGNeighbor303Probe* NeighborProbe = GetWorld()->SpawnActor<AIGNeighbor303Probe>())
 			{
 				NeighborProbe->Configure(WorldScene.Get(), Player.Get(), Entity, this);
+			}
+			return;
+		}
+		// 셋째 밤 관리인이 열쇠 꾸러미를 찾으러 도는 길을 겪는 검사. 관리인은 그대로 돈다.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGManagerKeyHuntProbe")))
+		{
+			if (AIGManagerKeyHuntProbe* HuntProbe = GetWorld()->SpawnActor<AIGManagerKeyHuntProbe>())
+			{
+				HuntProbe->Configure(WorldScene.Get(), Player.Get());
+			}
+			return;
+		}
+		// 서일영의 녹음기와 골목 약봉투를 겪는 검사. 밤의 관리인은 세워 둔다.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGSeoRecorderProbe")))
+		{
+			if (ManagerPatrol) { ManagerPatrol->SetActorTickEnabled(false); }
+			if (AIGSeoRecorderProbe* RecorderProbe = GetWorld()->SpawnActor<AIGSeoRecorderProbe>())
+			{
+				RecorderProbe->Configure(Player.Get(), this);
 			}
 			return;
 		}
@@ -1401,6 +1422,8 @@ bool AIGListenerGreyboxDirector::SetupStage()
 		this, &AIGListenerGreyboxDirector::HandleNightThreeSolved);
 	NightThree->OnReturnedHome.AddUObject(
 		this, &AIGListenerGreyboxDirector::HandleNightThreeReturnedHome);
+	NightThree->OnDistantSeoDropped.AddUObject(
+		this, &AIGListenerGreyboxDirector::HandleDistantSeoDropped);
 	FifthDawn->OnCompleted.AddUObject(
 		this, &AIGListenerGreyboxDirector::HandleFifthDawnCompleted);
 	NightFour->SetFifthDawn(FifthDawn);
@@ -1641,11 +1664,13 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			this, &AIGListenerGreyboxDirector::HandleWaterBowlExamined);
 	}
 
-	// 골목 이쪽 보도에 떨어진 납작한 약봉투. 인쇄된 이름까지만 목격 근거가 된다.
+	// 셋째 낮 골목 건너 샛길 입구에 서 있던 서일영이 떨어뜨린 납작한 약봉투(§3.4).
+	// 서일영이 섰던 자리(1240, -700) 바로 앞 아스팔트다. 서일영이 한 번 나타났다 간 뒤에만 있다.
+	// 인쇄된 이름까지만 목격 근거가 된다. 지나가는 차의 차체(Y -677)보다 바깥이다.
 	Parameters.Name = TEXT("MissingFloorWitnessSleepingPills");
 	SleepingPills = World->SpawnActor<AIGMissingFloorEvidence>(
 		AIGMissingFloorEvidence::StaticClass(),
-		FTransform(FRotator(0.0f, 18.0f, 0.0f), FVector(-40.0f, -449.0f, .20f)),
+		FTransform(FRotator(0.0f, -24.0f, 0.0f), FVector(1234.0f, -690.0f, .20f)),
 		Parameters);
 	if (SleepingPills)
 	{
@@ -1654,16 +1679,15 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_WitnessPrescriptionEnvelope.MI_WitnessPrescriptionEnvelope")),
 			FVector::ZeroVector,
 			NSLOCTEXT("IGMissingFloor", "WitnessPillsPrompt", "떨어진 약봉투"),
-			NSLOCTEXT(
-				"IGMissingFloor",
-				"WitnessPillsThought",
-				"‘서일영 님’이라고 적혀 있다."),
+			// 독백은 주울 때 고른다. 녹음기를 들었는지에 따라 같은 이름이 다르게 읽힌다.
+			FText::GetEmpty(),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
 			0.9f,
 			0.05f);
 		SleepingPills->OnExamined.AddUObject(
 			this, &AIGListenerGreyboxDirector::HandleSleepingPillsExamined);
+		RefreshSleepingPills();
 	}
 
 	// 옥상 탱크 기초 위. 기초는 (0,-25) 중심에 360×360×100이라 윗면이
@@ -2030,10 +2054,46 @@ void AIGListenerGreyboxDirector::HandleWaterBowlExamined(
 void AIGListenerGreyboxDirector::HandleSleepingPillsExamined(
 	AIGMissingFloorEvidence* Evidence)
 {
-	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative)
 	{
-		Narrative->RecordWitness(EIGMissingFloorWitness::SeoSleepingPills);
+		return;
 	}
+	Narrative->RecordWitness(EIGMissingFloorWitness::SeoSleepingPills);
+	// 5층 녹음기에서 서일영이 직접 이름을 대는 걸 들었으면 바로 알아본다. 아니면 봉투가
+	// 떨어진 자리로 짐작할 뿐이다.
+	AIGHorrorHUD::PushThought(
+		this,
+		Narrative->HasWitness(EIGMissingFloorWitness::SeoVoiceRecorder)
+			? NSLOCTEXT(
+				"IGMissingFloor",
+				"WitnessPillsThoughtRecorder",
+				"서일영… 녹음기에서 이름 대던 그 사람이네.")
+			: NSLOCTEXT(
+				"IGMissingFloor",
+				"WitnessPillsThoughtAlley",
+				"‘서일영 님’이라고 적혀 있네. 골목에 서 있던 그 사람 건가?"),
+		4.2f);
+}
+
+void AIGListenerGreyboxDirector::HandleDistantSeoDropped()
+{
+	bSeoPillsDropped = true;
+	RefreshSleepingPills();
+}
+
+void AIGListenerGreyboxDirector::RefreshSleepingPills()
+{
+	if (!SleepingPills)
+	{
+		return;
+	}
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const bool bDropped = bSeoPillsDropped
+		|| (Narrative && Narrative->HasBeatPlayed(FName(TEXT("Day3.DistantSeo"))));
+	SleepingPills->SetActorHiddenInGame(!bDropped);
+	SleepingPills->SetActorEnableCollision(bDropped);
+	SleepingPills->SetInteractionEnabled(bDropped);
 }
 
 void AIGListenerGreyboxDirector::HandleCigarettePackExamined(
@@ -8990,6 +9050,7 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 			EIGMissingFloorWitness::Unit402Silence,
 			EIGMissingFloorWitness::RoofDoorWind,
 			EIGMissingFloorWitness::BoothInnerRoomHum,
+			EIGMissingFloorWitness::SeoVoiceRecorder,
 		};
 		for (const EIGMissingFloorWitness Witness : Witnesses)
 		{

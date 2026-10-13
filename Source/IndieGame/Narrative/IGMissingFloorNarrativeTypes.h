@@ -132,7 +132,9 @@ enum class EIGMissingFloorWitness : uint8
 	/** 옥상 철문 안쪽의 실제 바람. 「물탱크 바람 소리」의 반증. */
 	RoofDoorWind = 11,
 	/** 관리실 안쪽 방에서 새는 기계 험. 쓰는 방이라는 뜻이다. */
-	BoothInnerRoomHum = 12
+	BoothInnerRoomHum = 12,
+	/** 5층 판재 더미 밑의 녹음기. 서일영이 그 새벽 올라오며 켜 둔 것을 끝까지 들었다. */
+	SeoVoiceRecorder = 13
 };
 
 /**

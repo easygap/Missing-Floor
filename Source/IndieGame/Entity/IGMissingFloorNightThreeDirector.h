@@ -6,11 +6,13 @@
 #include "IGMissingFloorNightThreeDirector.generated.h"
 
 class AIGDoorLatch;
+class AIGHidingSpot;
 class AIGListenerEntity;
 class AIGMissingFloorEvidence;
 class AIGPlayerCharacter;
 class AIGPrologueWorldScene;
 class AIGReadableNote;
+class AIGSeoRecorder;
 class AIGSwingDoor;
 class UAudioComponent;
 class UStaticMeshComponent;
@@ -18,6 +20,7 @@ class UIGMissingFloorNarrativeSubsystem;
 
 DECLARE_MULTICAST_DELEGATE(FIGNightThreeSolvedSignature);
 DECLARE_MULTICAST_DELEGATE(FIGNightThreeReturnedSignature);
+DECLARE_MULTICAST_DELEGATE(FIGNightThreeSeoDroppedSignature);
 
 /** Where beat 3-7 has got to. */
 UENUM()
@@ -138,6 +141,12 @@ public:
 	FIGNightThreeSolvedSignature OnSolved;
 
 	/**
+	 * 골목 건너 서일영이 비켜서거나 사라질 때 한 번. 서일영이 서 있던 자리에 약봉투가
+	 * 떨어져 있다. 받는 쪽에서 여러 번 와도 같은 결과가 되게 둔다.
+	 */
+	FIGNightThreeSeoDroppedSignature OnDistantSeoDropped;
+
+	/**
 	 * Context verbs used by the player's dedicated Q/B and listen inputs.
 	 * Keeping these outside CompleteInteraction prevents opening a door and
 	 * filing one of P4's timed taps from the same E/A press.
@@ -166,6 +175,8 @@ public:
 	 */
 	bool GetCavityWallObservationPoint(FVector& OutLocation) const;
 	AIGMissingFloorEvidence* GetImpactMark() const { return ImpactMark; }
+	AIGSeoRecorder* GetSeoRecorder() const { return SeoRecorder; }
+	AIGHidingSpot* GetCartHidingSpot() const { return CartHidingSpot; }
 	AIGMissingFloorEvidence* GetAnswerTarget() const { return AnswerTarget; }
 	AIGReadableNote* GetLabelsNote() const { return LabelsNote; }
 	AIGReadableNote* GetForumNote() const { return ForumNote; }
@@ -357,6 +368,14 @@ private:
 	/** §22.3 선택적 목격. 자재 더미 위에 남은 큰 손의 장갑 한 짝. */
 	UPROPERTY(Transient)
 	TObjectPtr<AIGMissingFloorEvidence> WorkGlove;
+
+	/** §3.4 서일영 녹음기. 판재 더미 밑에서 끈만 나와 있다. 메시가 없으면 스폰하지 않는다. */
+	UPROPERTY(Transient)
+	TObjectPtr<AIGSeoRecorder> SeoRecorder;
+
+	/** 5층의 숨을 자리. 공구 카트와 북서쪽 구석 사이에 웅크린다. 밤4 철문으로 들어오는 손님을 피한다. */
+	UPROPERTY(Transient)
+	TObjectPtr<AIGHidingSpot> CartHidingSpot;
 
 
 	UPROPERTY(Transient)

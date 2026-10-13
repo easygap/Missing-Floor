@@ -57,6 +57,13 @@ enum class EIGManagerPatrolState : uint8
  * 위층 사람이 두드리면 그 자리에서 굳고, 관리실로 서둘러 돌아간다. 벽 안의
  * 대답(T9)을 들은 뒤에는 나오지 않는다. 그 밤의 남은 길은 위층 사람의 것이다.
  *
+ * 열쇠 꾸러미가 없어진 걸 알면 한 번(밤3) 평소 길을 버리고 열쇠를 찾으러 간다.
+ * 그때만 4층 복도에 들어와 403호 도어락을 누르고, 걸쇠가 걸려 있으면 문이 걸린 채
+ * 돌아선다. 걸쇠가 없으면 문을 열고 문간에서 비춘다. 이어 옥상 철문을 열쇠로 열고
+ * 물탱크 통로를 비춘 뒤 5층 철문을 본다. 빗장이 걸려 있으면 손잡이만 덜컥거리고,
+ * 아니면 문을 열고 문간에서 비춘다. 5층 안으로는 끝내 들어가지 않는다. 안에 사람이
+ * 보이면 문을 쾅 닫고 내려간다.
+ *
  * 몸에는 충돌이 없다. 길은 계단탑과 복도의 빈 자리만 지나는 점 그래프다. 몸은
  * 리깅한 스켈레탈(SK_MokHansooPatrol)이 슬리퍼를 끌며 걷고, 쫓을 때는 허둥지둥
  * 뛴다. 서서 훑을 때와 노크에 굳을 때, 손목을 잡을 때 동작이 따로 있다.
@@ -79,6 +86,10 @@ public:
 
 	EIGManagerPatrolState GetPatrolState() const { return State; }
 	bool IsOnDuty() const { return bOnDuty; }
+	/** 열쇠를 찾으러 도는 중이다. 안쪽 방으로 돌아가면 끝난다. */
+	bool IsOnKeyHunt() const { return bKeyHunt; }
+	/** 검사 전용. 열쇠가 없어진 걸 안 것처럼 곧바로 찾으러 나선다. */
+	void StartKeyHuntForTesting();
 	/** 검사 전용. 그녀 앞 80cm에 서서 곧바로 손목을 잡는다. */
 	void BeginCatchForProbe();
 	/** 쫓거나 잡는 중. 그동안 다른 괴이는 끼어들지 않는다. */
@@ -95,7 +106,31 @@ private:
 	{
 		FVector Feet = FVector::ZeroVector;
 		bool bOnStair = false;
+		/** 열쇠를 찾으러 갈 때만 밟는 자리(4층 복도, 옥상 계단과 옥상). 평소 길은 여기를 지나지 않는다. */
+		bool bHuntOnly = false;
 		TArray<int32> Links;
+	};
+
+	/** 열쇠를 찾으러 가서 하는 일. */
+	enum class EHuntAction : uint8
+	{
+		None,
+		/** 403호 도어락을 누른다. 걸쇠가 있으면 문이 걸리고, 없으면 열어서 문간에서 비춘다. */
+		HomeDoor,
+		/** 닫혀 있으면 옥상 철문을 열쇠로 연다. */
+		RoofDoorOpen,
+		/** 옥상 문을 나서서 물탱크 통로를 훑는다. */
+		RoofSweep,
+		/** 5층 철문을 본다. 빗장이면 덜컥거리고, 아니면 열어서 문간에서만 비춘다. */
+		AnnexDoor,
+		/** 내려가며 옥상 철문을 닫는다. */
+		RoofDoorClose
+	};
+
+	struct FHuntStop
+	{
+		int32 Node = INDEX_NONE;
+		EHuntAction Action = EHuntAction::None;
 	};
 
 	struct FRouteStop
@@ -108,7 +143,7 @@ private:
 	};
 
 	void BuildGraph();
-	int32 AddNode(const FVector& Feet, bool bOnStair);
+	int32 AddNode(const FVector& Feet, bool bOnStair, bool bHuntOnly = false);
 	void LinkNodes(int32 A, int32 B);
 	/** 다익스트라. 노드가 오십 개 남짓이라 매번 새로 푼다. */
 	bool FindPath(int32 From, int32 To, TArray<int32>& OutPath) const;
@@ -127,6 +162,24 @@ private:
 	void SnapToRestNode();
 
 	void StartRound();
+	/** 안쪽 방 문이 열리고 열쇠 소리가 먼저 난다. 순찰이든 열쇠 찾기든 같다. */
+	void LeaveRoom();
+	/** 밤3, 유담이 계단 열쇠를 가져갔고 아직 찾으러 간 적이 없다. */
+	bool ShouldStartKeyHunt() const;
+	void StartKeyHunt();
+	/** 열쇠 찾기 다음 지점으로 간다. 마지막이면 안쪽 방으로 돌아간다. */
+	void AdvanceKeyHunt();
+	/** 도착한 지점에서 할 일을 시작한다. 할 일이 없으면 바로 다음 지점으로 간다. */
+	void BeginHuntAction();
+	void TickHuntAction(float DeltaSeconds);
+	/** 403호·옥상·5층 철문을 한 번 찾아 둔다. */
+	void ResolveHuntDoors();
+	/** 5층 안에서 유담을 봤다. 들어가지 않고 문을 쾅 닫고 내려간다. */
+	void SlamAnnexAndFlee();
+	/** 4층 복도는 관리인이 평소에 들어가지 않는 곳이다. 열쇠를 찾는 동안만 예외다. */
+	bool IsForbiddenNow(const FVector& Feet) const;
+	/** 5층 증축부 안. 관리인은 끝까지 들어가지 않는다. */
+	static bool IsInsideAnnex(const FVector& Feet);
 	void EnterRestingAtDoor(float RestSeconds);
 	void BeginInvestigation(const FVector& Where, bool bAlarmed);
 	void BeginChase();
@@ -243,6 +296,21 @@ private:
 	TArray<FRouteStop> Route;
 	int32 RestNode = INDEX_NONE;
 	int32 FourthFloorDoorNode = INDEX_NONE;
+
+	/** 열쇠 찾기. 길과 자리, 문 셋, 지금 하는 일. */
+	TArray<FHuntStop> HuntStops;
+	int32 HuntCursor = 0;
+	int32 Home403Node = INDEX_NONE;
+	int32 AnnexFrontNode = INDEX_NONE;
+	bool bKeyHunt = false;
+	bool bHuntAction = false;
+	double HuntActionStart = 0.0;
+	int32 HuntActionStep = 0;
+	/** 5층 문간에서 안에 있는 유담을 봤다. 문이 다 열리면 쾅 닫고 내려간다. */
+	bool bSawInAnnex = false;
+	TWeakObjectPtr<AIGSwingDoor> HomeDoor;
+	TWeakObjectPtr<AIGSwingDoor> RoofDoor;
+	TWeakObjectPtr<AIGSwingDoor> AnnexDoor;
 
 	EIGManagerPatrolState State = EIGManagerPatrolState::Resting;
 	bool bOnDuty = false;

@@ -250,6 +250,8 @@ $puzzleTwoSource = Read-ProjectText `
 	'Source/IndieGame/Entity/IGMissingFloorPuzzleTwoDirector.cpp'
 $nightThreeSource = Read-ProjectText `
 	'Source/IndieGame/Entity/IGMissingFloorNightThreeDirector.cpp'
+$seoRecorderSource = Read-ProjectText `
+	'Source/IndieGame/Entity/IGSeoRecorder.cpp'
 
 Assert-ContainsAll $story @(
 	'## 35. v3.4 — 엔딩 에필로그와 선택적 목격',
@@ -371,13 +373,14 @@ Assert-ContainsAll $narrativeTypes @(
 	'Unit402Silence = 10',
 	'RoofDoorWind = 11',
 	'BoothInnerRoomHum = 12',
+	'SeoVoiceRecorder = 13',
 	'TArray<FName> Witnesses;'
 ) '선택적 목격 정의'
 
 # 정규화 상한이 열거형의 마지막을 따라가야 한다. 뒤처지면 새로 넣은 목격이
 # 복원에서 조용히 버려진다 — 저장은 되는데 다음 실행에 사라지는 모양이다.
 Assert-ContainsAll $narrativeSource @(
-	'Raw <= static_cast<uint8>(EIGMissingFloorWitness::BoothInnerRoomHum);'
+	'Raw <= static_cast<uint8>(EIGMissingFloorWitness::SeoVoiceRecorder);'
 ) '목격 정규화 상한'
 
 Assert-ContainsAll $narrativeSource @(
@@ -397,7 +400,8 @@ Assert-ContainsAll $narrativeSource @(
 Assert-ContainsAll $narrativeSource @(
 	'Heard.Unit402Silence',
 	'Heard.RoofDoorWind',
-	'Heard.BoothInnerRoomHum'
+	'Heard.BoothInnerRoomHum',
+	'Heard.SeoVoiceRecorder'
 ) '소리 목격 직렬화'
 
 # 셋 다 그림 없이 부피만 세우고, 각자 자기 큐를 낸다.
@@ -436,6 +440,17 @@ Assert-ContainsAll $puzzleTwoSource @(
 Assert-ContainsAll $nightThreeSource @(
 	'RecordWitness(EIGMissingFloorWitness::AnnexWorkGlove)'
 ) '밤3 목격'
+
+# 서일영의 녹음기는 끝까지 들은 회차만 목격이 남고, 대치와 보도에서 회수된다(§3.4).
+Assert-ContainsAll $seoRecorderSource @(
+	'RecordWitness(EIGMissingFloorWitness::SeoVoiceRecorder)'
+) '녹음기 목격'
+Assert-ContainsAll $nightFourSource @(
+	'EIGMissingFloorWitness::SeoVoiceRecorder'
+) '녹음기의 대치 회수'
+Assert-ContainsAll $epilogueSource @(
+	'HasWitness(EIGMissingFloorWitness::SeoVoiceRecorder)'
+) '녹음기의 보도 회수'
 
 # 새 목격 셋도 반드시 회수가 있어야 한다 — 회수 없는 심기 금지(§13).
 Assert-ContainsAll $nightFourSource @(
@@ -632,4 +647,4 @@ foreach ($optional in @('WaterBowl', 'SleepingPills', 'CigarettePack')) {
 	}
 }
 
-Write-Host 'MISSING_FLOOR_RELEASE_ENDING_CONTRACT PASS replay_skip=1 ending_c=1 scoped_retry=1 audio=1 runtime_probe=1 epilogue=2 witnesses=12'
+Write-Host 'MISSING_FLOOR_RELEASE_ENDING_CONTRACT PASS replay_skip=1 ending_c=1 scoped_retry=1 audio=1 runtime_probe=1 epilogue=2 witnesses=13'

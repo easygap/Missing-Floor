@@ -3142,6 +3142,15 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 	const FReplyEntry Humans[] =
 	{
 		{
+			// 5층 녹음기에서 서일영이 뛰어 내려가는 소리까지 들었다. 그다음 일을 묻는다.
+			// 목한수의 「내가 민 거 아니야」가 이 물음에 대한 대답이 된다.
+			EIGMissingFloorWitness::SeoVoiceRecorder,
+			NSLOCTEXT(
+				"IGMissingFloor",
+				"ConfrontationReplySeoRecorder",
+				"403호 그 사람 내려가고 나서 아저씨는 뭐 했어요?"),
+		},
+		{
 			EIGMissingFloorWitness::RooftopCigarettePack,
 			NSLOCTEXT(
 				"IGMissingFloor",
@@ -3173,9 +3182,12 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 		}
 	}
 	TArray<FText> HeldHumans;
+	// 녹음에서 서일영이 직접 이름을 댔으니 약봉투 얘기로 다시 물을 필요가 없다.
+	const bool bHeardSeo = Narrative->HasWitness(EIGMissingFloorWitness::SeoVoiceRecorder);
 	for (const FReplyEntry& Entry : Humans)
 	{
-		if (Narrative->HasWitness(Entry.Witness))
+		if (Narrative->HasWitness(Entry.Witness)
+			&& !(bHeardSeo && Entry.Witness == EIGMissingFloorWitness::SeoSleepingPills))
 		{
 			HeldHumans.Add(Entry.Line);
 		}

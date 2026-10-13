@@ -43,6 +43,7 @@ public:
 	/** 검사용. 신고 문자를 건너뛰고 경찰 현장 확인을 바로 시작한다. 셋째 낮이어야 한다. */
 	void StartSiteCheckVisitForTesting();
 	class AIGSiteCheckVisit* GetSiteCheckVisitForTesting() const { return SiteCheckVisit.Get(); }
+	class AIGMissingFloorEvidence* GetSleepingPillsForTesting() const { return SleepingPills.Get(); }
 
 	virtual FText GetObjectiveText() const override;
 	virtual float GetObjectiveProgress() const override;
@@ -157,6 +158,10 @@ private:
 	/** §22.3 선택적 목격 셋. 진실도 게이트도 건드리지 않는다. */
 	void HandleWaterBowlExamined(class AIGMissingFloorEvidence* Evidence);
 	void HandleSleepingPillsExamined(class AIGMissingFloorEvidence* Evidence);
+	/** 골목 건너 서일영이 비켜서거나 사라졌다. 서일영이 서 있던 자리에 약봉투가 남는다. */
+	void HandleDistantSeoDropped();
+	/** 약봉투는 서일영이 한 번 나타났다 간 뒤에만 있다. 저장을 불러와도 똑같이 판단한다. */
+	void RefreshSleepingPills();
 	void HandleCigarettePackExamined(class AIGMissingFloorEvidence* Evidence);
 	void HandleStoreRosterExamined(class AIGMissingFloorEvidence* Evidence);
 	void HandleUnit401RadioExamined(class AIGMissingFloorEvidence* Evidence);
@@ -450,6 +455,8 @@ private:
 	/** 내려가는 그녀 뒤에 유담이 속말을 할 때. 음수면 할 말이 없다. */
 	double StairNeighborThoughtAt = -1.0;
 	bool bStairNeighborUnavailable = false;
+	/** 비켜서는 순간 떨어뜨렸다. 그 뒤 사라질 때 비트가 기록되기 전에도 봉투는 보인다. */
+	bool bSeoPillsDropped = false;
 
 	/** 셋째 아침 5층에 오는 경찰과 관리인. 출동 문자를 보낼 때 세운다. */
 	UPROPERTY(Transient)

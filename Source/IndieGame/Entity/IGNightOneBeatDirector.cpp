@@ -3,6 +3,7 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGToneSequenceSoundWave.h"
 #include "Components/AudioComponent.h"
+#include "Core/IGOnScreen.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
@@ -378,7 +379,7 @@ bool AIGNightOneBeatDirector::IsInPlayerView(
 	if (Subject)
 	{
 		// 원뿔 안이어도 벽 뒤라 그려지지 않았으면 보이지 않은 것이다.
-		return Subject->WasRecentlyRendered(0.2f);
+		return IGOnScreen::WasRecentlySeen(Subject, 0.2f);
 	}
 	// 빈 자리는 몸이 없으니 벽이 가리는지 직접 본다.
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(NightOneSightingView), false, PlayerCharacter);

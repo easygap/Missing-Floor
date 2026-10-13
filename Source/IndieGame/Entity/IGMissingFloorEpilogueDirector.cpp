@@ -851,6 +851,20 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildAutumnLines() const
 			"EpilogueAutumn3Seen",
 			"라디오를 창밖 쪽으로 돌려놓으셨다. 골목까지 들리겠다."));
 	}
+	// 202호 정우. 이름을 들은 회차에만 나온다. 엄마 목소리 이야기까지 들었으면 요즘
+	// 새벽이 어떤지도 정우한테서 듣는다.
+	if (Narrative && Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro"))))
+	{
+		Lines.Add(Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Guest")))
+			? NSLOCTEXT(
+				"IGMissingFloor",
+				"EpilogueAutumnJeongwooGuest",
+				"정우 씨가 헬멧을 벗고 인사한다. 요즘은 새벽에 문 두드리는 사람이 없대.")
+			: NSLOCTEXT(
+				"IGMissingFloor",
+				"EpilogueAutumnJeongwoo",
+				"공동현관 앞에서 정우 씨가 헬멧을 벗고 꾸벅 인사한다."));
+	}
 	return Lines;
 }
 
@@ -882,6 +896,19 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildServiceBayLines() const
 			"옥상 탱크 옆, 오빠가 쉬던 자리는 아직 그대로다."));
 	}
 	Lines.Add(FText::GetEmpty());
+	// 방을 빼는 날 짐은 202호 정우가 날라 줬다. 이름을 들은 회차에만 나온다.
+	if (Narrative && Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro"))))
+	{
+		Lines.Add(Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Guest")))
+			? NSLOCTEXT(
+				"IGMissingFloor",
+				"EpilogueServiceBayJeongwooGuest",
+				"짐은 정우 씨가 오토바이로 날라 줬다. 요즘은 새벽에 문 두드리는 사람이 없대.")
+			: NSLOCTEXT(
+				"IGMissingFloor",
+				"EpilogueServiceBayJeongwoo",
+				"짐은 정우 씨가 오토바이로 날라 줬다."));
+	}
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
 		"EpilogueServiceBay4",
@@ -947,6 +974,16 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 	}
 
 	if (Narrative
+		&& Narrative->HasWitness(EIGMissingFloorWitness::SeoVoiceRecorder))
+	{
+		// 5층 판재 밑에서 나온 녹음기는 유담이 경찰에 냈다. 출석은 공통 사실이고,
+		// 들은 회차에는 서일영이 그 녹음기를 자기 것이라고 인정한 것까지 나온다.
+		Lines.Add(NSLOCTEXT(
+			"IGMissingFloor",
+			"EpilogueNews4Recorder",
+			"전 세입자 서모씨는 경찰에 출석해 유족이 제출한 녹음기가 자신의 것이라고 인정했다"));
+	}
+	else if (Narrative
 		&& Narrative->HasWitness(EIGMissingFloorWitness::SeoSleepingPills))
 	{
 		// 출석 의사는 공통 사실이라 약봉투를 본 회차에도 남는다. 본 회차에는

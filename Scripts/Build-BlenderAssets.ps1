@@ -62,6 +62,7 @@ $builders = [ordered]@{
 	'outdoor_condenser' = @('SM_AcOutdoorUnit')
 	'witness_bowl' = @('SM_WitnessWaterBowl')
 	'witness_props' = @('SM_WitnessPrescriptionEnvelope', 'SM_WitnessStoreRoster', 'SM_WitnessCigaretteButts')
+	'seo_recorder' = @('SM_SeoVoiceRecorder')
 	'lobby_mailboxes' = @('SM_MailboxUnit')
 	'ceiling_light' = @('SM_CeilingLightRing', 'SM_CeilingLightDome')
 	'stair_sensor_light' = @('SM_StairSensorLight')
