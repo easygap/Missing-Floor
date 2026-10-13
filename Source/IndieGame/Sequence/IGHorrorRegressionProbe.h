@@ -72,6 +72,8 @@ private:
 	bool bActed = false;
 	bool bSawInside = false;
 	int32 LastGuestStage = -1;
+	/** 포획 복구가 끝난 단계 시각. */
+	float SettledSeconds = 0.0f;
 	/** 어둠 시험에 쓸 자리. 후보를 차례로 서 보고 가장 어두운 곳을 고른다. */
 	int32 SpotIndex = 0;
 	FVector DarkSpot = FVector::ZeroVector;

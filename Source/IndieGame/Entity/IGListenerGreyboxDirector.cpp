@@ -8915,16 +8915,17 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 		// the ceiling also covers all three gaze fallbacks and the complete
 		// silence, dialogue, entity-pass and blackout tail. 28초였는데 2026-10-12부터
 		// 목한수가 「내가 민 거 아니야」(31자, 3.85초)를 더 하고 존재는 그 줄이 끝난 뒤에
-		// 들어오므로 32초로 늘렸다. 걸린 시간을 남겨 다음에 줄을 더할 때 여유를 본다.
+		// 들어오므로 32초로 늘렸다(그때 30.0초). 2026-10-13에 「숨은 붙어 있었어…」(최소 3초)가
+		// 더해져 36초로 늘렸다. 걸린 시간을 남겨 다음에 줄을 더할 때 여유를 본다.
 		if (!NightFour->IsFinalConfrontationComplete())
 		{
-			if (StepDeadlineSeconds > 32.0f)
+			if (StepDeadlineSeconds > 36.0f)
 			{
 				FailProbe(TEXT("night-4 reveal/confrontation sequence stalled"));
 			}
 			return;
 		}
-		UE_LOG(LogTemp, Display, TEXT("MISSINGFLOOR_N4REVEAL seconds=%.1f ceiling=32.0"), StepDeadlineSeconds);
+		UE_LOG(LogTemp, Display, TEXT("MISSINGFLOOR_N4REVEAL seconds=%.1f ceiling=36.0"), StepDeadlineSeconds);
 		if (!NightFour->GetEndingATarget()
 			|| NightFour->GetEndingATarget()->IsHidden()
 			|| !NightFour->GetEndingATarget()->IsInteractionEnabled()

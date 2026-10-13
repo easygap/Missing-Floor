@@ -791,7 +791,24 @@ void AIGHorrorRegressionProbe::Tick(const float DeltaSeconds)
 		}
 		break;
 	case 93:
-		if (StepSeconds >= 3.0f && !Loops->IsCaptureResetInFlight())
+		// 위협 감독은 0.1초 타이머로 미뤄 둔 저장을 내보낸다. 포획 복구가 끝난 그 프레임에 보면 한 틱
+		// 이르다(렌더링을 켠 실시간 실행에서 걸렸다). 복구가 끝나고 1초 뒤에 본다.
+		if (Loops->IsCaptureResetInFlight())
+		{
+			bActed = false;
+			if (StepSeconds > 30.0f)
+			{
+				Check(false, TEXT("capture_recovers_after_recorder"));
+				Next(100);
+			}
+			break;
+		}
+		if (!bActed)
+		{
+			bActed = true;
+			SettledSeconds = StepSeconds;
+		}
+		if (StepSeconds >= 3.0f && StepSeconds - SettledSeconds >= 1.0f)
 		{
 			Check(Loops->GetCaptureCount() > CapturesAtStart, TEXT("recorder_capture_counted"));
 			Check(!Threats->IsAutosavePendingForProbe(), TEXT("autosave_written_after_recorder_and_capture"));
@@ -800,11 +817,6 @@ void AIGHorrorRegressionProbe::Tick(const float DeltaSeconds)
 				Tape->StartPlaybackForTesting();
 			}
 			Next(94);
-		}
-		else if (StepSeconds > 30.0f)
-		{
-			Check(false, TEXT("capture_recovers_after_recorder"));
-			Next(100);
 		}
 		break;
 	case 94:
