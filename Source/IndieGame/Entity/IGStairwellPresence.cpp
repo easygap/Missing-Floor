@@ -352,10 +352,13 @@ bool AIGStairwellPresence::CanBegin() const
 				return false;
 			}
 		}
-		// 손님이 문을 두드리고 있거나 어둑시니가 서 있으면 기다린다. 한 번에 하나다.
+		// 손님이 문을 두드리고 있거나 어둑시니가 서 있으면 기다린다. 한 번에 하나다. 다녀간
+		// 손님(Spent)은 기다릴 이유가 없다. 예전에는 Spent도 막아서 밤2에 손님이 한 번 다녀가면
+		// 그 밤에는 뒤따르는 발이 오지 않았다.
 		for (TActorIterator<AIGNightThreatDirector> It(GetWorld()); It; ++It)
 		{
-			if (It->GetGuestStage() != EIGGuestStage::Idle || It->IsEoduksiniManifested())
+			const EIGGuestStage VisitStage = It->GetGuestStage();
+			if ((VisitStage != EIGGuestStage::Idle && VisitStage != EIGGuestStage::Spent) || It->IsEoduksiniManifested())
 			{
 				return false;
 			}
@@ -766,7 +769,9 @@ void AIGStairwellPresence::SaveEncounter() const
 	}
 	const TCHAR* Checkpoint = Narrative->IsHourSealed() ? TEXT("Checkpoint.MissingFloor.Night")
 		: TEXT("Checkpoint.MissingFloor.Day");
-	Save->RequestAutosave(
+	// 밤에는 손님이나 추격이 진행 중이면 끝날 때까지 미뤘다가 저장한다.
+	AIGNightThreatDirector::RequestAutosaveWhenQuiet(
+		this,
 		FGameplayTag::RequestGameplayTag(TEXT("Chapter.MissingFloor"), false),
 		GetWorld()->GetOutermost()->GetFName(),
 		FGameplayTag::RequestGameplayTag(Checkpoint, false));

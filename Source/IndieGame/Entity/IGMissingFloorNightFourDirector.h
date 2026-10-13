@@ -20,8 +20,8 @@ DECLARE_MULTICAST_DELEGATE(FIGNightFourResolvedSignature);
  *
  * The hydraulic mask is one physically named cleaning circuit, not four
  * arbitrary valves: roof cleaning drain -> float-valve bypass -> ground-floor
- * transfer pump. First activation order is persisted, while every order can
- * still reach the same running state. Five separate hammer interactions then
+ * transfer pump. 이 순서로만 돈다. 순서가 틀린 조작은 기록되지 않고 경보와 함께 인터록이
+ * 10초 선다(HandleControlMisorder). Five separate hammer interactions then
  * remove the real middle gypsum panel. The two final targets change only the
  * mourning choice; discovery and the second report remain common state.
  */

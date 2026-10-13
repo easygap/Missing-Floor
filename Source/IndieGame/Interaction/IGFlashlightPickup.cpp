@@ -5,6 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "Entity/IGNightThreatDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Narrative/IGStoryStateSubsystem.h"
@@ -106,7 +107,9 @@ void AIGFlashlightPickup::CompleteInteraction_Implementation(const FIGInteractio
 		const TCHAR* Checkpoint = Narrative && Narrative->IsHourSealed() ? TEXT("Checkpoint.MissingFloor.Night")
 			: Narrative && Narrative->GetNightIndex() > 0 ? TEXT("Checkpoint.MissingFloor.Day")
 			: TEXT("Checkpoint.MissingFloor.Arrival");
-		Save->RequestAutosave(FGameplayTag::RequestGameplayTag(TEXT("Chapter.MissingFloor"), false),
+		// 밤에는 손님이나 추격이 진행 중이면 끝날 때까지 미뤘다가 저장한다.
+		AIGNightThreatDirector::RequestAutosaveWhenQuiet(this,
+			FGameplayTag::RequestGameplayTag(TEXT("Chapter.MissingFloor"), false),
 			GetWorld()->GetOutermost()->GetFName(), FGameplayTag::RequestGameplayTag(Checkpoint, false));
 	}
 }

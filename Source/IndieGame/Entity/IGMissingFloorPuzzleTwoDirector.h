@@ -49,9 +49,8 @@ public:
 	void SetHourActive(bool bHourActive);
 
 	/**
-	 * Fired once, when the carbon original is restored — the night-2 goal.
-	 * T7 itself waits for night 3: the realtor's message turns up beside the
-	 * keyring, so the date contradiction closes in the same night as the answer.
+	 * 밤2의 목표. 접수철 밑장과 부동산 문자 사본을 둘 다 읽어 날짜의 모순(T7)이 닫히면 한 번
+	 * 울린다. 어느 쪽을 먼저 읽어도 된다. 문자 사본은 밤2부터 같은 책상에 있다.
 	 */
 	FIGPuzzleTwoSolvedSignature OnSolved;
 
@@ -108,7 +107,7 @@ private:
 	void PlayMorningPhoneBuzz();
 	/** 재생하는 폰은 손에 들린다. 바닥에서 1.5m 떨어진 스피커는 낮 베드에 묻힌다. */
 	FVector GetPhoneInHandLocation(const AIGMissingFloorEvidence* Evidence) const;
-	/** 부동산 문자 사본은 밤3부터 책상에 있다. 밤2의 책상에는 없다. */
+	/** 부동산 문자 사본은 늘 관리실 책상에 있다. */
 	void RefreshAgentNoteAvailability();
 	void HandleFoamExamined(AIGMissingFloorEvidence* Evidence);
 	/**

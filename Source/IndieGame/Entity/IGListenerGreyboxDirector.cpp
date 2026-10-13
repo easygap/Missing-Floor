@@ -6,6 +6,7 @@
 #include "Sequence/IGNeighbor303Probe.h"
 #include "Sequence/IGManagerKeyHuntProbe.h"
 #include "Sequence/IGSeoRecorderProbe.h"
+#include "Sequence/IGHorrorRegressionProbe.h"
 #include "Sequence/IGSiteCheckProbe.h"
 #include "Sequence/IGNightFourHammerProbe.h"
 #include "Entity/IGSiteCheckVisit.h"
@@ -461,6 +462,16 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 			if (AIGManagerKeyHuntProbe* HuntProbe = GetWorld()->SpawnActor<AIGManagerKeyHuntProbe>())
 			{
 				HuntProbe->Configure(WorldScene.Get(), Player.Get());
+			}
+			return;
+		}
+		// 2026-10-13에 고친 겹침과 구멍을 한 실행에서 다시 겪는 검사. 관리인은 세워 둔다.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGHorrorRegressionProbe")))
+		{
+			if (ManagerPatrol) { ManagerPatrol->SetActorTickEnabled(false); }
+			if (AIGHorrorRegressionProbe* RegressionProbe = GetWorld()->SpawnActor<AIGHorrorRegressionProbe>())
+			{
+				RegressionProbe->Configure(WorldScene.Get(), Player.Get(), Entity);
 			}
 			return;
 		}
@@ -1705,8 +1716,8 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_WitnessCigaretteButts.MI_WitnessCigaretteButts")),
 			FVector::ZeroVector,
 			NSLOCTEXT("IGMissingFloor", "WitnessPackPrompt", "담배꽁초"),
-			// 대치의 「거기 앉아서 쉬던 사람이에요」와 에필로그의 「오빠가 쉬던
-			// 자리」가 이 한 줄에 기댄다.
+			// 대치의 「우리 오빠 여기 살았잖아요. 아저씨도 알았잖아요.」와 에필로그의
+			// 「오빠가 쉬던 자리」가 이 한 줄에 기댄다.
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"WitnessPackThought",
@@ -2609,7 +2620,7 @@ void AIGListenerGreyboxDirector::UpdateArrivalSequence()
 	{
 		ArrivalVoicemailBox->SetInteractionEnabled(true);
 		if (Narrative->HasBeatPlayed(FName(TEXT("Arrival.Box.Voicemail"))))
-			ArrivalVoicemailBox->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalVoicemailAgain", "음성 메시지 다시 보기"));
+			ArrivalVoicemailBox->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalVoicemailAgain", "음성 메시지 다시 듣기"));
 	}
 	if (ArrivalStoreBell)
 	{
@@ -2790,6 +2801,19 @@ void AIGListenerGreyboxDirector::HandleArrivalEvidence(
 				3.6f);
 		}
 		PlayArrivalHandSound(Evidence, !Narrative->HasBeatPlayed(FName(OpenedBeat)));
+	}
+	// 공구 상자를 처음 열면 같이 짐을 들던 버릇 하나를 떠올린다(설정집 §3.1). 사건 단서와는
+	// 상관없는 기억이다. 증거가 상자 문장을 먼저 띄우므로 그다음 줄로 선다.
+	if (Evidence == ArrivalNotebookBox
+		&& Narrative->MarkBeatPlayed(FName(TEXT("Memory.ToolBoxHandle"))))
+	{
+		AIGHorrorHUD::PushThought(
+			this,
+			NSLOCTEXT(
+				"IGMissingFloor",
+				"ArrivalToolBoxMemory",
+				"이거 들 때마다 오빠가 밑에 받치라고 했는데. 손잡이 끊어진다고."),
+			3.6f);
 	}
 	// 402호 메모. 빈집이라는 말을 나린에게 들었거나 문 안의 정적을 들었다면 한
 	// 번 되받는다. 밤 번호로 돌려보내기 전에 본다 — 다음 날 다시 읽어도 된다.
@@ -3143,7 +3167,7 @@ FText AIGListenerGreyboxDirector::GetNarinCounterLine() const
 	return NSLOCTEXT(
 		"IGMissingFloor",
 		"ArrivalNarinLine",
-		"큰 가방 메고 다니시던 분이죠? 작년 여름부터 못 봤어요. 근데 403호에 오셨구나. 올해만 세 번째예요, 그 집. 옆집은 봄부터 비어 있고요.");
+		"큰 가방 메고 다니시던 분이죠? 작년 여름부터 못 봤어요. 근데 403호에 오셨구나. 1년 새 세 번째예요, 그 집. 옆집은 봄부터 비어 있고요.");
 }
 
 void AIGListenerGreyboxDirector::RequestArrivalAutosave()
@@ -4360,7 +4384,7 @@ void AIGListenerGreyboxDirector::HandleSiteCheckChecked(AIGSiteCheckVisit* Visit
 		PlayFirstReportSiteCheck();
 	}
 	UE_LOG(LogTemp, Display, TEXT("SITECHECK beat witnessed=%d"), bWitnessed ? 1 : 0);
-	// 요구서는 관리인이 옥상에서 내려와 403호 문에 붙인다. 그녀가 방에 있을 때다.
+	// 요구서는 관리인이 옥상에서 내려와 4층 엘리베이터 공지 옆에 붙인다. 그녀가 방에 있을 때다.
 	if (!bProbeRequested)
 	{
 		ScheduleFirstReportTexts(IGListenerGreybox::SiteCheckAfterSeconds);
@@ -8587,7 +8611,7 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 		if (Narrative->HasSource(EIGMissingFloorTruth::StillCoveringIt,
 			EIGMissingFloorSource::EvictionWarning)
 			|| !NightPhase->GetObjectiveText().EqualTo(
-				NSLOCTEXT("IGMissingFloor", "DayObjectiveNotice", "403호 문에 붙은 통보문 읽기"))
+				NSLOCTEXT("IGMissingFloor", "DayObjectiveNotice", "엘리베이터 옆 통보문 읽기"))
 			|| IGListenerGreybox::NextFirstReportText(*Narrative, NightFour.Get())
 				!= IGListenerGreybox::EFirstReportText::None
 			|| !IsSleepBlocked())
@@ -11938,18 +11962,20 @@ void AIGListenerGreyboxDirector::RefreshPhonePosts()
 				FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "PostSensorMeta", "무영동 주민 · 댓글 5")}});
 		// 작년 7월, 403호에 살던 서일영의 글이다. 계정 이름이 그 호수다. 마지막 문장은 둘째 낮에
-		// 303호가 붙이는 셋째 쪽지와 같다(EXPANSION_PLAN §2.3).
+		// 303호가 붙이는 셋째 쪽지와 같다(EXPANSION_PLAN §2.3). 그때 위층 소리는 살아 있던 도하가
+		// 카트를 끌고 들어오는 소리라 녹음에 다 담겼다(설정집 §2). 관리실이 그 녹음을 물탱크
+		// 소리로 넘겼다는 글이다. 예전 글은 노크만 안 찍힌다고 해서 그 설정과 어긋났다.
 		Pages.Add({Board,
-			NSLOCTEXT("IGMissingFloor", "PostRecordingTitle", "층간소음 앱으로 녹음하면 새벽 노크만 안 찍혀요"),
+			NSLOCTEXT("IGMissingFloor", "PostRecordingTitle", "새벽마다 위에서 뭘 끄는데 관리실은 위층이 없대요"),
 			{NSLOCTEXT("IGMissingFloor", "PostRecordingBody",
-				"다른 소리는 다 찍히는데 네 시 반에 천장 쿵쿵거리는 소리만 안 찍혀요. 관리실은 증거를 가져오래요. 참는 데도 한계가 있습니다."),
+				"녹음한 걸 들려줬더니 물탱크에 바람 드는 소리래요. 바퀴 굴러가는 소리까지 들리는데요. 증거를 더 가져오라네요. 참는 데도 한계가 있습니다."),
 				FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "PostRecordingComment1", "ㄴ 참지 마세요"),
 				NSLOCTEXT("IGMissingFloor", "PostRecordingComment2", "ㄴ 올라가 보세요"),
 				NSLOCTEXT("IGMissingFloor", "PostRecordingComment3", "ㄴ 참지 마세요22"),
 				NSLOCTEXT("IGMissingFloor", "PostRecordingComment4", "ㄴ 저 같으면 올라갑니다"),
 				FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "PostRecordingMeta", "403호 · 작년 7월 · 댓글 12")}});
+				NSLOCTEXT("IGMissingFloor", "PostRecordingMeta", "403호 · 작년 7월 · 댓글 9")}});
 	}
 	Phone->SetExtraPhonePages(MoveTemp(Pages));
 }

@@ -43,6 +43,7 @@ AIGSwingDoor::AIGSwingDoor()
 
 	OpenPrompt = NSLOCTEXT("IGSwingDoor", "OpenPrompt", "문 열기");
 	ClosePrompt = NSLOCTEXT("IGSwingDoor", "ClosePrompt", "문 닫기");
+	LatchedOpenPrompt = NSLOCTEXT("IGSwingDoor", "LatchedOpenPrompt", "걸쇠 풀고 문 열기");
 }
 
 void AIGSwingDoor::ConfigurePrototypeVisuals(
@@ -444,7 +445,9 @@ FText AIGSwingDoor::GetInteractionPrompt_Implementation(AActor* Interactor) cons
 	{
 		return Unmet->LockedPrompt.IsEmpty() ? OpenPrompt : Unmet->LockedPrompt;
 	}
-	const FText& BasePrompt = bOpen ? ClosePrompt : OpenPrompt;
+	// 걸쇠가 걸린 문을 열면 걸쇠도 같이 풀린다. 그냥 「문 열기」라고 하면 닫아 둔 것과 걸어 둔
+	// 것이 구별되지 않는다.
+	const FText& BasePrompt = bOpen ? ClosePrompt : (bLatched ? LatchedOpenPrompt : OpenPrompt);
 	if (QuietOpenHoldSeconds <= 0.0f)
 	{
 		return BasePrompt;

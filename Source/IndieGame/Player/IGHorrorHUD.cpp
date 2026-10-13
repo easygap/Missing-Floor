@@ -210,9 +210,9 @@ namespace IGHorrorHUD
 				NSLOCTEXT("IGJournal", "FinalPost.Excerpt", "7/26 03:12 오늘은 올라가 봅니다. 사람인지 뭔지 얼굴이나 보죠."),
 				NSLOCTEXT("IGJournal", "FinalPost.Where", "1층 게시판 인쇄본"), EJournalThumbnail::Document},
 			{TEXT("Fifth.LandingImpactMark"), EJournalLane::Life,
-				NSLOCTEXT("IGJournal", "LandingImpactMark.Title", "계단참에 남은 자국"),
+				NSLOCTEXT("IGJournal", "LandingImpactMark.Title", "자재 모서리에 남은 자국"),
 				NSLOCTEXT("IGJournal", "LandingImpactMark.Excerpt", "철골 모서리와 바닥에 같은 검은 얼룩이 묻어 있다."),
-				NSLOCTEXT("IGJournal", "LandingImpactMark.Where", "5층 계단참 · 셋째 밤"), EJournalThumbnail::Metal},
+				NSLOCTEXT("IGJournal", "LandingImpactMark.Where", "5층 자재 더미 · 셋째 밤"), EJournalThumbnail::Metal},
 			{TEXT("Fifth.FreshPlasterDating"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "FreshPlasterDating.Title", "덧댄 벽"),
 				NSLOCTEXT("IGJournal", "FreshPlasterDating.Excerpt", "안쪽 석고보드는 바싹 말랐는데, 바깥 실리콘은 아직 덜 굳었다."),
@@ -239,7 +239,7 @@ namespace IGHorrorHUD
 				NSLOCTEXT("IGJournal", "AnswerReturned.Where", "5층 공동벽 · 셋째 밤"), EJournalThumbnail::Plaster},
 			{TEXT("Fifth.BreakerCutIntervention"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Title", "나간 전기"),
-				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Excerpt", "망치 세 번째에 5층 불이 나갔다."),
+				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Excerpt", "세 번째 망치질에 건물 불이 다 나갔다."),
 				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Where", "5층 · 넷째 밤"), EJournalThumbnail::Metal},
 
 			{TEXT("Estate.ShippingLabels"), EJournalLane::Personal,
@@ -1495,8 +1495,10 @@ void AIGHorrorHUD::AdvanceAudioCaptionQueue(const double CurrentTime)
 		FIGAudioCaptionMessage Next = MoveTemp(AudioCaptionQueue[0]);
 		AudioCaptionQueue.RemoveAt(0);
 		// A caption that would be badly detached from its sound is safer to drop
-		// than to present as a false current event.
-		if (CurrentTime - Next.QueuedAt > 3.0)
+		// than to present as a false current event. 자막을 오래 두는 설정이면 앞
+		// 자막도 그만큼 오래 머무니, 기다릴 수 있는 시간도 같이 늘린다. 그대로 두면
+		// 200%에서 줄 선 자막이 한 번도 뜨지 못하고 버려졌다.
+		if (CurrentTime - Next.QueuedAt > 3.0 * FMath::Max(1.0f, GetCaptionDurationScale()))
 		{
 			continue;
 		}
@@ -5584,7 +5586,7 @@ void AIGHorrorHUD::DrawAccessibilityPanel()
 		NSLOCTEXT("IGHUD", "A11yCrouchInputDesc", "앉기 키를 한 번 눌러 전환하거나, 누르고 있는 동안만 유지하도록 선택합니다."),
 		NSLOCTEXT("IGHUD", "A11yHoldInputDesc", "버튼을 길게 누르기 어렵다면 한 번 눌러 시작하고 다시 눌러 취소하도록 바꿀 수 있습니다."),
 		NSLOCTEXT("IGHUD", "A11yHoldDurationDesc", "문을 열거나 조사할 때 버튼을 얼마나 오래 누를지 정합니다."),
-		NSLOCTEXT("IGHUD", "A11yPromptKeysDesc", "항상으로 두면 누를 키를 계속 표시합니다. 익힐 때까지로 두면 같은 동작을 세 번 한 뒤부터 키 이름을 숨깁니다."),
+		NSLOCTEXT("IGHUD", "A11yPromptKeysDesc", "‘항상’으로 두면 누를 키를 계속 표시합니다. ‘익힐 때까지’로 두면 같은 동작을 세 번 한 뒤부터 키 이름을 숨깁니다."),
 		NSLOCTEXT("IGHUD", "A11yHapticsDesc", "게임패드 진동을 켜거나 끕니다."),
 		NSLOCTEXT("IGHUD", "A11yMicrophoneDesc", "켜면 마이크로 들어오는 내 목소리와 주변 소리에 위층 사람이 반응합니다."),
 		NSLOCTEXT("IGHUD", "A11yResetDesc", "이 화면의 설정을 처음 상태로 되돌립니다."),
@@ -6627,7 +6629,7 @@ void AIGHorrorHUD::DrawDisplaySettingsPanel()
 		NSLOCTEXT("IGHUD", "Display.ResolutionDesc", "화면 해상도를 바꿉니다. 모니터 해상도와 맞추면 가장 선명하게 보입니다.").ToString(),
 		NSLOCTEXT("IGHUD", "Display.QualityDesc", "그림자와 반사 등의 품질을 조절합니다. 게임이 버벅인다면 낮춰 보세요.").ToString(),
 		NSLOCTEXT("IGHUD", "Display.VSyncDesc", "화면이 가로로 갈라져 보이는 현상을 줄입니다. 조작 반응이 조금 느려질 수 있습니다.").ToString(),
-		NSLOCTEXT("IGHUD", "Display.FrameLimitDesc", "초당 표시할 화면 수의 최대값을 정합니다. 값을 낮추면 발열과 전력 사용을 줄일 수 있습니다.").ToString(),
+		NSLOCTEXT("IGHUD", "Display.FrameLimitDesc", "초당 표시할 화면 수의 최댓값을 정합니다. 값을 낮추면 발열과 전력 사용을 줄일 수 있습니다.").ToString(),
 		NSLOCTEXT("IGHUD", "Display.LanguageDesc", "화면에 나오는 글의 언어를 바꿉니다. 바로 적용됩니다.").ToString(),
 		NSLOCTEXT("IGHUD", "Display.AccessibilityDesc", "난이도, 자막, 화면 흔들림, 조작 도움을 설정합니다.").ToString(),
 		NSLOCTEXT("IGHUD", "Display.AudioBrightnessDesc", "소리 크기와 화면 밝기를 맞춥니다.").ToString(),

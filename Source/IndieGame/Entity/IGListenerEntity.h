@@ -349,6 +349,8 @@ private:
 	 * 자리를 보러 온다.
 	 */
 	void AttendAnswerTap(const FVector& KnockLocation, double Now);
+	/** 박자에 여러 번 멈춰 선 뒤의 탭. 서서 듣지 않고 친 자리로 곧장 간다. */
+	void InvestigateTapDirectly(const FVector& KnockLocation, double Now);
 	/** 연출이 건물을 침묵시킨 동안. P4의 8초가 대표다. */
 	bool IsAuthoredSilenceActive() const;
 
@@ -642,6 +644,12 @@ private:
 
 	/** The player's in-progress answer. Never more than the last three taps. */
 	TArray<double> AnswerTapTimes;
+	/**
+	 * 새 박자를 치기 시작한 횟수와 그 셈을 시작한 시각. 45초 안에 세 번째부터는 멈춰
+	 * 듣지 않고 곧장 친 자리로 온다. 한 번씩 두드려 그를 계속 세워 두던 구멍을 막는다.
+	 */
+	int32 TapStallCount = 0;
+	double TapStallWindowStart = -1000.0;
 	/**
 	 * 이 밤에 대답이 통한 횟수. 두 번째부터 기다림이 짧아지고 네 번째부터는
 	 * 대답이 오지 않는다. 같은 박자를 6초마다 두드리면 밤새 안 잡히던 구멍을

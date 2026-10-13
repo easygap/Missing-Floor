@@ -104,7 +104,8 @@ void AIGNightLoopDirector::BeginPlay()
 	if (const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
 	{
 		CaptureCount = FMath::Max(CaptureCount, Narrative->GetCaptureCount());
-		if (CaptureCount >= IGNightLoop::MercyNoteCaptureThreshold)
+		ListenerCaptureCount = FMath::Max(ListenerCaptureCount, Narrative->GetCaptureCount());
+		if (ListenerCaptureCount >= IGNightLoop::MercyNoteCaptureThreshold)
 		{
 			SetMercyNoteAtRest();
 		}
@@ -239,6 +240,10 @@ void AIGNightLoopDirector::BeginCaptureReset(
 		? Narrative->GetCaptureCount()
 		: 0;
 	CaptureCount = FMath::Max(CaptureCount + 1, PersistedCaptureCount + 1);
+	if (Kind == EIGCaptureKind::Listener)
+	{
+		ListenerCaptureCount = FMath::Max(ListenerCaptureCount + 1, PersistedCaptureCount + 1);
+	}
 	CapturedPlayer = Character;
 	LastCaptureSpot = Character->GetActorLocation();
 	// 깰 자리는 끊기기 전에 정한다. 끊긴 뒤에는 몸이 이미 쓰러져 있다.
@@ -719,6 +724,7 @@ FVector AIGNightLoopDirector::GetMercyNoteLocation() const
 void AIGNightLoopDirector::PrimeMercyNoteCaptureProbe()
 {
 	CaptureCount = IGNightLoop::MercyNoteCaptureThreshold - 1;
+	ListenerCaptureCount = IGNightLoop::MercyNoteCaptureThreshold - 1;
 	bMercyNoteRevealed = false;
 	bMercyNoteSliding = false;
 	GetWorldTimerManager().ClearTimer(MercyNoteRevealTimer);
@@ -799,7 +805,8 @@ bool AIGNightLoopDirector::InitializeMercyNote()
 
 void AIGNightLoopDirector::QueueMercyNoteReveal()
 {
-	if (CaptureCount < IGNightLoop::MercyNoteCaptureThreshold
+	// 관리인이나 어둑시니에게 잡힌 것까지 세면 눈으로 찾는 상대 앞에서 「눈이 없어」가 나왔다.
+	if (ListenerCaptureCount < IGNightLoop::MercyNoteCaptureThreshold
 		|| bMercyNoteRevealed
 		|| !MercyNote)
 	{

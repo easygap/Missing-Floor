@@ -19,6 +19,7 @@
 #include "Entity/IGMissingFloorEpilogueDirector.h"
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
+#include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
 #include "Entity/IGNightLoopDirector.h"
 #include "Entity/IGNightOneBeatDirector.h"
@@ -35,6 +36,7 @@
 #include "Player/IGPlayerCharacter.h"
 #include "Player/IGStressComponent.h"
 #include "Interaction/IGDoorLatch.h"
+#include "Save/IGSaveSubsystem.h"
 #include "TimerManager.h"
 
 namespace IGNightThreat
@@ -44,6 +46,9 @@ namespace IGNightThreat
 	constexpr double StairwellAfterglowSeconds = 60.0;
 	// §7. 잡혔다 깬 뒤 이만큼은 아무것도 오지 않는다.
 	constexpr double CaptureGraceSeconds = 40.0;
+	// 쫓거나 찾던 것이 끝나고 다른 것이 오기까지. 쫓기다 숨을 돌리자마자 손님이 문을 두드리지 않게 한다.
+	// 망치질 동안은 겹치는 게 그 장면이라 이 간격을 두지 않는다.
+	constexpr double PursuitAfterglowSeconds = 20.0;
 
 	// --- 어둑시니 ---
 	// 손전등을 끈 이만큼 어두운 자리에서 시간이 쌓인다(0~1, 1이 칠흑).
@@ -98,6 +103,8 @@ namespace IGNightThreat
 	// --- 손님 ---
 	// 403호 안에 이만큼 머물러야 온다.
 	constexpr float RequiredHomeDwellSeconds = 25.0f;
+	// 문을 닫고 403호에 이만큼 있으면 걸쇠를 알아챈다. 손님이 오기까지보다 한참 짧다.
+	constexpr float LatchHintDwellSeconds = 4.0f;
 	// 그 시간이 시작되고 이만큼 지난 뒤, 이만큼 전까지만 온다(05:30 마감 앞은 비운다).
 	constexpr float GuestEarliestHourSeconds = 150.0f;
 	constexpr float GuestLatestHourSeconds = 960.0f;
@@ -112,6 +119,11 @@ namespace IGNightThreat
 	constexpr float KeypadAgainAt = 16.0f;
 	constexpr float UnlockedAt = 17.9f;
 	constexpr float DoorAt = 18.4f;
+	// 두드리기 시작하고 이만큼 안에 문이 열렸으면 마침 열고 있던 문이다(길게 눌러 여는 데 1.4초).
+	// 이번에는 오지 않고, 문이 다시 닫히면 그 밤 안에 온다.
+	constexpr float GuestDoorOpenGraceSeconds = 1.0f;
+	// 들어온 몸이 숨는 순간을 볼 수 있는 거리.
+	constexpr float GuestSeeHideDistance = 400.0f;
 	/** 밤3, 403호에 오기 전. 0초에 401호를 두드리고 말을 건 뒤 402호를 두드린다. */
 	constexpr float CanvassLineAt = 2.4f;
 	constexpr float CanvassThoughtAt = 5.8f;
@@ -119,6 +131,11 @@ namespace IGNightThreat
 	constexpr float CanvassArriveAt = 11.4f;
 	/** 옆집 문 앞에서 403호 문간으로 오는 몸이 이만큼 붙으면 다 왔다. */
 	constexpr float LureArriveDistance = 30.0f;
+	/**
+	 * 403호 문 쪽으로 돌아선 몸이 걷기 전에 서 있는 시간. 402호 문 앞에서는 0.9초면 문간에
+	 * 닿는데 문을 끝까지 닫는 데 1.0~1.8초가 걸려서, 열자마자 알아채고 닫아도 늦었다.
+	 */
+	constexpr float LureTurnSeconds = 1.2f;
 	/** 밤4, 열린 5층 철문간. 두드리고 말을 건 뒤 이 시각까지 닫지 않으면 들어온다. */
 	constexpr float OpenDoorLineAt = 1.6f;
 	constexpr float OpenDoorStepInAt = 6.4f;
@@ -416,12 +433,89 @@ void AIGNightThreatDirector::Update()
 		AnnexDwellSeconds = 0.0f;
 		bHammerCallUsed = false;
 		HideGuestPapers();
+		bQuietAutosavePending = false;
 		return;
 	}
 
+	if (IsPursuitActive())
+	{
+		LastPursuitSeconds = Now;
+	}
 	UpdateGuest(DeltaSeconds);
 	UpdatePaperUnderDoor(DeltaSeconds);
 	UpdateEoduksini(DeltaSeconds);
+	if (bQuietAutosavePending && !IsEventInProgress())
+	{
+		bQuietAutosavePending = false;
+		if (UGameInstance* GameInstance = GetGameInstance())
+		{
+			if (UIGSaveSubsystem* Save = GameInstance->GetSubsystem<UIGSaveSubsystem>())
+			{
+				Save->RequestAutosave(PendingAutosaveChapter, PendingAutosaveMap, PendingAutosaveCheckpoint);
+			}
+		}
+	}
+}
+
+void AIGNightThreatDirector::RequestAutosaveWhenQuiet(
+	const UObject* WorldContext,
+	const FGameplayTag ChapterId,
+	const FName MapPackageName,
+	const FGameplayTag CheckpointTag)
+{
+	UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+	if (!World)
+	{
+		return;
+	}
+	for (TActorIterator<AIGNightThreatDirector> It(World); It; ++It)
+	{
+		const AIGNightPhaseDirector* Phase = It->NightPhase.Get();
+		if (Phase && Phase->IsHourActive() && It->IsEventInProgress())
+		{
+			It->bQuietAutosavePending = true;
+			It->PendingAutosaveChapter = ChapterId;
+			It->PendingAutosaveMap = MapPackageName;
+			It->PendingAutosaveCheckpoint = CheckpointTag;
+			return;
+		}
+		break;
+	}
+	if (UGameInstance* GameInstance = World->GetGameInstance())
+	{
+		if (UIGSaveSubsystem* Save = GameInstance->GetSubsystem<UIGSaveSubsystem>())
+		{
+			Save->RequestAutosave(ChapterId, MapPackageName, CheckpointTag);
+		}
+	}
+}
+
+bool AIGNightThreatDirector::IsEventInProgress() const
+{
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+	if ((GuestStage != EIGGuestStage::Idle && GuestStage != EIGGuestStage::Spent)
+		|| IsEoduksiniManifested()
+		|| IsPursuitActive()
+		|| AIGManagerPatrol::IsAnyOnKeyHunt(World))
+	{
+		return true;
+	}
+	if (const AIGNightLoopDirector* Loop = NightLoop.Get(); Loop && Loop->IsCaptureResetInFlight())
+	{
+		return true;
+	}
+	for (TActorIterator<AIGMissingFloorNightThreeDirector> It(World); It; ++It)
+	{
+		if (It->IsAwaitingWallAnswer() || It->IsSeoRecorderPlaying())
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 bool AIGNightThreatDirector::IsCaptureAllowed() const
@@ -438,17 +532,12 @@ bool AIGNightThreatDirector::IsQuietWindow() const
 	{
 		return false;
 	}
-	// §7. 위층 사람이 쫓거나 찾는 동안에는 다른 것이 끼어들지 않는다.
-	if (const AIGListenerEntity* Upstairs = Listener.Get())
+	// §7. 위층 사람이나 밤3의 관리인이 쫓거나 찾는 동안에는 다른 것이 끼어들지 않는다. 한 번에
+	// 하나다. 끝나고도 잠깐은 오지 않는다. 쫓기다 숨을 돌리자마자 다른 것이 몰려오면 안 된다.
+	if (IsPursuitActive()
+		|| (!IsHammerPhase() && World->GetTimeSeconds() - LastPursuitSeconds < IGNightThreat::PursuitAfterglowSeconds))
 	{
-		const EIGListenerState State = Upstairs->GetListenerState();
-		if (State == EIGListenerState::Chasing
-			|| State == EIGListenerState::Searching
-			|| State == EIGListenerState::Investigating
-			|| State == EIGListenerState::CaptureHold)
-		{
-			return false;
-		}
+		return false;
 	}
 	if (const AIGNightLoopDirector* Loop = NightLoop.Get())
 	{
@@ -458,10 +547,18 @@ bool AIGNightThreatDirector::IsQuietWindow() const
 			return false;
 		}
 	}
-	// 밤3의 관리인이 쫓거나 찾는 동안에도 끼어들지 않는다. 한 번에 하나다.
-	if (AIGManagerPatrol::IsAnyPursuing(World))
+	// 관리인이 열쇠를 찾아 403호 문까지 오는 밤에는 손님이 같은 문을 두드리지 않는다.
+	if (AIGManagerPatrol::IsAnyOnKeyHunt(World))
 	{
 		return false;
+	}
+	// 벽의 대답을 기다리는 8초와 5층 녹음기를 듣는 동안. 들어야 할 소리 위로 다른 것이 오지 않는다.
+	for (TActorIterator<AIGMissingFloorNightThreeDirector> It(World); It; ++It)
+	{
+		if (It->IsAwaitingWallAnswer() || It->IsSeoRecorderPlaying())
+		{
+			return false;
+		}
 	}
 	// 밤2 계단의 뒤따르는 발. 따라오는 동안과 끝나고 1분은 다른 것이 오지 않는다.
 	if (AIGStairwellPresence::IsActiveOrRecent(World, IGNightThreat::StairwellAfterglowSeconds))
@@ -491,6 +588,40 @@ bool AIGNightThreatDirector::IsQuietWindow() const
 		}
 	}
 	return true;
+}
+
+bool AIGNightThreatDirector::IsPursuitActive() const
+{
+	// 잠재운(틱이 꺼진) 위층 사람은 하던 상태 그대로 멈춰 있다. 조사하던 채로 세워 두면 밤새
+	// 쫓는 중으로 읽혀서 다른 괴이가 하나도 오지 않았다.
+	if (const AIGListenerEntity* Upstairs = Listener.Get();
+		Upstairs && !Upstairs->IsDormant() && Upstairs->IsActorTickEnabled())
+	{
+		const EIGListenerState State = Upstairs->GetListenerState();
+		if (State == EIGListenerState::Chasing
+			|| State == EIGListenerState::Searching
+			|| State == EIGListenerState::Investigating
+			|| State == EIGListenerState::CaptureHold)
+		{
+			return true;
+		}
+	}
+	return AIGManagerPatrol::IsAnyPursuing(GetWorld());
+}
+
+bool AIGNightThreatDirector::HasGuestLineOfSight(const FVector& BodyLocation, const FVector& Target) const
+{
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGGuestSight), false);
+	Params.AddIgnoredActor(Guest.Get());
+	Params.AddIgnoredActor(PlayerPawn.Get());
+	FHitResult Hit;
+	return !World->LineTraceSingleByChannel(
+		Hit, BodyLocation + FVector(0.0f, 0.0f, 150.0f), Target, ECC_Visibility, Params);
 }
 
 FVector AIGNightThreatDirector::GetPlayerEye() const
@@ -664,7 +795,12 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 		// 그녀의 등 뒤가 어둠이라, 손전등을 뺀 방의 어둠으로 잰다(§2.3 넷째 밤).
 		const float Darkness = IsHammerPhase() ? Player->GetRoomDarkness() : Player->GetDarkness();
 		const bool bDark = Darkness >= IGNightThreat::DarkThreshold;
-		if (bDark && !bGuestBusy && Now >= EoduksiniCooldownUntil && IsQuietWindow())
+		// 첫째 밤에는 3층 참 센서등이 어둑시니를 먼저 보여 준 뒤에야 어둠이 쌓인다(EXPANSION_PLAN
+		// §7). 예전에는 그 전에 어두운 데 오래 있으면 아무 소개 없이 먼저 나왔다.
+		const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+		const bool bIntroOutstanding = Narrative && Narrative->GetNightIndex() == 1
+			&& !Narrative->HasBeatPlayed(SensorIntroBeat);
+		if (bDark && !bGuestBusy && !bIntroOutstanding && Now >= EoduksiniCooldownUntil && IsQuietWindow())
 		{
 			DarknessSeconds += DeltaSeconds;
 		}
@@ -750,11 +886,22 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 				Player->PlayScareKick(1.2f);
 			}
 		}
+		// 처음 눈에 들어온 순간에 말한다. 생겨난 뒤 시간이 흘렀다고 말하지 않는다.
+		ThinkOnce(
+			TEXT("Threat.Eoduksini.First"),
+			NSLOCTEXT("IGMissingFloor", "YudamEoduksiniFirst", "저게 뭐야… 사람인가?"),
+			0.3f);
+		// 커지는 것을 본 뒤에도 아직 규칙은 모른다. 본 것만 말한다. 401호 할머니의 말을
+		// 들었으면 그 말이 떠오른다. 눈을 돌리면 사라진다는 것은 그걸 겪은 뒤에 안다.
 		if (EoduksiniGrowth >= 0.45f)
 		{
+			const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+			const bool bWarned = Narrative && Narrative->HasBeatPlayed(FName(TEXT("Arrival.HwangWarning")));
 			ThinkOnce(
 				TEXT("Threat.Eoduksini.Growth"),
-				NSLOCTEXT("IGMissingFloor", "YudamEoduksiniGrowth", "쳐다볼수록 커져. 보면 안 돼."));
+				bWarned
+					? NSLOCTEXT("IGMissingFloor", "YudamEoduksiniGrowthWarned", "할머니가 쳐다보지 말랬는데… 볼수록 커지네.")
+					: NSLOCTEXT("IGMissingFloor", "YudamEoduksiniGrowth", "볼수록 커지는 것 같은데."));
 		}
 	}
 	else
@@ -768,7 +915,7 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 			DismissEoduksini(false);
 			ThinkOnce(
 				TEXT("Threat.Eoduksini.LookAway"),
-				NSLOCTEXT("IGMissingFloor", "YudamEoduksiniLookAway", "눈을 돌렸더니… 없어졌어."),
+				NSLOCTEXT("IGMissingFloor", "YudamEoduksiniLookAway", "눈을 돌리니까 없어졌어. 계속 쳐다보면 안 되겠네."),
 				0.5f);
 			return;
 		}
@@ -918,11 +1065,12 @@ bool AIGNightThreatDirector::FindManifestSpot(FVector& OutLocation) const
 		}
 		return false;
 	}
-	// 등 뒤와 옆이 먼저다. 숨소리가 들리고, 돌아보면 거기 있다.
+	// 등 뒤와 옆이 먼저다. 숨소리가 들리고, 돌아보면 거기 있다. 눈앞(시야 안)에서 생겨나는
+	// 것은 보이면 안 된다. 예전에는 ±35°도 후보여서 화면 가장자리에서 솟아오를 수 있었다.
 	const float ViewYaw = Player->GetControlRotation().Yaw;
 	for (const float Distance : {650.0f, 500.0f, 380.0f})
 	{
-		for (const float Angle : {150.0f, -150.0f, 180.0f, 120.0f, -120.0f, 90.0f, -90.0f, 35.0f, -35.0f})
+		for (const float Angle : {150.0f, -150.0f, 180.0f, 120.0f, -120.0f, 90.0f, -90.0f})
 		{
 			const FVector Direction = FRotator(0.0f, ViewYaw + Angle, 0.0f).Vector();
 			if (IsValidManifestSpot(Eye + Direction * Distance, Floor))
@@ -989,10 +1137,8 @@ void AIGNightThreatDirector::ManifestEoduksiniAt(const FVector& Spot)
 	{
 		Stress->ApplyScare(0.2f);
 	}
-	ThinkOnce(
-		TEXT("Threat.Eoduksini.First"),
-		NSLOCTEXT("IGMissingFloor", "YudamEoduksiniFirst", "저게 뭐야… 사람인가?"),
-		1.6f);
+	// 첫마디는 그녀가 처음 쳐다본 순간에 한다(UpdateEoduksini). 등 뒤에 생겨났는데 시간만
+	// 흘렀다고 "저게 뭐야"라고 하지 않는다.
 }
 
 void AIGNightThreatDirector::DismissEoduksini(const bool bSilently)
@@ -1305,7 +1451,7 @@ void AIGNightThreatDirector::SetAnnexDoor(AIGSwingDoor* InDoor)
 
 bool AIGNightThreatDirector::BeginHammerCall()
 {
-	if (bHammerCallUsed || !IsHammerPhase() || !AnnexDoor.IsValid() || !IsQuietWindow()
+	if (bHammerCallUsed || !IsHammerPhase() || !AnnexDoor.IsValid() || !CanRunHammerCall()
 		|| (GuestStage != EIGGuestStage::Idle && GuestStage != EIGGuestStage::Spent))
 	{
 		return false;
@@ -1320,6 +1466,28 @@ bool AIGNightThreatDirector::BeginHammerCall()
 	StartGuest(EIGGuestDoor::Annex);
 	UE_LOG(LogTemp, Display, TEXT("NIGHT4_HAMMER_CALL begin stage=%d"), static_cast<int32>(GuestStage));
 	return true;
+}
+
+bool AIGNightThreatDirector::CanRunHammerCall() const
+{
+	// 넷째 밤 망치질 사이의 부름은 그 밤의 마지막 장면이다. 망치 소리를 들은 위층 사람이 아래층에서
+	// 소리를 찾아다니는 것으로는 막지 않는다(그는 5층에 오르지 않는다). 예전에는 그것 때문에 실제
+	// 플레이에서 부름이 거의 오지 않았다. 쫓거나 잡는 중, 잡혔다 깨는 중일 때만 미룬다.
+	if (const AIGListenerEntity* Upstairs = Listener.Get())
+	{
+		const EIGListenerState State = Upstairs->GetListenerState();
+		if (State == EIGListenerState::Chasing || State == EIGListenerState::CaptureHold)
+		{
+			return false;
+		}
+	}
+	if (const AIGNightLoopDirector* Loop = NightLoop.Get(); Loop
+		&& (Loop->IsCaptureResetInFlight()
+			|| GetWorld()->GetTimeSeconds() - Loop->GetLastCaptureSeconds() < IGNightThreat::CaptureGraceSeconds))
+	{
+		return false;
+	}
+	return IsHammerPhase();
 }
 
 AIGSwingDoor* AIGNightThreatDirector::GetGuestDoorActor() const
@@ -1419,8 +1587,10 @@ bool AIGNightThreatDirector::CanStartGuest(EIGGuestDoor& OutDoor) const
 	// 한 밤에 한 번 온다. 잡혀서 걸쇠가 뜯긴 밤에만 한 번 더 온다.
 	const bool bReturning = bGuestReturnOwed && GuestReturnNight == Night
 		&& Phase->GetHourElapsedSeconds() >= GuestReturnAtHourSeconds;
+	// 첫 노크와 거의 같이 문이 열려 미룬 방문은 아직 온 게 아니다.
+	const bool bDeferred = bGuestStartDeferred && GuestNight == Night;
 	if (Night < 2 || Night > 4
-		|| (!bReturning
+		|| (!bReturning && !bDeferred
 			&& Narrative->HasBeatPlayed(FName(*FString::Printf(TEXT("Threat.Guest.N%d"), Night)))))
 	{
 		return false;
@@ -1431,7 +1601,9 @@ bool AIGNightThreatDirector::CanStartGuest(EIGGuestDoor& OutDoor) const
 		return false;
 	}
 	// 403호에 오래 있었으면 현관으로, 밤4에 5층에 오래 있었으면 5층 철문으로 온다.
-	const bool bHome = HomeDwellSeconds >= IGNightThreat::RequiredHomeDwellSeconds && Door->IsFullyClosed();
+	// 문을 열어 둔 채 집에 있어도 온다. 예전에는 닫힌 문만 봐서, 현관을 열어 두기만 하면 손님이
+	// 아예 오지 않았다. 열려 있으면 문간에 선다(StartGuest).
+	const bool bHome = HomeDwellSeconds >= IGNightThreat::RequiredHomeDwellSeconds && !Door->IsSwinging();
 	const bool bAnnex = !bHome && Night == 4 && CanVisitAnnex();
 	if (!bHome && !bAnnex)
 	{
@@ -1472,7 +1644,11 @@ void AIGNightThreatDirector::StartGuest(const EIGGuestDoor Door)
 	{
 		Narrative->MarkBeatPlayed(FName(*FString::Printf(TEXT("Threat.Guest.N%d"), GuestNight)));
 	}
+	bGuestReturnVisit = bGuestReturnOwed && GuestReturnNight == GuestNight;
 	bGuestReturnOwed = false;
+	bGuestStartDeferred = false;
+	bGuestSawHide = false;
+	bGuestPlayerWasConcealed = false;
 	GuestDoor = Door;
 	GuestStage = EIGGuestStage::Knocking;
 	CanvassStop = 0;
@@ -1502,6 +1678,13 @@ void AIGNightThreatDirector::StartGuest(const EIGGuestDoor Door)
 		GuestStage = EIGGuestStage::AtOpenDoor;
 		Guest->Manifest(GetDoorThreshold(), Gate->GetActorRotation().Yaw + 180.0f, IGNightThreat::GuestGrowth);
 	}
+	else if (AIGSwingDoor* Front = HomeDoor.Get(); GuestDoor == EIGGuestDoor::Home && Front && Front->IsOpen() && Guest)
+	{
+		// 열어 둔 현관. 두드릴 문이 없으니 철문 때처럼 문간에 서서 안을 들여다본다.
+		GuestStage = EIGGuestStage::AtOpenDoor;
+		const FVector Threshold = GetDoorThreshold();
+		Guest->Manifest(Threshold, (GetGuestRoomCenter() - Threshold).Rotation().Yaw, IGNightThreat::GuestGrowth);
+	}
 }
 
 void AIGNightThreatDirector::GuestKnock(const int32 Count, const float Volume)
@@ -1530,23 +1713,28 @@ void AIGNightThreatDirector::GuestKnock(const int32 Count, const float Volume)
 			0.05f + 0.3f * Index,
 			false);
 	}
-	const FText Caption = GuestStage == EIGGuestStage::Canvassing
-		? NSLOCTEXT("IGMissingFloor", "CaptionGuestKnockNeighbor", "[옆집 문을 두드리는 소리]")
-		: GuestDoor == EIGGuestDoor::Annex
-			? NSLOCTEXT("IGMissingFloor", "CaptionGuestKnockAnnex", "[철문을 두드리는 소리]")
-			: NSLOCTEXT("IGMissingFloor", "CaptionGuestKnock", "[현관문을 두드리는 소리]");
+	// 몇 번, 어떤 박자로 쳤는지까지 적는다. 오빠의 둘, 쉬고, 하나와 견줄 수 있어야 한다.
+	const FText Caption = Count == 2
+		? NSLOCTEXT("IGMissingFloor", "CaptionGuestKnockTwice", "[문을 두 번 두드리고 멈추는 소리]")
+		: GuestStage == EIGGuestStage::Canvassing
+			? NSLOCTEXT("IGMissingFloor", "CaptionGuestKnockNeighbor", "[옆집 문을 빠르게 세 번 두드리는 소리]")
+			: GuestDoor == EIGGuestDoor::Annex
+				? NSLOCTEXT("IGMissingFloor", "CaptionGuestKnockAnnex", "[철문을 빠르게 세 번 두드리는 소리]")
+				: NSLOCTEXT("IGMissingFloor", "CaptionGuestKnock", "[현관문을 빠르게 세 번 두드리는 소리]");
 	AIGHorrorHUD::PushAudioCaptionAt(this, Caption, 2.0f, KnockAt);
 }
 
 void AIGNightThreatDirector::GuestSpeak(const int32 LineIndex)
 {
-	const FText Speaker = NSLOCTEXT("IGMissingFloor", "GuestSpeaker", "문 밖");
+	const FText Speaker = NSLOCTEXT("IGMissingFloor", "GuestSpeaker", "문밖");
 	FText Line;
 	switch (GuestNight)
 	{
 	case 2:
 		// 편의점의 나린. 새벽 근무 중이어야 할 사람이다.
-		Line = LineIndex == 0
+		Line = GuestStage == EIGGuestStage::AtOpenDoor
+			? NSLOCTEXT("IGMissingFloor", "GuestN2OpenDoor", "언니, 저 나린이에요. 문이 열려 있길래요. 지갑 두고 가셨어요.")
+			: LineIndex == 0
 			? NSLOCTEXT("IGMissingFloor", "GuestN2Line1", "언니, 저 편의점 나린이에요. 아까 지갑 두고 가셨어요.")
 			: LineIndex == 1
 				? NSLOCTEXT("IGMissingFloor", "GuestN2Line2", "언니. 문 좀 열어 주세요. 지갑… 두고 가셨어요.")
@@ -1960,6 +2148,9 @@ void AIGNightThreatDirector::OpenDoorForGuest()
 	GuestStage = EIGGuestStage::Inside;
 	GuestElapsed = 0.0f;
 	bPlayerHiddenWhenOpened = Player->IsConcealedInHidingSpot();
+	bGuestPlayerWasConcealed = bPlayerHiddenWhenOpened;
+	bGuestSawHide = false;
+	GuestLastVisiblePlayer = Player->GetActorLocation();
 	if (UIGStressComponent* Stress = Player->GetStress())
 	{
 		Stress->ApplyScare(0.6f);
@@ -2146,8 +2337,9 @@ void AIGNightThreatDirector::HandleCaptureSettled(const EIGCaptureKind Kind, con
 	{
 		DropGuestPaper(FVector(Entry.X, Entry.Y, Entry.Z - 90.0f));
 	}
-	// 들어와 본 집이다. 그 밤 안에 한 번 더 온다.
-	if (const AIGNightPhaseDirector* Phase = NightPhase.Get())
+	// 들어와 본 집이다. 그 밤 안에 한 번 더 온다. 그렇게 다시 와서 또 잡았으면 그 밤에는 더
+	// 오지 않는다.
+	if (const AIGNightPhaseDirector* Phase = NightPhase.Get(); Phase && !bGuestReturnVisit)
 	{
 		bGuestReturnOwed = true;
 		GuestReturnNight = GuestNight;
@@ -2160,7 +2352,7 @@ void AIGNightThreatDirector::HandleCaptureSettled(const EIGCaptureKind Kind, con
 		GuestBehindTimer, this, &AIGNightThreatDirector::SpeakGuestBehind, 1.1f, false);
 	const FText Thought = bAnnex
 		? NSLOCTEXT("IGMissingFloor", "YudamGuestBoltBent", "빗장이 휘었네. 이제 안 걸려.")
-		: NSLOCTEXT("IGMissingFloor", "YudamGuestLatchTorn", "걸쇠가 뜯겨 나갔네. 또 오면 어떡하지.");
+		: NSLOCTEXT("IGMissingFloor", "YudamGuestLatchTorn", "걸쇠가 뜯겨 나갔네. 또 오면 욕실 문이라도 잠그자.");
 	GetWorldTimerManager().SetTimer(
 		GuestWakeThoughtTimer,
 		FTimerDelegate::CreateWeakLambda(this, [this, Thought]()
@@ -2173,11 +2365,14 @@ void AIGNightThreatDirector::HandleCaptureSettled(const EIGCaptureKind Kind, con
 
 void AIGNightThreatDirector::HandleHourActiveChanged(const bool bActive)
 {
-	if (bActive)
-	{
-		return;
-	}
+	// 시간이 끝날 때도, 새로 열릴 때도 그 밤의 손님 사정과 망가진 걸쇠를 되돌린다. 결말 C에서
+	// 다시 하는 밤은 꺼진다는 방송 없이 곧바로 다시 켜지고(RestartTheHour), Update도 꺼진
+	// 시간을 못 본다. 꺼질 때만 되돌리면 다시 하는 밤에는 망치질 사이의 부름이 오지 않았다.
 	bGuestReturnOwed = false;
+	bGuestReturnVisit = false;
+	bGuestStartDeferred = false;
+	bHammerCallUsed = false;
+	bQuietAutosavePending = false;
 	for (AIGSwingDoor* Door : {HomeDoor.Get(), AnnexDoor.Get()})
 	{
 		if (AIGDoorLatch* Latch = FindLatchFor(Door))
@@ -2218,7 +2413,8 @@ void AIGNightThreatDirector::UpdateCanvass(AIGPlayerCharacter& Player)
 	{
 		const FVector Threshold = GetDoorThreshold();
 		const FVector BodyLocation = Body->GetActorLocation();
-		if (Door->IsFullyClosed())
+		// 닫기 시작했으면 막힌 것이다. 끝까지 닫히기를 기다리면 도는 문짝을 지나 들어왔다.
+		if (!Door->IsOpen())
 		{
 			// 오는 사이 문을 닫았다. 몸은 문 너머로 사라지고, 이제 이 문을 두드린다.
 			Body->Vanish();
@@ -2236,10 +2432,19 @@ void AIGNightThreatDirector::UpdateCanvass(AIGPlayerCharacter& Player)
 			GuestElapsed = 0.0f;
 			GuestStep = 9;
 			bPlayerHiddenWhenOpened = Player.IsConcealedInHidingSpot();
+			bGuestPlayerWasConcealed = bPlayerHiddenWhenOpened;
+			bGuestSawHide = false;
+			GuestLastVisiblePlayer = Player.GetActorLocation();
 			if (UIGStressComponent* Stress = Player.GetStress())
 			{
 				Stress->ApplyScare(0.6f);
 			}
+			return;
+		}
+		const UWorld* World = GetWorld();
+		if (World && World->GetTimeSeconds() - CanvassLureStartSeconds < LureTurnSeconds)
+		{
+			Body->SetTargetYaw((Threshold - BodyLocation).Rotation().Yaw);
 			return;
 		}
 		Body->SetTargetLocation(Threshold, PursueSpeed);
@@ -2249,6 +2454,7 @@ void AIGNightThreatDirector::UpdateCanvass(AIGPlayerCharacter& Player)
 	{
 		// 옆집을 두드리는 사이 문을 열었다. 그 문 앞에 서 있던 몸이 이쪽으로 돌아선다.
 		bCanvassLured = true;
+		CanvassLureStartSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 		const FVector From = GetNeighborDoorOutside(CanvassStop);
 		Body->Manifest(FVector(From.X, From.Y - 20.0f, AIGPrologueWorldScene::FourthFloorZ), 0.0f, GuestGrowth);
 		IGAudio::SpawnOneShotAt(
@@ -2305,7 +2511,7 @@ void AIGNightThreatDirector::UpdateCanvass(AIGPlayerCharacter& Player)
 void AIGNightThreatDirector::UpdateAtOpenDoor(AIGPlayerCharacter& Player)
 {
 	using namespace IGNightThreat;
-	AIGSwingDoor* Door = AnnexDoor.Get();
+	AIGSwingDoor* Door = GetGuestDoorActor();
 	AIGShadowFigure* Body = Guest.Get();
 	if (!Door || !Body)
 	{
@@ -2338,10 +2544,14 @@ void AIGNightThreatDirector::UpdateAtOpenDoor(AIGPlayerCharacter& Player)
 	{
 		++GuestStep;
 		GuestSpeak(0);
-		ThinkOnce(
-			TEXT("Threat.Guest.Tell.N4"),
-			NSLOCTEXT("IGMissingFloor", "YudamGuestTellBrother", "…오빠는 늘 둘, 하나로 두드렸는데."),
-			3.4f);
+		// 오빠 목소리를 낼 때만 박자로 알아챈다. 둘째 밤 문간에 선 것은 나린의 목소리다.
+		if (GuestNight == 4)
+		{
+			ThinkOnce(
+				TEXT("Threat.Guest.Tell.N4"),
+				NSLOCTEXT("IGMissingFloor", "YudamGuestTellBrother", "…오빠는 늘 둘, 하나로 두드렸는데."),
+				1.0f);
+		}
 	}
 	else if (GuestStep == 2 && GuestElapsed >= OpenDoorStepInAt)
 	{
@@ -2350,6 +2560,9 @@ void AIGNightThreatDirector::UpdateAtOpenDoor(AIGPlayerCharacter& Player)
 		GuestElapsed = 0.0f;
 		GuestStep = 9;
 		bPlayerHiddenWhenOpened = Player.IsConcealedInHidingSpot();
+		bGuestPlayerWasConcealed = bPlayerHiddenWhenOpened;
+		bGuestSawHide = false;
+		GuestLastVisiblePlayer = Player.GetActorLocation();
 		if (UIGStressComponent* Stress = Player.GetStress())
 		{
 			Stress->ApplyScare(0.6f);
@@ -2366,16 +2579,37 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		return;
 	}
 	HomeDwellSeconds = IsPlayerInHome() ? HomeDwellSeconds + DeltaSeconds : 0.0f;
+	// 걸쇠는 손님보다 먼저 눈에 들어와야 한다. 문을 닫고 집 안에 있는 첫 밤에 한 번 알아챈다.
+	// 손님은 문이 닫힌 채 25초를 머물러야 오니, 이 말은 늘 그보다 먼저다.
+	if (HomeDwellSeconds >= IGNightThreat::LatchHintDwellSeconds)
+	{
+		const AIGSwingDoor* Door = HomeDoor.Get();
+		const AIGDoorLatch* Latch = FindLatchFor(HomeDoor.Get());
+		if (Door && Latch && !Latch->IsBroken() && Door->IsFullyClosed() && !Door->IsLatched())
+		{
+			ThinkOnce(
+				TEXT("Home.LatchHint"),
+				NSLOCTEXT("IGMissingFloor", "YudamLatchHint", "현관에 걸쇠도 있네. 걸어 두면 밖에서는 못 열겠지."));
+		}
+	}
 	// 5층에 있는 시간은 철문이 열려 있어도 잰다. 열려 있으면 문간에 선다.
 	AnnexDwellSeconds = IsPlayerInAnnex() ? AnnexDwellSeconds + DeltaSeconds : 0.0f;
 
 	if (GuestStage == EIGGuestStage::Idle || GuestStage == EIGGuestStage::Spent)
 	{
-		// 밤이 바뀌면 다시 올 수 있다. 한 밤에 한 번은 서사 기록이 막는다.
+		// 밤이 바뀌면 다시 올 수 있다. 한 밤에 한 번은 서사 기록이 막는다. 잡혀서 한 번 더 오기로
+		// 했거나 미룬 방문이 있으면 같은 밤에도 다시 본다. 예전에는 Spent가 밤이 바뀔 때만 풀려서
+		// 잡힌 뒤 다시 오는 방문이 한 번도 오지 않았다.
 		if (GuestStage == EIGGuestStage::Spent)
 		{
 			const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-			if (Narrative && Narrative->GetNightIndex() != GuestNight)
+			const int32 Night = Narrative ? Narrative->GetNightIndex() : GuestNight;
+			if (Night != GuestNight)
+			{
+				bGuestStartDeferred = false;
+				GuestStage = EIGGuestStage::Idle;
+			}
+			else if ((bGuestReturnOwed && GuestReturnNight == Night) || bGuestStartDeferred)
 			{
 				GuestStage = EIGGuestStage::Idle;
 			}
@@ -2406,8 +2640,8 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		}
 		return;
 	}
-	// 위층 사람이 끼어들었거나 그녀가 잡혔다. 물러간다.
-	if (!IsQuietWindow())
+	// 위층 사람이 끼어들었거나 그녀가 잡혔다. 물러간다. 망치질 사이의 부름은 그 장면의 기준을 쓴다.
+	if (bHammerCall ? !CanRunHammerCall() : !IsQuietWindow())
 	{
 		EndGuest(true);
 		return;
@@ -2434,9 +2668,16 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 	case EIGGuestStage::Knocking:
 	case EIGGuestStage::Keypad:
 	{
-		// 두드리는 동안 문을 열면 바로 거기 서 있다.
+		// 두드리는 동안 문을 열면 바로 거기 서 있다. 두드리기 시작한 바로 그때 열린 문은
+		// 마침 열고 있던 문이라 아직 오지 않은 것으로 친다.
 		if (Door->IsOpen() && Guest)
 		{
+			if (GuestStage == EIGGuestStage::Knocking && GuestElapsed < GuestDoorOpenGraceSeconds)
+			{
+				bGuestStartDeferred = true;
+				EndGuest(false);
+				return;
+			}
 			Guest->Manifest(GetDoorThreshold(), 90.0f, GuestGrowth);
 			IGAudio::SpawnOneShotAt(
 				this,
@@ -2479,7 +2720,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 				ThinkOnce(
 					TEXT("Threat.Guest.Tell.N4"),
 					NSLOCTEXT("IGMissingFloor", "YudamGuestTellBrother", "…오빠는 늘 둘, 하나로 두드렸는데."),
-					3.4f);
+					1.0f);
 			}
 			else if (GuestDoor == EIGGuestDoor::Home
 				&& FVector::Dist2D(Player->GetActorLocation(), GetDoorOutside()) < 260.0f)
@@ -2635,8 +2876,21 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		const float Distance = FVector::Dist2D(PlayerFloor, BodyLocation);
 		Body->SetTargetYaw((PlayerFloor - BodyLocation).Rotation().Yaw);
 		const bool bPlayerConcealed = Player->IsConcealedInHidingSpot();
-		// 숨는 것을 봤으면 그 자리로 간다. 못 봤으면 소리로만 찾는다.
-		const bool bSawHide = bPlayerConcealed && !bPlayerHiddenWhenOpened && Distance < 400.0f;
+		// 숨는 것을 봤으면 그 자리로 간다. 못 봤으면 소리로만 찾는다. 봤는지는 숨는 순간에 한
+		// 번 정한다. 가깝고, 숨기 직전 그 자리가 막힘 없이 보였어야 한다. 예전에는 4 m 안이면
+		// 틱마다 다시 봐서 들어온 뒤에 숨으면 403호 어디서든 들켰다.
+		if (bPlayerConcealed && !bGuestPlayerWasConcealed)
+		{
+			bGuestSawHide = FVector::Dist2D(GuestLastVisiblePlayer, BodyLocation) < GuestSeeHideDistance
+				&& HasGuestLineOfSight(BodyLocation, GuestLastVisiblePlayer);
+		}
+		else if (!bPlayerConcealed)
+		{
+			bGuestSawHide = false;
+			GuestLastVisiblePlayer = Player->GetActorLocation();
+		}
+		bGuestPlayerWasConcealed = bPlayerConcealed;
+		const bool bSawHide = bPlayerConcealed && bGuestSawHide;
 		// 욕실(§4). 그녀가 욕실 안이면 문을 거쳐서만 간다. 잠그지 않은 문은 열고 들어가고,
 		// 잠갔으면 손잡이만 덜컥거려 보고 돌아간다. 숨은 걸 못 봤고 소리도 못 들었으면
 		// 욕실까지 오지 않는다.

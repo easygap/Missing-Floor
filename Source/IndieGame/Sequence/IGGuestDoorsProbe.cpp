@@ -541,7 +541,14 @@ void AIGGuestDoorsProbe::TickLure()
 		break;
 
 	case 4:
-		if (PhaseSeconds >= 0.8f)
+		// 돌아선 몸은 1.2초 서 있다가 걷는다(위협 감독의 LureTurnSeconds). 열자마자 알아채고 닫으면
+		// 그 사이에 막힌다.
+		if (!bActed && PhaseSeconds >= 0.6f)
+		{
+			bActed = true;
+			Check(bBody && FVector::Dist2D(Body, LureFirstBody) < 20.0f, TEXT("lure_body_pauses_before_walking"));
+		}
+		else if (bActed && PhaseSeconds >= 1.7f)
 		{
 			Check(bBody && Body.X > LureFirstBody.X + 40.0f, TEXT("lure_body_comes_to_403"));
 			Home->ForceOpenState(false);

@@ -205,6 +205,9 @@ namespace IGNightThree
 	 * 내리고, 스터드 너머로 먹인다. 박자는 CreateAnswerKnockPattern과 같다.
 	 */
 	constexpr float AnswerHitStartSeconds[3] = {0.0f, 0.42f, 1.15f};
+	// 벽에 귀를 대거나 두드린 뒤 독백이 뜨기까지. 빈 벽의 울림(1.45초)과 찬 벽(0.22초)이 다 난 뒤다.
+	constexpr float HollowThoughtDelaySeconds = 1.5f;
+	constexpr float SolidThoughtDelaySeconds = 0.4f;
 	constexpr float AnswerHitVolumes[3] = {0.76f, 0.76f, 0.6f};
 	constexpr float AnswerHitPitch = 0.97f;
 	constexpr float AnswerHitLowPassHz = 760.0f;
@@ -1182,6 +1185,102 @@ void AIGMissingFloorNightThreeDirector::EndPlay(
 	Super::EndPlay(EndPlayReason);
 }
 
+bool AIGMissingFloorNightThreeDirector::IsSeoRecorderPlaying() const
+{
+	return SeoRecorder && SeoRecorder->IsPlaying();
+}
+
+void AIGMissingFloorNightThreeDirector::PushThoughtAfter(
+	const FText& Thought,
+	const float Duration,
+	const float Delay)
+{
+	FTimerHandle ThoughtTimer;
+	GetWorldTimerManager().SetTimer(
+		ThoughtTimer,
+		FTimerDelegate::CreateWeakLambda(this, [this, Thought, Duration]()
+		{
+			AIGHorrorHUD::PushThought(this, Thought, Duration);
+		}),
+		FMath::Max(Delay, 0.01f),
+		false);
+}
+
+void AIGMissingFloorNightThreeDirector::NoteEarlyRhythmTap(const FVector& PlayerLocation)
+{
+	const UWorld* World = GetWorld();
+	const bool bTargetReady = AnswerTarget && AnswerTarget->IsInteractionEnabled() && !AnswerTarget->IsHidden();
+	// 5층 증축부 안(씬 BuildFifthFloorAnnex)에서 친 것만 본다.
+	const bool bInAnnex = PlayerLocation.X > -390.0f && PlayerLocation.X < 390.0f
+		&& PlayerLocation.Y > 460.0f && PlayerLocation.Y < 940.0f
+		&& PlayerLocation.Z > 1150.0f && PlayerLocation.Z < 1450.0f;
+	if (!World || !bHourCurrentlyActive || bAnswerPending || bAnswerDelivered || bTargetReady || !bInAnnex)
+	{
+		EarlyRhythmTaps.Reset();
+		return;
+	}
+	const double Now = World->GetTimeSeconds();
+	const double WindowScale = AIGListenerEntity::GetAnswerWindowScale(this);
+	if (!EarlyRhythmTaps.IsEmpty()
+		&& Now - EarlyRhythmTaps.Last() > AIGListenerEntity::AnswerSequenceResetSeconds * WindowScale)
+	{
+		EarlyRhythmTaps.Reset();
+	}
+	EarlyRhythmTaps.Add(Now);
+	if (EarlyRhythmTaps.Num() > 3)
+	{
+		EarlyRhythmTaps.RemoveAt(0);
+	}
+	if (EarlyRhythmTaps.Num() < 3
+		|| !AIGListenerEntity::MatchesAnswerCadence(
+			EarlyRhythmTaps[1] - EarlyRhythmTaps[0], EarlyRhythmTaps[2] - EarlyRhythmTaps[1], WindowScale))
+	{
+		return;
+	}
+	EarlyRhythmTaps.Reset();
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative)
+	{
+		return;
+	}
+	const FName Beat(*FString::Printf(TEXT("Night3.EarlyRhythm.N%d"), Narrative->GetNightIndex()));
+	if (Narrative->HasBeatPlayed(Beat))
+	{
+		return;
+	}
+	Narrative->MarkBeatPlayed(Beat);
+	// 그 박자를 쳤다는 것은 그녀도 안다. 벽이 아직 대답하지 않는다는 것만 말한다.
+	PushThoughtAfter(
+		NSLOCTEXT("IGMissingFloor", "EarlyRhythmThought", "둘, 쉬고, 하나… 아직은 아무 대답이 없네."),
+		3.2f,
+		1.6f);
+}
+
+void AIGMissingFloorNightThreeDirector::PushAnswerRhythmCaptions(
+	AActor* Owner,
+	const FText& FirstTwo,
+	const FVector& Where)
+{
+	if (!Owner)
+	{
+		return;
+	}
+	AIGHorrorHUD::PushAudioCaptionAt(Owner, FirstTwo, 1.6f, Where);
+	FTimerHandle LastTimer;
+	Owner->GetWorldTimerManager().SetTimer(
+		LastTimer,
+		FTimerDelegate::CreateWeakLambda(Owner, [Owner, Where]()
+		{
+			AIGHorrorHUD::PushAudioCaptionAt(
+				Owner,
+				NSLOCTEXT("IGMissingFloor", "AnswerRhythmLastCaption", "한 번 더 두드리는 소리"),
+				2.0f,
+				Where);
+		}),
+		IGNightThree::AnswerHitStartSeconds[2],
+		false);
+}
+
 void AIGMissingFloorNightThreeDirector::SetHourActive(const bool bHourActive)
 {
 	RefreshKeyringAvailability();
@@ -1354,6 +1453,8 @@ void AIGMissingFloorNightThreeDirector::HandleValveOpened(
 	{
 		Evidence->SetInteractionPrompt(
 			NSLOCTEXT("IGMissingFloor", "ValveOpenPrompt", "열린 배관 밸브"));
+		// 한 번 열면 그대로다. 다시 돌려 봐야 아무 일도 없이 소리만 나서 위층 사람만 부른다.
+		Evidence->SetInteractionEnabled(false);
 	}
 	IGAudio::SpawnOneShotAt(
 		this,
@@ -1431,6 +1532,18 @@ void AIGMissingFloorNightThreeDirector::PlayWallListenResponse(
 		IGNightThree::WallListenInnerRadius,
 		IGNightThree::WallListenFalloff,
 		EIGAudioBus::Puzzle);
+
+	// 소리 자막은 들린 것만 적는다. 어느 벽이 비었는지는 적지 않는다(독백이 비교한 뒤에 말한다).
+	if (bValveOpen)
+	{
+		AIGHorrorHUD::PushAudioCaptionAt(
+			this,
+			bHollow
+				? NSLOCTEXT("IGMissingFloor", "WallListenNearCaption", "벽 안에서 물소리가 길게 울리는 소리")
+				: NSLOCTEXT("IGMissingFloor", "WallListenFarCaption", "멀리서 물소리가 웅웅거리는 소리"),
+			2.6f,
+			WallLocation);
+	}
 
 	// And the water, at the band the structure left it in.
 	if (bValveOpen)
@@ -1778,8 +1891,7 @@ void AIGMissingFloorNightThreeDirector::HandleWallListened(const int32 BayIndex)
 		// 「세 벽 다」는 세 칸을 다 들어 본 뒤에야 할 수 있는 말이다.
 		DryListenedBays.Add(BayIndex);
 		PlayWallListenResponse(BayIndex, /*bHollow=*/false);
-		AIGHorrorHUD::PushThought(
-			this,
+		PushThoughtAfter(
 			DryListenedBays.Num() >= 3
 				? NSLOCTEXT(
 					"IGMissingFloor",
@@ -1794,7 +1906,8 @@ void AIGMissingFloorNightThreeDirector::HandleWallListened(const int32 BayIndex)
 						"IGMissingFloor",
 						"ListenSilentFirst",
 						"조용하네."),
-			3.2f);
+			3.2f,
+			IGNightThree::SolidThoughtDelaySeconds);
 		return;
 	}
 	// 밸브 뒤로는 칸마다 소리가 다르다. 그래도 한 칸만 듣고 「이 벽만」이라고
@@ -1810,8 +1923,7 @@ void AIGMissingFloorNightThreeDirector::HandleWallListened(const int32 BayIndex)
 	if (BayIndex == IGNightThree::CavityBayIndex)
 	{
 		PlayWallListenResponse(BayIndex, /*bHollow=*/true);
-		AIGHorrorHUD::PushThought(
-			this,
+		PushThoughtAfter(
 			!bCompared
 				? NSLOCTEXT(
 					"IGMissingFloor",
@@ -1826,15 +1938,15 @@ void AIGMissingFloorNightThreeDirector::HandleWallListened(const int32 BayIndex)
 						"IGMissingFloor",
 						"ListenCavityUnread",
 						"바로 뒤로 물이 흐른다. 이 벽만 소리가 달라. 왜 이러지?"),
-			4.0f);
+			4.0f,
+			IGNightThree::HollowThoughtDelaySeconds);
 	}
 	else
 	{
 		PlayWallListenResponse(BayIndex, /*bHollow=*/false);
 		// 비교 상대는 귀로 들었을 수도, 주먹으로 쳤을 수도 있다. 어느 쪽이든
 		// 공동 칸은 길게 울었으니 그것을 말한다.
-		AIGHorrorHUD::PushThought(
-			this,
+		PushThoughtAfter(
 			!bCompared
 				? NSLOCTEXT(
 					"IGMissingFloor",
@@ -1849,7 +1961,8 @@ void AIGMissingFloorNightThreeDirector::HandleWallListened(const int32 BayIndex)
 						"IGMissingFloor",
 						"ListenFarComparedUnread",
 						"여기선 물소리가 멀어. 아까 그 벽만 소리가 길게 울렸는데."),
-			bCompared ? 3.8f : 3.2f);
+			bCompared ? 3.8f : 3.2f,
+			IGNightThree::SolidThoughtDelaySeconds);
 	}
 	if (bCompared && Narrative)
 	{
@@ -1897,6 +2010,14 @@ void AIGMissingFloorNightThreeDirector::HandleWallKnocked(const int32 BayIndex)
 		IGNightThree::WallListenFalloff,
 		EIGAudioBus::Puzzle);
 
+	AIGHorrorHUD::PushAudioCaptionAt(
+		this,
+		bHollow
+			? NSLOCTEXT("IGMissingFloor", "WallKnockLongCaption", "두드린 소리가 벽 안에서 오래 울리는 소리")
+			: NSLOCTEXT("IGMissingFloor", "WallKnockShortCaption", "두드린 소리가 금방 끊기는 소리"),
+		2.4f,
+		KnockLocation);
+
 	ComparedBays.Add(BayIndex);
 	const bool bCompared = HasComparedWalls();
 	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
@@ -1906,8 +2027,7 @@ void AIGMissingFloorNightThreeDirector::HandleWallKnocked(const int32 BayIndex)
 			EIGMissingFloorSource::PipeAuditionCriterion);
 	if (bHollow)
 	{
-		AIGHorrorHUD::PushThought(
-			this,
+		PushThoughtAfter(
 			!bCompared
 				? NSLOCTEXT(
 					"IGMissingFloor",
@@ -1922,12 +2042,12 @@ void AIGMissingFloorNightThreeDirector::HandleWallKnocked(const int32 BayIndex)
 						"IGMissingFloor",
 						"KnockCavityUnread",
 						"소리가 오래 울린다. 이 벽만 달라. 오빠였으면 왜 그런지 알았을 텐데."),
-			3.8f);
+			3.8f,
+			IGNightThree::HollowThoughtDelaySeconds);
 	}
 	else
 	{
-		AIGHorrorHUD::PushThought(
-			this,
+		PushThoughtAfter(
 			!bCompared
 				? NSLOCTEXT(
 					"IGMissingFloor",
@@ -1942,7 +2062,8 @@ void AIGMissingFloorNightThreeDirector::HandleWallKnocked(const int32 BayIndex)
 						"IGMissingFloor",
 						"KnockSolidComparedUnread",
 						"소리가 금방 끊기네. 아까 그 벽만 길게 울렸는데."),
-			bCompared ? 3.6f : 3.0f);
+			bCompared ? 3.6f : 3.0f,
+			IGNightThree::SolidThoughtDelaySeconds);
 	}
 	if (bCompared && Narrative)
 	{
@@ -2175,6 +2296,11 @@ void AIGMissingFloorNightThreeDirector::DeliverWallAnswer()
 	bAnswerPending = false;
 	bAnswerDelivered = true;
 	PlayWallAnswerKnocks(this, AnswerHitTimers);
+	// 밤4·밤5와 같이 대답에도 자막이 있다. 소리를 꺼 둔 사람도 박자를 따라 읽을 수 있다.
+	PushAnswerRhythmCaptions(
+		this,
+		NSLOCTEXT("IGMissingFloor", "WallAnswerTwoCaption", "벽 안에서 두 번 두드리는 소리"),
+		GetWallAnswerLocation());
 
 	// T9와 P4는 첫 노크와 함께 확정한다. 여기서 미루면 그 사이에 05:30이 왔을
 	// 때 대답은 들었는데 T9가 없는 밤이 된다. 늦추는 것은 들리는 것과 글뿐이다.

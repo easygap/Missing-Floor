@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameplayTagContainer.h"
 #include "IGNightThreatDirector.generated.h"
 
 class AIGBathroomRefuge;
@@ -119,6 +120,16 @@ public:
 	void BeginEoduksiniCaptureForProbe(const FVector& Spot);
 	/** 검사 전용. 지금 밤의 손님이 403호 현관을 두드리기 시작한다. 머문 시간과 시간 창은 보지 않는다. */
 	void StartHomeGuestForProbe();
+	/** 검사 전용. 문 상태를 그대로 보고 403호에 손님을 보낸다. 열려 있으면 문간에 서고, 셋째 밤이면 옆집부터 들른다. */
+	void StartGuestForProbe() { StartGuest(EIGGuestDoor::Home); }
+	/** 검사 전용. 지금 다른 괴이가 끼어들 수 있는 조용한 때인가. */
+	bool IsQuietForProbe() const { return IsQuietWindow(); }
+	/** 검사 전용. 자동 저장을 미룰 만한 일이 진행 중인가. */
+	bool IsEventInProgressForProbe() const { return IsEventInProgress(); }
+	/** 검사 전용. 미뤄 둔 자동 저장이 있다. */
+	bool IsAutosavePendingForProbe() const { return bQuietAutosavePending; }
+	/** 첫 노크와 거의 같이 문이 열려 미룬 방문이 있다. */
+	bool IsGuestStartDeferred() const { return bGuestStartDeferred; }
 	/** 예고편 촬영 전용. Spot(바닥)에 어둑시니를 세운다. 그 뒤는 평소처럼 쳐다보면 커지며 다가온다. */
 	void ShowEoduksiniForMedia(const FVector& Spot) { ManifestEoduksiniAt(Spot); }
 	/** 예고편 촬영 전용. 소리 없이 거둔다. */
@@ -127,12 +138,32 @@ public:
 	/** 첫째 밤 3층 참의 센서등이 꺼지며 어둑시니를 처음 보여 준 비트. 한 판에 한 번. */
 	static const FName SensorIntroBeat;
 
+	/**
+	 * 밤 시간 중의 자동 저장. 손님·어둑시니·추격·벽의 대답처럼 진행 중인 일이 있으면 끝날 때까지
+	 * 미뤘다가 저장한다. 그런 일은 시작할 때 비트를 남기므로, 그 사이에 저장하면 불러온 판에서
+	 * 그 일이 통째로 없어졌다. 감독이 없거나 밤 시간이 아니면 바로 저장한다. 미루는 사이 밤이
+	 * 끝나면 버린다. 새벽 저장이 뒤따른다.
+	 */
+	static void RequestAutosaveWhenQuiet(
+		const UObject* WorldContext,
+		FGameplayTag ChapterId,
+		FName MapPackageName,
+		FGameplayTag CheckpointTag);
+
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	void Update();
 	bool IsQuietWindow() const;
+	/** 지금 진행 중인 일이 있다. 자동 저장을 미룰지 가른다. 끝난 뒤의 유예는 보지 않는다. */
+	bool IsEventInProgress() const;
+	/** 위층 사람이나 관리인이 지금 쫓거나 찾고 있다. */
+	bool IsPursuitActive() const;
+	/** 망치질 사이의 부름을 지금 할 수 있는가. 아래층에서 소리를 찾는 위층 사람은 막지 않는다. */
+	bool CanRunHammerCall() const;
+	/** 손님 몸에서 그 자리까지 막힌 데가 없다. 숨는 걸 봤는지 가를 때 쓴다. */
+	bool HasGuestLineOfSight(const FVector& BodyLocation, const FVector& Target) const;
 	/**
 	 * 밤4, 물소리로 망치를 덮은 채 차단기가 내려간 뒤 벽이 열리기 전. 다른 때의 가면 구간은
 	 * 결말 C가 혼자 맡아 아무것도 오지 않지만, 정전 뒤에는 어둑시니가 상시로 서고 철문 밖의
@@ -304,10 +335,24 @@ private:
 	int32 CanvassStop = 0;
 	/** 401·402호를 두드리는 사이 403호 문이 열렸다. 몸이 그 문으로 오는 중이다. */
 	bool bCanvassLured = false;
+	/** 몸이 열린 403호 문 쪽으로 돌아선 시각. 잠깐 서 있다가 걷기 시작한다. */
+	double CanvassLureStartSeconds = -1000.0;
+
+	// 미뤄 둔 자동 저장(RequestAutosaveWhenQuiet).
+	bool bQuietAutosavePending = false;
+	FGameplayTag PendingAutosaveChapter;
+	FName PendingAutosaveMap;
+	FGameplayTag PendingAutosaveCheckpoint;
 	int32 GuestStep = 0;
 	TArray<double> PlayerDoorKnockTimes;
 	bool bGuestAnswered = false;
 	bool bPlayerHiddenWhenOpened = false;
+	/** 들어온 뒤 숨는 순간을 봤다. 숨는 순간 한 번만 정하고, 나오면 지운다. */
+	bool bGuestSawHide = false;
+	/** 지난 틱에 숨어 있었다. 숨는 순간을 가려낸다. */
+	bool bGuestPlayerWasConcealed = false;
+	/** 숨기 직전, 몸이 아직 가구 밖에 있던 자리. 그 자리가 보였는지로 숨는 걸 봤는지 가른다. */
+	FVector GuestLastVisiblePlayer = FVector::ZeroVector;
 	bool bGuestHeardPlayer = false;
 	/** 잠긴 욕실 손잡이를 돌려 봤다. 그 뒤로 몇 초 서 있다가 간다. */
 	bool bGuestRattledRoom = false;
@@ -318,6 +363,12 @@ private:
 	bool bGuestReturnOwed = false;
 	float GuestReturnAtHourSeconds = 0.0f;
 	int32 GuestReturnNight = 0;
+	/** 이번 방문이 잡힌 뒤 다시 온 방문이다. 또 잡혀도 그 밤에는 더 오지 않는다. */
+	bool bGuestReturnVisit = false;
+	/** 첫 노크와 거의 같이 문이 열려 이번 방문을 미뤘다. 문이 다시 닫히면 그 밤 안에 온다. */
+	bool bGuestStartDeferred = false;
+	/** 위층 사람이나 관리인이 마지막으로 쫓거나 찾던 시각. 끝나고 잠깐은 다른 것이 오지 않는다. */
+	double LastPursuitSeconds = -1000.0;
 	FTimerHandle GuestBehindTimer;
 	FTimerHandle GuestSlamTimer;
 	FTimerHandle GuestWakeThoughtTimer;

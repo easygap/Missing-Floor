@@ -156,7 +156,9 @@ namespace IGNightFour
 	 * 손이 저려 망치를 못 든다. 부름이 오지 못했으면 벽만 조금 뒤에 답한다.
 	 */
 	constexpr float HammerCallDelaySeconds = 3.6f;
-	constexpr float WallAnswerAfterCallSeconds = 4.8f;
+	// 부름의 두 번째 노크(부름 6.0초)보다 0.45초 먼저 벽의 마지막 하나가 끝난다. 4.8초였을 때는
+	// 둘 사이가 0.05초라 문밖 노크가 벽의 박자에 붙어 들렸다.
+	constexpr float WallAnswerAfterCallSeconds = 4.4f;
 	constexpr float WallAnswerWithoutCallSeconds = 1.4f;
 
 	/** 목한수의 보폭. 뒷걸음이라 좁다. 첫 발은 몸이 뒤로 빠지자마자 나온다. */
@@ -1749,6 +1751,19 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 		EIGDialogueChannel::Conversation,
 		3.0f,
 		EIGDialoguePriority::Critical);
+	// 제 몫을 덜다가 한마디가 더 샌다. 7월 26일 아침 그가 찾았을 때 도하는 숨을 쉬고 있었다
+	// (설정집 §2). 그날의 날짜들로만 짐작하던 것을 그의 입으로 확인한다.
+	const FText MokBreath = NSLOCTEXT(
+		"IGMissingFloor",
+		"MokHansooBreathLine",
+		"숨은 붙어 있었어. 근데 어차피 틀렸었다고.");
+	AIGHorrorHUD::PushDialogue(
+		this,
+		NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
+		MokBreath,
+		EIGDialogueChannel::Conversation,
+		3.0f,
+		EIGDialoguePriority::Critical);
 	// 그가 지나가기 전에 댄 줄이 다 끝나야 한다. 존재가 먼저 들어오면
 	// 대치가 대화가 아니라 배경이 된다. 줄마다 실제로 화면에 머무는 시간을
 	// 잰다 — 한 줄에 3.05초를 곱하던 값은 마흔 글자짜리 줄이 5초를 쓰는
@@ -1776,7 +1791,8 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 	}
 	const float SpokenSeconds = (AIGHorrorHUD::EstimateDialogueSeconds(MokLine, 3.0f)
 		+ ReplySeconds
-		+ AIGHorrorHUD::EstimateDialogueSeconds(MokRetort, 3.0f)) * CaptionScale;
+		+ AIGHorrorHUD::EstimateDialogueSeconds(MokRetort, 3.0f)
+		+ AIGHorrorHUD::EstimateDialogueSeconds(MokBreath, 3.0f)) * CaptionScale;
 	ReplySeconds = FMath::Max(
 		0.0f,
 		SpokenSeconds + IGNightFour::EntityPassAfterLinesSeconds
@@ -2234,7 +2250,7 @@ void AIGMissingFloorNightFourDirector::ActivateControl(
 		? NSLOCTEXT("IGMissingFloor", "CleaningDrainThought", "아래쪽 배관으로 물이 빠진다.")
 		: ControlId == IGNightFour::FloatBypassId
 			? NSLOCTEXT("IGMissingFloor", "FloatBypassThought", "급수관에서도 물소리가 난다.")
-			: NSLOCTEXT("IGMissingFloor", "TransferPumpThought", "펌프가 돌기 시작했다.");
+			: NSLOCTEXT("IGMissingFloor", "TransferPumpThought", "펌프가 돌아가네.");
 	AIGHorrorHUD::PushThought(this, Result, 3.0f);
 	StartWaterMaskIfReady();
 	RefreshPresentation();
@@ -2737,10 +2753,9 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 						1100.0f,
 						2400.0f,
 						EIGAudioBus::Puzzle);
-					AIGHorrorHUD::PushAudioCaptionAt(
+					AIGMissingFloorNightThreeDirector::PushAnswerRhythmCaptions(
 						this,
-						NSLOCTEXT("IGMissingFloor", "Unit401ReplyCaption", "둘, 쉬고, 하나"),
-						2.6f,
+						NSLOCTEXT("IGMissingFloor", "Unit401ReplyCaption", "401호에서 두 번 두드리는 소리"),
 						IGNightFour::Unit401ReplyLocation);
 				}),
 				IGNightFour::Unit401ReplyDelaySeconds,
@@ -2897,10 +2912,9 @@ void AIGMissingFloorNightFourDirector::PlayWallAnswerBetweenStrikes()
 		&& !Narrative->IsNightFourWallOpened())
 	{
 		AIGMissingFloorNightThreeDirector::PlayWallAnswerKnocks(this, WallAnswerHitTimers);
-		AIGHorrorHUD::PushAudioCaptionAt(
+		AIGMissingFloorNightThreeDirector::PushAnswerRhythmCaptions(
 			this,
-			NSLOCTEXT("IGMissingFloor", "NightFourWallAnswerCaption", "벽 안에서 둘, 쉬고, 하나"),
-			2.6f,
+			NSLOCTEXT("IGMissingFloor", "WallAnswerTwoCaption", "벽 안에서 두 번 두드리는 소리"),
 			AIGMissingFloorNightThreeDirector::GetWallAnswerLocation());
 		UE_LOG(LogTemp, Display, TEXT("NIGHT4_WALL_ANSWER between strikes"));
 	}
@@ -3169,7 +3183,7 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyPills",
-				"서일영 씨도 알아요? 그날 무슨 일이 있었는지."),
+				"서일영 씨는 누구예요? 골목에서 5층만 올려다보던데요."),
 		},
 	};
 

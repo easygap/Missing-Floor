@@ -22,7 +22,7 @@ TEXT = {
     'ko': {
         'knock': '[위] 천장에서 세 번 두드리는 소리',
         'topfloor': '…4층이 꼭대기인데.',
-        'door_speaker': '문 밖',
+        'door_speaker': '문밖',
         'door_line': '언니, 저 편의점 나린이에요. 아까 지갑 두고 가셨어요.',
         'subtitle': 'Windows 무료 플레이 테스트',
     },

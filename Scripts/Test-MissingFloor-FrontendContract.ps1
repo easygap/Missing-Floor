@@ -386,7 +386,7 @@ Assert-True (-not $controllerSource.Contains('ToggleCursorMode')) `
 Assert-ContainsAll $gameConfig @(
 	'ProjectName=Missing Floor',
 	'ProjectDisplayedTitle=INVTEXT("Missing Floor")',
-	'ProjectVersion=0.9.0',
+	'ProjectVersion=0.9.1',
 	'Description=연락이 끊긴 오빠를 찾아 낡은 빌라로 이사 온 뒤, 새벽마다 천장을 두드리는 소리를 따라가는 1인칭 공포 게임',
 	'CompanyName=easygap',
 	'Homepage=https://github.com/easygap/Missing-Floor',
@@ -408,7 +408,7 @@ Assert-True (-not $gameConfig.Contains('BuildConfiguration=PPBC_Development')) `
 Assert-True (-not $gameConfig.Contains('ForDistribution=False')) `
 	'배포 플래그가 비활성화되어 있다'
 Assert-ContainsAll $gameTarget @(
-	'BuildVersion = "0.9.0";',
+	'BuildVersion = "0.9.1";',
 	'WindowsPlatform.bSetResourceVersions = true;'
 ) 'Win64 공개 버전 리소스 계약'
 $configuredVersion = [regex]::Match(
@@ -583,7 +583,7 @@ Assert-ContainsAll $executableMetadataSyncScript @(
 ) 'Shipping 루트 런처 VERSIONINFO 동기화'
 Assert-ContainsAll $executableMetadataScript @(
 	"ExpectedProductName = 'Missing Floor'",
-	"ExpectedVersion = '0.9.0'",
+	"ExpectedVersion = '0.9.1'",
 	"ExpectedCompanyName = 'easygap'",
 	'FileDescription',
 	'FileVersion',

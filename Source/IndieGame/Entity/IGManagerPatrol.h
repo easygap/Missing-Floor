@@ -96,6 +96,8 @@ public:
 	bool IsPursuing() const;
 	/** 월드에 쫓고 있는 관리인이 있는가. 괴이 감독이 긴장 예산을 잴 때 쓴다. */
 	static bool IsAnyPursuing(const UWorld* World);
+	/** 월드에 열쇠를 찾으러 도는 관리인이 있는가. 그동안 손님은 403호 문을 두드리지 않는다. */
+	static bool IsAnyOnKeyHunt(const UWorld* World);
 
 protected:
 	virtual void BeginPlay() override;

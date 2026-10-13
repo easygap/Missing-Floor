@@ -196,6 +196,8 @@ public:
 	/** 잠긴 손잡이를 밖에서 돌려 본다. 두 번 덜컥거리고 그 소리가 건물에 들린다(손님, 욕실). */
 	void PlayHandleRattle();
 	bool IsLatched() const { return bLatched; }
+	/** 걸쇠나 빗장이 걸린 채 닫힌 문의 여는 문구. 열면 걸쇠도 같이 풀린다는 것을 알린다. */
+	void SetLatchedOpenPrompt(const FText& InPrompt) { LatchedOpenPrompt = InPrompt; }
 	/** 걸쇠가 걸리거나 풀렸다. 걸쇠 모양을 그리는 쪽이 듣는다. */
 	FSimpleMulticastDelegate OnLatchChanged;
 
@@ -233,6 +235,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
 	FText ClosePrompt;
+	FText LatchedOpenPrompt;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
 	TArray<FIGDoorRequirement> Requirements;

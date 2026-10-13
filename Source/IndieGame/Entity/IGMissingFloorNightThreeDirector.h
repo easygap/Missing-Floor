@@ -88,6 +88,11 @@ public:
 	static void PlayWallAnswerKnocks(AActor* Owner, FTimerHandle* OutTimers = nullptr);
 	/** 그 소리가 나는 자리. 벽 가운데 칸, 스터드 너머다. */
 	static FVector GetWallAnswerLocation();
+	/**
+	 * 대답 박자의 소리 자막. 앞의 두 번은 첫 노크와 같이, 마지막 한 번은 그 노크가 날 때
+	 * 띄운다. 자막이 소리보다 먼저 박자를 다 말해 버리지 않게 한다.
+	 */
+	static void PushAnswerRhythmCaptions(AActor* Owner, const FText& FirstTwo, const FVector& Where);
 
 	/**
 	 * Spawns the gate, the annex contents and the day papers.
@@ -124,6 +129,19 @@ public:
 	EIGNightThreeReturnStage GetReturnStage() const { return ReturnStage; }
 	/** True while he is standing in the corridor on the way home. */
 	bool IsFigureInCorridor() const { return bFigureStaged; }
+	/** 둘-쉬고-하나를 두드리고 벽의 대답을 기다리는 8초다. 그동안 다른 괴이는 오지 않는다. */
+	bool IsAwaitingWallAnswer() const { return bAnswerPending; }
+	/** 검사 전용. 벽의 대답을 기다리는 8초를 흉내 낸다. */
+	void SetAnswerPendingForProbe(const bool bPending) { bAnswerPending = bPending; }
+	/** 5층 녹음기를 듣고 있다. 그동안 다른 괴이는 오지 않는다. */
+	bool IsSeoRecorderPlaying() const;
+	/** 소리가 다 난 뒤에 독백을 띄운다. 같은 프레임에 띄우면 글이 소리보다 먼저 답을 말한다. */
+	void PushThoughtAfter(const FText& Thought, float Duration, float Delay);
+	/**
+	 * 그녀가 어딘가를 두드렸다. 5층에서 단서를 다 모으기 전에 둘-쉬고-하나를 쳤으면 벽은
+	 * 대답하지 않지만 그 밤에 한 번 짧게 알아챈다. 진실과 대답 조건은 바꾸지 않는다.
+	 */
+	void NoteEarlyRhythmTap(const FVector& PlayerLocation);
 	/** True once she has walked past him while he was waiting on an answer. */
 	bool HasPassedWhileWaiting() const { return bPassedWhileWaiting; }
 	FVector GetReturnPassPoint() const;
@@ -431,6 +449,8 @@ private:
 	TArray<double> AnswerTapTimes;
 	bool bValveOpen = false;
 	bool bAnswerPending = false;
+	/** 표적이 서기 전 5층에서 친 탭의 시각. 마지막 셋으로 박자를 본다. */
+	TArray<double> EarlyRhythmTaps;
 	bool bAnswerDelivered = false;
 	bool bSolvedAnnounced = false;
 	bool bAnswerTargetAnnounced = false;

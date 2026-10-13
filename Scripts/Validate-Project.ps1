@@ -695,6 +695,8 @@ $reviewedTickingFiles = @(
 	'IGSeoRecorderProbe.cpp',
 	# -IGManagerKeyHuntProbe에서만 생성한다. 관리인이 열쇠를 찾으러 403호·옥상·5층 문을 도는 길을 보고 종료한다.
 	'IGManagerKeyHuntProbe.cpp',
+	# -IGHorrorRegressionProbe에서만 생성한다. 손님·어둑시니·녹음기가 겹치는 장면을 차례로 겪고 종료한다.
+	'IGHorrorRegressionProbe.cpp',
 	# 들뜬 보수판. 눌렸다 튀어나오는 1.6초 동안만 켜고 끝나면 끈다.
 	'IGResonantPanel.cpp',
 	# 전용 인자로만 생성한다. 실제 오디오 페이드와 충돌을 순서대로 확인한 뒤 종료한다.

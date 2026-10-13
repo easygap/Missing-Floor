@@ -210,9 +210,8 @@ struct INDIEGAME_API FIGMissingFloorNightState
 	TArray<FName> SolvedPuzzles;
 
 	/**
-	 * Night 4 P5 controls in the order the player first activated them.
-	 * Order is gameplay: the same final hydraulic state is always reachable,
-	 * but only Drain -> FloatBypass -> TransferPump avoids the pressure alarm.
+	 * 밤4 P5에서 돌린 조작의 순서. 세척 배수 → 부자밸브 우회 → 이송 펌프 순서로 맞게 돌린
+	 * 것만 들어간다. 틀린 조작은 경보와 인터록만 남기고 여기 적히지 않는다.
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
 	TArray<FName> NightFourControlOrder;

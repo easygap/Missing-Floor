@@ -603,7 +603,7 @@ Assert-ContainsAll $narrativeSource @(
 
 # 6행 — 세입자 두 명의 단기 퇴거(프롤로그) → 그들이 들은 것(밤1).
 Assert-ContainsAll $greyboxSource @(
-	'올해만 세 번째예요, 그 집.'
+	'1년 새 세 번째예요, 그 집.'
 ) '단기 퇴거 심기'
 
 # 12행 — 채널 5의 빈 복도(밤2) → 같은 화각에 직접 서기(밤3).

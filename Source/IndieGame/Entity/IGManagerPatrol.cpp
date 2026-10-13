@@ -16,6 +16,7 @@
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGNightLoopDirector.h"
+#include "Entity/IGNightThreatDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "Entity/IGWalkerKit.h"
 #include "GameFramework/Controller.h"
@@ -688,6 +689,22 @@ bool AIGManagerPatrol::IsAnyPursuing(const UWorld* World)
 	for (TActorIterator<AIGManagerPatrol> It(const_cast<UWorld*>(World)); It; ++It)
 	{
 		if (It->IsPursuing())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool AIGManagerPatrol::IsAnyOnKeyHunt(const UWorld* World)
+{
+	if (!World)
+	{
+		return false;
+	}
+	for (TActorIterator<AIGManagerPatrol> It(const_cast<UWorld*>(World)); It; ++It)
+	{
+		if (It->IsOnDuty() && It->IsOnKeyHunt())
 		{
 			return true;
 		}
@@ -1423,9 +1440,9 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 			BeginSearch();
 			return;
 		}
+		// 숨는 걸 못 봤으면 그녀가 어디 들어갔는지 모른다. 마지막으로 본 자리부터 찾는다.
 		if (!bSawPlayerHide)
 		{
-			LastKnownPlayerFeet = PlayerFeet;
 			BeginSearch();
 			return;
 		}
@@ -1445,6 +1462,26 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 	// 손이 닿는다. 숨은 그녀는 가구 앞에 서면 닿는다.
 	const FVector Feet = GetFeet();
 	const float Planar = FVector::Dist2D(Feet, PlayerFeet);
+	// 쫓아가는 자리는 마지막으로 보거나 들은 자리다. 보이는 동안에는 매 프레임 그녀 발밑으로
+	// 갱신된다. 예전에는 놓친 뒤 3.5초 동안 벽 너머의 그녀를 그대로 따라갔다.
+	const FVector ChaseGoal = bSawPlayerHide ? HideSpotFeet : LastKnownPlayerFeet;
+	// 손전등도 같다. 보이는 동안에는 그녀를, 놓친 뒤에는 마지막으로 본 자리를 비춘다. 다 와서
+	// 발밑을 비추게 되면 걸을 때처럼 앞을 비춘다.
+	auto AimChaseTorch = [&](const float Step)
+	{
+		if (Now - LastSeenSeconds <= 0.25)
+		{
+			AimTorch(Character->GetActorLocation(), Step);
+		}
+		else if (FVector::Dist2D(Feet, ChaseGoal) > 150.0f)
+		{
+			AimTorch(ChaseGoal + FVector(0.0f, 0.0f, 110.0f), Step);
+		}
+		else
+		{
+			RelaxTorch(Step);
+		}
+	};
 	if (bSawPlayerHide && Character->IsConcealedInHidingSpot())
 	{
 		if (FVector::Dist2D(Feet, HideSpotFeet) <= IGManagerPatrol::HideReach
@@ -1464,7 +1501,7 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 
 	// 5층 안으로는 따라 들어가지 않는다. 문 앞까지 와서 비추다가 문을 쾅 닫고 내려간다.
 	// 열쇠를 찾으러 온 길이 아니면 그 문 앞으로 가는 길도 없다. 그냥 돌아간다.
-	if (IsInsideAnnex(PlayerFeet))
+	if (IsInsideAnnex(ChaseGoal))
 	{
 		if (!bKeyHunt || !Nodes.IsValidIndex(AnnexFrontNode))
 		{
@@ -1482,12 +1519,12 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 			SetDestination(AnnexFrontNode);
 		}
 		TickWalking(DeltaSeconds, IGManagerPatrol::ChaseSpeed);
-		AimTorch(Character->GetActorLocation(), DeltaSeconds);
+		AimChaseTorch(DeltaSeconds);
 		return;
 	}
 
 	// 4층 복도로는 따라가지 않는다. 목에서 서서 비춘다.
-	if (IsForbiddenNow(PlayerFeet))
+	if (IsForbiddenNow(ChaseGoal))
 	{
 		const int32 StandNode = GetFourthFloorStandNode();
 		if (FVector::Dist(Feet, Nodes[StandNode].Feet) < 10.0f)
@@ -1509,13 +1546,13 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 			SetDestination(StandNode);
 		}
 		TickWalking(DeltaSeconds, IGManagerPatrol::ChaseSpeed);
-		AimTorch(Character->GetActorLocation(), DeltaSeconds);
+		AimChaseTorch(DeltaSeconds);
 		return;
 	}
 
 	// 같은 바닥에서 막힌 데 없이 보이면 곧장 간다. 아니면 그녀와 가까운 노드로 길을 잡는다.
 	// 계단 위에서는 곧장 가지 않는다 — 높이를 버리고 미끄러지면 단 위로 뜬다.
-	const FVector Target = bSawPlayerHide ? HideSpotFeet : PlayerFeet;
+	const FVector Target = ChaseGoal;
 	const bool bSameFloor = FMath::Abs(Target.Z - Feet.Z) < 30.0f
 		&& !AIGPrologueWorldScene::IsOnStairFlight(Target)
 		&& !AIGPrologueWorldScene::IsOnStairFlight(Feet);
@@ -1537,7 +1574,7 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 		}
 		TickWalking(DeltaSeconds, IGManagerPatrol::ChaseSpeed);
 	}
-	AimTorch(Character->GetActorLocation(), DeltaSeconds);
+	AimChaseTorch(DeltaSeconds);
 }
 
 // -- 열쇠 찾기 ---------------------------------------------------------------
@@ -1550,6 +1587,15 @@ bool AIGManagerPatrol::ShouldStartKeyHunt() const
 		: nullptr;
 	const FGameplayTag KeyTag = FGameplayTag::RequestGameplayTag(
 		FName(TEXT("State.MissingFloor.HasStairKey")), false);
+	// 손님이 와 있는 동안에는 열쇠를 찾으러 나서지 않는다. 둘 다 403호 문으로 와서 부딪쳤다.
+	for (TActorIterator<AIGNightThreatDirector> It(GetWorld()); It; ++It)
+	{
+		const EIGGuestStage VisitStage = It->GetGuestStage();
+		if (VisitStage != EIGGuestStage::Idle && VisitStage != EIGGuestStage::Spent)
+		{
+			return false;
+		}
+	}
 	return Narrative && Story && KeyTag.IsValid() && Story->HasState(KeyTag)
 		&& !Narrative->HasBeatPlayed(IGManagerPatrol::KeyHuntBeat)
 		&& Nodes.IsValidIndex(Home403Node)
@@ -2181,18 +2227,19 @@ void AIGManagerPatrol::HandleNoise(const FIGNoiseEvent& Event)
 	{
 		return;
 	}
-	if (State == EIGManagerPatrolState::Chasing)
-	{
-		LastKnownPlayerFeet = GetPlayerFeet();
-		LastSeenSeconds = FMath::Max(LastSeenSeconds, GetWorld()->GetTimeSeconds() - 1.0);
-		return;
-	}
 	// 소리 난 바닥으로 간다. 소리는 발 높이보다 높은 데서 나기도 해서 바닥으로 내려 잡는다.
 	FVector Floor = Event.Location;
 	Floor.Z = GetPlayerFeet().Z;
 	if (FMath::Abs(Event.Location.Z - Floor.Z) > 250.0f)
 	{
 		Floor.Z = Event.Location.Z - 100.0f;
+	}
+	// 쫓는 중에 들린 소리는 그 소리가 난 자리를 알려 줄 뿐이다. 그녀가 지금 어디 있는지는 모른다.
+	if (State == EIGManagerPatrolState::Chasing)
+	{
+		LastKnownPlayerFeet = Floor;
+		LastSeenSeconds = FMath::Max(LastSeenSeconds, GetWorld()->GetTimeSeconds() - 1.0);
+		return;
 	}
 	BeginInvestigation(Floor, true);
 }

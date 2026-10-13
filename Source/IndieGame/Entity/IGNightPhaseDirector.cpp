@@ -747,7 +747,7 @@ FText AIGNightPhaseDirector::GetObjectiveText() const
 				&& !Narrative->HasSource(EIGMissingFloorTruth::StillCoveringIt,
 					EIGMissingFloorSource::EvictionWarning))
 			{
-				return NSLOCTEXT("IGMissingFloor", "DayObjectiveNotice", "403호 문에 붙은 통보문 읽기");
+				return NSLOCTEXT("IGMissingFloor", "DayObjectiveNotice", "엘리베이터 옆 통보문 읽기");
 			}
 			if (!Narrative->HasBeatPlayed(TEXT("Night3.SiteCheck")))
 			{

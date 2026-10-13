@@ -579,7 +579,7 @@ void AIGMissingFloorFifthDawnDirector::FireCue(const int32 CueIndex)
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"FifthDawnCaptionNoReply",
-				"[벽 안] 두 번 두드리는 소리  ·  대답 없음"),
+				"[벽 안] 두드리다 멈추는 소리  ·  대답 없음"),
 			3.0f);
 		break;
 	case 9:

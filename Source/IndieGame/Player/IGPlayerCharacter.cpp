@@ -29,6 +29,7 @@
 #include "Interaction/IGElevator.h"
 #include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGPickupItem.h"
+#include "Interaction/IGDoorLatch.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Narrative/IGStoryHelpers.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
@@ -46,6 +47,8 @@
 
 namespace IGPlayerNoise
 {
+	// 문에 붙은 작은 판정(걸쇠·문구멍)을 보고 두드리면 그 문을 두드린 것으로 치는 거리(cm).
+	constexpr float DoorFixtureKnockRadius = 70.0f;
 	/**
 	 * 평소 걷는 속도. 발소리 크기는 이동 컴포넌트의 현재 상한이 아니라 이 값에 대어 잰다.
 	 * 장면이 걸음을 늦추면 소리도 작아져야 조심해서 걷는다는 말이 맞는다.
@@ -2130,6 +2133,52 @@ void AIGPlayerCharacter::Knock()
 		return;
 	}
 	AActor* FocusedActor = InteractionComponent->GetFocusedActor();
+	bool bDirectorKnock = false;
+	if (IsValid(FocusedActor))
+	{
+		if (UWorld* World = GetWorld())
+		{
+			for (TActorIterator<AIGMissingFloorNightThreeDirector> It(World); It; ++It)
+			{
+				if (It->TryPlayerKnock(FocusedActor, this))
+				{
+					bDirectorKnock = true;
+					break;
+				}
+			}
+		}
+		if (bDirectorKnock)
+		{
+			ApplyPlayerKnockFeedback();
+			return;
+		}
+		// 걸쇠와 문구멍은 문짝에 붙은 작은 판정이다. 거길 보고 두드려도 그 문을 두드린 것이다.
+		// 그 밖에 감독이 맡지 않는 물건을 보고 있으면 손이 닿는 면을 두드린다. 예전에는 둘 다
+		// 아무 일도 없어서, 문구멍을 보며 친 오빠의 박자가 손님에게 닿지 않았다.
+		const FGameplayTag DoorTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Door")), false);
+		if (!InteractionComponent->GetFocusedInteractionTag().MatchesTagExact(DoorTag))
+		{
+			AActor* OwningDoor = nullptr;
+			if (const AIGDoorLatch* Latch = Cast<AIGDoorLatch>(FocusedActor))
+			{
+				OwningDoor = Latch->GetDoor();
+			}
+			else if (UWorld* World = GetWorld())
+			{
+				for (TActorIterator<AIGSwingDoor> It(World); It; ++It)
+				{
+					if (!It->IsOpen()
+						&& FVector::Dist(It->GetLatchSoundLocation(), FocusedActor->GetActorLocation())
+							<= IGPlayerNoise::DoorFixtureKnockRadius)
+					{
+						OwningDoor = *It;
+						break;
+					}
+				}
+			}
+			FocusedActor = OwningDoor;
+		}
+	}
 	if (!IsValid(FocusedActor))
 	{
 		// Nothing under the cursor. §7 P4 teaches 둘-쉬고-하나 and §8 비트 3-7
@@ -2196,23 +2245,6 @@ void AIGPlayerCharacter::Knock()
 
 	if (UWorld* World = GetWorld())
 	{
-		for (TActorIterator<AIGMissingFloorNightThreeDirector> It(World); It; ++It)
-		{
-			if (It->TryPlayerKnock(FocusedActor, this))
-			{
-				ApplyPlayerKnockFeedback();
-				return;
-			}
-		}
-		const FGameplayTag DoorInteractionTag =
-			FGameplayTag::RequestGameplayTag(
-				FName(TEXT("Interaction.Door")),
-				false);
-		if (!InteractionComponent->GetFocusedInteractionTag().MatchesTagExact(
-				DoorInteractionTag))
-		{
-			return;
-		}
 
 		// Ordinary doors still answer the verb physically; they simply do not
 		// advance a puzzle unless a chapter director owns that surface.
@@ -2307,6 +2339,15 @@ void AIGPlayerCharacter::ApplyPlayerKnockFeedback()
 	}
 	PlayHapticFeedback(0.35f, 0.06f);
 	RegisterKnockSequenceTap();
+	// 5층에서 단서보다 먼저 오빠의 박자를 쳤는지 밤3 감독이 본다. 벽은 대답하지 않아도
+	// 친 것은 알아챈다.
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<AIGMissingFloorNightThreeDirector> It(World); It; ++It)
+		{
+			It->NoteEarlyRhythmTap(GetActorLocation());
+		}
+	}
 }
 
 void AIGPlayerCharacter::RegisterKnockSequenceTap()

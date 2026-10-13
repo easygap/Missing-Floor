@@ -34,9 +34,8 @@ namespace IGNightFourHammerProbe
 	/** 5층 동쪽 벽 앞, 망치를 드는 자리와 벽의 판 가운데. 월드 좌표다. */
 	const FVector WallFeet(175.0f, 700.0f, 1200.0f);
 	const FVector WallFace(246.0f, 700.0f, 1290.0f);
-	/** 403호 침대 옆, 방 안. 4층 바닥 기준이 아니라 월드 좌표다. */
-	/** 넷째 타 뒤 벽 안의 대답까지(밤4 디렉터의 3.6 + 4.8초). 이보다 일찍 풀리면 부름을 건너뛴 것이다. */
-	constexpr float ExpectedReleaseSeconds = 8.4f;
+	/** 넷째 타 뒤 벽 안의 대답까지(밤4 디렉터의 3.6 + 4.4초). 이보다 일찍 풀리면 부름을 건너뛴 것이다. */
+	constexpr float ExpectedReleaseSeconds = 8.0f;
 }
 
 AIGNightFourHammerProbe::AIGNightFourHammerProbe()

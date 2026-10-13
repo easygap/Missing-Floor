@@ -147,6 +147,11 @@ private:
 	bool bMercyNoteRevealed = false;
 	bool bMercyNoteSliding = false;
 	int32 CaptureCount = 0;
+	/**
+	 * 위층 사람에게 잡힌 횟수. 다섯 번째 쪽지(「소리를 줄여라. 걔는 눈이 없어.」)는
+	 * 그에 대한 쪽지라 이것만 센다. 서사 기록의 포획 수도 같은 것을 센다.
+	 */
+	int32 ListenerCaptureCount = 0;
 	/** 지금(또는 마지막) 포획을 한 괴이. 0이 위층 사람이다. */
 	EIGCaptureKind CaptureKindInFlight{};
 	/** 이번 포획의 깨어날 자리. 잡히는 순간 정한다. */

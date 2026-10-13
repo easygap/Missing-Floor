@@ -14,7 +14,7 @@ class UStaticMeshComponent;
  * 5층 판재 더미 밑에 1년 동안 있던 서일영 녹음기(설정집 §3.4 「남기고 간 녹음 메모」).
  *
  * 그날 새벽 서일영은 증거를 남기려고 녹음을 켜고 올라왔다. 몸싸움하다 떨어진 녹음기가
- * 판재 밑으로 미끄러져 들어가서, 다음 날 현장을 치운 목한수도 못 봤다. 손목끈
+ * 판재 밑으로 미끄러져 들어가서, 그날 낮 현장을 치운 목한수도 못 봤다. 손목끈
  * 끝만 판재 밖으로 나와 있다.
  *
  * 꺼내면 녹음이 재생된다. 서일영이 날짜와 시각을 말하고 계단을 오르면 카트 바퀴가
@@ -62,8 +62,12 @@ private:
 	void HandleTaken(AIGMissingFloorEvidence* Evidence);
 	void BeginPlayback();
 	void AbortPlayback();
+	/** 끝까지 들은 뒤의 생각. 마지막 단계에서 멈춰도 띄운다. */
+	void PushRecorderThought();
 	void RunCue();
 	void Wait(float Seconds);
+	/** 재생 중 0.2초마다 본다. 잡히는 중이면 멈춘다. 대사 사이 대기가 길어서 다음 큐만 보면 늦었다. */
+	void WatchForCapture();
 	/** 녹음 속 서일영의 말. 화면에 머무는 시간을 돌려준다. */
 	float PushRecordedLine(const FText& Line);
 	void PushCaption(const FText& Caption, float Seconds);
@@ -83,6 +87,7 @@ private:
 	TArray<TWeakObjectPtr<UAudioComponent>> Voices;
 
 	FTimerHandle CueTimer;
+	FTimerHandle CaptureWatchTimer;
 	int32 CueIndex = 0;
 	int32 StepIndex = 0;
 	/** 앞 대사가 끝나기를 기다리다 그냥 넘어가는 시각. 다른 대사가 끼면 넉넉히 기다린다. */

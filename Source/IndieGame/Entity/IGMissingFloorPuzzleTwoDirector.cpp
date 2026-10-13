@@ -527,7 +527,7 @@ bool AIGMissingFloorPuzzleTwoDirector::Configure(AIGPrologueWorldScene* InScene)
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"P2RecorderThought",
-				"화면에 ‘HDD 없음’이라고 뜬다. 녹화 표시등도 꺼져 있다."),
+				"화면에 ‘HDD 없음’이라고 떠 있네. 녹화 표시등도 꺼져 있고."),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
 			0.9f,

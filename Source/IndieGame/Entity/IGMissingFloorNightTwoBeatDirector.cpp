@@ -750,15 +750,27 @@ void AIGMissingFloorNightTwoBeatDirector::ArmReturnChase()
 		return;
 	}
 	ReturnStage = EIGNightTwoReturnStage::AwaitingExit;
-	// 밤은 끝나지 않았다. 목표가 바뀐 것을 한 줄로 말한다. 밑장은 책상에 남아
-	// 있어서 「들고」 갈 것은 없다.
-	AIGHorrorHUD::PushThought(
-		this,
-		NSLOCTEXT(
-			"IGMissingFloor",
-			"N2ReturnThought",
-			"이제 403호까지 올라가야 해."),
-		4.0f);
+	// 두 기록을 맞대 본 결론을 말하고, 밤이 끝나지 않았다는 것을 한 줄로 덧붙인다. 밑장은
+	// 책상에 남아 있어서 「들고」 갈 것은 없다. 이 함수는 마지막 단서를 읽는 호출 안에서
+	// 불리고, 그 단서의 대사는 이 함수가 끝난 뒤에야 들어간다. 다음 틱으로 미뤄야 단서를
+	// 읽은 대사가 먼저 나오고 결론이 뒤따른다.
+	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		AIGHorrorHUD::PushThought(
+			this,
+			NSLOCTEXT(
+				"IGMissingFloor",
+				"P2ContradictionThought",
+				"26일에 짐을 다 뺐다는데, 벽 두드리는 소리는 31일까지 났어. 그때도 위에 누가 있었던 거야."),
+			5.0f);
+		AIGHorrorHUD::PushThought(
+			this,
+			NSLOCTEXT(
+				"IGMissingFloor",
+				"N2ReturnThought",
+				"이제 403호까지 올라가야 해."),
+			4.0f);
+	}));
 	// 지운 민원을 읽은 몸이 식는다. 놀람이 아니라 한기라서 숨은 걸리지 않는다.
 	if (AIGPlayerCharacter* PlayerCharacter = Player.Get())
 	{

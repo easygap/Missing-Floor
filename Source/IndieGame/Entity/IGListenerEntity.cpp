@@ -48,6 +48,9 @@ namespace IGListener
 	constexpr float BangMasking = 0.3f;
 	/** 한 밤에 대답이 통하는 횟수. 그 뒤로는 벽의 잔향만 돌아온다. */
 	constexpr int32 AnswersPerNight = 3;
+	/** 탭에 멈춰 서서 듣는 것은 45초에 두 번까지다. 그 뒤로는 곧장 친 자리로 온다. */
+	constexpr double TapStallWindowSeconds = 45.0;
+	constexpr int32 TapStallsPerWindow = 2;
 	constexpr float SearchSeconds = 12.0f;
 	constexpr float SearchRadius = 350.0f;
 	constexpr float ChaseGiveUpSeconds = 8.0f;
@@ -1514,6 +1517,16 @@ bool AIGListenerEntity::TryAnswerKnock(const FVector& KnockLocation)
 	{
 		AnswerTapTimes.RemoveAt(0);
 	}
+	if (AnswerTapTimes.Num() == 1)
+	{
+		// 새 박자의 첫 탭이다. 45초 안에 몇 번째로 그를 세우는지 센다.
+		if (Now - TapStallWindowStart > IGListener::TapStallWindowSeconds)
+		{
+			TapStallWindowStart = Now;
+			TapStallCount = 0;
+		}
+		++TapStallCount;
+	}
 	if (AnswerTapTimes.Num() < 3)
 	{
 		AttendAnswerTap(KnockLocation, Now);
@@ -1551,6 +1564,11 @@ bool AIGListenerEntity::TryAnswerKnock(const FVector& KnockLocation)
 			// 두 번째 소리가 되고, 가만히 있으면 청취가 끝난 뒤 그 자리를 보러 온다.
 			// 이미 무언가를 쫓는 중이면 박자는 그냥 소리다. 연출이 붙든 그도 서 있던
 			// 자리를 지킨다 — 붙듦을 푸는 것은 소음의 몫이다.
+			if (TapStallCount > IGListener::TapStallsPerWindow)
+			{
+				InvestigateTapDirectly(KnockLocation, Now);
+				return true;
+			}
 			NoteAnswerLocation(KnockLocation);
 			LastHeardTime = Now;
 			bReactingToSound = true;
@@ -1620,6 +1638,11 @@ void AIGListenerEntity::AttendAnswerTap(const FVector& KnockLocation, const doub
 	{
 		return;
 	}
+	if (TapStallCount > IGListener::TapStallsPerWindow)
+	{
+		InvestigateTapDirectly(KnockLocation, Now);
+		return;
+	}
 	NoteAnswerLocation(KnockLocation);
 	LastHeardTime = Now;
 	bReactingToSound = true;
@@ -1632,6 +1655,22 @@ void AIGListenerEntity::AttendAnswerTap(const FVector& KnockLocation, const doub
 		EnterState(EIGListenerState::Listening);
 	}
 	bCadenceEarsUp = true;
+}
+
+void AIGListenerEntity::InvestigateTapDirectly(const FVector& KnockLocation, const double Now)
+{
+	// 두드림에 몇 번이나 멈춰 서서 들었는데 아무것도 이어지지 않았다. 이제는 서서 듣지
+	// 않고 친 자리로 곧장 온다. 이미 그쪽으로 가는 중이면 걸음을 끊지 않는다.
+	const bool bFromAbove = NoteAnswerLocation(KnockLocation);
+	LastHeardTime = Now;
+	bReactingToSound = true;
+	bSilentApproach = false;
+	bObservationHold = false;
+	if (State != EIGListenerState::Investigating)
+	{
+		EnterState(EIGListenerState::Investigating);
+	}
+	bCallFromAbove = bFromAbove;
 }
 
 bool AIGListenerEntity::IsAnswerLearned() const
@@ -1794,6 +1833,8 @@ void AIGListenerEntity::SetDormant(const bool bInDormant)
 		bObservationHold = false;
 		bSilenceNextStopKnock = false;
 		AnswersThisNight = 0;
+		TapStallCount = 0;
+		TapStallWindowStart = -1000.0;
 		if (UWorld* World = GetWorld())
 		{
 			if (UIGMissingFloorAudioSubsystem* AudioDirector =
@@ -1872,6 +1913,8 @@ void AIGListenerEntity::ParkForBeat(const FVector& Where, const float Yaw)
 	bReactingToSound = false;
 	bAmbushArmed = false;
 	AnswerTapTimes.Reset();
+	TapStallCount = 0;
+	TapStallWindowStart = -1000.0;
 	EnterState(EIGListenerState::Patrolling);
 }
 

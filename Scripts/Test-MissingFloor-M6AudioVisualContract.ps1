@@ -231,7 +231,7 @@ foreach ($pluginName in @('AudioCapture', 'ResonanceAudio')) {
 }
 Assert-ContainsAll $gameConfig @(
 	'ProjectName=Missing Floor',
-	'ProjectVersion=0.9.0',
+	'ProjectVersion=0.9.1',
 	'CompanyName=easygap'
 ) 'M6 product metadata'
 

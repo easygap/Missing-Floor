@@ -8,7 +8,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "Entity/IGMissingFloorEvidence.h"
+#include "Entity/IGNightLoopDirector.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
@@ -193,6 +195,8 @@ void AIGSeoRecorder::BeginPlayback()
 	CueIndex = 0;
 	StepIndex = 0;
 	LineDeadlineAt = 0.0;
+	GetWorldTimerManager().SetTimer(
+		CaptureWatchTimer, this, &AIGSeoRecorder::WatchForCapture, 0.2f, true);
 	IGAudio::SpawnOneShotAt(
 		this,
 		UIGToneSequenceSoundWave::CreatePickupRustle(this),
@@ -206,6 +210,12 @@ void AIGSeoRecorder::BeginPlayback()
 void AIGSeoRecorder::AbortPlayback()
 {
 	GetWorldTimerManager().ClearTimer(CueTimer);
+	GetWorldTimerManager().ClearTimer(CaptureWatchTimer);
+	// 끝까지 듣고 목격까지 남긴 뒤 생각이 뜨기 전에 멈췄다. 들은 것은 들은 것이니 생각은 띄운다.
+	if (CueIndex == 14)
+	{
+		PushRecorderThought();
+	}
 	for (const TWeakObjectPtr<UAudioComponent>& Voice : Voices)
 	{
 		if (UAudioComponent* Component = Voice.Get())
@@ -219,6 +229,31 @@ void AIGSeoRecorder::AbortPlayback()
 	StepIndex = 0;
 	UE_LOG(LogTemp, Display, TEXT("SEORECORDER playback stopped before the end"));
 	RefreshAvailability();
+}
+
+void AIGSeoRecorder::WatchForCapture()
+{
+	if (!bPlaying)
+	{
+		GetWorldTimerManager().ClearTimer(CaptureWatchTimer);
+		return;
+	}
+	for (TActorIterator<AIGNightLoopDirector> It(GetWorld()); It; ++It)
+	{
+		if (It->IsCaptureResetInFlight())
+		{
+			AbortPlayback();
+			return;
+		}
+	}
+}
+
+void AIGSeoRecorder::PushRecorderThought()
+{
+	AIGHorrorHUD::PushThought(
+		this,
+		NSLOCTEXT("IGMissingFloor", "SeoRecorderThought", "오빠를 두고 그냥 내려간 거야?"),
+		4.0f);
 }
 
 void AIGSeoRecorder::Wait(const float Seconds)
@@ -298,6 +333,15 @@ void AIGSeoRecorder::RunCue()
 	if (!bPlaying || !World)
 	{
 		return;
+	}
+	// 듣다가 붙잡혔다. 녹음기는 손에서 떨어져 판재 밑으로 돌아가고, 처음부터 다시 들어야 한다.
+	for (TActorIterator<AIGNightLoopDirector> It(World); It; ++It)
+	{
+		if (It->IsCaptureResetInFlight())
+		{
+			AbortPlayback();
+			return;
+		}
 	}
 	const double Now = World->GetTimeSeconds();
 	// 대사는 앞 대사가 끝난 뒤에 넣는다. 다른 대사가 끼어서 안 끝나면 넉넉히 기다린다.
@@ -469,10 +513,7 @@ void AIGSeoRecorder::RunCue()
 		return;
 
 	case 14:
-		AIGHorrorHUD::PushThought(
-			this,
-			NSLOCTEXT("IGMissingFloor", "SeoRecorderThought", "오빠를 두고 그냥 내려간 거야?"),
-			4.0f);
+		PushRecorderThought();
 		bPlaying = false;
 		Voices.Reset();
 		RefreshAvailability();

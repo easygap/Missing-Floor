@@ -74,6 +74,10 @@ void AIGDoorLatch::ConfigureAuthored(
 	const FText& InUnlockPrompt)
 {
 	BindDoor(InDoor);
+	if (InDoor)
+	{
+		InDoor->SetLatchedOpenPrompt(NSLOCTEXT("IGMissingFloor", "BoltedOpenPrompt", "빗장 풀고 문 열기"));
+	}
 	BoltTravelCm = InTravelCm;
 	BoltRestOffset = FVector::ZeroVector;
 	LockPrompt = InLockPrompt;

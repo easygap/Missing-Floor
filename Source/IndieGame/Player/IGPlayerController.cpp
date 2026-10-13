@@ -192,6 +192,8 @@ void AIGPlayerController::BeginPlay()
 
 	bNightFiveProbeRequested =
 		FParse::Param(FCommandLine::Get(), TEXT("IGNightFiveProbe"));
+	// 다섯째 밤을 들은 프로필이면 처음부터 흐리게 보인다. 검사는 프로필을 읽지도 쓰지도 않는다.
+	bNightFiveSpent = !bNightFiveProbeRequested && IGOnboardingMemory::ReadBool(TEXT("NightFivePlayed"));
 	if (bNightFiveProbeRequested)
 	{
 		UE_LOG(
@@ -5125,8 +5127,13 @@ void AIGPlayerController::EndNightFive()
 			AudioDirector->HoldTitleSoundscape(false);
 		}
 	}
-	// 한 번 재생하면 흐려진다. 사라지지는 않는다 — 다시 들을 수 있다.
+	// 한 번 재생하면 흐려진다. 사라지지는 않는다 — 다시 들을 수 있다. 프로필에 남겨 다음에
+	// 켰을 때도 흐리게 보인다. 예전에는 이번 실행 동안만 기억했다.
 	bNightFiveSpent = true;
+	if (!bNightFiveProbeRequested)
+	{
+		IGOnboardingMemory::WriteBool(TEXT("NightFivePlayed"), true);
+	}
 	NightFiveSeconds = 0.0f;
 	// 타이틀로 복귀한다. 애초에 떠난 적이 없으므로 되돌릴 상태도 없다.
 	SystemMenuSelection = IGFrontendMenuLayout::NightFiveAction;
