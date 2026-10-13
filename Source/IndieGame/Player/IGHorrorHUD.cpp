@@ -2675,6 +2675,15 @@ void AIGHorrorHUD::DrawHUD()
 			: Canvas->ClipY - 54.0f,
 		&AudioCaptionPanelTop);
 
+	// 아래쪽 줄은 대사와 소리 자막이 먼저 쓴다. 상황 안내는 조사 안내보다 먼저 정한다.
+	// 조사 안내를 배치한 뒤에 정하면 안내가 새로 뜨는 프레임에 조사 안내가 아직 그 자리를
+	// 비우지 않아 한 프레임 겹쳤다(중국어 화면 점검에서 잡혔다).
+	const bool bLowerLaneBusy = bDialogueVisible || bAudioCaptionVisible;
+	if (bGuideAllowed)
+	{
+		UpdateContextTips(DeltaSeconds, !bLowerLaneBusy && !bFadedOut && ControlsAlpha <= 0.01f);
+	}
+
 	// 초점이 잡힌 대상의 조사 안내와 누르기 진행.
 	if (bHasFocus && !bFadedOut)
 	{
@@ -2726,9 +2735,9 @@ void AIGHorrorHUD::DrawHUD()
 			// 글자 높이와 하단 조작 안내 여백을 빼고 화면 안에 남긴다.
 			const float PromptHeight = MeasureTextHeight(
 				Prompt.ToString(), GetFontForRole(EIGHudTextRole::Prompt), 1.f);
-			// 상황 안내는 이 아래에서 갱신돼서 같은 프레임에 뜬다. 투명도만 보고 자리를 비우면
-			// 첫 프레임에 둘이 겹쳤다가 다음 프레임에 안내 문구가 위로 튄다. 띄울 안내가
-			// 정해지면 바로 자리를 비워 둔다.
+			// 상황 안내는 위에서 이번 프레임 것으로 먼저 정해진다. 투명도만 보고 자리를 비우면
+			// 안내가 떠오르는 동안 둘이 겹쳤다가 안내 문구가 위로 튄다. 띄울 안내가 정해지면
+			// 바로 자리를 비워 둔다.
 			const float LowerGuideReserve = ControlsAlpha > 0.01f
 				? 138.f
 				: (ContextTips.GetCurrent() != EIGContextTip::None ? 100.f : 54.f);
@@ -2757,16 +2766,14 @@ void AIGHorrorHUD::DrawHUD()
 	}
 
 
-	// 아래쪽 줄은 대사와 소리 자막이 먼저 쓴다. 자막이 뜨면 조작 안내는 바로
-	// 비키고, 자막이 걷히면 천천히 돌아온다. 툭 튀어나오면 눈이 그리로 간다.
-	const bool bLowerLaneBusy = bDialogueVisible || bAudioCaptionVisible;
+	// 자막이 뜨면 조작 안내는 바로 비키고, 자막이 걷히면 천천히 돌아온다. 툭 튀어나오면
+	// 눈이 그리로 간다.
 	bLowerLaneBusyLastFrame = bLowerLaneBusy;
 	ControlsLaneAlpha = bLowerLaneBusy
 		? 0.0f
 		: FMath::FInterpTo(ControlsLaneAlpha, 1.0f, DeltaSeconds, 6.0f);
 	if (bGuideAllowed)
 	{
-		UpdateContextTips(DeltaSeconds, !bLowerLaneBusy && !bFadedOut && ControlsAlpha <= 0.01f);
 		UpdatePrintedTextReading();
 	}
 	if (!bLowerLaneBusy && !bFadedOut)
