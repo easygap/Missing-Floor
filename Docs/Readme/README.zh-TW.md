@@ -8,9 +8,9 @@
 
 ![雨後小巷盡頭的四層公寓，只有兩扇窗亮著燈](../Media/readme/title-menu-first-run-1080-zh-Hant.webp)
 
-目前能玩的是 0.9.0 測試版（Windows），支援繁體中文、簡體中文、韓文、英文和日文。
+目前能玩的是 0.9.1 測試版（Windows），支援繁體中文、簡體中文、韓文、英文和日文。
 
-[下載測試版（Windows，0.9.0）](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip) · [預告片（英文字幕）](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-Trailer-en.mp4) · [操作說明](#操作說明)
+[下載測試版（Windows，0.9.1）](https://github.com/easygap/Missing-Floor/releases/download/v0.9.1/MissingFloor-0.9.1-Windows.zip) · [預告片（英文字幕）](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-Trailer-en.mp4) · [操作說明](#操作說明)
 
 ## 白天
 
@@ -60,9 +60,9 @@
 
 ## 下載
 
-目前發布的是 0.9.0 測試版。這是正式 1.0 之前的候選版本，想先在更多電腦上、請第一次玩的人試試看。
+目前發布的是 0.9.1 測試版。這是正式 1.0 之前的候選版本，想先在更多電腦上、請第一次玩的人試試看。
 
-1. 下載 [Windows 版 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip)。
+1. 下載 [Windows 版 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.9.1/MissingFloor-0.9.1-Windows.zip)。
 2. 全部解壓縮後執行 `MissingFloor.exe`。同一資料夾裡的 `Engine` 和 `IndieGame` 資料夾要放在一起才能啟動。
 3. 選擇「開始遊戲」。進度會自動儲存，之後選「繼續遊戲」就能接著玩。
 

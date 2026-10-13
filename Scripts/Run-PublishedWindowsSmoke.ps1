@@ -6,6 +6,8 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell 5.1에는 ZipFile 형식이 기본으로 올라와 있지 않다.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 $root = [IO.Path]::GetFullPath($WorkDirectory)
 if (Test-Path -LiteralPath $root) { throw '공개 배포본 검사는 새 폴더에서 실행해야 합니다.' }
 $downloadRoot = Join-Path $root 'Download'

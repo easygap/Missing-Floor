@@ -8,9 +8,9 @@
 
 ![비 그친 골목 끝의 4층짜리 빌라. 창 두 개에만 불이 켜져 있다.](Docs/Media/readme/title-menu-first-run-1080.webp)
 
-지금 받을 수 있는 버전은 0.9.0(Windows)입니다. 한국어, 영어, 일본어, 중국어 간체·번체로 할 수 있습니다.
+지금 받을 수 있는 버전은 0.9.1(Windows)입니다. 한국어, 영어, 일본어, 중국어 간체·번체로 할 수 있습니다.
 
-[플레이 테스트 받기 (Windows, 0.9.0)](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip) · [예고편](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-Trailer.mp4) · [조작](#조작)
+[플레이 테스트 받기 (Windows, 0.9.1)](https://github.com/easygap/Missing-Floor/releases/download/v0.9.1/MissingFloor-0.9.1-Windows.zip) · [예고편](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-Trailer.mp4) · [조작](#조작)
 
 ## 낮
 
@@ -58,9 +58,9 @@
 
 ## 다운로드
 
-지금 배포 중인 버전은 0.9.0입니다. 정식 1.0을 내기 전에 여러 PC와 처음 하는 분들의 확인을 받으려는 후보입니다.
+지금 배포 중인 버전은 0.9.1입니다. 정식 1.0을 내기 전에 여러 PC와 처음 하는 분들의 확인을 받으려는 후보입니다.
 
-1. [Windows용 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.9.0/MissingFloor-0.9.0-Windows.zip)을 받습니다.
+1. [Windows용 ZIP](https://github.com/easygap/Missing-Floor/releases/download/v0.9.1/MissingFloor-0.9.1-Windows.zip)을 받습니다.
 2. 압축을 다 풀고 `MissingFloor.exe`를 실행합니다. 같은 폴더의 `Engine`, `IndieGame` 폴더가 함께 있어야 켜집니다.
 3. ‘게임 시작’을 누릅니다. 진행은 자동으로 저장되고, 다음부터는 ‘이어하기’로 이어서 할 수 있습니다.
 

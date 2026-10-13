@@ -2,7 +2,7 @@
 
 ## Windows에서 플레이하기
 
-1. [Windows 테스트 버전](https://github.com/easygap/Missing-Floor/releases/tag/v0.9.0)에서 `MissingFloor-0.9.0-Windows.zip`을 받습니다.
+1. [Windows 테스트 버전](https://github.com/easygap/Missing-Floor/releases/tag/v0.9.1)에서 `MissingFloor-0.9.1-Windows.zip`을 받습니다.
 2. ZIP 파일의 **압축을 모두 풉니다.** 실행 파일 옆의 `Engine`, `IndieGame` 폴더도 함께 있어야 합니다.
 3. `MissingFloor.exe`를 실행하고 **게임 시작**을 선택합니다.
 4. 소리 크기와 밝기를 맞춘 뒤 시작합니다. 조작법은 `F1`, 난이도와 접근성 설정은 `F10`으로 다시 열 수 있습니다.
