@@ -15,7 +15,8 @@
 
 namespace IGLeftoverAnnex
 {
-	const FName Space(TEXT("Annex"));
+	/** 이 감독이 덧댄 것을 둔 공간 이름. 유니티 빌드에서 다른 파일의 인자 이름과 겹치지 않게 접두어를 붙였다. */
+	const FName AnnexSpace(TEXT("Annex"));
 	const FName GapSeam(TEXT("Annex.Seam"));
 	const FName GapInspection(TEXT("Annex.Inspection"));
 
@@ -81,18 +82,18 @@ bool AIGMissingFloorLeftoverDirector::IsInspectionOverlayOn() const
 
 bool AIGMissingFloorLeftoverDirector::IsAnnexLiningBusy() const
 {
-	return Lining && CurrentSpace == Space && !Lining->IsHidden() && Lining->IsBusy();
+	return Lining && CurrentSpace == AnnexSpace && !Lining->IsHidden() && Lining->IsBusy();
 }
 
 bool AIGMissingFloorLeftoverDirector::IsAnnexSpread() const
 {
-	return Lining && CurrentSpace == Space && Lining->GetState() == EIGLiningState::Spread && !Lining->IsMoving();
+	return Lining && CurrentSpace == AnnexSpace && Lining->GetState() == EIGLiningState::Spread && !Lining->IsMoving();
 }
 
 void AIGMissingFloorLeftoverDirector::EnsureAnnexLining()
 {
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-	if (!Lining || !Narrative || CurrentSpace == Space || IsLegacyRun() || Narrative->IsNightFourWallOpened())
+	if (!Lining || !Narrative || CurrentSpace == AnnexSpace || IsLegacyRun() || Narrative->IsNightFourWallOpened())
 	{
 		return;
 	}
@@ -121,7 +122,7 @@ void AIGMissingFloorLeftoverDirector::PrepareAnnexLining(const int32 WallStage, 
 	{
 		return;
 	}
-	CurrentSpace = Space;
+	CurrentSpace = AnnexSpace;
 	LoadGapsFor(CurrentSpace);
 	if (Scene)
 	{
@@ -187,7 +188,7 @@ void AIGMissingFloorLeftoverDirector::OpenAnnexInspection()
 	Lining->OnGapSealed.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleLiningSealed);
 	Lining->OnGapSealed.AddWeakLambda(this, [this](AIGLiningEntity* Entity, const FName GapId)
 	{
-		if (GapId == GapInspection && Entity && CurrentSpace == Space)
+		if (GapId == GapInspection && Entity && CurrentSpace == AnnexSpace)
 		{
 			SpreadAnnexLining(SpreadSeconds);
 		}
@@ -196,7 +197,7 @@ void AIGMissingFloorLeftoverDirector::OpenAnnexInspection()
 
 void AIGMissingFloorLeftoverDirector::PinAnnexKnee()
 {
-	if (!Lining || CurrentSpace != Space)
+	if (!Lining || CurrentSpace != AnnexSpace)
 	{
 		return;
 	}
@@ -210,7 +211,7 @@ void AIGMissingFloorLeftoverDirector::PinAnnexKnee()
 
 void AIGMissingFloorLeftoverDirector::StrainAnnexLining()
 {
-	if (!Lining || CurrentSpace != Space || Lining->IsHidden())
+	if (!Lining || CurrentSpace != AnnexSpace || Lining->IsHidden())
 	{
 		return;
 	}
@@ -220,7 +221,7 @@ void AIGMissingFloorLeftoverDirector::StrainAnnexLining()
 
 void AIGMissingFloorLeftoverDirector::PushOutAnnexLining(const bool bInstant)
 {
-	if (!Lining || CurrentSpace != Space)
+	if (!Lining || CurrentSpace != AnnexSpace)
 	{
 		return;
 	}
@@ -239,7 +240,7 @@ void AIGMissingFloorLeftoverDirector::PushOutAnnexLining(const bool bInstant)
 
 void AIGMissingFloorLeftoverDirector::HideAnnexLining()
 {
-	if (!Lining || CurrentSpace != Space)
+	if (!Lining || CurrentSpace != AnnexSpace)
 	{
 		return;
 	}
