@@ -257,7 +257,8 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 		return;
 	}
 	case 101:
-		if (PhaseSeconds < 0.5f)
+		// 밤 제목 카드(4.2초와 페이드)가 걷힌 뒤에 찍는다.
+		if (PhaseSeconds < 6.0f)
 		{
 			return;
 		}

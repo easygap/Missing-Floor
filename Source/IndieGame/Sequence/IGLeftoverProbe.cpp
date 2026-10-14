@@ -420,12 +420,12 @@ void AIGLeftoverProbe::EndFrames()
 
 void AIGLeftoverProbe::TickFrames()
 {
-	// 고정 60fps 실행에서 두 틱에 한 장, 30fps다. 10초가 넘으면 스스로 멈춘다.
+	// 고정 60fps 실행에서 두 틱에 한 장, 30fps다. 25초가 넘으면 스스로 멈춘다.
 	if (FrameTag.IsEmpty() || (FrameTick++ % 2) != 0)
 	{
 		return;
 	}
-	if (FrameIndex >= 300)
+	if (FrameIndex >= 750)
 	{
 		EndFrames();
 		return;
@@ -1453,7 +1453,15 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 				Narrative->RemoveLeftover(EIGLeftoverList::WallLayers, FName(Layer));
 			}
 			Wall->RestoreWallForTesting();
-			Stand(FVector(20.0f, 650.0f, 1200.0f), FVector(215.0f, 560.0f, 1330.0f));
+			// 이음매로 가는 길은 처음 자리(Y 640)와 이음매(Y 700) 쪽을, 몸을 펴는 길은 점검구 위 벽을 본다.
+			if (WallShotStage == 7)
+			{
+				Stand(FVector(40.0f, 700.0f, 1200.0f), FVector(250.0f, 670.0f, 1360.0f));
+			}
+			else
+			{
+				Stand(FVector(20.0f, 650.0f, 1200.0f), FVector(215.0f, 560.0f, 1330.0f));
+			}
 			Step = 1;
 			PhaseSeconds = 0.0f;
 			return;
@@ -1477,7 +1485,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		const bool bSettled = WallShotStage == 7
 			? Body->GetHeldGap() == FName(TEXT("Annex.Seam")) && !Body->IsMoving()
 			: Director->IsAnnexSpread();
-		if (Step == 2 && (bSettled || PhaseSeconds > 12.0f))
+		// 점검구로 옮겨 누르고 몸을 펴기까지 실제 판(밤4 검사)에서 20초 남짓 걸린다.
+		if (Step == 2 && (bSettled || PhaseSeconds > 28.0f))
 		{
 			Check(bSettled, *FString::Printf(TEXT("frames_%s_settled"), WallShotStage == 7 ? TEXT("seam") : TEXT("spread")));
 			Step = 3;
