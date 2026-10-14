@@ -1,0 +1,30 @@
+{
+  "name": "SM_AnnexBraceFrame",
+  "mesh_class": "prop",
+  "fbx": "SM_AnnexBraceFrame.fbx",
+  "textures": {
+    "D": "SM_AnnexBraceFrame_D.png",
+    "N": "SM_AnnexBraceFrame_N.png",
+    "ORM": "SM_AnnexBraceFrame_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 624,
+  "bounds_m": {
+    "min": [
+      -0.0435,
+      -0.305,
+      -0.0008
+    ],
+    "max": [
+      0.0435,
+      0.303,
+      2.385
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "공사하고 남은 경량 철골 틀 60x238(ㄷ자 스터드 둘, 위아래 런너). 원점 바닥 가운데, 틀 면은 YZ, 깊이 X 7.5. 위 런너가 덧댄 것의 무릎 마디를 건다."
+}

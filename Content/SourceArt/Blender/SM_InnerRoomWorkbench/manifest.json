@@ -1,0 +1,30 @@
+{
+  "name": "SM_InnerRoomWorkbench",
+  "mesh_class": "prop",
+  "fbx": "SM_InnerRoomWorkbench.fbx",
+  "textures": {
+    "D": "SM_InnerRoomWorkbench_D.png",
+    "N": "SM_InnerRoomWorkbench_N.png",
+    "ORM": "SM_InnerRoomWorkbench_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 1208,
+  "bounds_m": {
+    "min": [
+      -0.7,
+      -0.3,
+      0.0
+    ],
+    "max": [
+      0.7,
+      0.3,
+      0.827
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "관리실 안쪽 방 작업대. 폭 X 140, 깊이 Y 60, 높이 80. 윗면 위에 물증 액터를 따로 놓는다"
+}

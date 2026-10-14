@@ -1,0 +1,30 @@
+{
+  "name": "SM_LinedWallPanelB",
+  "mesh_class": "prop",
+  "fbx": "SM_LinedWallPanelB.fbx",
+  "textures": {
+    "D": "SM_LinedWallPanelB_D.png",
+    "N": "SM_LinedWallPanelB_N.png",
+    "ORM": "SM_LinedWallPanelB_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 300,
+  "bounds_m": {
+    "min": [
+      -0.49,
+      -0.054,
+      0.01
+    ],
+    "max": [
+      0.49,
+      0.0,
+      0.99
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "방음재 위에 방수막을 덧대고 실리콘으로 두른 1 m 판. 앞면 -Y"
+}

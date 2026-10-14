@@ -23,6 +23,10 @@ rig_crawler.py가 기는 몸을 다뤘다면 여기는 서서 걷는 몸이다. 
 열쇠 꾸러미 규칙을 빼고 두 팔을 다 흔들며, 동작은 Idle·Walk(루프)와 LookBack(1회,
 어깨 너머로 고개를 돌려 뒤를 본다) 셋이다.
 
+--profile mover는 resident에 짐 나르는 동작 다섯을 더한다(202호 정우). Carry(상자를 두 팔로
+안고 걷기), CarryIdle(안고 서 있기), Crouch(쪼그려 앉아 숨 고르기), Brace(두 손으로 판을 받치고
+버티기), HoldDoor(오른손으로 문을 잡아 두기). 전부 제자리 루프다.
+
 --profile officer는 resident에 벽을 살피는 동작 둘을 더한다(셋째 아침 5층에 오는 순찰
 경찰관). Knock(1회, 오른손으로 벽을 세 번 두드리고 손을 벽 가까이에 둔다)과 Listen(1회,
 상체를 숙이고 고개를 돌려 벽에 귀를 댄다)이다.
@@ -71,7 +75,7 @@ TORCH_HAND = Vector((0.30, 0.19, 0.98))
 
 # patrol(목한수), resident(빈손으로 선 사람), officer(빈손 + 벽 살피기). main()이 인자에서 정한다.
 PROFILE = "patrol"
-EMPTY_HANDED = ("resident", "officer")
+EMPTY_HANDED = ("resident", "officer", "mover")
 # officer는 A자로 벌려 뽑은 팔을 서 있을 때 허벅지 옆으로 모은다(m). main()이 손목 자리로 정한다.
 OFFICER_HANG = 0.0
 
@@ -90,7 +94,7 @@ def parse_args():
     parser.add_argument("--out", default=None)
     parser.add_argument("--no-bake", action="store_true")
     parser.add_argument("--notes", default="")
-    parser.add_argument("--profile", choices=["patrol", "resident", "officer"], default="patrol")
+    parser.add_argument("--profile", choices=["patrol", "resident", "officer", "mover"], default="patrol")
     parser.add_argument("--tint-box", action="append", default=[],
                         help="xmin,xmax,zmin,zmax,색상(도),채도 배율,명도 배율. 앞이 +X인 저작 좌표(m)에서 "
                              "이 상자 안의 색만 굽기 전에 바꾼다. 시안에 없던 뒷면을 생성기가 지어낸 색을 고칠 때")
@@ -433,7 +437,7 @@ def hold_torch(arm, frame, bob=0.0, sweep=0.0, lift=0.0, tremble=0.0):
                end_direction=Vector((0.82, 0.0, -0.57)))
 
 
-def author_walk(arm, name, frames, stride, lift, bob, lean, arm_swing, crouch):
+def author_walk(arm, name, frames, stride, lift, bob, lean, arm_swing, crouch, arms=None):
     """제자리 걸음. 한 주기에 두 걸음. 디딘 발은 미끄러지듯 뒤로 가고, 든 발은 낮게 앞으로.
 
     골반은 crouch만큼 늘 낮춰 무릎을 조금 굽힌다. 다리를 다 펴서는 보폭 끝의 발이
@@ -473,6 +477,9 @@ def author_walk(arm, name, frames, stride, lift, bob, lean, arm_swing, crouch):
         # 왼팔은 반대 다리와 함께 흔든다. 오른손은 손전등을 앞으로 든다.
         # 빈손인 사람은 오른팔도 반대 박자로 흔든다.
         swing = math.sin(math.tau * t)
+        if arms is not None:
+            arms(arm, f, t)
+            continue
         swing_arm(arm, "l", f, arm_swing * swing, 0.03 * abs(swing))
         if PROFILE in EMPTY_HANDED:
             swing_arm(arm, "r", f, -arm_swing * swing, 0.03 * abs(swing))
@@ -665,6 +672,111 @@ def author_grab(arm, frames=20):
     return action
 
 
+def shoulder_now(arm, side):
+    """지금 자세의 어깨 자리. 골반을 내린 동작에서 팔 목표를 어깨 기준으로 잡는다."""
+    bpy.context.view_layer.update()
+    return arm.pose.bones[f"upperarm_{side}"].head.copy()
+
+
+def hold_box(arm, frame, bob=0.0):
+    """상자를 두 팔로 안는다. 손바닥이 상자 옆면을 마주 본다. FBX 좌표라 오른쪽이 -Y다."""
+    for side, sign in (("l", 1.0), ("r", -1.0)):
+        sh = shoulder_now(arm, side)
+        target = Vector((sh.x + 0.34, sign * 0.17, sh.z - 0.30 + bob))
+        solve_limb(arm, f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", target,
+                   sh + Vector((-0.25, sign * 0.35, -0.35)), frame,
+                   end_direction=Vector((0.35, -sign * 0.9, 0.1)))
+
+
+def plant_feet_offset(arm, frame, offsets):
+    for side in ("l", "r"):
+        ankle = rest(arm, f"calf_{side}") + offsets.get(side, Vector((0.0, 0.0, 0.0)))
+        knee = rest(arm, f"thigh_{side}")
+        solve_limb(arm, f"thigh_{side}", f"calf_{side}", f"foot_{side}", ankle,
+                   knee + Vector((0.6, 0.0, 0.0)), frame)
+
+
+def author_carry_walk(arm, frames=36):
+    """상자를 안고 걷는다. 보폭이 짧고 상체가 조금 뒤로 젖혀진다."""
+    def arms(armature, f, t):
+        hold_box(armature, f, bob=0.006 * math.sin(2.0 * math.tau * t))
+    return author_walk(arm, "Carry", frames, stride=0.40, lift=0.03, bob=0.012, lean=-3.0,
+                       arm_swing=0.0, crouch=0.03, arms=arms)
+
+
+def author_carry_idle(arm, frames=90):
+    action = new_action(arm, "CarryIdle", frames)
+    for f in range(0, frames + 1, 3):
+        t = f / frames * math.tau
+        breath = math.sin(2.0 * t)
+        key_rot(arm, "spine_01", f, rx=-2.0)
+        key_rot(arm, "spine_02", f, rx=0.8 * breath)
+        key_rot(arm, "head", f, rx=4.0 + 1.0 * math.sin(t), ry=4.0 * math.sin(t))
+        plant_feet(arm, f)
+        hold_box(arm, f, bob=0.005 * breath)
+    cyclic(arm, action)
+    return action
+
+
+def author_crouch(arm, frames=90):
+    """판 뒤 구석에 쪼그려 앉아 있다. 숨이 가쁘다. 팔은 무릎 위에 걸친다."""
+    action = new_action(arm, "Crouch", frames)
+    for f in range(0, frames + 1, 3):
+        t = f / frames * math.tau
+        breath = math.sin(3.0 * t)
+        key_loc(arm, "pelvis", f, y=-0.34 - 0.006 * breath)
+        key_rot(arm, "pelvis", f, rx=-12.0)
+        key_rot(arm, "spine_01", f, rx=15.0 + 1.2 * breath)
+        key_rot(arm, "spine_02", f, rx=8.0)
+        key_rot(arm, "spine_03", f, rx=3.0 - 1.0 * breath)
+        key_rot(arm, "neck", f, rx=-14.0)
+        key_rot(arm, "head", f, rx=-16.0, ry=6.0 * math.sin(t * 0.5))
+        plant_feet_offset(arm, f, {"l": Vector((0.05, 0.03, 0.0)), "r": Vector((-0.04, -0.03, 0.0))})
+        # 팔은 IK로 끌지 않고 몸통을 따라 숙인다. 생성 형상은 팔과 옆구리 사이가 막으로
+        # 이어져 있어서, 몸통만 숙이고 손을 따로 두면 그 막이 등 뒤로 날개처럼 펴진다.
+    cyclic(arm, action)
+    return action
+
+
+def author_brace(arm, frames=60):
+    """두 손으로 판을 받치고 버틴다. 한 발을 뒤로 빼고 상체를 앞으로 실었다. 팔이 조금 떨린다."""
+    action = new_action(arm, "Brace", frames)
+    for f in range(0, frames + 1, 2):
+        t = f / frames * math.tau
+        tremble = 0.004 * math.sin(9.0 * t) + 0.003 * math.sin(14.0 * t + 0.7)
+        key_loc(arm, "pelvis", f, y=-0.05)
+        key_rot(arm, "spine_01", f, rx=10.0)
+        key_rot(arm, "spine_02", f, rx=6.0 + 0.6 * math.sin(2.0 * t))
+        key_rot(arm, "head", f, rx=-6.0)
+        plant_feet_offset(arm, f, {"r": Vector((-0.28, 0.0, 0.0)), "l": Vector((0.06, 0.0, 0.0))})
+        for side, sign in (("l", 1.0), ("r", -1.0)):
+            sh = shoulder_now(arm, side)
+            target = Vector((sh.x + 0.50, sign * 0.17, sh.z - 0.04 + tremble))
+            solve_limb(arm, f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", target,
+                       sh + Vector((-0.1, sign * 0.45, -0.40)), f,
+                       end_direction=Vector((0.55, 0.0, 0.83)))
+    cyclic(arm, action)
+    return action
+
+
+def author_hold_door(arm, frames=90):
+    """오른손으로 열린 문 끝을 잡고 서 있다. 고개는 지나갈 사람 쪽(앞)을 본다."""
+    action = new_action(arm, "HoldDoor", frames)
+    for f in range(0, frames + 1, 3):
+        t = f / frames * math.tau
+        breath = math.sin(2.0 * t)
+        key_rot(arm, "spine_02", f, ry=-8.0, rx=0.6 * breath)
+        key_rot(arm, "head", f, ry=6.0 * math.sin(t), rx=1.0)
+        plant_feet(arm, f)
+        sh = shoulder_now(arm, "r")
+        target = Vector((sh.x + 0.32, -0.42, sh.z - 0.32 + 0.004 * breath))
+        solve_limb(arm, "upperarm_r", "lowerarm_r", "hand_r", target,
+                   sh + Vector((-0.3, -0.2, -0.4)), f, end_direction=Vector((0.2, -0.3, 0.9)))
+        swing_arm(arm, "l", f, 0.0, 0.006 * breath)
+    cyclic(arm, action)
+    return action
+
+
 def hang_left(arm, frame, lift):
     wrist = rest(arm, "lowerarm_l")
     elbow = rest(arm, "upperarm_l")
@@ -807,6 +919,12 @@ def main():
         if PROFILE == "officer":
             actions["Knock"] = author_knock(arm)
             actions["Listen"] = author_listen(arm)
+        if PROFILE == "mover":
+            actions["Carry"] = author_carry_walk(arm)
+            actions["CarryIdle"] = author_carry_idle(arm)
+            actions["Crouch"] = author_crouch(arm)
+            actions["Brace"] = author_brace(arm)
+            actions["HoldDoor"] = author_hold_door(arm)
     else:
         actions = patrol_actions(arm)
     set_action_frame(arm, actions["Idle"], 1)
@@ -821,6 +939,12 @@ def main():
     if PROFILE in EMPTY_HANDED:
         set_action_frame(arm, actions["LookBack"], 60)
         ig.render_preview(low, os.path.join(out_dir, f"{name}_lookback.png"), camera_yaw_deg=160.0, camera_pitch_deg=4.0)
+        if PROFILE == "mover":
+            for key, frame, yaw in (("Carry", 9, -90.0), ("CarryIdle", 30, -35.0), ("Crouch", 30, -35.0),
+                                    ("Brace", 20, -70.0), ("HoldDoor", 30, -20.0)):
+                set_action_frame(arm, actions[key], frame)
+                ig.render_preview(low, os.path.join(out_dir, f"{name}_{key.lower()}.png"),
+                                  camera_yaw_deg=yaw, camera_pitch_deg=4.0)
         if PROFILE == "officer":
             set_action_frame(arm, actions["Knock"], 30)
             ig.render_preview(low, os.path.join(out_dir, f"{name}_knock.png"), camera_yaw_deg=-70.0, camera_pitch_deg=4.0)

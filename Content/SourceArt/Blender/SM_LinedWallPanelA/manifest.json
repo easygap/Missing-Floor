@@ -1,0 +1,30 @@
+{
+  "name": "SM_LinedWallPanelA",
+  "mesh_class": "prop",
+  "fbx": "SM_LinedWallPanelA.fbx",
+  "textures": {
+    "D": "SM_LinedWallPanelA_D.png",
+    "N": "SM_LinedWallPanelA_N.png",
+    "ORM": "SM_LinedWallPanelA_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 544,
+  "bounds_m": {
+    "min": [
+      -0.495,
+      -0.046,
+      0.005
+    ],
+    "max": [
+      0.495,
+      0.0,
+      0.995
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "계란판 방음재 판 넷을 실리콘으로 이은 1 m 판. 앞면 -Y, 두께 3.5 cm, 원점 아래 가운데"
+}

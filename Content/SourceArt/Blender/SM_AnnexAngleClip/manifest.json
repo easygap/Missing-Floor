@@ -1,0 +1,30 @@
+{
+  "name": "SM_AnnexAngleClip",
+  "mesh_class": "prop",
+  "fbx": "SM_AnnexAngleClip.fbx",
+  "textures": {
+    "D": "SM_AnnexAngleClip_D.png",
+    "N": "SM_AnnexAngleClip_N.png",
+    "ORM": "SM_AnnexAngleClip_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 380,
+  "bounds_m": {
+    "min": [
+      -0.0003,
+      -0.03,
+      -0.07
+    ],
+    "max": [
+      0.05,
+      0.03,
+      0.0003
+    ]
+  },
+  "origin": "wall-ceiling-corner",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "안쪽 판 위 가운데를 천장에 물린 ㄱ자 아연 철물(6x7x5). 원점이 벽 면과 천장의 모서리, 앞 +X. 마지막 단계에 친다."
+}

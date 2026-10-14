@@ -1,0 +1,30 @@
+{
+  "name": "SM_CoverPieceB",
+  "mesh_class": "prop",
+  "fbx": "SM_CoverPieceB.fbx",
+  "textures": {
+    "D": "SM_CoverPieceB_D.png",
+    "N": "SM_CoverPieceB_N.png",
+    "ORM": "SM_CoverPieceB_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 608,
+  "bounds_m": {
+    "min": [
+      -0.0134,
+      -0.04,
+      -0.01
+    ],
+    "max": [
+      0.0015,
+      0.3,
+      0.35
+    ]
+  },
+  "origin": "cover-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "5층 배관 점검구 덮개 조각 B. 원점이 덮개 가운데(앞면 X 0), 앞면 +X에 방수막과 얼룩, 뒷면에 고정쇠 나사 구멍과 바깥 변의 접힌 방수막. 맞춘 자리 그대로 놓으면 한 장이 된다."
+}

@@ -1,0 +1,30 @@
+{
+  "name": "SM_HammerDent",
+  "mesh_class": "prop",
+  "fbx": "SM_HammerDent.fbx",
+  "textures": {
+    "D": "SM_HammerDent_D.png",
+    "N": "SM_HammerDent_N.png",
+    "ORM": "SM_HammerDent_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 312,
+  "bounds_m": {
+    "min": [
+      -0.0034,
+      -0.0474,
+      -0.0549
+    ],
+    "max": [
+      0.0034,
+      0.0532,
+      0.0485
+    ]
+  },
+  "origin": "wall-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "고정되지 않은 자리를 망치로 쳤을 때 남는 얕은 자국(지름 7). 원점이 벽 면 가운데, 앞면 +X."
+}

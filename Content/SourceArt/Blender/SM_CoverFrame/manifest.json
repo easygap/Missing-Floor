@@ -1,0 +1,30 @@
+{
+  "name": "SM_CoverFrame",
+  "mesh_class": "prop",
+  "fbx": "SM_CoverFrame.fbx",
+  "textures": {
+    "D": "SM_CoverFrame_D.png",
+    "N": "SM_CoverFrame_N.png",
+    "ORM": "SM_CoverFrame_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 832,
+  "bounds_m": {
+    "min": [
+      -0.032,
+      -0.321,
+      -0.371
+    ],
+    "max": [
+      0.004,
+      0.321,
+      0.371
+    ]
+  },
+  "origin": "cover-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "배관 점검구 덮개의 금속 틀. 원점이 덮개 가운데, 앞면 날개가 X 0(벽 면), 슬리브가 -X 3 cm. 모서리 안쪽 기둥에 고정쇠(SM_CoverClamp)를 단다."
+}

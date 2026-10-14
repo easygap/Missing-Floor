@@ -133,6 +133,36 @@ SURFACES = (
     SurfaceSpec(
         "T_UnitDoorPaintedSteel", 0.74, 0.62, 0.86, 0.30,
         rough_detail=0.26, ao_depth=0.50),
+    # 덧댄 것과 관리실 안쪽 방의 은폐 재료(2026-10-13). 계란판 방음재는 봉우리와 골이
+    # 실제로 깊어서 노멀을 세게 두고 골에 먼지가 앉는다. 방수막은 아스팔트라 반쯤
+    # 번들거리고 주름만 얕게 솟는다. 아연도금 철골은 반짝이는 결정 무늬와 긁힌 자리가
+    # 거칠기로 갈린다. 금속성은 재질 쪽에서 준다.
+    SurfaceSpec(
+        "T_LiningFoam", 0.90, 0.80, 0.97, 0.85,
+        rough_detail=0.10, ao_depth=1.60),
+    SurfaceSpec(
+        "T_LiningMembrane", 0.52, 0.38, 0.72, 0.38,
+        rough_detail=0.24, ao_depth=0.70),
+    SurfaceSpec(
+        "T_LiningSteel", 0.42, 0.28, 0.66, 0.22,
+        rough_detail=0.30, ao_depth=0.45),
+    # 관리실 안쪽 방(2026-10-13). 도장 철판은 반쯤 번들거리고 녹 자리만 거칠다. PP 마대와
+    # 캔버스·담요는 무광이고 짜임이 얕게 솟는다. 합판은 손때 자리가 조금 매끈하다.
+    SurfaceSpec(
+        "T_CabinetPaintGrey", 0.48, 0.34, 0.72, 0.20,
+        rough_detail=0.28, ao_depth=0.40),
+    SurfaceSpec(
+        "T_WovenSack", 0.80, 0.68, 0.92, 0.55,
+        rough_detail=0.12, ao_depth=0.90),
+    SurfaceSpec(
+        "T_BlanketFloral", 0.92, 0.84, 0.98, 0.30,
+        rough_detail=0.08, ao_depth=0.55),
+    SurfaceSpec(
+        "T_CotCanvas", 0.86, 0.74, 0.95, 0.35,
+        rough_detail=0.10, ao_depth=0.60),
+    SurfaceSpec(
+        "T_WorkbenchPlywood", 0.70, 0.55, 0.84, 0.28,
+        rough_detail=0.22, ao_depth=0.55),
 )
 
 

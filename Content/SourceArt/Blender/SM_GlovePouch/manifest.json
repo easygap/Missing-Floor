@@ -1,0 +1,30 @@
+{
+  "name": "SM_GlovePouch",
+  "mesh_class": "prop",
+  "fbx": "SM_GlovePouch.fbx",
+  "textures": {
+    "D": "SM_GlovePouch_D.png",
+    "N": "SM_GlovePouch_N.png",
+    "ORM": "SM_GlovePouch_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 5240,
+  "bounds_m": {
+    "min": [
+      -0.1275,
+      -0.0689,
+      0.0001
+    ],
+    "max": [
+      0.1519,
+      0.0687,
+      0.1134
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "정우의 겨울 장비 주머니(남색 나일론, 코팅 장갑). 24x13x9 cm."
+}

@@ -1,0 +1,30 @@
+{
+  "name": "SM_CoverClamp",
+  "mesh_class": "prop",
+  "fbx": "SM_CoverClamp.fbx",
+  "textures": {
+    "D": "SM_CoverClamp_D.png",
+    "N": "SM_CoverClamp_N.png",
+    "ORM": "SM_CoverClamp_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 212,
+  "bounds_m": {
+    "min": [
+      -0.007,
+      -0.006,
+      -0.006
+    ],
+    "max": [
+      0.0025,
+      0.045,
+      0.006
+    ]
+  },
+  "origin": "pivot",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "덮개 고정쇠. 원점이 축(X), 날개 +Y 4.5 cm, 끝 -X 쪽 핀이 나사 구멍에 물린다."
+}

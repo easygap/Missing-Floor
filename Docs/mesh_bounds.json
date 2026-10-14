@@ -12,6 +12,78 @@
         52.0
       ]
     },
+    "SM_AccessHatchDoorL": {
+      "origin": [
+        0.71,
+        39.19,
+        0.0
+      ],
+      "extent": [
+        1.21,
+        39.71,
+        49.5
+      ]
+    },
+    "SM_AccessHatchDoorM": {
+      "origin": [
+        0.71,
+        24.19,
+        0.0
+      ],
+      "extent": [
+        1.21,
+        24.71,
+        34.5
+      ]
+    },
+    "SM_AccessHatchDoorS": {
+      "origin": [
+        0.71,
+        21.69,
+        0.0
+      ],
+      "extent": [
+        1.21,
+        22.21,
+        22.0
+      ]
+    },
+    "SM_AccessHatchFrameL": {
+      "origin": [
+        -1.6,
+        0.0,
+        0.0
+      ],
+      "extent": [
+        2.4,
+        43.0,
+        53.0
+      ]
+    },
+    "SM_AccessHatchFrameM": {
+      "origin": [
+        -1.6,
+        0.0,
+        0.0
+      ],
+      "extent": [
+        2.4,
+        28.0,
+        38.0
+      ]
+    },
+    "SM_AccessHatchFrameS": {
+      "origin": [
+        -1.6,
+        0.0,
+        0.0
+      ],
+      "extent": [
+        2.4,
+        25.5,
+        25.5
+      ]
+    },
     "SM_AlleyCatRun": {
       "origin": [
         -0.0405,
@@ -24,6 +96,42 @@
         23.3532
       ]
     },
+    "SM_AnnexAngleClip": {
+      "origin": [
+        2.4861,
+        0.0,
+        -3.4861
+      ],
+      "extent": [
+        2.5139,
+        3.0,
+        3.5139
+      ]
+    },
+    "SM_AnnexBatten": {
+      "origin": [
+        1.25,
+        0.0,
+        0.0
+      ],
+      "extent": [
+        1.25,
+        2.25,
+        118.0
+      ]
+    },
+    "SM_AnnexBraceFrame": {
+      "origin": [
+        0.0,
+        -0.1,
+        119.21
+      ],
+      "extent": [
+        4.35,
+        30.4,
+        119.29
+      ]
+    },
     "SM_AnnexDoorLeaf": {
       "origin": [
         0.415,
@@ -34,6 +142,54 @@
         44.765,
         9.2,
         101.75
+      ]
+    },
+    "SM_AnnexInnerFixings": {
+      "origin": [
+        0.35,
+        0.0,
+        0.0
+      ],
+      "extent": [
+        0.35,
+        57.75,
+        117.0
+      ]
+    },
+    "SM_AnnexJointTape": {
+      "origin": [
+        0.66,
+        0.0,
+        0.0
+      ],
+      "extent": [
+        0.66,
+        53.0,
+        7.0
+      ]
+    },
+    "SM_AnnexJointTorn": {
+      "origin": [
+        3.0013,
+        -0.0,
+        0.745
+      ],
+      "extent": [
+        3.0013,
+        53.0,
+        6.255
+      ]
+    },
+    "SM_AnnexOverlayTop": {
+      "origin": [
+        0.625,
+        -0.0,
+        26.5
+      ],
+      "extent": [
+        0.625,
+        53.0,
+        26.5
       ]
     },
     "SM_ApartmentBedding": {
@@ -70,6 +226,18 @@
         67.0,
         6.3,
         49.5
+      ]
+    },
+    "SM_BareBulb": {
+      "origin": [
+        0.0,
+        0.0,
+        -27.179
+      ],
+      "extent": [
+        2.5185,
+        2.5185,
+        27.179
       ]
     },
     "SM_Basket": {
@@ -190,6 +358,18 @@
         12.0,
         12.0,
         0.6
+      ]
+    },
+    "SM_BentShieldSheet": {
+      "origin": [
+        14.4206,
+        22.53,
+        70.0
+      ],
+      "extent": [
+        15.5794,
+        22.53,
+        70.0
       ]
     },
     "SM_BoothKeyring": {
@@ -360,6 +540,18 @@
         0.7
       ]
     },
+    "SM_CollectionNoticePrint": {
+      "origin": [
+        0.0,
+        -0.04,
+        14.85
+      ],
+      "extent": [
+        10.5,
+        0.01,
+        14.85
+      ]
+    },
     "SM_ComplaintImpressionPad": {
       "origin": [
         0.0,
@@ -454,6 +646,90 @@
         6.2955,
         11.7133,
         0.715
+      ]
+    },
+    "SM_CoverClamp": {
+      "origin": [
+        -0.225,
+        1.95,
+        0.0
+      ],
+      "extent": [
+        0.475,
+        2.55,
+        0.6
+      ]
+    },
+    "SM_CoverFlapA": {
+      "origin": [
+        0.075,
+        -15.0769,
+        -6.0
+      ],
+      "extent": [
+        0.075,
+        14.9231,
+        6.0
+      ]
+    },
+    "SM_CoverFlapB": {
+      "origin": [
+        0.075,
+        14.0,
+        -6.0
+      ],
+      "extent": [
+        0.075,
+        16.0,
+        6.0
+      ]
+    },
+    "SM_CoverFrame": {
+      "origin": [
+        -1.4,
+        0.0,
+        0.0
+      ],
+      "extent": [
+        1.8,
+        32.1,
+        37.1
+      ]
+    },
+    "SM_CoverPieceA": {
+      "origin": [
+        -0.595,
+        -14.5,
+        -0.0
+      ],
+      "extent": [
+        0.745,
+        15.5,
+        35.0
+      ]
+    },
+    "SM_CoverPieceB": {
+      "origin": [
+        -0.595,
+        13.0,
+        17.0
+      ],
+      "extent": [
+        0.745,
+        17.0,
+        18.0
+      ]
+    },
+    "SM_CoverPieceC": {
+      "origin": [
+        -0.595,
+        13.5,
+        -16.0
+      ],
+      "extent": [
+        0.745,
+        16.5,
+        19.0
       ]
     },
     "SM_CrackedPhone": {
@@ -864,6 +1140,18 @@
         77.9111
       ]
     },
+    "SM_FinishBoard": {
+      "origin": [
+        0.0,
+        -0.06,
+        90.1
+      ],
+      "extent": [
+        50.0,
+        0.675,
+        90.1
+      ]
+    },
     "SM_FireAlarmPanel": {
       "origin": [
         0.0,
@@ -996,6 +1284,18 @@
         60.0
       ]
     },
+    "SM_GlovePouch": {
+      "origin": [
+        1.221,
+        -0.0089,
+        5.6761
+      ],
+      "extent": [
+        13.9693,
+        6.8761,
+        5.6634
+      ]
+    },
     "SM_GraphitePencil": {
       "origin": [
         0.0,
@@ -1032,6 +1332,30 @@
         0.625
       ]
     },
+    "SM_HammerDent": {
+      "origin": [
+        -0.0021,
+        0.292,
+        -0.3232
+      ],
+      "extent": [
+        0.3379,
+        5.0279,
+        5.1696
+      ]
+    },
+    "SM_HandCart": {
+      "origin": [
+        0.0,
+        -0.0,
+        49.4371
+      ],
+      "extent": [
+        45.0,
+        30.0,
+        49.4371
+      ]
+    },
     "SM_HangingWorkVest": {
       "origin": [
         0.0215,
@@ -1042,6 +1366,18 @@
         24.9735,
         4.1482,
         35.8776
+      ]
+    },
+    "SM_HatchSealPlug": {
+      "origin": [
+        8.7594,
+        0.0443,
+        -0.5003
+      ],
+      "extent": [
+        58.7594,
+        51.0589,
+        49.8275
       ]
     },
     "SM_HotSnackWarmer": {
@@ -1104,6 +1440,54 @@
         11.025
       ]
     },
+    "SM_InnerRoomCabinet": {
+      "origin": [
+        0.0,
+        -0.9,
+        90.0
+      ],
+      "extent": [
+        45.0,
+        23.4,
+        90.0
+      ]
+    },
+    "SM_InnerRoomCot": {
+      "origin": [
+        0.0,
+        -0.0,
+        26.8051
+      ],
+      "extent": [
+        95.0,
+        33.9,
+        26.661
+      ]
+    },
+    "SM_InnerRoomWorkbench": {
+      "origin": [
+        0.0,
+        -0.0,
+        41.35
+      ],
+      "extent": [
+        70.0,
+        30.0,
+        41.35
+      ]
+    },
+    "SM_InspectionOverlayBoard": {
+      "origin": [
+        1.0299,
+        -0.493,
+        -1.7147
+      ],
+      "extent": [
+        1.0299,
+        40.4996,
+        47.7853
+      ]
+    },
     "SM_KimchiTub": {
       "origin": [
         0.0,
@@ -1164,6 +1548,66 @@
         0.5
       ]
     },
+    "SM_LeftoverLabel303": {
+      "origin": [
+        12.0,
+        -19.34,
+        18.7
+      ],
+      "extent": [
+        8.0,
+        0.01,
+        4.5
+      ]
+    },
+    "SM_LeftoverLabelDoha": {
+      "origin": [
+        12.0,
+        -19.34,
+        18.7
+      ],
+      "extent": [
+        8.0,
+        0.01,
+        4.5
+      ]
+    },
+    "SM_LeftoverLabelJeongwoo": {
+      "origin": [
+        12.0,
+        -19.34,
+        18.7
+      ],
+      "extent": [
+        8.0,
+        0.01,
+        4.5
+      ]
+    },
+    "SM_LeftoverLabelMarked": {
+      "origin": [
+        -9.0,
+        -19.36,
+        28.5
+      ],
+      "extent": [
+        10.15,
+        0.01,
+        3.1915
+      ]
+    },
+    "SM_LeftoverStickerUnclaimed": {
+      "origin": [
+        12.0,
+        -19.38,
+        20.5
+      ],
+      "extent": [
+        4.153,
+        0.01,
+        1.9763
+      ]
+    },
     "SM_LeverHandle": {
       "origin": [
         0.0,
@@ -1186,6 +1630,30 @@
         4.5,
         0.9975,
         12.0
+      ]
+    },
+    "SM_LinedWallPanelA": {
+      "origin": [
+        0.0,
+        -2.3,
+        50.0
+      ],
+      "extent": [
+        49.5,
+        2.3,
+        49.5
+      ]
+    },
+    "SM_LinedWallPanelB": {
+      "origin": [
+        0.0,
+        -2.7,
+        50.0
+      ],
+      "extent": [
+        49.0,
+        2.7,
+        49.0
       ]
     },
     "SM_ListenerEntityCrawl": {
@@ -1474,6 +1942,18 @@
         18.0,
         26.0,
         32.9
+      ]
+    },
+    "SM_RemovedBoards": {
+      "origin": [
+        -2.5,
+        -3.4562,
+        89.1224
+      ],
+      "extent": [
+        63.5,
+        16.576,
+        89.2094
       ]
     },
     "SM_RentalNoticeA4": {
@@ -1800,6 +2280,18 @@
         26.4
       ]
     },
+    "SM_StorageBox": {
+      "origin": [
+        0.0,
+        -0.025,
+        17.1
+      ],
+      "extent": [
+        25.0,
+        19.225,
+        17.1
+      ]
+    },
     "SM_StoreCoolerBank": {
       "origin": [
         -3.35,
@@ -1848,6 +2340,18 @@
         84.5
       ]
     },
+    "SM_TimberWedge": {
+      "origin": [
+        0.0,
+        -0.0,
+        2.48
+      ],
+      "extent": [
+        11.0,
+        3.0,
+        2.48
+      ]
+    },
     "SM_TobaccoCabinet": {
       "origin": [
         0.0,
@@ -1858,6 +2362,18 @@
         110.0,
         9.75,
         70.0
+      ]
+    },
+    "SM_ToolPouch": {
+      "origin": [
+        1.2899,
+        -1.3914,
+        5.0
+      ],
+      "extent": [
+        23.7899,
+        7.4914,
+        6.1
       ]
     },
     "SM_TrafficCone": {
@@ -2124,6 +2640,18 @@
         90.0
       ]
     },
+    "SM_WasteSack": {
+      "origin": [
+        0.0,
+        -0.0,
+        38.2723
+      ],
+      "extent": [
+        25.8912,
+        18.9554,
+        38.2277
+      ]
+    },
     "SM_WaterBottle": {
       "origin": [
         -0.0266,
@@ -2226,6 +2754,42 @@
         7000,
         3943,
         2189
+      ]
+    },
+    "SK_Jeongwoo": {
+      "origin": [
+        0.4127,
+        -0.032,
+        88.9907
+      ],
+      "extent": [
+        17.6968,
+        49.9993,
+        88.9669
+      ],
+      "lod_vertices": [
+        13375,
+        8835,
+        5057,
+        2869
+      ]
+    },
+    "SK_Lining": {
+      "origin": [
+        -0.4607,
+        0.0,
+        18.8
+      ],
+      "extent": [
+        182.446,
+        201.9066,
+        19.2
+      ],
+      "lod_vertices": [
+        8403,
+        4691,
+        2188,
+        868
       ]
     },
     "SK_ListenerCrawler": {

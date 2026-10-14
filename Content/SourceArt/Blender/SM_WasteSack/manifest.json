@@ -1,0 +1,30 @@
+{
+  "name": "SM_WasteSack",
+  "mesh_class": "prop",
+  "fbx": "SM_WasteSack.fbx",
+  "textures": {
+    "D": "SM_WasteSack_D.png",
+    "N": "SM_WasteSack_N.png",
+    "ORM": "SM_WasteSack_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 5816,
+  "bounds_m": {
+    "min": [
+      -0.2589,
+      -0.1896,
+      0.0004
+    ],
+    "max": [
+      0.2589,
+      0.1896,
+      0.765
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "수거를 기다리는 흰 PP 마대(목을 끈으로 묶음). 높이 약 80"
+}

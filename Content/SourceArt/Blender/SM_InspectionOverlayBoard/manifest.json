@@ -1,0 +1,30 @@
+{
+  "name": "SM_InspectionOverlayBoard",
+  "mesh_class": "prop",
+  "fbx": "SM_InspectionOverlayBoard.fbx",
+  "textures": {
+    "D": "SM_InspectionOverlayBoard_D.png",
+    "N": "SM_InspectionOverlayBoard_N.png",
+    "ORM": "SM_InspectionOverlayBoard_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 496,
+  "bounds_m": {
+    "min": [
+      0.0,
+      -0.4099,
+      -0.495
+    ],
+    "max": [
+      0.0206,
+      0.4001,
+      0.4607
+    ]
+  },
+  "origin": "back-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "5층 배관 점검 자리를 덮어 박은 석고 덧판 80x90. 원점이 판 가운데 뒷면(벽 면), 앞면 +X. 나사 여섯과 둘레 실리콘."
+}

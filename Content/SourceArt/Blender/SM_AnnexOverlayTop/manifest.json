@@ -1,0 +1,30 @@
+{
+  "name": "SM_AnnexOverlayTop",
+  "mesh_class": "prop",
+  "fbx": "SM_AnnexOverlayTop.fbx",
+  "textures": {
+    "D": "SM_AnnexOverlayTop_D.png",
+    "N": "SM_AnnexOverlayTop_N.png",
+    "ORM": "SM_AnnexOverlayTop_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 108,
+  "bounds_m": {
+    "min": [
+      0.0,
+      -0.53,
+      0.0
+    ],
+    "max": [
+      0.0125,
+      0.53,
+      0.53
+    ]
+  },
+  "origin": "back-bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "시신 벽 칸 위쪽에 덧댄 석고 덧판 106x53x1.25. 원점이 아래 변 가운데 뒷면(이음 자리), 앞면 +X. 셋째 단계에 바깥층과 같이 떨어진다."
+}

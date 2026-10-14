@@ -1,0 +1,30 @@
+{
+  "name": "SM_CollectionNoticePrint",
+  "mesh_class": "prop",
+  "fbx": "SM_CollectionNoticePrint.fbx",
+  "textures": {
+    "D": "SM_CollectionNoticePrint_D.png",
+    "N": "SM_CollectionNoticePrint_N.png",
+    "ORM": "SM_CollectionNoticePrint_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 12,
+  "bounds_m": {
+    "min": [
+      -0.105,
+      -0.0005,
+      0.0
+    ],
+    "max": [
+      0.105,
+      -0.0003,
+      0.297
+    ]
+  },
+  "origin": "box-bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "1층 게시판 옆 「대형 폐기물 수거 안내」 A4. 수거일을 볼펜으로 긋고 손글씨로 고쳤다. 원점 종이 아래 가운데."
+}

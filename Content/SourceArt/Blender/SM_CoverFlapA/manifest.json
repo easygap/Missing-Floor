@@ -1,0 +1,30 @@
+{
+  "name": "SM_CoverFlapA",
+  "mesh_class": "prop",
+  "fbx": "SM_CoverFlapA.fbx",
+  "textures": {
+    "D": "SM_CoverFlapA_D.png",
+    "N": "SM_CoverFlapA_N.png",
+    "ORM": "SM_CoverFlapA_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 12,
+  "bounds_m": {
+    "min": [
+      0.0,
+      -0.3,
+      -0.12
+    ],
+    "max": [
+      0.0015,
+      -0.0015,
+      0.0
+    ]
+  },
+  "origin": "cover-top-edge",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "덮개 조각 A의 윗부분 방수막. 원점이 덮개 위 변 가운데(Z +35 cm). 들추면 막아 놓은 통풍구가 보인다."
+}

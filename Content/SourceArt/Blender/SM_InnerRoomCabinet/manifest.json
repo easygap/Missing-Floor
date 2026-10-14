@@ -1,0 +1,30 @@
+{
+  "name": "SM_InnerRoomCabinet",
+  "mesh_class": "prop",
+  "fbx": "SM_InnerRoomCabinet.fbx",
+  "textures": {
+    "D": "SM_InnerRoomCabinet_D.png",
+    "N": "SM_InnerRoomCabinet_N.png",
+    "ORM": "SM_InnerRoomCabinet_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 532,
+  "bounds_m": {
+    "min": [
+      -0.45,
+      -0.243,
+      0.0
+    ],
+    "max": [
+      0.45,
+      0.225,
+      1.8
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "관리실 안쪽 방 회색 철제 보관함. 폭 X 90, 깊이 Y 45(앞면 -Y), 높이 180"
+}

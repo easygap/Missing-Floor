@@ -1,0 +1,30 @@
+{
+  "name": "SM_BentShieldSheet",
+  "mesh_class": "prop",
+  "fbx": "SM_BentShieldSheet.fbx",
+  "textures": {
+    "D": "SM_BentShieldSheet_D.png",
+    "N": "SM_BentShieldSheet_N.png",
+    "ORM": "SM_BentShieldSheet_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 1644,
+  "bounds_m": {
+    "min": [
+      -0.0116,
+      -0.0,
+      -0.0
+    ],
+    "max": [
+      0.3,
+      0.4506,
+      1.4
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "배관 점검 칸을 큰 공간과 가르는 ㄱ자 아연 판. 원점 바닥 모서리, 날개 +Y 45와 +X 30, 높이 140."
+}

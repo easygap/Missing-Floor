@@ -1,0 +1,30 @@
+{
+  "name": "SM_ToolPouch",
+  "mesh_class": "prop",
+  "fbx": "SM_ToolPouch.fbx",
+  "textures": {
+    "D": "SM_ToolPouch_D.png",
+    "N": "SM_ToolPouch_N.png",
+    "ORM": "SM_ToolPouch_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3732,
+  "bounds_m": {
+    "min": [
+      -0.225,
+      -0.0888,
+      -0.011
+    ],
+    "max": [
+      0.2508,
+      0.061,
+      0.111
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "오빠의 말아 둔 천 공구 주머니. 길이 X 45 cm, 지름 11 cm. 끝에 펠트와 고무 쐐기가 비어져 나왔다."
+}

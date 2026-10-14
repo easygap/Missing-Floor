@@ -486,9 +486,10 @@ def rename_animations(name, expected):
     for asset_name in takes:
         if not asset_name.startswith(name):
             continue
-        for action in expected:
+        # 긴 이름부터 맞춘다. CarryIdle 테이크가 Idle에 먼저 걸리면 진짜 Idle을 덮는다.
+        for action in sorted(expected, key=len, reverse=True):
             # 테이크가 하나인 FBX는 Unreal이 액션 이름 대신 _Anim을 붙인다.
-            if asset_name.endswith(action) or (len(expected) == 1 and asset_name == f"{name}_Anim"):
+            if asset_name.endswith(f"_{action}") or (len(expected) == 1 and asset_name == f"{name}_Anim"):
                 target = f"{MESH_ROOT}/A_{short}_{action}"
                 source = f"{MESH_ROOT}/{asset_name}"
                 if source != target:

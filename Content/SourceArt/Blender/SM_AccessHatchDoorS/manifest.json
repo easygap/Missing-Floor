@@ -1,0 +1,30 @@
+{
+  "name": "SM_AccessHatchDoorS",
+  "mesh_class": "prop",
+  "fbx": "SM_AccessHatchDoorS.fbx",
+  "textures": {
+    "D": "SM_AccessHatchDoorS_D.png",
+    "N": "SM_AccessHatchDoorS_N.png",
+    "ORM": "SM_AccessHatchDoorS_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 540,
+  "bounds_m": {
+    "min": [
+      -0.005,
+      -0.0052,
+      -0.22
+    ],
+    "max": [
+      0.0192,
+      0.439,
+      0.22
+    ]
+  },
+  "origin": "hinge-axis",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "점검구 문짝 45x45용. 원점이 경첩 축 가운데, 문짝은 +Y로 44 cm, 두께 X 0..1.2 cm(+X가 방 쪽 앞면). 자물쇠는 손잡이 쪽 가운데."
+}

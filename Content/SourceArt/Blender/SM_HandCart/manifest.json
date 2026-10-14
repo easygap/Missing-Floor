@@ -1,0 +1,30 @@
+{
+  "name": "SM_HandCart",
+  "mesh_class": "prop",
+  "fbx": "SM_HandCart.fbx",
+  "textures": {
+    "D": "SM_HandCart_D.png",
+    "N": "SM_HandCart_N.png",
+    "ORM": "SM_HandCart_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 776,
+  "bounds_m": {
+    "min": [
+      -0.45,
+      -0.3,
+      0.0
+    ],
+    "max": [
+      0.45,
+      0.3,
+      0.9887
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "필로티 평대차. 길이 X 90(손잡이 +X), 폭 Y 60, 손잡이 높이 98"
+}

@@ -1,0 +1,74 @@
+{
+  "name": "SK_Jeongwoo",
+  "mesh_class": "hero",
+  "fbx": "SK_Jeongwoo.fbx",
+  "textures": {
+    "D": "SK_Jeongwoo_D.png",
+    "N": "SK_Jeongwoo_N.png",
+    "ORM": "SK_Jeongwoo_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 14000,
+  "bounds_m": {
+    "min": [
+      -0.1728,
+      -0.5003,
+      0.0002
+    ],
+    "max": [
+      0.1811,
+      0.4997,
+      1.7796
+    ]
+  },
+  "origin": "bottom",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "생성 GLB pbr_00001_.glb에서 두 발 리깅",
+  "skeletal": true,
+  "animations": {
+    "Idle": {
+      "frames": 120,
+      "fps": 30,
+      "loop": true
+    },
+    "Walk": {
+      "frames": 32,
+      "fps": 30,
+      "loop": true
+    },
+    "LookBack": {
+      "frames": 75,
+      "fps": 30,
+      "loop": false
+    },
+    "Carry": {
+      "frames": 36,
+      "fps": 30,
+      "loop": true
+    },
+    "CarryIdle": {
+      "frames": 90,
+      "fps": 30,
+      "loop": true
+    },
+    "Crouch": {
+      "frames": 90,
+      "fps": 30,
+      "loop": true
+    },
+    "Brace": {
+      "frames": 60,
+      "fps": 30,
+      "loop": true
+    },
+    "HoldDoor": {
+      "frames": 90,
+      "fps": 30,
+      "loop": true
+    }
+  },
+  "generated_from": "../Generated/Jeongwoo/trellis1024-s56/raw/pbr_00001_.glb"
+}

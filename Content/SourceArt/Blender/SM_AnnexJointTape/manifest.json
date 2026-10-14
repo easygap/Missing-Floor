@@ -1,0 +1,30 @@
+{
+  "name": "SM_AnnexJointTape",
+  "mesh_class": "prop",
+  "fbx": "SM_AnnexJointTape.fbx",
+  "textures": {
+    "D": "SM_AnnexJointTape_D.png",
+    "N": "SM_AnnexJointTape_N.png",
+    "ORM": "SM_AnnexJointTape_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 28,
+  "bounds_m": {
+    "min": [
+      0.0,
+      -0.53,
+      -0.07
+    ],
+    "max": [
+      0.0132,
+      0.53,
+      0.07
+    ]
+  },
+  "origin": "joint-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "덧판 아래 이음을 덮은 종이 테이프와 갈라진 퍼티(높이 14). 원점이 이음 가운데 벽 면. 첫째 단계에서 뜯겨 SM_AnnexJointTorn으로 바뀐다."
+}

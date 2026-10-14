@@ -1,0 +1,30 @@
+{
+  "name": "SM_InnerRoomCot",
+  "mesh_class": "prop",
+  "fbx": "SM_InnerRoomCot.fbx",
+  "textures": {
+    "D": "SM_InnerRoomCot_D.png",
+    "N": "SM_InnerRoomCot_N.png",
+    "ORM": "SM_InnerRoomCot_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 46956,
+  "bounds_m": {
+    "min": [
+      -0.95,
+      -0.339,
+      0.0014
+    ],
+    "max": [
+      0.95,
+      0.339,
+      0.5347
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "관리실 안쪽 방 목한수의 간이침대. 길이 X 190 cm, 폭 Y 65, 높이 40"
+}

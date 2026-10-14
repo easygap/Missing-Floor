@@ -7,6 +7,8 @@
 - 라이선스 원문 또는 영수증을 프로젝트 외부의 안전한 보관소에도 보존합니다.
 - 재배포 금지 에셋은 원본 파일을 공개 저장소에 올리지 않습니다.
 - 생성형 AI 결과물은 사용한 서비스, 생성 날짜와 당시 약관을 기록합니다.
+- 생성에 쓴 프롬프트와 도구 기록은 작업 자료로 따로 보관하고 공개 저장소와 배포본에 넣지 않습니다. 이 대장에는
+  서비스·날짜·원본 파일·라이선스와, 시안을 만들 때 참고한 외부 자료의 주소를 남깁니다.
 - 사람의 얼굴·목소리·상표·실제 주소가 포함된 자료는 별도 초상권/상표권/개인정보 검토를 거칩니다.
 - 코드 라이선스와 콘텐츠 라이선스를 구분합니다.
 
@@ -22,35 +24,41 @@
 | `/Game/Prototype/Textures/T_Photo_WoodDark_*` | ambientCG.com — Wood067 | CC0 1.0 | 2026-07-19 | 원본(2K JPG) | `Content/SourceArt/Photo/WoodDark/` | 가구 목재 |
 | `/Game/Prototype/Textures/T_Photo_MarbleFloor_*` | ambientCG.com — Marble016 | CC0 1.0 | 2026-07-26 | 원본(2K JPG) | `Content/SourceArt/Photo/MarbleFloor/` | 부엌 상판 돌. `M_CounterStoneUV` |
 | `/Game/Audio/S_*` (67종: 발소리 6면·문·노크·위층 사람·놀람·베드) | OpenGameArt rubberduck 「100 CC0 SFX」 1·2·wood-metal, Kenney 「Impact Sounds」, Owlish Media 「Sound Effects Pack」 | CC0 1.0 | 2026-09-11 | 가공(피치·저역·겹침·되울림·루프 이음) | `Content/SourceArt/Audio/manifest.json`, `Scripts/curate_cc0_audio.py` | 원본 팩은 `Saved/AudioCC0/`에 두고 저장소에는 가공본만 둔다. 게임은 `IGAudio::Sample`로 찾고 없으면 합성기 |
-| `/Game/Meshes/SK_ListenerCrawler`, `A_ListenerCrawler_{Crawl,Listen,Bang,Lunge}`, `DA_IGCharacterLODs` | 직접 제작 (사진 참고 → gpt-image 기준 이미지 → TRELLIS.2 → Blender 표면 정리·접지 리깅) | 프로젝트 소유 | 2026-09-14 | 새 원본으로 교체 | `Content/SourceArt/Blender/SK_ListenerCrawler/`, `Scripts/blender/rig_crawler.py` | 12,000삼각형, 21개 뼈, 네 동작, 스켈레탈 LOD 네 단계. `Docs/BLENDER_PIPELINE.md` 「리깅된 인물」 |
+| `/Game/Meshes/SK_ListenerCrawler`, `A_ListenerCrawler_{Crawl,Listen,Bang,Lunge}`, `DA_IGCharacterLODs` | 프로젝트 제작 (사진 참고 → gpt-image 기준 이미지 → TRELLIS.2 → Blender 표면 정리·접지 리깅) | 프로젝트 소유 | 2026-09-14 | 새 원본으로 교체 | `Content/SourceArt/Blender/SK_ListenerCrawler/`, `Scripts/blender/rig_crawler.py` | 12,000삼각형, 21개 뼈, 네 동작, 스켈레탈 LOD 네 단계. `Docs/BLENDER_PIPELINE.md` 「리깅된 인물」 |
 | `Content/SourceArt/Reference/Listener/*` | Wikimedia Commons — 미 육군·해병대 낮은 포복 사진, 살아 있는 조각상 사진 | 파일별 공개 저작물·CC 라이선스, 참고 전용 | 2026-09-11 | 원본 | 파일명이 Commons 파일명 | 이번에 채택한 두 사진의 정확한 출처와 공개 조건은 `Docs/REALISM_REVIEW_2026-09-14.md`. 다른 사진의 라이선스까지 같은 것으로 간주하지 않는다 |
-| `Content/SourceArt/AI/ListenerPhotoAnchor_20260914.png`, `ListenerTurnaround_20260914.png` | OpenAI 내장 ImageGen, gpt-image 스킬 흐름 | 생성 원본, 프로젝트 제작 자료 | 2026-09-14 | 원본 | `Docs/REALISM_REVIEW_2026-09-14.md` | 가상 인물의 기준 이미지와 다각도·확대 시트. 게임 패키지에 직접 포함하지 않는다 |
+| `Content/SourceArt/AI/ListenerPhotoAnchor_20260914.png`, `ListenerTurnaround_20260914.png` | OpenAI 이미지 생성 | 생성 원본, 프로젝트 제작 자료 | 2026-09-14 | 원본 | `Docs/REALISM_REVIEW_2026-09-14.md` | 가상 인물의 기준 이미지와 다각도·확대 시트. 게임 패키지에 직접 포함하지 않는다 |
 | `/Game/Photo/Props/*` (9종: old_bed_frame, side_table_01, metal_office_desk, painted_wooden_chair_01, desk_lamp_arm_01, trashbag, cardboard_box_01, plastic_crate_01, utility_box_01) | polyhaven.com (포토그래메트리 스캔) | CC0 1.0 | 2026-07-19 | 원본(glTF, 1K 텍스처) | `Content/SourceArt/PhotoProps/` | 실물 스캔 소품 |
 | `/Game/Meshes/SM_*` (30종: 생활 소품·밸브 손잡이·고양이·위층 사람·M5 공동 잔존물·목한수 근접 대치) | 직접 제작 (UE5 Geometry Script 절차 모델링) | 프로젝트 소유 | 2026-08-05 | 원본 | `Scripts/generate_meshes.py` | 회전체·베벨·불리언·스윕. ImageGen 비율 기준과 실제 치수 계약에 맞춰 절차 메시로 재구성 |
 | `/Game/Meshes/SM_UnitDoorLeaf·WideL, SM_UnitDoorHardware·WideL, SM_UnitDoorFrame·Wide, SM_FireExtinguisherBox, SM_FireExtinguisher, SM_MailboxUnit, SM_CeilingLightRing·Dome, SM_FridgeBody·Door, SM_KitchenBaseRun, SM_DrumWasher, SM_KitchenWallUnits, SM_RangeHood, SM_Microwave, SM_KitchenSink, SM_InductionHob, SM_Wardrobe, SM_WallAirConditioner, SM_TrafficCone, SM_StoreCoolerBank·Door, SM_StoreGondola, SM_StoreCounter, SM_CardTerminal, SM_HotSnackWarmer, SM_ChestFreezer, SM_OpenShowcase, SM_ApartmentWindow, SM_VenetianBlind, SM_VideoIntercom, SM_WallSwitch, SM_ShoeCabinet, SM_VillaWindow, SM_UtilityPole, SM_GasMeterBox, SM_AcOutdoorUnit, SM_ConvexMirror, SM_TriangleKimbapA~D, SM_TobaccoCabinet, SM_WindowBar, SM_HotWaterDispenser, SM_TrashBin` (49종) | 직접 제작 (Blender 5.2 헤드리스 절차 모델링, Cycles 베이크) | 프로젝트 소유 | 2026-09-04 | 원본 | `Content/SourceArt/Blender/<이름>/`, `Scripts/blender/build_*.py` | 실제 치수·베벨·UCX 충돌·구운 D/N/ORM. `Docs/BLENDER_PIPELINE.md` |
-| `/Game/Meshes/SM_DeliveryScooterRidden`, `SM_DeliveryScooter` | 직접 제작 (gpt-image 시안 → TRELLIS.2 생성 → Blender 다듬기·베이크) | 프로젝트 소유 | 2026-10-07, 2026-10-08 다시 다듬음 | 원본 | `Content/SourceArt/AI/DeliveryScooter_20261002.png`, `DeliveryScooterParked_20261007.png`, `Content/SourceArt/Generated/DeliveryScooter*/`, `Content/SourceArt/Blender/<이름>/` | 골목 배달 오토바이. 기사가 탄 채 달리는 모델과 세워 둔 모델을 바꿔 쓴다. 첫째·둘째 낮에는 202호 정우가 탄 모델로 공동현관 옆 연석에 앉아 있다. 10월 8일에 생성 원본의 UV 이음매를 붙이고 6 mm 복셀 리메시 뒤 다시 줄였고, 세워 둔 쪽 배달통은 탄 쪽 색에 맞췄다. 충돌 없음(막힘 상자는 디렉터가 둔다) |
-| `/Game/Meshes/SM_Elevator{CabSides,CabFront,CabBack,BackPanel,CabCeiling,CabFloor,DoorPanel,LandingFrame,Cop,CctvDome,FullLamp,ButtonLed}`, `/Game/Prototype/Materials/M_ElevatorMirror` | 직접 제작 (gpt-image 시안과 텍스처 → Blender 절차 모델링·베이크, 거울 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Elevator*_2026100{6,7}.png`(+JSON), `Scripts/blender/build_elevator.py`, `Scripts/import_elevator_mirror.py` | 실제로 오르내리는 엘리베이터와 층별 문틀. 거울은 씬 캡처 결과를 보여 주는 언릿 머티리얼이다 |
-| `/Game/Meshes/SK_YudamReflection`, `A_YudamReflection_{Idle,Walk,LookBack}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/AI/YudamFrontReference_20261006.png`(+JSON), `Content/SourceArt/Generated/YudamReflection/` | 엘리베이터 거울에만 그리는 유담. 「만원」에서 거울 속에 늘어나는 사람도 이 모델이다. 2026-10-08에 스무딩 없이 다시 리깅해 팔의 셔츠색 조각을 없앴다 |
-| `/Game/Meshes/SK_StairFoldedFigure`, `A_StairFoldedFigure_{Idle,Twitch,Lift}` | 직접 제작 (gpt-image 시안 → TRELLIS.2 → Blender 리깅 `rig_folded.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/AI/StairwellFoldedFigure_20261002.png`(+JSON), `Content/SourceArt/Generated/StairFoldedFigure/` | 밤2 「뒤따르는 발」의 허리 꺾인 작업복 차림 |
-| `/Game/Meshes/SK_MokHansooPatrol`, `A_MokHansooPatrol_{Idle,Walk,Run,Look,Freeze,Grab}` | 직접 제작 (기존 목한수 이미지를 참고로 gpt-image 순찰 차림 정면 → TRELLIS.2 → Blender 리깅 `rig_walker.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/Generated/MokHansooPatrol/source-front.png`(+JSON), `Content/SourceArt/Blender/SK_MokHansooPatrol/` | 밤3 순찰하는 관리인의 걷기·달리기·굳기 |
-| `/Game/Meshes/SM_StairSensorLight` | 직접 제작 (gpt-image 시안 → Blender 절차 모델링·베이크, 발광은 돔에만) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/StairSensorLight{Off,Lit}_20261007.png`(+JSON), `Scripts/blender/build_stair_sensor_light.py` | 계단탑 층 참의 원형 LED 센서등. 씬이 MID의 EmissiveStrength로 켜고 끈다 |
-| `/Game/Meshes/SM_NoticeLightsOutA4` | 직접 제작 (gpt-image 인쇄면 → Blender A4 판·테이프 베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/NoticeLightsOut_20261007.png`(+JSON), `Scripts/blender/build_notice_prints.py` | 1층 엘리베이터 옆 관리실 공지 「복도 소등 안내」. 인쇄 글자와 읽기 문구가 같다 |
-| `/Game/Meshes/SM_StairFireDoorLeaf, SM_FireDoorCloserArm, SM_FireDoorCloserRod, SM_FireDoorPrints, SM_FireDoorWedge, SM_ExitSignLamp` | 직접 제작 (gpt-image 시안·인쇄면 → Blender 절차 모델링·베이크, 고임목 윗면은 시안 사진을 펴서 씀) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/FireDoor{Concept,Sticker,Wedge}_20261007.png`, `ExitSignFace_20261007.png`(+JSON), `Scripts/rectify_concept_faces.py`, `Scripts/blender/build_stair_fire_door.py` | 2·3·4층 계단 목의 방화문, 도어클로저 팔 두 마디, 양면 스티커, 고임목, 피난구 유도등 |
-| `/Game/Meshes/SM_DoorPrints202, SM_Doorbells202, SM_DoorPrints303, SM_DawnDeliveryBag` | 직접 제작 (gpt-image 인쇄면·시안 → Blender 판·초인종·가방 베이크, 가방 앞·옆면은 시안 사진을 펴서 씀) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/{Door202Note,Doorbells202,Door303Sign,DawnDeliveryBag}_20261007.png`(+JSON), `Scripts/rectify_concept_faces.py`, `Scripts/blender/build_neighbor_doors.py` | 202호 쪽지와 무선 초인종 셋, 303호 안내문, 그 시간 303호 문 옆의 새벽배송 보냉 가방. 쪽지·안내문 글자와 읽기 문구가 같다 |
-| `/Game/Meshes/SM_Bathroom{Toilet,Basin,MirrorCabinet,Shower,DoorLeaf,DoorFrame,TowelRail,CornerShelf,VentGrille}`, `SM_FloorDrain` | 직접 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Bathroom{Concept,Toilet,Basin,MirrorCabinet,Shower,Door}_20261007.png`(+JSON), `Scripts/blender/build_bathroom.py` | 403호 욕실의 비품과 문. 문짝 욕실 쪽 로제트에 누름 잠금 단추가 있다 |
-| `/Game/Prototype/Textures/T_Bathroom{WallTile,FloorTile}_{D,N,R,A}`, `/Game/Prototype/Materials/M_BathroomWallTile_{X,Y}`, `M_BathroomFloorTile_XY` | 직접 제작 (gpt-image 타일 → 잘라 1024로 축소, 노멀·거칠기·AO 파생, 월드 투영 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 가공(자르기·축소·맵 파생) | `Content/SourceArt/AI/Bathroom{WallTile,FloorTile}_20261007.png`(+JSON), `Scripts/condition_ai_tiles.py`, `Scripts/generate_ai_pbr_maps.py`, `Scripts/import_bathroom_surfaces.py` | 욕실 벽 흰 유약 타일(한 장 25 cm), 바닥 회색 논슬립 타일(한 장 20 cm) |
-| `/Game/Meshes/SM_RooftopDoorLeaf`, `SM_AnnexDoorLeaf`, `SM_RooftopDoorSign` | 직접 제작 (gpt-image 시안·인쇄면 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/{RooftopDoor,AnnexDoorOutside,RooftopDoorSign}_20261007.png`(+JSON), `Scripts/blender/build_rooftop_doors.py` | 옥상 철문(85 cm)과 5층 철문(88 cm), 옥상 철문 계단 쪽 안내판. 안내판 글자와 시안 글자가 같다 |
-| `/Game/Meshes/SM_DoorBarrelBolt`, `SM_DoorBarrelBoltPin`, `SM_DoorBarrelBoltKeeper` | 직접 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/DoorBarrelBolt_20261007.png`(+JSON), `Scripts/blender/build_rooftop_doors.py` | 5층 철문 안쪽 빗장의 몸통, 미는 막대, 문설주 옆면의 받이쇠 |
-| `/Game/Meshes/SM_Note303{First,Second,Third,Last}` | 직접 제작 (gpt-image 손글씨·인쇄면 → Blender 판·테이프 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Note303{First,Second,Third,Last}_20261007.png`(+JSON), `Scripts/blender/build_notes303.py` | 303호가 403호 현관문 바깥에 붙이는 쪽지 넷. 종이 글자와 읽기 화면 문구가 같다. 마지막 쪽지는 에필로그 「403호 문」 그림을 찍을 때만 문에 붙인다 |
-| `/Game/Meshes/SK_Neighbor303`, `A_Neighbor303_{Idle,Walk,LookBack}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile resident`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/Neighbor303Front_20261008.png`(+JSON), `Content/SourceArt/Generated/Neighbor303/` | 셋째 낮 계단에서 마주치는 303호. 가방 뒷면은 굽기 전에 검게 했다 |
-| `/Game/Meshes/SK_Eoduksini`, `SK_Eoduksini_Skeleton`, `/Game/Prototype/Materials/MI_Eoduksini`, `/Game/Prototype/Textures/T_Eoduksini_{D,N,ORM}` | 직접 제작 (gpt-image 점토 원형 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/EoduksiniClay_20261008.png`(+JSON), `Content/SourceArt/Generated/Eoduksini/` | 어둑시니 몸. 동작 없이 뼈 넷만 있고, 게임이 허리와 팔을 직접 돌린다 |
-| `/Game/Meshes/SK_PolicePatrol`, `SK_PolicePatrol_Skeleton`, `A_PolicePatrol_{Idle,Walk,LookBack,Knock,Listen}`, `/Game/Prototype/Materials/MI_PolicePatrol`, `/Game/Prototype/Textures/T_PolicePatrol_{D,N,ORM}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile officer`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PolicePatrolFront_20261012.png`(+JSON), `Content/SourceArt/Generated/PolicePatrol/` | 셋째 아침 5층 현장 확인에 오는 순찰 경찰관. 벽을 세 번 두드리는 동작과 귀를 대는 동작이 있다 |
-| `/Game/Meshes/SK_PaperGuest`, `SK_PaperGuest_Skeleton`, `/Game/Prototype/Materials/MI_PaperGuest`, `/Game/Prototype/Textures/T_PaperGuest_{D,N,ORM}` | 직접 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py --keep-color`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PaperGuestFront_20261012.png`(+JSON), `Content/SourceArt/Generated/PaperGuest/` | 문 밖 손님의 종이 몸. 원기둥에 종이를 붙인 예전 몸을 바꿨다. 얼굴 자리에 SM_DoorDeliveryMagnet이 붙는다 |
-| `/Game/Meshes/SM_SeoVoiceRecorder`, `/Game/Prototype/Materials/MI_SeoVoiceRecorder`, `/Game/Prototype/Textures/T_SeoVoiceRecorder_{D,N,ORM}` | 직접 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/SeoVoiceRecorder_20261012.png`(+JSON), `Scripts/blender/build_seo_recorder.py` | 5층 첫 판재 더미 밑에 끈만 나와 있는 서일영 소형 녹음기. 윗면에만 석고 가루가 있고 스피커 구멍은 점 격자로 구웠다 |
+| `/Game/Meshes/SM_DeliveryScooterRidden`, `SM_DeliveryScooter` | 프로젝트 제작 (gpt-image 시안 → TRELLIS.2 생성 → Blender 다듬기·베이크) | 프로젝트 소유 | 2026-10-07, 2026-10-08 다시 다듬음 | 원본 | `Content/SourceArt/AI/DeliveryScooter_20261002.png`, `DeliveryScooterParked_20261007.png`, `Content/SourceArt/Generated/DeliveryScooter*/`, `Content/SourceArt/Blender/<이름>/` | 골목 배달 오토바이. 기사가 탄 채 달리는 모델과 세워 둔 모델을 바꿔 쓴다. 첫째·둘째 낮에는 202호 정우가 탄 모델로 공동현관 옆 연석에 앉아 있다. 10월 8일에 생성 원본의 UV 이음매를 붙이고 6 mm 복셀 리메시 뒤 다시 줄였고, 세워 둔 쪽 배달통은 탄 쪽 색에 맞췄다. 충돌 없음(막힘 상자는 디렉터가 둔다) |
+| `/Game/Meshes/SM_Elevator{CabSides,CabFront,CabBack,BackPanel,CabCeiling,CabFloor,DoorPanel,LandingFrame,Cop,CctvDome,FullLamp,ButtonLed}`, `/Game/Prototype/Materials/M_ElevatorMirror` | 프로젝트 제작 (gpt-image 시안과 텍스처 → Blender 절차 모델링·베이크, 거울 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Elevator*_2026100{6,7}.png`, `Scripts/blender/build_elevator.py`, `Scripts/import_elevator_mirror.py` | 실제로 오르내리는 엘리베이터와 층별 문틀. 거울은 씬 캡처 결과를 보여 주는 언릿 머티리얼이다 |
+| `/Game/Meshes/SK_YudamReflection`, `A_YudamReflection_{Idle,Walk,LookBack}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/AI/YudamFrontReference_20261006.png`, `Content/SourceArt/Generated/YudamReflection/` | 엘리베이터 거울에만 그리는 유담. 「만원」에서 거울 속에 늘어나는 사람도 이 모델이다. 2026-10-08에 스무딩 없이 다시 리깅해 팔의 셔츠색 조각을 없앴다 |
+| `/Game/Meshes/SK_StairFoldedFigure`, `A_StairFoldedFigure_{Idle,Twitch,Lift}` | 프로젝트 제작 (gpt-image 시안 → TRELLIS.2 → Blender 리깅 `rig_folded.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/AI/StairwellFoldedFigure_20261002.png`, `Content/SourceArt/Generated/StairFoldedFigure/` | 밤2 「뒤따르는 발」의 허리 꺾인 작업복 차림 |
+| `/Game/Meshes/SK_MokHansooPatrol`, `A_MokHansooPatrol_{Idle,Walk,Run,Look,Freeze,Grab}` | 프로젝트 제작 (기존 목한수 이미지를 참고로 gpt-image 순찰 차림 정면 → TRELLIS.2 → Blender 리깅 `rig_walker.py`) | 프로젝트 소유 | 2026-10-06 | 원본 | `Content/SourceArt/Generated/MokHansooPatrol/source-front.png`, `Content/SourceArt/Blender/SK_MokHansooPatrol/` | 밤3 순찰하는 관리인의 걷기·달리기·굳기 |
+| `/Game/Meshes/SM_StairSensorLight` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크, 발광은 돔에만) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/StairSensorLight{Off,Lit}_20261007.png`, `Scripts/blender/build_stair_sensor_light.py` | 계단탑 층 참의 원형 LED 센서등. 씬이 MID의 EmissiveStrength로 켜고 끈다 |
+| `/Game/Meshes/SM_NoticeLightsOutA4` | 프로젝트 제작 (gpt-image 인쇄면 → Blender A4 판·테이프 베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/NoticeLightsOut_20261007.png`, `Scripts/blender/build_notice_prints.py` | 1층 엘리베이터 옆 관리실 공지 「복도 소등 안내」. 인쇄 글자와 읽기 문구가 같다 |
+| `/Game/Meshes/SM_StairFireDoorLeaf, SM_FireDoorCloserArm, SM_FireDoorCloserRod, SM_FireDoorPrints, SM_FireDoorWedge, SM_ExitSignLamp` | 프로젝트 제작 (gpt-image 시안·인쇄면 → Blender 절차 모델링·베이크, 고임목 윗면은 시안 사진을 펴서 씀) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/FireDoor{Concept,Sticker,Wedge}_20261007.png`, `ExitSignFace_20261007.png`, `Scripts/rectify_concept_faces.py`, `Scripts/blender/build_stair_fire_door.py` | 2·3·4층 계단 목의 방화문, 도어클로저 팔 두 마디, 양면 스티커, 고임목, 피난구 유도등 |
+| `/Game/Meshes/SM_DoorPrints202, SM_Doorbells202, SM_DoorPrints303, SM_DawnDeliveryBag` | 프로젝트 제작 (gpt-image 인쇄면·시안 → Blender 판·초인종·가방 베이크, 가방 앞·옆면은 시안 사진을 펴서 씀) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/{Door202Note,Doorbells202,Door303Sign,DawnDeliveryBag}_20261007.png`, `Scripts/rectify_concept_faces.py`, `Scripts/blender/build_neighbor_doors.py` | 202호 쪽지와 무선 초인종 셋, 303호 안내문, 그 시간 303호 문 옆의 새벽배송 보냉 가방. 쪽지·안내문 글자와 읽기 문구가 같다 |
+| `/Game/Meshes/SM_Bathroom{Toilet,Basin,MirrorCabinet,Shower,DoorLeaf,DoorFrame,TowelRail,CornerShelf,VentGrille}`, `SM_FloorDrain` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Bathroom{Concept,Toilet,Basin,MirrorCabinet,Shower,Door}_20261007.png`, `Scripts/blender/build_bathroom.py` | 403호 욕실의 비품과 문. 문짝 욕실 쪽 로제트에 누름 잠금 단추가 있다 |
+| `/Game/Prototype/Textures/T_Bathroom{WallTile,FloorTile}_{D,N,R,A}`, `/Game/Prototype/Materials/M_BathroomWallTile_{X,Y}`, `M_BathroomFloorTile_XY` | 프로젝트 제작 (gpt-image 타일 → 잘라 1024로 축소, 노멀·거칠기·AO 파생, 월드 투영 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 가공(자르기·축소·맵 파생) | `Content/SourceArt/AI/Bathroom{WallTile,FloorTile}_20261007.png`, `Scripts/condition_ai_tiles.py`, `Scripts/generate_ai_pbr_maps.py`, `Scripts/import_bathroom_surfaces.py` | 욕실 벽 흰 유약 타일(한 장 25 cm), 바닥 회색 논슬립 타일(한 장 20 cm) |
+| `/Game/Meshes/SM_RooftopDoorLeaf`, `SM_AnnexDoorLeaf`, `SM_RooftopDoorSign` | 프로젝트 제작 (gpt-image 시안·인쇄면 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/{RooftopDoor,AnnexDoorOutside,RooftopDoorSign}_20261007.png`, `Scripts/blender/build_rooftop_doors.py` | 옥상 철문(85 cm)과 5층 철문(88 cm), 옥상 철문 계단 쪽 안내판. 안내판 글자와 시안 글자가 같다 |
+| `/Game/Meshes/SM_DoorBarrelBolt`, `SM_DoorBarrelBoltPin`, `SM_DoorBarrelBoltKeeper` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/DoorBarrelBolt_20261007.png`, `Scripts/blender/build_rooftop_doors.py` | 5층 철문 안쪽 빗장의 몸통, 미는 막대, 문설주 옆면의 받이쇠 |
+| `/Game/Meshes/SM_Note303{First,Second,Third,Last}` | 프로젝트 제작 (gpt-image 손글씨·인쇄면 → Blender 판·테이프 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Note303{First,Second,Third,Last}_20261007.png`, `Scripts/blender/build_notes303.py` | 303호가 403호 현관문 바깥에 붙이는 쪽지 넷. 종이 글자와 읽기 화면 문구가 같다. 마지막 쪽지는 에필로그 「403호 문」 그림을 찍을 때만 문에 붙인다 |
+| `/Game/Meshes/SK_Neighbor303`, `A_Neighbor303_{Idle,Walk,LookBack}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile resident`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/Neighbor303Front_20261008.png`, `Content/SourceArt/Generated/Neighbor303/` | 셋째 낮 계단에서 마주치는 303호. 가방 뒷면은 굽기 전에 검게 했다 |
+| `/Game/Meshes/SK_Eoduksini`, `SK_Eoduksini_Skeleton`, `/Game/Prototype/Materials/MI_Eoduksini`, `/Game/Prototype/Textures/T_Eoduksini_{D,N,ORM}` | 프로젝트 제작 (gpt-image 점토 원형 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/AI/EoduksiniClay_20261008.png`, `Content/SourceArt/Generated/Eoduksini/` | 어둑시니 몸. 동작 없이 뼈 넷만 있고, 게임이 허리와 팔을 직접 돌린다 |
+| `/Game/Meshes/SK_PolicePatrol`, `SK_PolicePatrol_Skeleton`, `A_PolicePatrol_{Idle,Walk,LookBack,Knock,Listen}`, `/Game/Prototype/Materials/MI_PolicePatrol`, `/Game/Prototype/Textures/T_PolicePatrol_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile officer`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PolicePatrolFront_20261012.png`, `Content/SourceArt/Generated/PolicePatrol/` | 셋째 아침 5층 현장 확인에 오는 순찰 경찰관. 벽을 세 번 두드리는 동작과 귀를 대는 동작이 있다 |
+| `/Game/Meshes/SK_PaperGuest`, `SK_PaperGuest_Skeleton`, `/Game/Prototype/Materials/MI_PaperGuest`, `/Game/Prototype/Textures/T_PaperGuest_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py --keep-color`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PaperGuestFront_20261012.png`, `Content/SourceArt/Generated/PaperGuest/` | 문 밖 손님의 종이 몸. 원기둥에 종이를 붙인 예전 몸을 바꿨다. 얼굴 자리에 SM_DoorDeliveryMagnet이 붙는다 |
+| `/Game/Meshes/SM_SeoVoiceRecorder`, `/Game/Prototype/Materials/MI_SeoVoiceRecorder`, `/Game/Prototype/Textures/T_SeoVoiceRecorder_{D,N,ORM}` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/SeoVoiceRecorder_20261012.png`, `Scripts/blender/build_seo_recorder.py` | 5층 첫 판재 더미 밑에 끈만 나와 있는 서일영 소형 녹음기. 윗면에만 석고 가루가 있고 스피커 구멍은 점 격자로 구웠다 |
+| `/Game/Meshes/SK_Lining`, `SK_Lining_Skeleton`, `/Game/Prototype/Materials/MI_Lining`, `/Game/Prototype/Textures/T_Lining_{D,N,ORM}` | 프로젝트 제작 (gpt-image 형태 시안과 타일 셋 → Blender 절차 모델링·리깅 `rig_lining.py`) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/Lining{ModelSheet,InSitu,FoamTile,MembraneTile,SteelTile}_20261013.png`, `Content/SourceArt/T_Lining{Foam,Membrane,Steel}_{D,N,R,A}.png`, `Scripts/blender/rig_lining.py` | 벌어진 벽을 몸으로 덮는 괴이(「302호에 남은 짐」). 방음재 판·방수막 띠·ㄷ자 철골 다리 넷. 동작은 굽지 않고 게임이 뼈 열세 개를 직접 놓는다. 방음재 타일은 채도를 반으로 내려 다시 구웠다 |
+| `/Game/Meshes/SK_Jeongwoo`, `SK_Jeongwoo_Skeleton`, `A_Jeongwoo_{Idle,Walk,LookBack,Carry,CarryIdle,Crouch,Brace,HoldDoor}`, `MI_Jeongwoo`, `T_Jeongwoo_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile mover`) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/JeongwooFront_20261013.png`, `Content/SourceArt/Generated/Jeongwoo/` | 걸어 다니는 202호 정우. 상자 나르기·쪼그려 앉기·판 받치기·문 잡기 동작이 있다. 오토바이에 탄 모습은 예전 `SM_DeliveryScooterRidden` 그대로다 |
+| `/Game/Meshes/SM_InnerRoom{Cot,Cabinet,Workbench}`, `SM_HandCart`, `SM_WasteSack`, `SM_StorageBox`, `SM_RemovedBoards`, `SM_BareBulb`, `SM_LinedWallPanel{A,B}` | 프로젝트 제작 (gpt-image 시안과 타일 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/{FoldingCot,SteelCabinet,HandCart,SacksBoxes}_20261013.png`, `{CotCanvas,BlanketFloral,CabinetPaint,WorkbenchPlywood,WovenSack}Tile_20261013.png`, `Content/SourceArt/T_{CotCanvas,BlanketFloral,CabinetPaintGrey,WorkbenchPlywood,WovenSack}_*.png`, `Scripts/blender/build_inner_room.py` | 관리실 안쪽 방의 간이침대·보관함·작업대·손수레·마대·상자·떼어 낸 판재·백열등과 벽에 덧댄 방음 판 |
+| `/Game/Meshes/SM_AccessHatch{Frame,Door}{S,M,L}`, `SM_HatchSealPlug`, `SM_CoverPiece{A,B,C}`, `SM_CoverFlap{A,B}`, `SM_CoverFrame`, `SM_CoverClamp`, `SM_ToolPouch`, `SM_GlovePouch`, `SM_InspectionOverlayBoard`, `SM_BentShieldSheet`, `SM_FinishBoard`, `SM_TimberWedge` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크, 덮개 앞면은 시안 그림을 덮개 전체 좌표로 펴서 조각마다 굽는다) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/{AccessHatch,AccessCoverFront,ToolPouch}_20261013.png`, `Scripts/blender/build_leftover_props.py` | 벽 점검구 세 크기, 덧댄 것이 눌러 막은 자리, P6 덮개 조각·틀·고정쇠, 오빠의 공구 주머니, 정우의 장갑 주머니, 5층 점검 자리 덧판과 차폐판, 302호 마감판과 쐐기 |
+| `/Game/Meshes/SM_LeftoverLabel{Jeongwoo,Doha,Marked}`, `SM_CollectionNoticePrint` | 직접 제작 (PIL 인쇄면, 손글씨는 나눔손글씨 펜 · 인쇄는 맑은 고딕 → Blender 판 베이크) | 프로젝트 소유. 나눔손글씨 펜은 SIL Open Font License 1.1 | 2026-10-13 | 원본 | `Content/SourceArt/LeftoverPrints/*.png`, `Scripts/build_leftover_prints.py`, `Scripts/blender/build_leftover_props.py` | 상자 이름표 셋과 1층 「대형 폐기물 수거 안내」. 종이 글자와 읽기 화면 문구가 같다 |
+| `/Game/Meshes/SM_Annex{OverlayTop,JointTape,JointTorn,Batten,InnerFixings,AngleClip,BraceFrame}`, `SM_HammerDent` | 프로젝트 제작 (gpt-image 시안 → 시안 면을 잘라 펴서 Blender 판·철물 모델링·베이크) | 프로젝트 소유 | 2026-10-14 | 원본 | `Content/SourceArt/AI/{AnnexWallLayers,SteelBraceFrame}_20261014.png`, `Content/SourceArt/AnnexWall/*.png`, `Scripts/crop_annex_wall_textures.py`, `Scripts/blender/build_annex_wall_props.py` | 밤4 5층 시신 벽 칸에 덧댄 판·이음 테이프·각재, 떼어 낸 뒤의 안쪽 판 나사와 ㄱ자 철물, 무릎 마디를 거는 경량 철골 틀, 빗나간 망치 자국 |
 | `/Game/UI/Textures/T_EpilogueDoorNote_D` | 직접 제작 (게임 안 렌더 `Run-EpilogueDoorStill.ps1`) | 프로젝트 소유 | 2026-10-08 | 원본 | `Content/SourceArt/T_EpilogueDoorNote_D.png` | 에필로그 「403호 문」 정지 화면. 마지막 쪽지만 붙은 403호 문이고, 호수 표찰은 들지 않는다 |
-| `/Game/Prototype/Textures/T_StairWetBootprints_M`, `/Game/Prototype/Materials/M_StairWetBootprints` | 직접 제작 (gpt-image 마스크 → 회색조 축소, 데칼 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 가공(회색조·512px·흐림 1.2px) | `Content/SourceArt/AI/StairWetBootprints_20261007.png`(+JSON), `Scripts/import_stair_bootprints.py` | 「뒤따르는 발」이 남기는 젖은 작업화 자국 |
-| `/Game/Meshes/SM_PocketFlashlight`, `SM_ServicePressurePanel` | 직접 제작 (gpt-image 형태 참고·바탕 그림 → Blender 모델링·베이크) | 프로젝트 소유 | 2026-10-02 | 원본 | `Content/SourceArt/AI/PocketFlashlight_20261002.png`, `PlasterPressure_20261002.png`(+JSON), `Scripts/blender/build_pocket_flashlight.py`, `build_service_pressure_panel.py` | 현관 손전등과 들뜬 보수판 |
-| `/Game/Meshes/SM_ListenerEntityCrawl, SM_AlleyCatRun, SM_MokHansooFigure, SM_FinalCavityRemains` | 직접 제작 (기준 시트 한 칸 → ComfyUI 네이티브 TRELLIS.2 형상 생성 → Blender 다듬기) | 프로젝트 소유. TRELLIS.2 가중치 MIT(Microsoft, Comfy-Org 재포장), DINOv3 Meta 제한 허가, BiRefNet MIT | 2026-09-08 | 원본 | `Content/SourceArt/Generated/<이름>/<시도>/generation.json`, `Scripts/generate_3d_comfy.py`, `Scripts/blender/refine_generated.py` | 입력은 우리 기준 시트뿐. Hunyuan3D는 한국 제외 라이선스라 쓰지 않는다 |
+| `/Game/Prototype/Textures/T_StairWetBootprints_M`, `/Game/Prototype/Materials/M_StairWetBootprints` | 프로젝트 제작 (gpt-image 마스크 → 회색조 축소, 데칼 머티리얼은 에디터 파이썬) | 프로젝트 소유 | 2026-10-07 | 가공(회색조·512px·흐림 1.2px) | `Content/SourceArt/AI/StairWetBootprints_20261007.png`, `Scripts/import_stair_bootprints.py` | 「뒤따르는 발」이 남기는 젖은 작업화 자국 |
+| `/Game/Meshes/SM_PocketFlashlight`, `SM_ServicePressurePanel` | 프로젝트 제작 (gpt-image 형태 참고·바탕 그림 → Blender 모델링·베이크) | 프로젝트 소유 | 2026-10-02 | 원본 | `Content/SourceArt/AI/PocketFlashlight_20261002.png`, `PlasterPressure_20261002.png`, `Scripts/blender/build_pocket_flashlight.py`, `build_service_pressure_panel.py` | 현관 손전등과 들뜬 보수판 |
+| `/Game/Meshes/SM_ListenerEntityCrawl, SM_AlleyCatRun, SM_MokHansooFigure, SM_FinalCavityRemains` | 프로젝트 제작 (기준 시트 한 칸 → TRELLIS.2 형상 생성 → Blender 다듬기) | 프로젝트 소유. TRELLIS.2 가중치 MIT(Microsoft, Comfy-Org 재포장), DINOv3 Meta 제한 허가, BiRefNet MIT | 2026-09-08 | 원본 | `Content/SourceArt/Generated/<이름>/<시도>/generation.json`, `Scripts/generate_3d_comfy.py`, `Scripts/blender/refine_generated.py` | 입력은 우리 기준 시트뿐. Hunyuan3D는 한국 제외 라이선스라 쓰지 않는다 |
 | `/Game/Prototype/Textures/T_<Blender 에셋>_{D,N,ORM,E}` · `/Game/Prototype/Materials/M_IGBakedProp, MI_*` | 직접 제작 (Cycles 베이크, UE 마스터 재질 인스턴스) | 프로젝트 소유 | 2026-09-04 | 원본 | `Scripts/import_blender_assets.py` | 에셋마다 한 세트. ORM은 AO·거칠기·금속성 채널 |
 | `/Game/Prototype/Textures/T_Label*` | 직접 제작 (System.Drawing) — 가상 브랜드, 실제 상표 미사용 | 프로젝트 소유 | 2026-07-25 | 원본 | `Scripts/Create-RetailGraphics.ps1`, `Scripts/Prepare-AIArt.ps1` | 제품 라벨 아트 |
 | `Content/SourceArt/Labels/Store/CigarettePacks.png` (담뱃갑 앞면 8) | 직접 제작 (PIL) — 가상 브랜드, 실제 상표·전화번호 미사용, 담뱃갑 경고면은 글자만 | 프로젝트 소유 | 2026-09-08 | 원본 | `Scripts/create_store_product_art.py` | 담배 진열장 빌더가 담뱃갑 앞면에 붙여 굽는 입력. 게임 텍스처로 직접 쓰지 않는다 |
@@ -58,6 +66,7 @@
 | `/Game/Prototype/Textures/T_(Jangpan·Wallpaper·…)_{D,N,R}` | 직접 제작 (절차 생성) | 프로젝트 소유 | 2026-07-19 | 원본 | `Scripts/generate_surface_textures.py` | 사진 텍스처 폴백 |
 | `Source/IndieGame/UI/Fonts/Pretendard-{Regular,SemiBold}.otf` | orioncactus / Pretendard 1.3.9 | SIL Open Font License 1.1 | 2026-08-12 | 원본 | `Source/IndieGame/UI/Fonts/OFL-Pretendard.txt` | 설정·대화·본문·보조문구. 패키지 실행 파일 옆 `UI/Fonts`에 NonUFS 스테이징 |
 | `Source/IndieGame/UI/Fonts/GowunBatang-Bold.ttf` | Yanghee Ryu / Google Fonts | SIL Open Font License 1.1 | 2026-08-12 | 원본 | `Source/IndieGame/UI/Fonts/OFL-GowunBatang.txt` | 타이틀·장면 제목 전용. 패키지 실행 파일 옆 `UI/Fonts`에 NonUFS 스테이징 |
+| `Source/IndieGame/UI/Fonts/NotoSans{JP,SC,TC}-Regular.otf` | Adobe·Google / Noto Sans CJK 지역 서브셋(github.com/notofonts/noto-cjk, Sans/SubsetOTF) | SIL Open Font License 1.1 | 2026-10-13 | 원본 | `Source/IndieGame/UI/Fonts/OFL-NotoSansCJK.txt` | 일본어·중국어 간체·번체 화면 글자. 한국어 서체에 없는 가나·한자를 언어별 지역 자형으로 채운다. 패키지 실행 파일 옆 `UI/Fonts`에 NonUFS 스테이징 |
 
 ambientCG 자료는 CC0 1.0(상업적 사용·수정·재배포 허용, 출처 표기 불요)입니다. 내려받은 zip은 `Scripts/Get-PhotoTextures.ps1`이 풀 때만 쓰고 저장소에는 두지 않으며, 풀어 둔 JPG가 `Content/SourceArt/Photo/`에 있습니다.
 
@@ -66,9 +75,9 @@ ambientCG 자료는 CC0 1.0(상업적 사용·수정·재배포 허용, 출처 �
 가독성을, 고운바탕 Bold는 「없는 층」 제목의 문학적 긴장만 담당한다. 의미 있는
 본문을 생성 이미지에 굽지 않는 기존 원칙은 그대로 유지한다.
 
-## 생성형 이미지(ImageGen) 아트워크
+## 생성형 이미지 아트워크
 
-OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아래 기록에
+OpenAI 이미지 생성으로 생성하고 각 항목의 생성 방식과 날짜를 아래 기록에
 남겼습니다. `Scripts/Prepare-AIArt.ps1`로 크롭·리샘플·미세문구 재작성을
 진행하며, 원본은 `Content/SourceArt/AI/`에 그대로 보관합니다.
 
@@ -145,7 +154,7 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 
 ### 원룸 비주얼 패스 생성 기록
 
-- 서비스: OpenAI ImageGen 내장 도구
+- 서비스: OpenAI 이미지 생성
 - 생성일: 2026-08-06
 - 보존 원본: `Content/SourceArt/AI/ApartmentVisualTarget_v1.png`,
   `TextureApartmentWallpaperVintage.png`, `MaskApartmentWallPatina.png`
@@ -153,32 +162,25 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   `01562DEE4BCD53C9A44663AEADB81BAB5B582FABD26D82071BBE91FDFB55CBA5`,
   벽지 `464803BCFE96602303AF292E03FC5308C46C972EC9249B6C78CFAB5CFA91BB03`,
   파티나 `1C8D8B6E1F9849DE838A67BC3D712E71B6ECA5F39D2412A815377BDC04773D17`
-- 목표 시안 프롬프트: 실제 Shipping 원룸의 카메라·기하·동선·소품과 HUD를
-  보존하고, 따뜻한 텅스텐 조명과 차가운 새벽광, 오래된 벽지·장판의 미세
-  물성만 보강한다. 괴물·고어·새 가구·새 출입구는 추가하지 않는다.
-- 재질 프롬프트: 벽지는 조명과 그림자를 굽지 않은 이음매 없는 아이보리
-  엠보싱 알베도, 파티나는 검정 무손상·흰색 손상의 그레이스케일 마스크로
-  생성한다. 의미 있는 문자·상표·인물은 포함하지 않는다.
 - 적용: `Build-ArtAssets.ps1 -ApartmentVisualOnly`가 5개 텍스처와 4개
   머티리얼을 빌드·감사한다. 파티나는 두 곳에만 국부 배치하고 9.5m에서
   컬링하며, 조명·상호작용·충돌·서사 상태에는 영향을 주지 않는다.
 
 ### Windows 배포 아이콘 생성 기록
 
-- 도구: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구: OpenAI 이미지 생성(gpt-image)
 - 생성일: 2026-09-30. 옛 이야기의 물탱크 점검구 아이콘(2026-08-05)을 바꿨다
-- 보존 원본: `Content/SourceArt/AI/ApplicationIcon_20260930.png`와 같은 이름의 JSON
+- 보존 원본: `Content/SourceArt/AI/ApplicationIcon_20260930.png`
 - 파생: `Build/Windows/ApplicationIcon.png`, `Build/Windows/Application.ico`
 - 처리: `Scripts/prepare_application_icon.py --crop 0.20 0.12 0.80 0.72`가 옥탑방과
   꼭대기층을 잘라 정사각형으로 맞추고 중간톤 감마, 대비·채도·샤프닝을 고정값으로
   건 뒤 16/24/32/48/64/128/256px ICO 디렉터리를 만든다.
 - 검수: 밝은·어두운 작업 표시줄에서 16~48px을 보고 옥탑방 벽과 창 불빛이 남는지
   확인했다.
-- 전체 프롬프트: `Docs/IMAGEGEN_PROMPTS_2026-09-30.md`
 
 ### 벽지 얼룩·증거 소품 생성 기록
 
-- 서비스: OpenAI ImageGen
+- 서비스: OpenAI 이미지 생성
 - 생성일: 2026-08-03
 - 보존 원본: `Content/SourceArt/AI/SheetHorrorSurfaceBlends.png`,
   `SheetEvidenceProps.png`
@@ -186,11 +188,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 적용: `Scripts/Build-ArtAssets.ps1`이 소스 분리, PBR 파생, 텍스처 임포트,
   마스크드 머티리얼 생성과 Geometry Script 메시 베이크를 순서대로 수행한다.
   마지막 UAsset 감사에서 LOD·해상도·압축·재질 입력과 텍스처 연결을 검사한다.
-- 전체 생성·수정 프롬프트: `Docs/IMAGEGEN_PROMPTS_2026-08-03.md`
 
 ### 골목 고양이·봉지 재질 생성 기록
 
-- 서비스: OpenAI ImageGen
+- 서비스: OpenAI 이미지 생성
 - 생성일: 2026-08-03
 - 보존 원본: `SheetAlleyCatPoseReference.png`, `TextureAlleyCatTabby.png`,
   `TextureCarrierBagFilm.png`
@@ -203,7 +204,7 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 
 ### 밸브 손잡이·도장 강판 생성 기록
 
-- 서비스: OpenAI ImageGen
+- 서비스: OpenAI 이미지 생성
 - 생성일: 2026-08-03
 - 보존 원본: `Content/SourceArt/AI/TextureP3CabinetPaintedSteel.png`
 - 파생: `T_P3CabinetPaintedSteel_D`, `M_P3CabinetMetalUV`,
@@ -213,7 +214,7 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 
 ### 관리 열쇠 기준 이미지 생성 기록
 
-- 서비스: OpenAI ImageGen 내장 도구
+- 서비스: OpenAI 이미지 생성
 - 생성일: 2026-08-03
 - 보존 원본:
   `Content/SourceArt/AI/SheetRooftopUnlockedPadlockKeysReference.png`
@@ -222,7 +223,7 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 
 ### CH02 종이 시트 생성 기록
 
-- 서비스: OpenAI ImageGen
+- 서비스: OpenAI 이미지 생성
 - 생성일: 2026-07-26
 - 보존 원본: `Content/SourceArt/AI/SheetPaperNotes_v2.png`
 - 원본 크기: 1254×1254
@@ -237,15 +238,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 이전 V1 시트(`SheetPaper.png`)는 종이가 아니라 새우 과자 봉지 그림이었습니다.
   2026-09-30에 파생 텍스처와 함께 지웠습니다.
 
-사용한 프롬프트 전문:
-
-```text
-[공통 스타일 규칙 - 반드시 지켜줘] 이건 사실적인 PBR 렌더링 기반 1인칭 공포게임에 쓸 종이 텍스처야. 여러 장을 따로 만들어도 전부 같은 세계에 있는 것처럼 보여야 해. 실제 종이를 스튜디오에서 완전 정면으로 촬영한 팩샷 사진처럼 만들어줘. 대형 소프트박스 조명, 그림자 거의 없음, 원근 왜곡 없이 완전 정면 평면. 종이의 섬유결, 눌림, 습기와 세월의 물성이 섬세하게 보여야 해. 배경은 순백색이고 색은 채도를 낮춘 실제 재료 톤이어야 해. 실존 상표나 로고는 절대 금지. 이번 이미지는 Unreal Engine 5 생활공포게임의 문서 배경용 원본 시트다. 전체 캔버스는 정확한 1:1 정사각형, 2열×2행의 엄격한 격자. 각 칸 사이는 굵고 깨끗한 흰 여백으로 완전히 분리하고, 네 칸의 조명·카메라·그레인·노출은 완전히 동일하게 유지한다. 각 칸 중앙에 세로 A4 비율(1:1.414)의 빈 종이 한 장을 완전 정면으로 놓고 셀 높이의 약 90%를 채운다. 좌상단: 깨끗하지만 아주 약간 따뜻한 흰색 복사용지, 미세한 종이 섬유만. 우상단: 아래 가장자리에서 번진 현실적인 물얼룩과 옅은 조수선, 살짝 물결친 가장자리의 젖은 종이. 좌하단: 한 번 세로로, 한 번 가로로 접었다 펼친 부드러운 십자 접힘 자국이 있는 종이. 우하단: 누렇게 바랜 낡은 종이, 모서리 마모와 아주 약한 갈색 반점, 찢어지거나 구멍 나지 않음. 네 종이 모두 완전히 비어 있어야 한다. 글자, 숫자, 도장, 선, 그림, 로고, 워터마크, 테이프, 클립, 손, 소품을 절대 넣지 말 것. 종이 밖 배경에는 그림자, 그라데이션, 바닥면, 반사, 질감이 없어야 한다. 게임에서 한국어 문자를 런타임으로 올릴 예정이므로 넓고 깨끗한 중앙 여백을 유지한다.
-```
 
 ### 「없는 층」 환경·인물·흔적·핵심 소품 생성 기록
 
-- 서비스: OpenAI ImageGen 내장 도구
+- 서비스: OpenAI 이미지 생성
 - 생성일: 2026-08-10
 - 보존 원본: `SheetMissingFloorEnvironmentReference.png`,
   `SheetListenerEntityAnatomyReference.png`, `TextureMissingFloorDryPlaster.png`,
@@ -271,12 +267,11 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   보존한 정면 LOD다. 1.6m에서 켜고 1.25m까지 히스테리시스로 유지하며,
   측면에서는 반드시 숨긴다.
   나머지 스프라이트는 원거리 접근 불가 인물만 허용한다.
-- 전체 프롬프트: `Docs/IMAGEGEN_PROMPTS_2026-08-10.md`
 - 배치·거리·LOD 합격표: `Docs/MISSING_FLOOR_ART_MATRIX.md`
 
 ### 발소리 표면·현관문 생성 기록
 
-- 서비스: 로컬 ChatGPT 소프트웨어의 ImageGen (프로젝트 동일 작업공간)
+- 서비스: OpenAI 이미지 생성
 - 생성일: 2026-08-14
 - 보존 원본: `TextureVillaStairCheckerPlatePaintedSteel.png`,
   `TextureRooftopUrethaneWaterproofing.png`,
@@ -300,11 +295,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   `MISSINGFLOOR_GREYBOX PASS`, `Validate-Project.ps1` 전 계약 무회귀.
 - 승인 경계: 세 바닥이 실제 플레이에서 **눈으로 구분되는지**는 사람의
   판단이다. 계약은 프레임이 깨지지 않았다는 것까지만 말한다.
-- 전체 프롬프트: `Docs/IMAGEGEN_PROMPTS_2026-08-14.md`
 
 ### M0 1인칭 두드리기 손 생성 기록
 
-- 서비스/모드: OpenAI ImageGen 내장 도구, `stylized-concept`
+- 서비스/모드: OpenAI 이미지 생성, `stylized-concept`
 - 생성일: 2026-08-11
 - 보존 원본: `Content/SourceArt/AI/SheetFirstPersonKnockPhases_v1.png`
 - 투명 마스터: `Content/SourceArt/AI/SheetFirstPersonKnockPhases_v1_RGBA.png`
@@ -330,7 +324,6 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 적용 경계: 유효 노크의 준비·접촉·반동만 카메라 UI-space에서 알파
   블렌딩한다. 기존 3D/PBR 세계, 충돌, 조명과 접촉 그림자는 교체하지 않는다.
   흔들림 감소는 접촉 정지 프레임을 사용한다.
-- 프롬프트 전문: `Docs/IMAGEGEN_PROMPTS_2026-08-11.md`
 
 ### 사용을 중단한 포획 이미지
 
@@ -338,32 +331,31 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 `T_FPCaptureEmbrace0_D`~`T_FPCaptureEmbrace3_D`는 현재 게임에서 쓰지 않는다.
 포획 장면은 3D 캐릭터의 몸과 팔로 보여 준다. 코드와 다른 에셋에서 참조하지
 않는 것을 확인하고 2026-09-22에 원본·투명본·파생 이미지·에셋 10개와 빌드
-목록을 정리했다. 생성 당시 기록은 커밋 `b3da61a`의 이 문서와
-`Docs/IMAGEGEN_PROMPTS_2026-08-11.md`에 남아 있다.
+목록을 정리했다. 생성 당시 기록은 커밋 `b3da61a`의 이 문서에 남아 있다.
 
 ## 2026-08-11 없는 층 M5 공동 리빌 원본
 
 - `Content/SourceArt/AI/SheetFinalCavityRemainsReference_v1.png`
-  - 도구/모드: OpenAI ImageGen 내장 생성, `stylized-concept`
+  - 도구/모드: OpenAI 이미지 생성, `stylized-concept`
   - SHA-256: `950EA1404E6804C083F4EF060ABA7AE175EB70DAD9BE396333605E889C855297`
   - 용도: 건조한 부분 골격, 내려앉은 작업복, 방수포와 캐스터의 3D 비율·재질 참고.
     생성본의 피부·머리카락과 스튜디오 배경은 사용하지 않는다.
   - 런타임: 4개 Geometry Script 정적 메시로 재구성하며 원본 PNG를 카메라나
     재질에 직접 노출하지 않는다.
 - `Content/SourceArt/AI/SheetMokHansooConfrontationReference_v1.png`
-  - 도구/모드: OpenAI ImageGen 내장 생성, `stylized-concept`
+  - 도구/모드: OpenAI 이미지 생성, `stylized-concept`
   - SHA-256: `466FC1AF73CD8852E955022FA5D9FBE1F38A04F6623F318F966F0373FEBCF618`
   - 용도: 목한수의 평균 체형, 작업복, 두 손 석고보드 파지와 피로한 표정 참고.
   - 런타임: 작업복·머리/손·석고보드 3개 근접 3D 메시로 재구성한다. 기존
     `T_SpriteMok_D`는 12m 이상 접근 불가 원거리 규칙을 유지한다.
 - `Content/SourceArt/AI/FinalCavityFrontBlend_v1.png`
-  - 도구/모드: OpenAI ImageGen 내장 생성·편집, `game-asset`
+  - 도구/모드: OpenAI 이미지 생성·편집, `game-asset`
   - SHA-256: `9C26AAC9D3160CBD73B3183A332BC822FA8B6A1B655D5B24A6D642E1952B6D11`
   - 용도: 절차 3D 셸에서 부족한 건조한 의복·골격의 정면 판독 정보.
   - 파생: `T_SpriteFinalCavity_{D,N,R,A}`와 `M_SpriteFinalCavity`. 105~360cm·
     정면 내적 0.68 초과에서만 보이며, 숨은 3D 셸의 실제 그림자를 유지한다.
 - `Content/SourceArt/AI/MokHansooFinalFrontBlend_v1.png`
-  - 도구/모드: OpenAI ImageGen 내장 생성, `game-asset`
+  - 도구/모드: OpenAI 이미지 생성, `game-asset`
   - SHA-256: `B2C6787D66E595F6A32BD6FD653060773097BF560CFE0EEDF0877EAB6FA6547C`
   - 용도: 목한수의 피로한 얼굴과 낡은 재킷을 근접 정면에서 판독하기 위한 보강.
   - 파생: `T_SpriteMokFinalUpper_{D,N,R,A}`와 `M_SpriteMokFinalUpper`. 세로
@@ -371,22 +363,20 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 
 네 원본 모두 프로젝트 제작 레퍼런스·파생 소스이며 외부 인물·브랜드·상표를
 참조하지 않은 생성물이다. 최종 런타임 형상과 배치, 거리·각도·재질 선택은
-프로젝트 코드가 소유한다. 전체 프롬프트와 생성·편집 이력은
-`Docs/IMAGEGEN_PROMPTS_2026-08-11.md`에 보존한다.
+프로젝트 코드가 소유한다. 생성·편집 이력은 작업 자료로 따로 보관한다.
 
 ## 2026-09-17 관리실 문구류
 
-- `BoothStationeryStudy_20260917.png`: 알파의 근영사 장부 제품 사진과 STAEDTLER 노리스 연필 사진을 형태 참고로 사용한 내장 imagegen 생성물. 외부 사진은 제품 형태를 확인하는 데 쓰며 게임에 원본을 넣지 않는다.
+- `BoothStationeryStudy_20260917.png`: 알파의 근영사 장부 제품 사진과 STAEDTLER 노리스 연필 사진을 형태 참고로 사용한 OpenAI 이미지 생성물. 외부 사진은 제품 형태를 확인하는 데 쓰며 게임에 원본을 넣지 않는다.
 - `ComplaintRubbing_20260917.png`: 글자 없는 흑연 문지름 질감. 실제 한글은 별도 마스크로 합성한다.
-- 두 생성 원본과 최종 프롬프트는 `Content/SourceArt/AI/BoothPrompts_20260917.json`에 연결되어 있다.
 - 접수철의 손글씨는 나눔손글씨 펜체를 사용한다. [Google Fonts 원본](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/METADATA.pb), 글꼴 파일과 SIL OFL 고지는 `Scripts/fonts/NanumPenScript/`에 보존한다. 글꼴을 수정하지 않았으며 게임에서는 구운 인쇄 이미지를 사용한다.
 - 실물 참고 링크, 모델 치수, 전후 화면은 [관리실 점검 기록](BOOTH_REVIEW_20260917.md)에 정리한다.
 
 ## 2026-09-17 로비 분전반
 
-- `CircuitPanelReference_20260917.png`: LS EBS32Fb 제품 실물 사진을 구조 참고로 전달해 내장 imagegen으로 만든 정면·사선·확대 시트다. 사진의 상표나 인증 표시는 모델에 옮기지 않았다.
-- `CorridorCabinetReference_20260917.png`: KDM의 매입형 금속 함 사진과 로비 분전반 시트를 함께 참고해 만든 닫힌 함체 시트다. 별도 JSON에 프롬프트를 보존한다. `SM_CorridorCircuitCabinet`의 문틈·힌지·잠금쇠와 매입 깊이에 사용했다. 한글 이름표는 `SM_CorridorCircuitPrint`로 분리했다.
-- 참고 사진 주소와 사용한 프롬프트는 `Content/SourceArt/AI/CircuitPanelReference_20260917.json`에 남긴다. 판매 사진 원본은 배포 에셋에 포함하지 않는다.
+- `CircuitPanelReference_20260917.png`: LS EBS32Fb 제품 실물 사진을 구조 참고로 전달해 OpenAI 이미지 생성으로 만든 정면·사선·확대 시트다. 사진의 상표나 인증 표시는 모델에 옮기지 않았다.
+- `CorridorCabinetReference_20260917.png`: KDM의 매입형 금속 함 사진과 로비 분전반 시트를 함께 참고해 만든 닫힌 함체 시트다. `SM_CorridorCircuitCabinet`의 문틈·힌지·잠금쇠와 매입 깊이에 사용했다. 한글 이름표는 `SM_CorridorCircuitPrint`로 분리했다.
+- 참고한 판매 사진 주소는 아래 「생성 시안에 참고한 외부 자료」에 적었다. 판매 사진 원본은 배포 에셋에 포함하지 않는다.
 - Blender에서 `SM_LobbyCircuitPanel`, `SM_CircuitToggle`, `SM_CircuitPanelPrints`로 제작했다. 한글 이름표는 `Scripts/build_circuit_prints.py`로 만들고 인쇄 UV만 보정했다.
 - 전원 상태, 회전축, 그림자와 반사는 게임이 계산한다. 생성 참고 이미지를 분전반 앞면에 붙이지 않는다.
 - 실제 게임 화면과 검증 결과는 [분전반 점검 기록](CIRCUIT_REVIEW_20260917.md)에 정리한다.
@@ -396,7 +386,7 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 
 ## 2026-08-12 타이틀·엔딩 C 환경 키아트
 
-- 도구/모드: OpenAI 내장 ImageGen, `stylized-concept`
+- 도구/모드: OpenAI 이미지 생성, `stylized-concept`
 - 보존 원본: `Content/SourceArt/AI/TitleBackgroundMissingFloor_v1.png`
 - 원본 SHA-256:
   `4831357AA6439F9CF93CC3D5CC4664DDF8EB995D59759E1F319504246CD57D39`
@@ -409,11 +399,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   외관 크롭만 담당한다. 방 번호·매물명·후기는 네이티브 한글 UI가 소유한다.
   일시정지는 현재 월드 화면을 유지하고, 메뉴·포커스·현지화 문자는 C++ HUD가
   소유한다.
-- 프롬프트 전문: `Docs/IMAGEGEN_PROMPTS_2026-08-12.md`
 
 ## 2026-08-18 한국 빌라 외벽 스터코
 
-- 도구/모드: OpenAI 내장 ImageGen, `game-asset`
+- 도구/모드: OpenAI 이미지 생성, `game-asset`
 - 보존 원본: `Content/SourceArt/AI/TextureKoreanVillaStucco_v1.png`
 - 원본 SHA-256:
   `474A8D005146B499FDB39CBAE62FC17F790EC71E9D833E4864A387DBA959BA57`
@@ -423,11 +412,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 적용 경계: 생성물은 한글·상표·사물·조명·그림자가 없는 외벽 BaseColor
   원본만 담당한다. N/R/A와 월드 매핑은 재현 가능한 로컬 스크립트가 만들며,
   UE의 실제 광원과 Lumen이 최종 명암을 계산한다.
-- 프롬프트 전문: `Docs/IMAGEGEN_PROMPTS_2026-08-18.md`
 
 ## 2026-09-28 옥상 밤 원경
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), 배경 투명
+- 도구/모드: OpenAI 이미지 생성(gpt-image), 배경 투명
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/SkylineNorth_20260928.png`
     `D38CB1F2756CBD7DAFFF73428D5FAE50B44C5D6C2EF3622A02E650093FA17941`
@@ -448,11 +436,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   글자·실존 상호가 없다
 - 적용 경계: 옥상에서 보이는 접근할 수 없는 원경만 담당한다. 가까운 난간·물탱크·
   이웃 빌라는 3D 지오메트리이고, 창이 켜지고 꺼지는 시간은 게임이 정한다
-- 프롬프트 전문: `Docs/IMAGEGEN_PROMPTS_2026-09-28.md`, 원본마다 같은 이름의 JSON
 
 ## 2026-09-28 5층 옥탑 외벽 패널
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본: `Content/SourceArt/AI/AnnexSandwichPanel_20260928.png`
   `E6BAD9852811CB0F418EF3F7697EEEBAD37B3726AD604908ED871645DBBEA7DF`
 - 파생: `Content/SourceArt/AnnexPanel/AnnexSandwichPanel_D.png`. `Scripts/build_annex_panel_texture.py`가
@@ -462,11 +449,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 권리/참조: 참고 사진 없이 문장만으로 만든 가상의 도장 강판이다. 글자·상표가 없다
 - 적용 경계: 5층 증축부 바깥 외피와 후레싱만 담당한다. 안쪽 석고와 문, 충돌은 기존 벽이
   그대로 맡는다
-- 프롬프트 전문: `Docs/IMAGEGEN_PROMPTS_2026-09-28.md`, 원본 옆 JSON
 
 ## 2026-09-28 골목 이웃 창 뒤의 방
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/RoomInteriorLamp_20260928.png`
     `941BDCEF303A40F048B67180EAABF86CB663F2655CD3E019DA77EB6128B78E07`
@@ -482,11 +468,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 권리/참조: 참고 사진 없이 문장만으로 만든 가상의 방이다. 사람·읽을 수 있는 글자·상표가 없다
 - 적용 경계: 골목 이웃 건물의 창 여덟 개 뒤에서만 보인다. 들어갈 수 없는 방이고, 빌라 자기 앞면 창과
   403호·복도 창은 쓰지 않는다
-- 프롬프트 전문: `Docs/IMAGEGEN_PROMPTS_2026-09-28.md`, 원본마다 같은 이름의 JSON
 
 ## 2026-09-29 현관문 인쇄물과 공용부 때
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/DoorFlyerChinese_20260929.png`
     `3DA9E088D0707B9563A458F59E6AEE7F673B6ABF8A88114B7FA5E6C957CC71A0`
@@ -512,11 +497,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   재질이 월드 좌표로 곱하는 회색 마스크라 드로우콜이 늘지 않는다
 - 권리/참조: 상호·전화번호는 모두 가상이다. 번호는 국번이 0으로 시작해 실제로 걸리지 않는다.
   사람·실제 상표·읽을 수 없는 가짜 글자가 없다
-- 프롬프트 전문: 원본마다 같은 이름의 JSON
 
 ## 2026-10-07 2·3층 방화문, 202호와 303호
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/FireDoorConcept_20261007.png`
     `7CA46A941EB833D52BDBCE14119C20AAB468695DEA8F1D3ED2AEEB8CFBDAD9E4`
@@ -543,11 +527,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   보이고 그때만 충돌이 켜진다. 피난구 유도등은 발광 3으로 늘 켜져 있다
 - 권리/참조: 실제 제품이나 상표를 본뜨지 않았다. 피난구 유도등은 녹색 바탕에 문으로 달려 나가는 사람을
   그린 흔한 모양이다. 글자는 받은 뒤 한 자씩 확인했다
-- 프롬프트 전문: 원본마다 같은 이름의 JSON
 
 ## 2026-10-07 계단 센서등과 복도 소등 안내
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/StairSensorLightOff_20261007.png`
     `75338D34DEF84471540140454E4A298B1EFC9763B40B81F1690455C66436D95B`
@@ -562,11 +545,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   공지는 그림자를 끄고 읽기 상자로만 판정한다
 - 권리/참조: 실제 제품이나 상표를 본뜨지 않은 일반적인 원형 센서등이다. 공지의 글자는 게임 속
   관리실이 쓴 가상의 문장이고, 받은 뒤 한 자씩 확인했다
-- 프롬프트 전문: 원본마다 같은 이름의 JSON
 
 ## 2026-10-07 403호 욕실
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/BathroomConcept_20261007.png`
     `35EEFC2A8EEB8064151EE0A3111E301C4CF8FC1ED820F161BEF83AE5D264B69C`
@@ -591,11 +573,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 런타임: 벽과 바닥은 씬이 월드 투영 재질로 깔아 블록 크기와 상관없이 타일 크기가 같다. 욕실 등은
   스위치를 켤 때만 켜진다
 - 권리/참조: 실제 제품이나 상표를 본뜨지 않은 흔한 옛 빌라 욕실 비품이다. 글자와 로고가 없다
-- 프롬프트 전문: 원본마다 같은 이름의 JSON
 
 ## 2026-10-07 옥상 철문, 5층 철문과 빗장
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/RooftopDoor_20261007.png`
     `CA09A96515AC87BDDE904D5FF84ABB7BA6F1A654AB8B93E58DFE44BD10551F35`
@@ -612,11 +593,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   그림자를 끈다. 빗장 몸통과 막대는 문짝에 붙어 돌고, 받이쇠는 씬이 문설주 옆면에 둔다
 - 권리/참조: 실제 제품이나 상표를 본뜨지 않은 흔한 옛 빌라 철문과 빗장이다. 안내판 글자는 받은 뒤 한 자씩
   확인했다
-- 프롬프트 전문: 원본마다 같은 이름의 JSON
 
 ## 2026-10-07 303호 쪽지
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)
+- 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/Note303First_20261007.png`
     `8903EAA406A7A788AF823DBF7DDD663E63FC0CE41FECF485DD3560B56D82D464`
@@ -631,11 +611,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 런타임: 쪽지는 403호 문짝 회전축에 붙은 읽기 쪽지 액터라 문과 같이 돈다. 충돌과 그림자는 없고, 읽기는
   종이 크기의 상자로 받는다
 - 권리/참조: 실제 사람의 글씨를 본뜨지 않은 손글씨와 장식 없는 인쇄면이다. 글자는 받은 뒤 한 자씩 확인했다
-- 프롬프트 전문: 원본마다 같은 이름의 JSON
 
 ## 2026-10-08 계단의 303호
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), ComfyUI 네이티브 TRELLIS.2
+- 도구/모드: OpenAI 이미지 생성(gpt-image), TRELLIS.2
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/Neighbor303Front_20261008.png`
     `2E9B5E80FE85D64D1317F2574CE99A39943B54C70085CE83EC6F7F20E02592D7`
@@ -644,11 +623,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   가방 뒷면을 생성기가 회색과 남색으로 지어내서 `--tint-box`로 등 뒤 상자만 굽기 전에 검게 했다
 - 런타임: AIGStairNeighbor가 계단 길 위로 옮기며 Idle·Walk를 튼다. 충돌은 플레이어 몸만 막는 캡슐 하나다
 - 권리/참조: 특정 인물을 본뜨지 않은 가상의 30대 간호사다. 옷과 가방에 글자와 로고가 없다
-- 프롬프트 전문: 같은 이름의 JSON
 
 ## 2026-10-08 어둑시니 몸
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), ComfyUI 네이티브 TRELLIS.2
+- 도구/모드: OpenAI 이미지 생성(gpt-image), TRELLIS.2
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/EoduksiniClay_20261008.png`
     `9E4CBB89EC3521118D0FA85EB3E1C44F89B3615B21E2179A8299824F0D02006E`
@@ -658,7 +636,6 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 런타임: AIGShadowFigure가 UPoseableMeshComponent로 띄워 허리 뼈를 숙이고 팔을 늘어뜨린다. 충돌은 없고, 숙인
   머리가 컬링되지 않게 경계 상자를 2.8배로 잡는다
 - 권리/참조: 한국 민담의 어둑시니를 바탕으로 지은 가상의 존재다. 특정 작품의 괴물을 본뜨지 않았고 글자와 로고가 없다
-- 프롬프트 전문: 같은 이름의 JSON
 
 ## 2026-10-08 에필로그 「403호 문」
 
@@ -675,7 +652,7 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 
 ## 2026-10-12 현장 확인의 경찰관
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), ComfyUI 네이티브 TRELLIS.2
+- 도구/모드: OpenAI 이미지 생성(gpt-image), TRELLIS.2
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/PolicePatrolFront_20261012.png`
     `5F07E9072F8024161BE1AEE8E225F86EB53DB87B52917E052DD1771B7FB3BB39`
@@ -687,11 +664,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 런타임: AIGSiteCheckVisit가 옥상 계단 길 위로 옮기며 Idle·Walk를 틀고, 5층 가운데 칸 앞에서 Knock·Listen을
   튼다. 충돌은 플레이어 몸만 막는 캡슐 하나다
 - 권리/참조: 특정 인물을 본뜨지 않은 가상의 30대 순찰 경찰관이다. 제복과 조끼, 모자에 글자와 숫자가 없다
-- 프롬프트 전문: 같은 이름의 JSON
 
 ## 2026-10-12 문 밖 손님의 종이 몸
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), ComfyUI 네이티브 TRELLIS.2
+- 도구/모드: OpenAI 이미지 생성(gpt-image), TRELLIS.2
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/PaperGuestFront_20261012.png`
     `7ED0CB52EA66AFBC414C3FE4D059BC5C3963E5C97067684AF622DCF962A1A421`
@@ -702,11 +678,10 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
   못 불러오면 예전 종이 낱장 몸으로 돌아간다
 - 권리/참조: 한국 아파트 현관문에 쌓이는 전단과 자석, 안내문을 겹친 가상의 존재다. 종이의 인쇄는 읽히지 않는
   색 덩어리와 그림 기호다
-- 프롬프트 전문: 같은 이름의 JSON
 
 ## 2026-10-12 서일영의 녹음기
 
-- 도구/모드: gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증), Blender 5.2 절차 모델링
+- 도구/모드: OpenAI 이미지 생성(gpt-image), Blender 5.2 절차 모델링
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/SeoVoiceRecorder_20261012.png`
     `360049F919248D5EC00241CE17495BF924CE8F2C10EF0EBB4DA25144E9AC1F7E`
@@ -717,4 +692,41 @@ OpenAI ImageGen으로 생성하고 각 항목의 생성 방식과 날짜를 아�
 - 런타임: AIGSeoRecorder가 5층 첫 판재 더미 남쪽 끝 받침목 사이에 눕혀 둔다. 그림자와 디스턴스 필드 조명은 끄고
   12 m 안에서만 렌더링한다. 줍기 판정은 판재 밖으로 나온 끝과 끈을 덮는 박스로 따로 둔다
 - 권리/참조: 특정 제품을 따라 만들지 않은 흔한 소형 녹음기다. 몸통에 글자나 상표가 없다
-- 프롬프트 전문: 같은 이름의 JSON
+
+## 생성 시안에 참고한 외부 자료
+
+생성 시안을 만들 때 형태·재질·비례를 확인하려고 본 외부 사진과 문서다. 사진과 문서는 게임과 저장소에
+넣지 않았고, 상표·인증 표시·문구는 옮기지 않았다. 생성에 쓴 프롬프트와 도구 기록은 작업 자료로 따로
+보관한다.
+
+| 생성 원본 | 참고한 외부 자료 |
+|---|---|
+| `ApartmentNightVista_20260916.png` | https://mediahub.seoul.go.kr/archives/2003713 |
+| `../Labels/Store/RetailPackagingBack.png`, `NarinContinuity_20260915.png` | https://nongshimmall.com/product/포테토칩-오리지널60g20/2551/ |
+| `Bedding_20260917` | https://d2xjmi1k71iy2m.cloudfront.net/dairyfarm/id/images/560/1356026_PE953267_S5.jpg<br>https://www.ikea.com/kr/ko/images/products/pilspinnare-pillow-high-side-back-sleeper__1300769_pe937182_s5.jpg<br>https://www.ikea.com/kr/ko/p/aengslilja-duvet-cover-and-pillowcase-blue-grey-00592790/ |
+| `BoothPrompts_20260917` | https://staedtler.co.kr/product/noris-120-%EB%85%B8%EB%A6%AC%EC%8A%A4-%EC%97%B0%ED%95%84-120/<br>https://staedtler.co.kr/wp-content/uploads/2021/08/120_Upcycled_Wood_Web_Single_product_Einzelprodukt.jpg<br>https://www.alpha.co.kr/image/product/137700/137700_350.jpg<br>https://www.alpha.co.kr/product/productView.do?productCode=137700&PS_IDX= |
+| `BoothPump_20260916` | https://cms.media.wilo.com/dcidocpfinder/wilo557525/6855427/wilo557525.pdf<br>https://wpump.co.kr/product/pb-600ma%ED%95%98%ED%96%A5%EC%8B%9D/472/<br>https://wpump.co.kr/web/product/big/202104/2f0d9547a19ba1e0797afecc1455cf20.jpg |
+| `CircuitPanelReference_20260917.png` | https://gs181215.cafe24.com/product/ls%EC%9D%BC%EB%A0%89%ED%8A%B8%EB%A6%AD-ebs32fb-30a-30ma-ce%EC%9D%B8%EC%A6%9D-%EB%B6%84%EC%A0%84%EB%B0%98%EC%9A%A9%EB%88%84%EC%A0%84%EC%B0%A8%EB%8B%A8%EA%B8%B0/27171/<br>https://gs181215.cafe24.com/web/product/big/202510/da887a37de0668eb4880fb6cb2275f31.jpg |
+| `CorridorCabinetReference_20260917.png` | https://www.kdmsteel.com/es/caja-electrica-empotrada/<br>https://www.kdmsteel.com/wp-content/uploads/2019/08/Recessed-enclosure-with-reinforced-door.png |
+| `DetailMaterials_20260916` | https://gdimg.gmarket.co.kr/1954558316/still/400?ver=1606198714<br>https://global.gmarket.co.kr/item?goodsCode=1954558316<br>https://img.danuri.io/catalog-image/046/812/009/c2d012ed1646425eab3b68f86e2516f4.jpg?shrink=500:500&_v=20260916080519<br>https://m.ftscrt.com/food/e711be2a-a45c-458e-bc93-5ac00c17e61f_lg_sq.jpg<br>https://m.gundalin.com/product/일반-석고보드/126/<br>https://m.gundalin.com/web/product/big/202204/2dbeeb961bb9f2abb192fef55e6d9d18.png<br>https://prod.danawa.com/info/?pcode=9812046<br>https://www.fatsecret.kr/칼로리-영양소/cu/참치마요-삼각김밥/1개<br>https://www.paintstins.com/sale-41373209-1-gallon-white-paint-tin-cans-round-container-4-liter-package-metal-cans.html |
+| `DoorMagnet_20260916.png` | https://24print.co.kr/shop/shopdetail.html?branduid=86&mcode=002&scode=&search=&sort=view&type=X&xcode=018<br>https://dsp114.com/mlangprintauto/msticker/<br>https://m.wowpress.co.kr/ordr/prod/dets?ProdNo=40093 |
+| `EntranceCamera_20260916` | https://daewha.net/product/코맥스-drc-4y/117/<br>https://daewha.net/web/product/big/202304/5cc52013ac8913346a057c8b35737dd9.jpg |
+| `EntryReference_20260917` | https://multimedia.3m.com/mws/media/2208839O/3m-psd-pdf.pdf<br>https://www.kocom.com/product/view.php?c_no=17&p_no=17<br>https://www.sionmart.co.kr/goods/goods_view.php?goodsNo=1000000053 |
+| `ExtinguisherReference_20260916.png` | https://m.damoda.kr/data/editor/b10c2e18735388b8091b04809beecb271020211.jpg<br>https://m.damoda.kr/goods/view_contents?no=6500&zoom=1 |
+| `FireAlarmReference_20260916.png` | https://www.gfs.co.kr/lib/download.asp?AttachFile=%2Fupload%2Fattachbase%2FCompanyBrochure%28KOR%29_2012.07.11.pdf |
+| `HouseholdMaterials_20260917` | https://file.app.ikea.cn/cn/en/images/products/utsadd-pet-bowl-metal__1534416_pe1016150_s5.jpg<br>https://www.ikea.com/de/en/p/utsadd-pet-bowl-metal-40638833/<br>https://www.muji.us/cdn/shop/files/4548076410195_01_org_700x.jpg?v=1771531703<br>https://www.muji.us/cdn/shop/files/4548076410195_02_org_700x.jpg?v=1771531702 |
+| `HouseholdStudy_20260917` | https://www.lge.co.kr/kr/story/user-guide/images/air-conditioners-install-guide/condenser05-pc.png<br>https://www.lge.co.kr/kr/story/user-guide/images/air-conditioners-install-guide/general-plumbing02.png<br>https://www.lge.co.kr/kr/story/user-guide/images/air-conditioners-install-guide/slide-outdoor01.png<br>https://www.muji.us/cdn/shop/files/4548076410195_01_org_700x.jpg?v=1771531703<br>https://www.muji.us/cdn/shop/files/4548076410195_02_org_700x.jpg?v=1771531702<br>https://www.muji.us/cdn/shop/files/4548076410195_06_org_700x.jpg?v=1771531702 |
+| `KoreanBrick_20260916.png` | https://www.ebrick.co.kr/editor/summernote/upload/image/2021/03/18/9635c33213a24ffdbbd595c0ebe39f60.jpg<br>https://www.ebrick.co.kr/file/onsale/36208b9c034c49b2ace9f5253899b440.jpg<br>https://www.ebrick.co.kr/product/s_list_detail.do?idx=42 |
+| `LandingFixtures_20260915` | https://baleunmoongori.com/product/빌라-우체통-다세대-실버-고급-우편함/997/<br>https://baleunmoongori.com/web/product/big/202009/b6aae174a4d3c4f3da31c692f39eecd4.jpg<br>https://cdn.imweb.me/thumbnail/20250212/b257afaf98ce4.png<br>https://cdn.thescoop.co.kr/news/photo/202006/39879_55151_33.jpg<br>https://h-pedia.com/shop_view/?idx=173<br>https://www.thescoop.co.kr/news/articleView.html?idxno=39879 |
+| `LandingPaint_20260915.png` | https://ambientcg.com/view?id=Plaster004<br>https://www.thescoop.co.kr/news/articleView.html?idxno=39879 |
+| `NeighborMemo_20260916.png` | https://economist.co.kr/article/view/ecn202502190001 |
+| `PrintReviewPrompts_20260916` | https://unsplash.com/photos/a-group-of-hand-prints-on-a-wall-8LzW2EliVk8<br>https://www.howardpianoindustries.com/piano-tuning-hammer/ |
+| `PumpPanelReference_20260916.png` | https://hanilpump.kr/product/wld-10-오배수컨트롤판넬2펌프/4534/ |
+| `RentalNotice_20260916.png` | https://economist.co.kr/article/view/ecn202502190001 |
+| `RoofUtility_20260916` | https://imbp.co.kr/bbs/board.php?bo_table=notice&wr_id=293<br>https://imbp.co.kr/bbs/board.php?bo_table=notice&wr_id=383<br>https://so-handel.de/a124-2024.html<br>https://www.materiel-elevage-online.fr/28208-tole-larmee-epaisseur-5-7mm-acier-lamine-a-chaud.html |
+| `ShippingLabel_20260917.png` | https://www.korea.kr/news/reporterView.do?newsId=148934239<br>https://www.korea.kr/newsWeb/resources/attaches/2024.09/23/3%2835%29.jpg |
+| `SpatialMaterials_20260915` | https://ilshinstone.co.kr/other/44<br>https://www.jumpoline.com/_jumpo/jumpo_view.asp?webjofrsid=594134<br>https://www.muji.com.hk/en/product/4548076410232 |
+| `UtilityFixtures_20260915` | https://blog.daara.co.kr/sell_view.html?bc=21&cid=samjung&key=&no=53377&page=1&search=&url=%2Findex.html<br>https://img.lxhausys.com/2024/content/files/202508211101/HIMACS%202025%20Reference%20Book.pdf<br>https://smartcontentcenter.tistory.com/1297<br>https://thomson.tistory.com/1233<br>https://www.hanwhavision.com/ko/products/video-recorder/dvr/dvr-ch4/srd-440/<br>https://www.hanwhavision.com/mea/products/product-details/smt-1931 |
+| `WindowReference_20260916.png` | https://www.coupang.com/vp/products/6753753342 |
+| `WitnessPropsStudy_20260917.png` | https://museumoflitter.org/cigarette-butt-litter/<br>https://printingkorea.net/front/productlist.php?code=005004<br>https://www.elizabethrichards.com.au/products/a4-wooden-clipboard |
+| `WorkVestFinish_20260917` | https://multimedia.3m.com/mws/media/2208839O/3m-psd-pdf.pdf |

@@ -1,0 +1,30 @@
+{
+  "name": "SM_RemovedBoards",
+  "mesh_class": "prop",
+  "fbx": "SM_RemovedBoards.fbx",
+  "textures": {
+    "D": "SM_RemovedBoards_D.png",
+    "N": "SM_RemovedBoards_N.png",
+    "ORM": "SM_RemovedBoards_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 748,
+  "bounds_m": {
+    "min": [
+      -0.66,
+      -0.2003,
+      -0.0009
+    ],
+    "max": [
+      0.61,
+      0.1312,
+      1.7833
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "벽에서 떼어 낸 판재 넷(합판·석고보드). 방수막 조각과 실리콘, 나사 자국이 남았다. 앞면 -Y, 벽에 기댐"
+}

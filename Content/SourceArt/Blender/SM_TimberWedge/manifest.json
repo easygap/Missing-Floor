@@ -1,0 +1,30 @@
+{
+  "name": "SM_TimberWedge",
+  "mesh_class": "prop",
+  "fbx": "SM_TimberWedge.fbx",
+  "textures": {
+    "D": "SM_TimberWedge_D.png",
+    "N": "SM_TimberWedge_N.png",
+    "ORM": "SM_TimberWedge_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 108,
+  "bounds_m": {
+    "min": [
+      -0.11,
+      -0.03,
+      0.0
+    ],
+    "max": [
+      0.11,
+      0.03,
+      0.0496
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "공사 자재 나무 쐐기. 길이 X 22(두꺼운 끝 +X 5 cm), 폭 6. 원점 바닥 가운데."
+}

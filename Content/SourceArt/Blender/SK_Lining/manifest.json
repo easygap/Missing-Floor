@@ -1,0 +1,216 @@
+{
+  "name": "SK_Lining",
+  "mesh_class": "hero",
+  "fbx": "SK_Lining.fbx",
+  "textures": {
+    "D": "SK_Lining_D.png",
+    "N": "SK_Lining_N.png",
+    "ORM": "SK_Lining_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3724,
+  "bounds_m": {
+    "min": [
+      -1.8291,
+      -2.0191,
+      -0.004
+    ],
+    "max": [
+      1.8199,
+      2.0191,
+      0.38
+    ]
+  },
+  "origin": "body-bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "덧댄 것. 절차 모델(rig_lining.py), 뼈 열넷, 동작 없음(게임이 뼈를 놓는다)",
+  "skeletal": true,
+  "animations": {},
+  "bones": {
+    "root": {
+      "head_cm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tail_cm": [
+        0.0,
+        0.0,
+        10.0
+      ],
+      "parent": null
+    },
+    "body": {
+      "head_cm": [
+        0.0,
+        0.0,
+        22.0
+      ],
+      "tail_cm": [
+        30.0,
+        0.0,
+        22.0
+      ],
+      "parent": "root"
+    },
+    "leg_fl_1": {
+      "head_cm": [
+        33.0,
+        -52.0,
+        22.0
+      ],
+      "tail_cm": [
+        89.57,
+        -108.57,
+        22.0
+      ],
+      "parent": "body"
+    },
+    "leg_fl_2": {
+      "head_cm": [
+        89.57,
+        -108.57,
+        22.0
+      ],
+      "tail_cm": [
+        144.72,
+        -163.72,
+        22.0
+      ],
+      "parent": "leg_fl_1"
+    },
+    "leg_fl_3": {
+      "head_cm": [
+        144.72,
+        -163.72,
+        22.0
+      ],
+      "tail_cm": [
+        151.79,
+        -170.79,
+        6.0
+      ],
+      "parent": "leg_fl_2"
+    },
+    "leg_fr_1": {
+      "head_cm": [
+        33.0,
+        52.0,
+        22.0
+      ],
+      "tail_cm": [
+        89.57,
+        108.57,
+        22.0
+      ],
+      "parent": "body"
+    },
+    "leg_fr_2": {
+      "head_cm": [
+        89.57,
+        108.57,
+        22.0
+      ],
+      "tail_cm": [
+        144.72,
+        163.72,
+        22.0
+      ],
+      "parent": "leg_fr_1"
+    },
+    "leg_fr_3": {
+      "head_cm": [
+        144.72,
+        163.72,
+        22.0
+      ],
+      "tail_cm": [
+        151.79,
+        170.79,
+        6.0
+      ],
+      "parent": "leg_fr_2"
+    },
+    "leg_bl_1": {
+      "head_cm": [
+        -33.0,
+        -52.0,
+        22.0
+      ],
+      "tail_cm": [
+        -89.57,
+        -108.57,
+        22.0
+      ],
+      "parent": "body"
+    },
+    "leg_bl_2": {
+      "head_cm": [
+        -89.57,
+        -108.57,
+        22.0
+      ],
+      "tail_cm": [
+        -144.72,
+        -163.72,
+        22.0
+      ],
+      "parent": "leg_bl_1"
+    },
+    "leg_bl_3": {
+      "head_cm": [
+        -144.72,
+        -163.72,
+        22.0
+      ],
+      "tail_cm": [
+        -151.79,
+        -170.79,
+        6.0
+      ],
+      "parent": "leg_bl_2"
+    },
+    "leg_br_1": {
+      "head_cm": [
+        -33.0,
+        52.0,
+        22.0
+      ],
+      "tail_cm": [
+        -89.57,
+        108.57,
+        22.0
+      ],
+      "parent": "body"
+    },
+    "leg_br_2": {
+      "head_cm": [
+        -89.57,
+        108.57,
+        22.0
+      ],
+      "tail_cm": [
+        -144.72,
+        163.72,
+        22.0
+      ],
+      "parent": "leg_br_1"
+    },
+    "leg_br_3": {
+      "head_cm": [
+        -144.72,
+        163.72,
+        22.0
+      ],
+      "tail_cm": [
+        -151.79,
+        170.79,
+        6.0
+      ],
+      "parent": "leg_br_2"
+    }
+  }
+}

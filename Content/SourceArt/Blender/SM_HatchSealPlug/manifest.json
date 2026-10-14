@@ -1,0 +1,30 @@
+{
+  "name": "SM_HatchSealPlug",
+  "mesh_class": "prop",
+  "fbx": "SM_HatchSealPlug.fbx",
+  "textures": {
+    "D": "SM_HatchSealPlug_D.png",
+    "N": "SM_HatchSealPlug_N.png",
+    "ORM": "SM_HatchSealPlug_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 3308,
+  "bounds_m": {
+    "min": [
+      -0.5,
+      -0.5101,
+      -0.5033
+    ],
+    "max": [
+      0.6752,
+      0.511,
+      0.4933
+    ]
+  },
+  "origin": "center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "덧댄 것이 눌러 막은 점검구 자리. 1 m 정육면체 기준이라 IGAccessHatch가 X 4 cm, 개구부 크기로 줄여 쓴다. +X 면이 방 쪽(뭉개진 방음재와 검은 접착층)."
+}

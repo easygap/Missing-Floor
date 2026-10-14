@@ -1,0 +1,31 @@
+{
+  "name": "SM_BareBulb",
+  "mesh_class": "prop",
+  "fbx": "SM_BareBulb.fbx",
+  "textures": {
+    "D": "SM_BareBulb_D.png",
+    "N": "SM_BareBulb_N.png",
+    "ORM": "SM_BareBulb_ORM.png",
+    "E": "SM_BareBulb_E.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 928,
+  "bounds_m": {
+    "min": [
+      -0.0252,
+      -0.0252,
+      -0.5436
+    ],
+    "max": [
+      0.0252,
+      0.0252,
+      0.0
+    ]
+  },
+  "origin": "top-center",
+  "emissive_strength": 3.0,
+  "blender": "5.2.0 LTS",
+  "notes": "천장에 줄로 매단 백열등. 원점이 천장 매다는 점, 전구 가운데가 아래 51 cm"
+}

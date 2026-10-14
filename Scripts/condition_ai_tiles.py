@@ -805,6 +805,18 @@ def main() -> int:
     parser.add_argument("--blend", type=float, default=0.12)
     parser.add_argument("--detail-gain", type=float, default=1.0)
     parser.add_argument(
+        "--saturation",
+        type=float,
+        default=1.0,
+        help="Ad-hoc: scale chroma around luma (1 keeps it). The lining foam ships at 0.55",
+    )
+    parser.add_argument(
+        "--value",
+        type=float,
+        default=1.0,
+        help="Ad-hoc: multiply brightness after the saturation step",
+    )
+    parser.add_argument(
         "--preview",
         action="store_true",
         help="Also write a 2x2 tiling sheet for eye approval",
@@ -860,6 +872,16 @@ def main() -> int:
         out, seam_note = make_seamless(
             out, spec.seam, spec.blend, spec.period_axis
         )
+        if args.saturation != 1.0 or args.value != 1.0:
+            import numpy as np
+
+            # 채도만 덜고 무늬와 밝기 얼룩은 그대로 둔다. 밝기 축은 Rec.709 휘도다.
+            rgb = np.asarray(out.convert("RGB"), dtype=np.float32) / 255.0
+            luma = rgb @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+            mixed = luma[..., None] + (rgb - luma[..., None]) * args.saturation
+            mixed = np.clip(mixed * args.value, 0.0, 1.0)
+            out = Image.fromarray((mixed * 255.0 + 0.5).astype(np.uint8), "RGB")
+            print(f"       saturation x{args.saturation:.2f}  value x{args.value:.2f}")
         after = measure(out)
         print(f"       out  luma {after['luma_mean']:.3f}  stipple {after['stipple']:.2f}"
               f"  field {after['field_spread']}"

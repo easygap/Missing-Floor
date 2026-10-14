@@ -1,0 +1,30 @@
+{
+  "name": "SM_AnnexInnerFixings",
+  "mesh_class": "prop",
+  "fbx": "SM_AnnexInnerFixings.fbx",
+  "textures": {
+    "D": "SM_AnnexInnerFixings_D.png",
+    "N": "SM_AnnexInnerFixings_N.png",
+    "ORM": "SM_AnnexInnerFixings_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 1784,
+  "bounds_m": {
+    "min": [
+      -0.0,
+      -0.5775,
+      -1.17
+    ],
+    "max": [
+      0.007,
+      0.5775,
+      1.17
+    ]
+  },
+  "origin": "bay-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "바깥층을 떼면 드러나는 안쪽 판. 각재 자국 둘과 그 사이의 나사 두 줄(안쪽 고정점), 각재 나사 구멍, 이음의 접착층과 방음재. 원점이 칸 가운데 벽 면(월드 높이 1320)."
+}
