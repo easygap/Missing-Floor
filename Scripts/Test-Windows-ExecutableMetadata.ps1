@@ -3,7 +3,7 @@ param(
 	[Parameter(Mandatory = $true)]
 	[string]$Executable,
 	[string]$ExpectedProductName = 'Missing Floor',
-	[string]$ExpectedVersion = '0.9.1',
+	[string]$ExpectedVersion = '0.10.0',
 	[string]$ExpectedCompanyName = 'easygap',
 	[string]$ExpectedCopyright =
 		'Copyright 2026 easygap. All rights reserved.',
