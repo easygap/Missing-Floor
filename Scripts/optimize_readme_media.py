@@ -49,6 +49,8 @@ STILLS = (
     "game-booth.png",
     "game-bedroom-dawn.png",
     "game-alley-dawn.png",
+    # 5층 벽에서 천장까지 몸을 편 덧댄 것(0.10.0). 화면 글자가 없는 컷이라 다섯 언어가 같이 쓴다.
+    "game-annex-lining.png",
     # 검수 기록도 본문에 전후 비교 캡처를 여러 장 건다. 원본을 그대로 걸면
     # 문서 하나를 여는 데 수십 MB가 들어서 같이 줄인다.
     "bedroom-before-bed.png",

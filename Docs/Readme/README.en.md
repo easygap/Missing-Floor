@@ -18,6 +18,8 @@ At 4:30 a.m. on the first night, three knocks come from the ceiling. Unit 403 is
 
 In daylight you follow your brother's trail around the building and the alley. Mrs. Hwang in 401 has lived here for thirty years. Narin, who works at the convenience store across the alley, knows everyone's business.
 
+A bulk waste notice is taped to the management office door, its pickup date crossed out and moved up. Jeongwoo from 202 is hauling the "unclaimed" boxes out of the office and up to 302. One of them has your brother's handwriting on it.
+
 ![The fourth-floor corridor. Gas inspection stickers and old flyers on every door.](../Media/readme/game-corridor-day-en.webp)
 
 <table>
@@ -28,7 +30,7 @@ In daylight you follow your brother's trail around the building and the alley. M
   <tr><td>The alley</td><td>Dawn24</td></tr>
 </table>
 
-The management office ledger, the CCTV and the meter readings on the ground floor don't quite agree. What you hear through the walls counts too. `Tab` brings back anything you've read, and if you're stuck, `H` has Yudam mutter where to look next.
+The management office ledger, the CCTV and the meter readings on the ground floor don't quite agree. What you hear through the walls counts too. Press `Tab` to reread your notes. If you're stuck, press `H` to hear Yudam's thoughts on where to look next.
 
 Signs and notices stay in Korean. Story documents can be read in English when you examine them.
 
@@ -48,11 +50,17 @@ From 4:30 to 5:30 the building is locked, and the one upstairs crawls the corrid
 
 Stand in the dark too long and a black shape appears, and it grows the longer you look at it. If a familiar voice calls from outside your front door, don't open it.
 
+In the back room of the management office, in 302 and on the fifth-floor wall, someone has packed layer after layer of soundproofing. Whatever is stuck there ignores sound and light. It looks for gaps that lead into the wall and covers the widest one with its body. Sometimes you have to open a hatch to draw it somewhere else, or wedge up a fallen board to clear a path. Get in its way and you'll be pinned between the board and its body.
+
+![The fifth-floor wall. A mass of soundproofing and steel has stretched itself up to the ceiling.](../Media/readme/game-annex-lining.webp)
+
 ![A dark corridor. Light from a neighbor's unit leaks under a door.](../Media/readme/game-corridor-night-en.webp)
 
 You can hide in the wardrobe or under the bed, and block the way with the front-door latch or the stairwell fire doors. Flashlight batteries come from the convenience store.
 
 Getting caught doesn't send you back to the start of the night. You come to wherever you were dragged, a few minutes later. What you lose depends on what caught you. If it was the one upstairs, your flashlight is lying on the floor where it grabbed you, and you have to go back there for it.
+
+Once you have found what the night had to show you, you can lie down in the bed in Unit 403 and wait for morning. You can keep looking around until 5:30, but if the night’s work isn’t done by then, you go through that night again the next evening.
 
 ![Unit 403, boxes still half unpacked. You can hide under the bed.](../Media/readme/game-bedroom-en.webp)
 
@@ -98,9 +106,9 @@ Caption size and background, sound direction markers, camera shake, flickering l
 
 ## Credits
 
-Sound effects are CC0 assets from OpenGameArt and Kenney, surface textures come from ambientCG, and scanned props from Poly Haven, also CC0. The fonts are Pretendard and Gowun Batang (SIL Open Font License 1.1).
+Sound effects are CC0 assets from OpenGameArt and Kenney, surface textures come from ambientCG, and scanned props from Poly Haven, also CC0. The fonts are Pretendard and Gowun Batang, with Noto Sans CJK for Japanese and Chinese (all SIL Open Font License 1.1).
 
-Some of the game is AI-made. Parts of the printed material, signs and textures are AI-generated images edited by hand. The bodies of the people and creatures, such as the one upstairs, the black shape, the building manager and the neighbor in 303, along with the alley cat and the delivery scooters, were turned into 3D from AI images with TRELLIS.2, then cleaned up and rigged in Blender. Many other props were modeled in Blender from AI concept images. Full sources and terms are in the [asset ledger](../ASSET_POLICY.md) (Korean).
+Some of the game is AI-made. Parts of the printed material, signs and textures are AI-generated images edited by hand. The bodies of the people and creatures, such as the one upstairs, the black shape, the building manager and the neighbors in 303 and 202, along with the alley cat and the delivery scooters, were turned into 3D from AI images, then cleaned up and rigged in Blender. The thing stuck to the walls was built by hand in Blender from AI concept images and texture tiles. Many other props were modeled in Blender from AI concept images. Full sources and terms are in the [asset ledger](../ASSET_POLICY.md) (Korean).
 
 ## Bugs and feedback
 

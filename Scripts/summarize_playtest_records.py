@@ -18,7 +18,9 @@ import os
 import statistics
 import sys
 
-NIGHT_MINUTES = {1: (12, 18), 2: (16, 24), 3: (20, 30), 4: (15, 25)}
+# 출시 확인표 §20.5의 처음 하는 사람 중앙값 목표. 0.10.0에서 밤을 침대에서 끝내게 바꾸며 다시 정했다.
+# 사람 기록이 없는 설계 목표라 기록이 모이면 다시 본다.
+NIGHT_MINUTES = {1: (20, 30), 2: (30, 40), 3: (35, 50), 4: (30, 45)}
 CAPTURE_MEDIAN_LIMIT = {1: 1, 4: 3}
 STUCK_SECONDS = 600.0
 STUCK_RADIUS = 600.0  # 같은 자리로 보는 범위(cm)
