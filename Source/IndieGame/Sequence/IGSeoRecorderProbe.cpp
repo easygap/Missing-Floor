@@ -387,7 +387,7 @@ void AIGSeoRecorderProbe::Tick(const float DeltaSeconds)
 		NightFour->BuildConfrontationReplyLinesForTesting(Replies);
 		Check(Contains(Replies, NSLOCTEXT("IGMissingFloor", "ConfrontationReplySeoRecorder", "403호 그 사람 내려가고 나서 아저씨는 뭐 했어요?")),
 			TEXT("confrontation_asks_what_he_did_after"));
-		Check(!Contains(Replies, NSLOCTEXT("IGMissingFloor", "ConfrontationReplyPills", "서일영 씨도 알아요? 그날 무슨 일이 있었는지.")),
+		Check(!Contains(Replies, NSLOCTEXT("IGMissingFloor", "ConfrontationReplyPills", "서일영 씨는 누구예요? 골목에서 5층만 올려다보던데요.")),
 			TEXT("confrontation_drops_the_pills_question"));
 		const TArray<FText> News = Epilogue->BuildNewsLinesForTesting();
 		Check(Contains(News, NSLOCTEXT("IGMissingFloor", "EpilogueNews4Recorder", "전 세입자 서모씨는 경찰에 출석해 유족이 제출한 녹음기가 자신의 것이라고 인정했다")),

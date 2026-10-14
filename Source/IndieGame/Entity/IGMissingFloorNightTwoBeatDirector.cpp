@@ -738,7 +738,24 @@ void AIGMissingFloorNightTwoBeatDirector::ReleaseFigure()
 
 // -- 비트 2-5 「귀환 추격」 -------------------------------------------------
 
-void AIGMissingFloorNightTwoBeatDirector::ArmReturnChase()
+void AIGMissingFloorNightTwoBeatDirector::CompleteReturnAfterEscort()
+{
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative || Narrative->GetNightIndex() != 2 || ReturnStage == EIGNightTwoReturnStage::Home)
+	{
+		return;
+	}
+	ReturnStage = EIGNightTwoReturnStage::Home;
+	GetWorldTimerManager().ClearTimer(ReturnTimer);
+	GetWorldTimerManager().ClearTimer(ReturnChillTimer);
+	if (UIGMissingFloorNarrativeSubsystem* Mutable = GetNarrative())
+	{
+		Mutable->MarkBeatPlayed(IGNightTwo::ReturnBeatId);
+	}
+	OnReturnedHome.Broadcast();
+}
+
+void AIGMissingFloorNightTwoBeatDirector::ArmReturnChase(const bool bWithConclusion)
 {
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 	if (!Narrative || Narrative->GetNightIndex() != 2)
@@ -754,23 +771,26 @@ void AIGMissingFloorNightTwoBeatDirector::ArmReturnChase()
 	// 책상에 남아 있어서 「들고」 갈 것은 없다. 이 함수는 마지막 단서를 읽는 호출 안에서
 	// 불리고, 그 단서의 대사는 이 함수가 끝난 뒤에야 들어간다. 다음 틱으로 미뤄야 단서를
 	// 읽은 대사가 먼저 나오고 결론이 뒤따른다.
-	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+	if (bWithConclusion)
 	{
-		AIGHorrorHUD::PushThought(
-			this,
-			NSLOCTEXT(
-				"IGMissingFloor",
-				"P2ContradictionThought",
-				"26일에 짐을 다 뺐다는데, 벽 두드리는 소리는 31일까지 났어. 그때도 위에 누가 있었던 거야."),
-			5.0f);
-		AIGHorrorHUD::PushThought(
-			this,
-			NSLOCTEXT(
-				"IGMissingFloor",
-				"N2ReturnThought",
-				"이제 403호까지 올라가야 해."),
-			4.0f);
-	}));
+		GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			AIGHorrorHUD::PushThought(
+				this,
+				NSLOCTEXT(
+					"IGMissingFloor",
+					"P2ContradictionThought",
+					"26일에 짐을 다 뺐다는데, 벽 두드리는 소리는 31일까지 났어. 그때도 위에 누가 있었던 거야."),
+				5.0f);
+			AIGHorrorHUD::PushThought(
+				this,
+				NSLOCTEXT(
+					"IGMissingFloor",
+					"N2ReturnThought",
+					"이제 403호까지 올라가야 해."),
+				4.0f);
+		}));
+	}
 	// 지운 민원을 읽은 몸이 식는다. 놀람이 아니라 한기라서 숨은 걸리지 않는다.
 	if (AIGPlayerCharacter* PlayerCharacter = Player.Get())
 	{
@@ -826,11 +846,11 @@ bool AIGMissingFloorNightTwoBeatDirector::IsPlayerOutsideBooth() const
 		return false;
 	}
 	const FVector Where = PlayerCharacter->GetActorLocation();
-	// 1층에서 관리실 남쪽 선을 넘었을 때만. 다른 층에서의 Y는 아무 의미가 없다.
-	// 2층 바닥(4층의 3분의 1)부터는 1층이 아니다 — 계단이 이어진 뒤로 2층 복도의
-	// Y도 이 선 남쪽이다.
-	return Where.Z < IGNightTwo::FourthFloorZ / 3.0f
-		&& Where.Y < IGNightTwo::BoothExitY;
+	// 1층에서 관리실 남쪽 선을 넘었을 때. 2층 바닥(4층의 3분의 1)부터는 1층이 아니다 — 계단이
+	// 이어진 뒤로 2층 복도의 Y도 이 선 남쪽이다. 안쪽 방 장면 동안 관리인을 피해 먼저 계단이나
+	// 엘리베이터로 올라간 뒤에 추격이 걸리면, 이미 관리실을 나선 것으로 본다.
+	return Where.Z >= IGNightTwo::FourthFloorZ / 3.0f
+		|| Where.Y < IGNightTwo::BoothExitY;
 }
 
 bool AIGMissingFloorNightTwoBeatDirector::IsPlayerInsideBooth() const

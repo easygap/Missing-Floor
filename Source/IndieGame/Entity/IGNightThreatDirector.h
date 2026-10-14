@@ -126,6 +126,8 @@ public:
 	bool IsQuietForProbe() const { return IsQuietWindow(); }
 	/** 검사 전용. 자동 저장을 미룰 만한 일이 진행 중인가. */
 	bool IsEventInProgressForProbe() const { return IsEventInProgress(); }
+	/** 침대에서 아침까지 쉬지 못하게 하는 일이 있다(손님·어둑시니·추격·벽의 대답). */
+	bool IsBusyForNightRest() const { return IsEventInProgress() || IsPursuitActive(); }
 	/** 검사 전용. 미뤄 둔 자동 저장이 있다. */
 	bool IsAutosavePendingForProbe() const { return bQuietAutosavePending; }
 	/** 첫 노크와 거의 같이 문이 열려 미룬 방문이 있다. */
@@ -144,6 +146,12 @@ public:
 	 * 그 일이 통째로 없어졌다. 감독이 없거나 밤 시간이 아니면 바로 저장한다. 미루는 사이 밤이
 	 * 끝나면 버린다. 새벽 저장이 뒤따른다.
 	 */
+	/**
+	 * 큰 발견 바로 뒤에는 다른 괴이(손님·어둑시니 등)가 끼어들지 않게 Seconds 동안 조용한 때를 닫는다.
+	 * 위층 사람과 관리인의 실제 추격은 막지 않는다(그건 그녀가 낸 소리의 결과다).
+	 */
+	static void HoldQuietAfterDiscovery(const UObject* WorldContext, float Seconds);
+
 	static void RequestAutosaveWhenQuiet(
 		const UObject* WorldContext,
 		FGameplayTag ChapterId,
@@ -369,6 +377,8 @@ private:
 	bool bGuestStartDeferred = false;
 	/** 위층 사람이나 관리인이 마지막으로 쫓거나 찾던 시각. 끝나고 잠깐은 다른 것이 오지 않는다. */
 	double LastPursuitSeconds = -1000.0;
+	/** HoldQuietAfterDiscovery가 닫은 때의 끝(월드 시각). */
+	double DiscoveryQuietUntil = -1000.0;
 	FTimerHandle GuestBehindTimer;
 	FTimerHandle GuestSlamTimer;
 	FTimerHandle GuestWakeThoughtTimer;

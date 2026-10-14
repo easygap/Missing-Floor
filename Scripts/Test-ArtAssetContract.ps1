@@ -1012,8 +1012,13 @@ foreach ($token in @(
 		throw "Missing-floor v3 witness contract is missing: $token"
 	}
 }
-if (-not $missingFloorNarrativeHeader.Contains('SnapshotSchemaVersion = 3')) {
-	throw 'Missing-floor snapshot schema was not advanced for optional witnesses.'
+if (-not $missingFloorNarrativeHeader.Contains('SnapshotSchemaVersion = 4')) {
+	throw 'Missing-floor snapshot schema was not advanced for the 302 leftovers state.'
+}
+foreach ($token in @('FIGLeftoverState Leftover;', 'bLegacyWallSequence', 'Snapshot.SchemaVersion < 4')) {
+	if (-not $missingFloorNarrativeSource.Contains($token) -and -not $missingFloorNarrativeTypes.Contains($token)) {
+		throw "Missing-floor leftovers save contract is missing: $token"
+	}
 }
 
 # §12: 표에 올라온 출처는 전부 세계 어딘가에서 실제로 적혀야 한다.

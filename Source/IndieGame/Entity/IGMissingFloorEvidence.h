@@ -89,6 +89,9 @@ public:
 	/** Fires on every completed examination, including repeats. */
 	FIGEvidenceExaminedSignature OnExamined;
 
+	/** 마지막으로 끝낸 상호작용이 조준한 자리. 조준 정보가 없으면(검사) 액터 위치다. */
+	FVector GetLastInteractionPoint() const { return LastInteractionPoint; }
+
 	virtual void BeginInteraction_Implementation(
 		const FIGInteractionContext& Context) override;
 	virtual void UpdateInteraction_Implementation(
@@ -141,4 +144,5 @@ private:
 
 	int32 CompletedStages = 0;
 	bool bExamined = false;
+	FVector LastInteractionPoint = FVector::ZeroVector;
 };

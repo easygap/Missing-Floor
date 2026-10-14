@@ -250,6 +250,8 @@ private:
 	void AdvanceReturn();
 	void StageReturnFigure();
 	void ReleaseReturnFigure();
+	/** 귀가 뒤, 그녀가 그를 보지 않는 때를 골라 순찰로 돌려보낸다. */
+	void PollReturnFigureRelease();
 	/**
 	 * 대답을 받고도 05:30을 넘긴 밤3이 되풀이될 때 귀환길을 다시 세운다.
 	 * T9는 새로 확정되지 않으므로 OnSolved가 다시 오지 않는다.
@@ -300,6 +302,8 @@ private:
 	TArray<FVector> CorridorPatrolPoints;
 
 	FTimerHandle ReturnTimer;
+	FTimerHandle FigureReleaseTimer;
+	float FigureUnseenSeconds = 0.0f;
 	EIGNightThreeReturnStage ReturnStage = EIGNightThreeReturnStage::Idle;
 	bool bFigureStaged = false;
 	bool bPassedWhileWaiting = false;

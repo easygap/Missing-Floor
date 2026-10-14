@@ -54,6 +54,15 @@ void AIGReadableNote::ConfigurePrototypeVisuals(
 	PaperMesh->SetCastShadow(bCastPresentationShadow);
 }
 
+void AIGReadableNote::HidePresentation()
+{
+	if (PaperMesh)
+	{
+		PaperMesh->SetVisibility(false, true);
+		PaperMesh->SetCastShadow(false);
+	}
+}
+
 void AIGReadableNote::SetNoteText(const FText& InTitle, TArray<FText> InBodyLines)
 {
 	NoteTitle = InTitle;

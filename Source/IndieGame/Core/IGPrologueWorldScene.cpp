@@ -3740,14 +3740,48 @@ void AIGPrologueWorldScene::BuildLowerFloors()
 			FVector(-20, -65, 590), FVector(280, 300, 20), Jangpan),
 			IGPrologueWorld::FootstepVinylTag);
 		CreateBlock(FVector(-20, -65, 850), FVector(280, 300, 20), PaperCeil);
-		CreateBlock(FVector(-167.5f, -57.5f, 720), FVector(15, 315, 240), PaperY);
-		CreateBlock(FVector(127.5f, -57.5f, 720), FVector(15, 315, 240), PaperY);
-		CreateBlock(FVector(-20, 92.5f, 720), FVector(280, 15, 240), PaperX);
+		// 서벽은 장롱 뒤 큰 점검구(Y -40..40, 높이 610..710)를 비운다.
+		CreateBlock(FVector(-167.5f, -127.5f, 720), FVector(15, 175, 240), PaperY);
+		CreateBlock(FVector(-167.5f, 70, 720), FVector(15, 60, 240), PaperY);
+		CreateBlock(FVector(-167.5f, 0, 605), FVector(15, 80, 10), PaperY);
+		CreateBlock(FVector(-167.5f, 0, 775), FVector(15, 80, 130), PaperY);
+		// 동벽은 남쪽 중간 점검판(Y -175..-125, 높이 610..680)을 비운다.
+		CreateBlock(FVector(127.5f, -195, 720), FVector(15, 40, 240), PaperY);
+		CreateBlock(FVector(127.5f, -12.5f, 720), FVector(15, 225, 240), PaperY);
+		CreateBlock(FVector(127.5f, -150, 605), FVector(15, 50, 10), PaperY);
+		CreateBlock(FVector(127.5f, -150, 760), FVector(15, 50, 160), PaperY);
+		// 북벽은 마감판 한 줄을 떼어 낸 좁은 작업 틈(X -10..20, 높이 620..730)을 비운다.
+		// 짐 줄기 감독의 Storage.Narrow(가운데 X 5)와 같은 자리다.
+		CreateBlock(FVector(-85, 92.5f, 720), FVector(150, 15, 240), PaperX);
+		CreateBlock(FVector(70, 92.5f, 720), FVector(100, 15, 240), PaperX);
+		CreateBlock(FVector(5, 92.5f, 610), FVector(30, 15, 20), PaperX);
+		CreateBlock(FVector(5, 92.5f, 785), FVector(30, 15, 110), PaperX);
+		// 세 틈 뒤는 같은 배관 통로다. 덮개를 열면 어두운 콘크리트와 관이 보인다.
+		UMaterialInterface* StorageChase = TexMat(TEXT("M_UtilityConcreteDark"), ConcreteDarkMaterial);
+		// 통로 바닥. 302호 바닥 마감 밖이라 구조 슬래브를 따로 깐다(서쪽, 북쪽).
+		CreateBlock(FVector(-187.5f, 0, 595), FVector(35, 100, 10), StorageChase);
+		CreateBlock(FVector(5, 111, 595), FVector(50, 26, 10), StorageChase);
+		CreateBlock(FVector(-202.5f, 0, 720), FVector(5, 90, 240), StorageChase);
+		CreateBlock(FVector(-187.5f, -47.5f, 720), FVector(25, 5, 240), StorageChase);
+		CreateBlock(FVector(-187.5f, 47.5f, 720), FVector(25, 5, 240), StorageChase);
+		CreateBlock(FVector(5, 122.5f, 720), FVector(40, 5, 240), StorageChase);
+		CreateBlock(FVector(-17.5f, 111, 720), FVector(5, 22, 240), StorageChase);
+		CreateBlock(FVector(27.5f, 111, 720), FVector(5, 22, 240), StorageChase);
+		CreateBlock(FVector(157.5f, -150, 720), FVector(5, 60, 240), StorageChase);
+		CreateBlock(FVector(146, -182.5f, 720), FVector(22, 5, 240), StorageChase);
+		CreateBlock(FVector(146, -117.5f, 720), FVector(22, 5, 240), StorageChase);
+		CreateBlock(FVector(5, 112, 720), FVector(8, 8, 240),
+			TexMat(TEXT("M_StainlessUV"), MetalFrameMaterial), false, CylinderMesh);
+		// 장롱은 짐 줄기 감독이 민다. 여기서는 처음 자리에 둔다(움직이는 컴포넌트).
 		if (UStaticMesh* WardrobeMesh = PropMesh(TEXT("SM_Wardrobe")))
 		{
-			CreateBlock(
+			Wardrobe302Mesh = CreateBlock(
 				FVector(-138, 0, 600), FVector(100, 100, 100),
 				nullptr, true, WardrobeMesh, FRotator::ZeroRotator);
+			if (Wardrobe302Mesh)
+			{
+				Wardrobe302Mesh->SetMobility(EComponentMobility::Movable);
+			}
 		}
 		// 열려 있는 현관문. 안쪽 벽에 붙여 젖혀 두었다.
 		if (DoorLeafMesh)
@@ -3756,8 +3790,9 @@ void AIGPrologueWorldScene::BuildLowerFloors()
 				FVector(-80, -170, 600), FVector(100, 100, 100),
 				nullptr, true, DoorLeafMesh, FRotator(0, 90, 0));
 		}
-		CreateProp(TEXT("SM_KimchiTub"), FVector(90, 60, 600), nullptr, 15.0f, 1.0f, true);
-		CreateProp(TEXT("SM_Basket"), FVector(84, 20, 600), nullptr, -20.0f, 1.0f, true);
+		// 북동 구석은 마감판과 정우 자리라 비운다. 살림 몇 개는 남동쪽 벽 밑에 몰아 두었다.
+		CreateProp(TEXT("SM_KimchiTub"), FVector(95, -198, 600), nullptr, 15.0f, 1.0f, true);
+		CreateProp(TEXT("SM_Basket"), FVector(58, -200, 600), nullptr, -20.0f, 1.0f, true);
 		CreateProp(TEXT("SM_HouseSlipper"), FVector(-12, -190, 600), nullptr, 8.0f, 1.0f, false);
 		CreateProp(TEXT("SM_HouseSlipper"), FVector(2, -192, 600), nullptr, -4.0f, 1.0f, false);
 		if (RingMesh && DomeMesh)
@@ -4572,7 +4607,32 @@ void AIGPrologueWorldScene::BuildFifthFloorAnnex()
 
 	// Three finished bays in a row: only the middle one hides a cavity, and
 	// only sound can tell them apart. Gypsum faces with exposed stud edges.
-	for (const float BayY : {560.0f, 700.0f, 840.0f})
+	// 남쪽 첫 칸은 배관 점검 자리(Y 462..522, 높이 1230..1300)에 자리를 내주고 Y 524..620이다.
+	CreateBlock(FVector(257.5f, 572, 1320), FVector(15, 96, 240), AnnexWallY);
+	CreateBlock(FVector(249.0f, 522.0f, 1320), FVector(4, 4, 240), Stud, false);
+	CreateBlock(FVector(249.0f, 622.0f, 1320), FVector(4, 6, 240), Stud, false);
+	// 배관 점검 자리. 원래 덮개를 떼고 석고 덧판을 박아 막았다. 덧판은 밤4에 뜯는다.
+	CreateBlock(FVector(257.5f, 492, 1215), FVector(15, 64, 30), AnnexWallY);
+	CreateBlock(FVector(257.5f, 492, 1370), FVector(15, 64, 140), AnnexWallY);
+	CreateBlock(FVector(257.5f, 461, 1265), FVector(15, 2, 70), AnnexWallY);
+	CreateBlock(FVector(257.5f, 523, 1265), FVector(15, 2, 70), AnnexWallY);
+	if (UStaticMesh* Overlay = PropMesh(TEXT("SM_InspectionOverlayBoard")))
+	{
+		MissingFloorInspectionOverlay = CreateBlock(
+			FVector(250, 492, 1265), FVector(100, 80, 100), nullptr, true, Overlay, FRotator(0, 180, 0));
+		if (MissingFloorInspectionOverlay)
+		{
+			MissingFloorInspectionOverlay->SetMobility(EComponentMobility::Movable);
+		}
+	}
+	// 점검 칸 안. 가지관과 밸브, 그리고 큰 공간을 가리는 ㄱ자 아연 판.
+	CreateBlock(FVector(290, 490, 1320), FVector(10, 10, 240),
+		TexMat(TEXT("M_StainlessUV"), MetalFrameMaterial), false, CylinderMesh);
+	if (UStaticMesh* Shield = PropMesh(TEXT("SM_BentShieldSheet")))
+	{
+		CreateBlock(FVector(265, 525, 1200), FVector(100, 100, 100), nullptr, true, Shield, FRotator(0, -90, 0));
+	}
+	for (const float BayY : {700.0f, 840.0f})
 	{
 		UStaticMeshComponent* BayPanel = CreateBlock(
 			FVector(257.5f, BayY, 1320),
@@ -5126,6 +5186,20 @@ bool AIGPrologueWorldScene::OpenMissingFloorCavity()
 	return true;
 }
 
+bool AIGPrologueWorldScene::SetMissingFloorInspectionOverlayRemoved(const bool bRemoved)
+{
+	if (!MissingFloorInspectionOverlay)
+	{
+		return false;
+	}
+	MissingFloorInspectionOverlay->SetVisibility(!bRemoved, true);
+	MissingFloorInspectionOverlay->SetHiddenInGame(bRemoved, true);
+	MissingFloorInspectionOverlay->SetCollisionEnabled(
+		bRemoved ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
+	bMissingFloorInspectionOverlayRemoved = bRemoved;
+	return true;
+}
+
 bool AIGPrologueWorldScene::ResetMissingFloorCavity()
 {
 	if (!MissingFloorCavityWallPanel)
@@ -5338,7 +5412,10 @@ void AIGPrologueWorldScene::BuildLobby()
 	// (STORY_BIBLE_MISSING_FLOOR.md §8 밤2).
 	CreateBlock(FVector(170, -160, -10), FVector(240, 170, 20), LobbyFloor);
 	CreateBlock(FVector(170, -155, 250), FVector(240, 160, 20), LobbyCeil);
-	CreateBlock(FVector(170, -77.5f, 120), FVector(240, 15, 240), LobbyWallX);
+	// 북벽은 안쪽 방 문(개구부 X 202..278, 높이 205)을 비켜 세 조각이다.
+	CreateBlock(FVector(126, -77.5f, 120), FVector(152, 15, 240), LobbyWallX);
+	CreateBlock(FVector(284, -77.5f, 120), FVector(12, 15, 240), LobbyWallX);
+	CreateBlock(FVector(240, -77.5f, 222.5f), FVector(76, 15, 35), LobbyWallX);
 	CreateBlock(FVector(52.5f, -155, 120), FVector(15, 140, 240), LobbyWallY);
 	CreateBlock(FVector(287.5f, -155, 120), FVector(15, 140, 240), LobbyWallY);
 	// 자재 보관 벽의 작업조끼. 아래 판재와 떨어뜨리고 서쪽 배관·조작반은 비운다.
@@ -5365,10 +5442,12 @@ void AIGPrologueWorldScene::BuildLobby()
 	CreateBlock(FVector(150, -105.2f, CctvScreenCenterZ), FVector(CctvScreenWidth, CctvScreenHeight, 100),
 		TexMat(TEXT("M_CctvStandby"), ScreenGlowMaterial), false,
 		LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane")), FRotator(0, 180, 90));
-	// The inner room's door leaf, always shut: a dark slab with a hairline
-	// gap the foam reveal peers through. It never opens — that is the point.
-	CreateBlock(FVector(240, -84.5f, 105), FVector(70, 5, 210), PlasticDarkMaterial, false);
-	CreateBlock(FVector(272, -84, 105), FVector(2.4f, 3, 200), ConcreteDarkMaterial, false);
+	// 안쪽 방 문틀. 문짝은 짐 줄기 감독이 단다(AIGMissingFloorLeftoverDirector). 403호 욕실과
+	// 같은 ABS 문틀을 15 cm 벽 두께로 줄여 쓰고, 문 닫힘 턱이 관리실 쪽에 선다.
+	if (UStaticMesh* InnerFrame = PropMesh(TEXT("SM_BathroomDoorFrame")))
+	{
+		CreateBlock(FVector(240, -77.5f, 0), FVector(100, 75, 100), nullptr, false, InnerFrame, FRotator::ZeroRotator);
+	}
 	// Booth ceiling lamp block so the room is not a cave in the day section.
 	CreateBlock(FVector(170, -150, 237), FVector(24, 24, 4), PlasticDarkMaterial, false);
 	CreateLight(FVector(170, -150, 226), 900.0f, 420.0f,
@@ -5381,6 +5460,8 @@ void AIGPrologueWorldScene::BuildLobby()
 		FVector(254, -166, 39.61f), FVector(50, 100, 100), nullptr,
 		true, PropMesh(TEXT("SM_GypsumCutBoard")), FRotator(0, 90, 99));
 	CreateProp(TEXT("SM_WorkPaintCan"), FVector(230, -198, 0), nullptr, -60, 1, true);
+
+	BuildInnerRoom();
 
 	// Granite skirting round the lobby, matching the landings upstairs.
 	CreateBlock(FVector(575, -146.75f, 6), FVector(250, 3.5f, 12), Skirting, false);
@@ -5545,6 +5626,113 @@ void AIGPrologueWorldScene::BuildLobby()
 		CreateBlock(FVector(790, -306, 1470), FVector(180, 182, 20), ShaftConcrete);
 		CreateBlock(FVector(795, -308, -140), FVector(150, 166, 20), ShaftConcrete);
 		CreateBlock(FVector(710, -308, -85), FVector(20, 166, 130), ShaftConcrete);
+	}
+}
+
+void AIGPrologueWorldScene::BuildInnerRoom()
+{
+	// 관리실 안쪽 방. 목한수가 자는 방이고, 7월 27일부터 벽마다 방음재를 덧대 붙였다.
+	// 안쪽은 X -100..280, Y -70..170, 높이 235. 문은 관리실 북벽(X 202..278)이고 방 쪽으로
+	// 열린다. 서벽 가슴 높이에 작은 점검구(45x45), 북벽 동쪽 무릎 높이에 큰 점검구(80x100)가
+	// 있고 둘 다 같은 배관 통로로 이어진다. 문짝·점검구 덮개·괴이는 짐 줄기 감독이 단다.
+	UMaterialInterface* RoomFloor = TexMat(TEXT("M_Jangpan"), FloorMaterial);
+	UMaterialInterface* RoomWallX = TexMat(TEXT("M_Stucco_X"), ConcreteMaterial);
+	UMaterialInterface* RoomWallY = TexMat(TEXT("M_Stucco_Y"), ConcreteMaterial);
+	UMaterialInterface* RoomCeil = TexMat(TEXT("M_StuccoCeil"), ConcreteMaterial);
+	UMaterialInterface* Chase = TexMat(TEXT("M_UtilityConcreteDark"), ConcreteDarkMaterial);
+	UMaterialInterface* ChasePipe = TexMat(TEXT("M_StainlessUV"), MetalFrameMaterial);
+	IGPrologueWorld::TagFootstepSurface(
+		CreateBlock(FVector(90, 50, -10), FVector(410, 250, 20), RoomFloor),
+		IGPrologueWorld::FootstepVinylTag);
+	CreateBlock(FVector(90, 50, 245), FVector(410, 250, 20), RoomCeil);
+	// 남벽 서쪽 끝(관리실 서벽 바깥). 동쪽은 관리실 북벽이 맡는다.
+	CreateBlock(FVector(-32.5f, -77.5f, 117.5f), FVector(165, 15, 235), RoomWallX);
+	// 서벽. 작은 점검구 자리(Y 62.5..107.5, 높이 117.5..162.5)를 비운다.
+	CreateBlock(FVector(-107.5f, -3.75f, 117.5f), FVector(15, 132.5f, 235), RoomWallY);
+	CreateBlock(FVector(-107.5f, 146.25f, 117.5f), FVector(15, 77.5f, 235), RoomWallY);
+	CreateBlock(FVector(-107.5f, 85, 58.75f), FVector(15, 45, 117.5f), RoomWallY);
+	CreateBlock(FVector(-107.5f, 85, 198.75f), FVector(15, 45, 72.5f), RoomWallY);
+	// 북벽. 큰 점검구 자리(X 150..230, 높이 10..110)를 비운다.
+	CreateBlock(FVector(25, 177.5f, 117.5f), FVector(250, 15, 235), RoomWallX);
+	CreateBlock(FVector(255, 177.5f, 117.5f), FVector(50, 15, 235), RoomWallX);
+	CreateBlock(FVector(190, 177.5f, 5), FVector(80, 15, 10), RoomWallX);
+	CreateBlock(FVector(190, 177.5f, 172.5f), FVector(80, 15, 125), RoomWallX);
+	// 동벽.
+	CreateBlock(FVector(287.5f, 57.5f, 117.5f), FVector(15, 255, 235), RoomWallY);
+
+	// 점검구 뒤 배관 통로. 덮개를 열면 어둡고 좁은 통로와 관이 보인다.
+	CreateBlock(FVector(-170, 85, 117.5f), FVector(10, 110, 235), Chase);
+	CreateBlock(FVector(-140, 32.5f, 117.5f), FVector(50, 5, 235), Chase);
+	CreateBlock(FVector(-140, 137.5f, 117.5f), FVector(50, 5, 235), Chase);
+	CreateBlock(FVector(-140, 85, -10), FVector(50, 110, 20), Chase);
+	CreateBlock(FVector(-140, 85, 245), FVector(50, 110, 20), Chase);
+	CreateBlock(FVector(-145, 70, 117.5f), FVector(10, 10, 235), ChasePipe, false, CylinderMesh);
+	CreateBlock(FVector(190, 240, 117.5f), FVector(110, 10, 235), Chase);
+	CreateBlock(FVector(137.5f, 210, 117.5f), FVector(5, 50, 235), Chase);
+	CreateBlock(FVector(242.5f, 210, 117.5f), FVector(5, 50, 235), Chase);
+	CreateBlock(FVector(190, 210, -10), FVector(110, 50, 20), Chase);
+	// physics-audit: intentional 통로 천장 판은 양옆 5 cm 벽 두 장 위에 걸쳐 얹었다. 서쪽 통로와 같은 짜임이다.
+	CreateBlock(FVector(190, 210, 245), FVector(110, 50, 20), Chase);
+	CreateBlock(FVector(190, 214, 34), FVector(10, 10, 110), ChasePipe, false, CylinderMesh, FRotator(90, 0, 0));
+
+	// 벽마다 덧댄 방음 판. 판 하나가 1 m이고 점검구와 문틀은 비켰다.
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(-50, 170, 0), nullptr, 0.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelB"), FVector(-50, 170, 100), nullptr, 0.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelB"), FVector(50, 170, 0), nullptr, 0.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(50, 170, 100), nullptr, 0.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(190, 170, 120), nullptr, 0.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelB"), FVector(-100, -20, 0), nullptr, 90.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(-100, -20, 100), nullptr, 90.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(-100, 80, 0), nullptr, 90.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(-50, -70, 0), nullptr, 180.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelB"), FVector(-50, -70, 100), nullptr, 180.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelB"), FVector(50, -70, 0), nullptr, 180.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(50, -70, 100), nullptr, 180.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(145, -70, 0), nullptr, 180.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelB"), FVector(145, -70, 100), nullptr, 180.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelB"), FVector(280, 30, 0), nullptr, -90.0f, 1.0f, false);
+	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(280, 30, 100), nullptr, -90.0f, 1.0f, false);
+
+	// 남벽 서쪽 간이침대, 서벽 작업대(점검구 밑), 동벽 북쪽 보관함, 동벽 가운데 떼어 낸 판재.
+	CreateProp(TEXT("SM_InnerRoomCot"), FVector(3, -30, 0), nullptr, 180.0f, 1.0f, true);
+	CreateProp(TEXT("SM_InnerRoomWorkbench"), FVector(-65, 85, 0), nullptr, 90.0f, 1.0f, true);
+	CreateProp(TEXT("SM_InnerRoomCabinet"), FVector(256, 122, 0), nullptr, -90.0f, 1.0f, true);
+	if (UStaticMesh* Boards = PropMesh(TEXT("SM_RemovedBoards")))
+	{
+		// 메시 바닥이 0.8 mm 아래로 내려와 있어 그만큼 올려 바닥에 얹는다.
+		CreateBlock(FVector(262, 30, 0.08f), FVector(65, 100, 85), nullptr, true, Boards, FRotator(0, -90, 0));
+	}
+	CreateProp(TEXT("SM_StorageBox"), FVector(256, 124, 180), nullptr, -84.0f, 1.0f, true);
+	CreateProp(TEXT("SM_StorageBox"), FVector(254, 118, 214.2f), nullptr, -97.0f, 1.0f, true);
+	CreateProp(TEXT("SM_WasteSack"), FVector(125, -40, 0), nullptr, 20.0f, 1.0f, true);
+	CreateProp(TEXT("SM_WasteSack"), FVector(160, -22, 0), nullptr, -35.0f, 1.0f, true);
+
+	// 줄에 매단 백열등. 그가 깨면 켜고 나간 사이에도 켜 둔다. 연출은 세기로만 끈다.
+	InnerRoomBulb = CreateProp(TEXT("SM_BareBulb"), FVector(90, 50, 235), nullptr, 0.0f, 1.0f, false);
+	if (InnerRoomBulb)
+	{
+		InnerRoomBulb->SetMobility(EComponentMobility::Movable);
+		InnerRoomBulbGlow = UMaterialInstanceDynamic::Create(InnerRoomBulb->GetMaterial(0), this);
+		if (InnerRoomBulbGlow)
+		{
+			InnerRoomBulb->SetMaterial(0, InnerRoomBulbGlow);
+			InnerRoomBulbGlow->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.0f);
+		}
+	}
+	InnerRoomBulbLight = CreateLight(
+		FVector(90, 50, 180), 0.0f, 620.0f, FLinearColor(1.0f, 0.78f, 0.52f), true, 3.0f);
+}
+
+void AIGPrologueWorldScene::SetInnerRoomBulbOn(const bool bOn)
+{
+	bInnerRoomBulbOn = bOn;
+	if (InnerRoomBulbLight)
+	{
+		InnerRoomBulbLight->SetIntensity(bOn ? InnerRoomBulbIntensity : 0.0f);
+	}
+	if (InnerRoomBulbGlow)
+	{
+		InnerRoomBulbGlow->SetScalarParameterValue(TEXT("EmissiveStrength"), bOn ? 6.0f : 0.0f);
 	}
 }
 
@@ -7215,7 +7403,8 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 			NSLOCTEXT("IGMissingFloor", "HideBehindSheetPrompt", "비닐 뒤에 숨기"));
 	}
 	// 302호 장롱. 403호 장롱과 같은 메시라 같은 자리에서 본다(앞면 X -114.4).
-	if (AIGHidingSpot* Wardrobe302 = SpawnHidingSpot(FVector(-114.4f, 0.0f, 600.0f), 0.0f))
+	Wardrobe302Hide = SpawnHidingSpot(FVector(-114.4f, 0.0f, 600.0f), 0.0f);
+	if (AIGHidingSpot* Wardrobe302 = Wardrobe302Hide.Get())
 	{
 		Wardrobe302->Configure(
 			EIGHidingView::DoorGap,

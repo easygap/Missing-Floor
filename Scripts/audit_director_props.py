@@ -526,6 +526,12 @@ def prop_boxes(sources: dict, signatures: dict, mesh_bounds: dict) -> tuple:
             half = origin = None
             explicit = re.search(r"FVector\s*\(([^()]*)\)", size_argument)
             explicit_values = _floats(explicit.group(1), 3) if explicit else None
+            if explicit_values is None:
+                # 벽 점검구처럼 면의 크기(가로, 세로)만 받는 소품. 두께는 틀 깊이 4 cm로 본다.
+                flat = re.search(r"FVector2D\s*\(([^()]*)\)", size_argument)
+                flat_values = _floats(flat.group(1), 2) if flat else None
+                if flat_values:
+                    explicit_values = (4.0, flat_values[0], flat_values[1])
             authored = bool(AUTHORED_SIZE_IDIOM.search(size_argument))
             zero = "ZeroVector" in size_argument
 

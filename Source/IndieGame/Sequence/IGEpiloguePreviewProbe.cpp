@@ -78,6 +78,11 @@ void AIGEpiloguePreviewProbe::Tick(const float DeltaSeconds)
 				}
 				Narrative->MarkBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro")));
 				Narrative->MarkBeatPlayed(FName(TEXT("Day.Jeongwoo.Guest")));
+				Narrative->MarkBeatPlayed(FName(TEXT("Day2.NarinMilk")));
+				// 0.10.0 남은 짐 줄기: 공구 주머니를 가져오고 정우와 오빠 상자를 같이 꺼낸 회차.
+				Narrative->AddLeftover(EIGLeftoverList::Taken, FName(TEXT("ToolPouch")));
+				Narrative->AddLeftover(EIGLeftoverList::Taken, FName(TEXT("DohaBox")));
+				Narrative->MutableLeftover().JeongwooState = FName(TEXT("LeftTogether"));
 				UE_LOG(LogIndieGame, Display, TEXT("EPILOGUE_PREVIEW all witnesses seen"));
 			}
 		}

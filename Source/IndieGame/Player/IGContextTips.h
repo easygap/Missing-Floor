@@ -21,7 +21,9 @@ enum class EIGContextTip : uint8
 	/** 처음으로 단서가 기록됐을 때(낮). */
 	Journal,
 	/** 한동안 새로 알아낸 것이 없을 때. */
-	Hint
+	Hint,
+	/** H 힌트가 다음에 할 일을 그대로 말하기 직전. 매번 띄운다. */
+	HintAnswer
 };
 
 struct FIGContextTips
@@ -41,8 +43,17 @@ struct FIGContextTips
 		case EIGContextTip::Sprint: return TEXT("Sprint");
 		case EIGContextTip::Journal: return TEXT("Journal");
 		case EIGContextTip::Hint: return TEXT("Hint");
+		case EIGContextTip::HintAnswer: return TEXT("HintAnswer");
 		default: return TEXT("None");
 		}
+	}
+
+	/** 기억하지 않는 안내. 떠 있던 다른 안내를 밀어내고 바로 띄운다. */
+	void Show(const EIGContextTip Tip)
+	{
+		Current = Tip;
+		Remaining = ShowSeconds;
+		Waited = 0.0f;
 	}
 
 	/** 이미 띄운 적이 있거나 다른 안내가 떠 있으면 아무것도 하지 않는다. */
@@ -78,7 +89,10 @@ struct FIGContextTips
 		Remaining -= Delta;
 		if (Remaining <= 0.0f)
 		{
-			IGOnboardingMemory::MarkTipShown(Name(Current));
+			if (Current != EIGContextTip::HintAnswer)
+			{
+				IGOnboardingMemory::MarkTipShown(Name(Current));
+			}
 			Current = EIGContextTip::None;
 		}
 	}

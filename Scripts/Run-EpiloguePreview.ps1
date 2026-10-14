@@ -4,7 +4,11 @@ param(
 	# en·ja·zh-Hans·zh-Hant로 찍으면 장면 글이 번역에서 넘치는지 본다. 프로필 언어는 그대로다.
 	[string]$Culture,
 	# 목격과 이웃 비트를 다 채운 회차로 찍는다. 장면마다 가장 긴 글이 나온다.
-	[switch]$AllSeen
+	[switch]$AllSeen,
+	# 2면 글자를 가장 크게 키운 설정으로 찍는다.
+	[ValidateSet(1, 2)][int]$TextScale = 1,
+	[int]$Width = 1600,
+	[int]$Height = 900
 )
 
 # 결말 에필로그를 밤4 없이 바로 실제 시간으로 흘리며 장면마다 한 장씩 찍는다(A 99초, B 83초).
@@ -22,9 +26,10 @@ $settingsBytes = if (Test-Path -LiteralPath $settingsPath) { [IO.File]::ReadAllB
 $extra = @()
 if (-not [string]::IsNullOrWhiteSpace($Culture)) { $extra += ('-IGCulture=' + $Culture) }
 if ($AllSeen) { $extra += '-IGEpiloguePreviewAllSeen' }
+if ($TextScale -gt 1) { $extra += ('-IGCaptionScale=' + $TextScale) }
 try {
 	& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen -d3d12 -nosound `
-		-Windowed -ResX=1600 -ResY=900 -ForceRes -IGListenerGreybox "-IGEpiloguePreview=$Ending" -IGSkipFrontend `
+		-Windowed "-ResX=$Width" "-ResY=$Height" -ForceRes -IGListenerGreybox "-IGEpiloguePreview=$Ending" -IGSkipFrontend `
 		'-ExecCmds=Scalability 2,sg.ResolutionQuality 100,r.ScreenPercentage 100' `
 		"-UserDir=$probeUser" "-abslog=$logPath" @extra | Out-Null
 } finally {

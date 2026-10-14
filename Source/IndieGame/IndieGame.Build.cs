@@ -47,7 +47,12 @@ public class IndieGame : ModuleRules
 			"Pretendard-SemiBold.otf",
 			"GowunBatang-Bold.ttf",
 			"OFL-Pretendard.txt",
-			"OFL-GowunBatang.txt"
+			"OFL-GowunBatang.txt",
+			// 일본어·중국어 간체·번체 지역 서브셋. 윈도우에 깔린 글꼴에 기대지 않는다.
+			"NotoSansJP-Regular.otf",
+			"NotoSansSC-Regular.otf",
+			"NotoSansTC-Regular.otf",
+			"OFL-NotoSansCJK.txt"
 		};
 		foreach (string FontFile in BundledFontFiles)
 		{

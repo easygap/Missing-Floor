@@ -3,6 +3,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Entity/IGMissingFloorLeftoverDirector.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
 #include "GameplayTagContainer.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
@@ -107,6 +108,16 @@ namespace
 				Last });
 		}
 		const UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+		for (TActorIterator<AIGMissingFloorLeftoverDirector> It(World); World && It; ++It)
+		{
+			if (It->IsInnerRoomErrandRunning())
+			{
+				return Make(TEXT("Hint.Night2.InnerRoom"), {
+					NSLOCTEXT("IGHint", "NightTwoInner1", "아저씨가 나간 사이에 안쪽 방을 봐야 해."),
+					NSLOCTEXT("IGHint", "NightTwoInner2", "작업대와 벽에 붙은 조각, 보관함, 상자를 살펴보자."),
+					NSLOCTEXT("IGHint", "NightTwoInner3", "손수레 소리가 다시 가까워지기 전에 관리실을 나가자.") });
+			}
+		}
 		for (TActorIterator<AIGMissingFloorNightTwoBeatDirector> It(World); World && It; ++It)
 		{
 			if (It->GetReturnStage() == EIGNightTwoReturnStage::AwaitingBooth)
@@ -126,6 +137,22 @@ namespace
 		const UObject* WorldContext,
 		const UIGMissingFloorNarrativeSubsystem* N)
 	{
+		const FIGLeftoverState& Leftover = N->GetLeftover();
+		if (Leftover.JeongwooState == FName(TEXT("Trapped")))
+		{
+			const FText Last = Leftover.WedgeSocket != FName(TEXT("Brace"))
+				? NSLOCTEXT("IGHint", "NightThreeStorage3Wedge", "판 밑동이 바닥에 걸리는 자리에 쐐기를 끼우자.")
+				: (!Leftover.bWardrobeMoved
+					? NSLOCTEXT("IGHint", "NightThreeStorage3Wardrobe", "장롱을 밀면 뒤에 큰 점검구가 있어. 그걸 열자.")
+					: NSLOCTEXT("IGHint", "NightThreeStorage3Hatch", "장롱 뒤 점검구를 열자. 저게 그리로 옮겨 가면 판이 풀려."));
+			// 2단계는 생각할 관계까지만. 관리실에서 큰 점검구로 옮겨 가는 것을 봤으면 그걸 떠올린다.
+			return Make(TEXT("Hint.Night3.Storage"), {
+				NSLOCTEXT("IGHint", "NightThreeStorage1", "302호에 판이 넘어와서 정우 씨가 못 나오고 있어."),
+				Beat(N, TEXT("Leftover.SeenMove"))
+					? NSLOCTEXT("IGHint", "NightThreeStorage2Seen", "판은 밑동에서 밀려 나와. 관리실에선 큰 점검구를 열자 저게 그리로 옮겨 갔지.")
+					: NSLOCTEXT("IGHint", "NightThreeStorage2", "판은 밑동에서 밀려 나와. 누르는 걸 다른 데로 돌릴 수는 없을까."),
+				Last });
+		}
 		const bool bSomeoneInWall = N->HasTruth(ETruth::SomeoneInTheWall);
 		const bool bAnswered = N->HasTruth(ETruth::WaitingForAnAnswer);
 		if (bAnswered)
@@ -191,6 +218,54 @@ namespace
 				NSLOCTEXT("IGHint", "NightFour1", "망치 소리가 너무 클 텐데. 좀 덜 들리게 할 수 없을까."),
 				NSLOCTEXT("IGHint", "NightFour2", "탱크를 청소할 땐 배관이 시끄럽댔지. 점검 메모를 보자."),
 				Last });
+		}
+		const FIGLeftoverState& Leftover = N->GetLeftover();
+		if (!N->IsNightFourWallOpened() && !Leftover.bLegacyWallSequence)
+		{
+			const auto Layer = [N](const TCHAR* Name)
+			{
+				return N->HasLeftover(EIGLeftoverList::WallLayers, FName(Name));
+			};
+			switch (Leftover.WallStage)
+			{
+			case 0:
+				return Make(TEXT("Hint.Night4.Wall0"), {
+					NSLOCTEXT("IGHint", "NightFourWall0a", "물소리가 나는 동안 벽을 뜯어야 해."),
+					NSLOCTEXT("IGHint", "NightFourWall0b", "가운데 칸에만 판을 한 겹 더 댔어. 고정한 데를 찾자."),
+					NSLOCTEXT("IGHint", "NightFourWall0c", "위쪽 덧판 이음매를 망치로 치자. 테이프 밑에 나사가 있어.") });
+			case 1:
+				return Make(TEXT("Hint.Night4.Wall1"), {
+					NSLOCTEXT("IGHint", "NightFourWall1a", "그게 이음매를 덮고 있어."),
+					NSLOCTEXT("IGHint", "NightFourWall1b", "더 큰 틈을 내주면 그리로 옮겨 가겠지."),
+					NSLOCTEXT("IGHint", "NightFourWall1c", "구석 쪽 작은 덧판을 떼어서 점검구를 열자.") });
+			case 2:
+				return Leftover.bFramePlaced
+					? Make(TEXT("Hint.Night4.Wall2Braced"), {
+						NSLOCTEXT("IGHint", "NightFourWall2Ba", "이제 못 접어."),
+						NSLOCTEXT("IGHint", "NightFourWall2Bb", "이음매 위로 나사가 드러나 있었지."),
+						NSLOCTEXT("IGHint", "NightFourWall2Bc", "드러난 덧판 나사를 망치로 쳐 내자.") })
+					: Make(TEXT("Hint.Night4.Wall2"), {
+						NSLOCTEXT("IGHint", "NightFourWall2a", "천장까지 몸을 폈어. 다시 접히면 벽으로 와."),
+						Beat(N, TEXT("Leftover.Seen.BraceFrame"))
+							? NSLOCTEXT("IGHint", "NightFourWall2b", "구석에 철골 틀이 있었어.")
+							: NSLOCTEXT("IGHint", "NightFourWall2bUnseen", "저 마디를 걸어 둘 만한 게 이 층에 없을까. 둘러보자."),
+						NSLOCTEXT("IGHint", "NightFourWall2c", "철골 틀을 세워서 저 무릎 마디를 걸어 두자.") });
+			case 3:
+				return !Layer(TEXT("Rebrace"))
+					? Make(TEXT("Hint.Night4.Wall3"), {
+						NSLOCTEXT("IGHint", "NightFourWall3a", "틀이 밀렸어."),
+						NSLOCTEXT("IGHint", "NightFourWall3b", "저게 버티면서 틀을 밀고 있어."),
+						NSLOCTEXT("IGHint", "NightFourWall3c", "밀린 틀을 다시 세우자.") })
+					: Make(TEXT("Hint.Night4.Wall3Inner"), {
+						NSLOCTEXT("IGHint", "NightFourWall3Ia", "덧판은 떼어 냈어. 안쪽 판이 남았어."),
+						NSLOCTEXT("IGHint", "NightFourWall3Ib", "안쪽 판은 기둥을 따라 나사로 박았어."),
+						NSLOCTEXT("IGHint", "NightFourWall3Ic", "양쪽 기둥 자리의 나사를 쳐 내자.") });
+			default:
+				return Make(TEXT("Hint.Night4.Wall4"), {
+					NSLOCTEXT("IGHint", "NightFourWall4a", "거의 다 됐어."),
+					NSLOCTEXT("IGHint", "NightFourWall4b", "위에 철물 하나가 남았어."),
+					NSLOCTEXT("IGHint", "NightFourWall4c", "위쪽 가운데 ㄱ자 철물을 쳐 내자.") });
+			}
 		}
 		if (!N->IsNightFourWallOpened())
 		{
@@ -284,6 +359,21 @@ FIGHintStep IGMissingFloorHints::Resolve(const UObject* WorldContext)
 	if (!N->IsHourSealed())
 	{
 		return ResolveDay(N, NightIndex);
+	}
+	// 그 밤의 일을 마쳤으면 남은 것을 보고 침대에서 쉬라고만 떠올린다. 밤4는 결말이 밤을 닫는다.
+	if (NightIndex <= 3 && N->HasBeatPlayed(FName(*FString::Printf(TEXT("Night%d.Goal"), NightIndex))))
+	{
+		if (NightIndex == 1 && !Beat(N, TEXT("Night1.AboveConfirmed")))
+		{
+			return Make(TEXT("Hint.Night1.After"), {
+				NSLOCTEXT("IGHint", "NightOneAfter1", "위에서 형광등 소리가 났어."),
+				NSLOCTEXT("IGHint", "NightOneAfter2", "4층 복도 천장 쪽이 제일 크게 울렸어."),
+				NSLOCTEXT("IGHint", "NightOneAfter3", "4층 복도 천장 밑에서 소리를 들어 보자. 그다음엔 403호 침대에서 쉬어도 돼.") });
+		}
+		return Make(TEXT("Hint.Night.Rest"), {
+			NSLOCTEXT("IGHint", "NightRest1", "오늘 밤 할 일은 끝났어."),
+			NSLOCTEXT("IGHint", "NightRest2", "더 볼 데가 있으면 보고, 아니면 403호로 돌아가자."),
+			NSLOCTEXT("IGHint", "NightRest3", "403호 침대에서 아침까지 쉬자. 밖이 조용할 때.") });
 	}
 	switch (NightIndex)
 	{

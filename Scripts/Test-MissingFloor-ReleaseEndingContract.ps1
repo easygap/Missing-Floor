@@ -352,9 +352,13 @@ Assert-ContainsAll $hudSource @(
 	'T_EpilogueDoorNote_D'
 ) '에필로그 HUD 렌더'
 
-# 텍스처 없이도 장면이 성립해야 한다. 에필로그의 뜻은 문장에 있다.
-if (-not $hudSource.Contains('if (SceneTexture && SceneTexture->GetResource())')) {
+# 텍스처 없이도 장면이 성립해야 한다. 에필로그의 뜻은 문장에 있다. 글이 길면 사진을 줄이거나
+# 빼서 글이 화면 안에 남게 한다(0.10.0).
+if (-not $hudSource.Contains('if (SceneTexture && SceneTexture->GetResource()')) {
 	throw 'Epilogue still must degrade to text when the texture is absent.'
+}
+if (-not $hudSource.Contains('const float RoomForPlate = BottomY - TopY - 40.0f * Scale - TextHeight;')) {
+	throw 'Epilogue text must be measured before the plate takes its height.'
 }
 
 # -- v3.4 §22.3 선택적 목격 -------------------------------------------------
@@ -374,13 +378,15 @@ Assert-ContainsAll $narrativeTypes @(
 	'RoofDoorWind = 11',
 	'BoothInnerRoomHum = 12',
 	'SeoVoiceRecorder = 13',
+	'InnerRoomCoverPieces = 14',
+	'InspectionCoverMatched = 15',
 	'TArray<FName> Witnesses;'
 ) '선택적 목격 정의'
 
 # 정규화 상한이 열거형의 마지막을 따라가야 한다. 뒤처지면 새로 넣은 목격이
 # 복원에서 조용히 버려진다 — 저장은 되는데 다음 실행에 사라지는 모양이다.
 Assert-ContainsAll $narrativeSource @(
-	'Raw <= static_cast<uint8>(EIGMissingFloorWitness::SeoVoiceRecorder);'
+	'Raw <= static_cast<uint8>(EIGMissingFloorWitness::InspectionCoverMatched);'
 ) '목격 정규화 상한'
 
 Assert-ContainsAll $narrativeSource @(

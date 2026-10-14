@@ -42,6 +42,9 @@ public:
 	bool StartEpilogue(AIGPlayerCharacter* InPlayer, FName EndingId);
 	/** 검사용. 지금 저장 상태로 보도 자막을 만든다. */
 	TArray<FText> BuildNewsLinesForTesting() const { return BuildNewsLines(); }
+	/** 검사용. 결말 A 공방과 결말 B 방 빼는 날의 줄. */
+	TArray<FText> BuildWorkshopLinesForTesting() const { return BuildWorkshopLines(); }
+	TArray<FText> BuildServiceBayLinesForTesting() const { return BuildServiceBayLines(); }
 
 	bool IsActive() const { return bActive; }
 	FName GetEndingId() const { return ActiveEndingId; }
@@ -93,6 +96,10 @@ private:
 	TArray<FText> BuildServiceBayLines() const;
 
 	UIGMissingFloorNarrativeSubsystem* GetNarrative() const;
+	/** 302호에서 찾은 오빠 공구 주머니를 가져왔다(결말 A 공방 입구). */
+	bool HasBroughtToolPouch() const;
+	/** 302호에서 정우와 같이 오빠 상자를 꺼내 나왔다(결말 B 방 빼는 날). */
+	bool CarriedDohaBoxTogether() const;
 	void StopBeds();
 	/** 우회가 끝나면 마지막 카드로 건너뛴다. 카드는 원래 길이대로 머문다. */
 	void SkipToFinalCard();
@@ -107,6 +114,8 @@ private:
 
 	TWeakObjectPtr<AIGPlayerCharacter> Player;
 	FTimerHandle CueTimerHandle;
+	/** 결말 B: 정우가 403호 문을 닫는 소리. */
+	FTimerHandle EpilogueDoorTimer;
 	/** 처음 보는 사람에게도 건너뛰기를 여는 타이머(§6). */
 	FTimerHandle FirstViewSkipTimer;
 	FName ActiveEndingId;

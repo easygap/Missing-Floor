@@ -195,6 +195,7 @@ void AIGMissingFloorEpilogueDirector::SkipToFinalCard()
 	}
 
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(EpilogueDoorTimer);
 	bReplaySkipInputActive = false;
 	bReplaySkipRewinding = false;
 	ReplaySkipProgress = 0.0f;
@@ -549,6 +550,19 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 		switch (CueIndex)
 		{
 		case 5:
+			if (HasBroughtToolPouch())
+			{
+				// 말아 묶은 캔버스 안에서 공구가 한 번 부딪친다.
+				IGAudio::SpawnOneShotAt(
+					this,
+					UIGToneSequenceSoundWave::CreateToolRollClink(this),
+					Origin,
+					0.6f,
+					1.0f,
+					IGEpilogue::MontageInnerRadius,
+					IGEpilogue::MontageFalloff,
+					EIGAudioBus::World);
+			}
 			PresentScene(
 				EIGMissingFloorEpilogueScene::Workshop,
 				NSLOCTEXT(
@@ -669,6 +683,32 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 	switch (CueIndex)
 	{
 	case 5:
+		if (CarriedDohaBoxTogether() && GetNarrative()
+			&& GetNarrative()->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro"))))
+		{
+			// 유담이 지나간 뒤 정우가 403호 문을 닫는다. 열쇠가 반납함에 떨어지기 전이다.
+			GetWorldTimerManager().SetTimer(EpilogueDoorTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				if (!bActive)
+				{
+					return;
+				}
+				const AIGPlayerCharacter* Listener = Player.Get();
+				IGAudio::SpawnOneShotAt(
+					this,
+					UIGToneSequenceSoundWave::CreateDoorThud(this),
+					Listener ? Listener->GetActorLocation() : GetActorLocation(),
+					0.45f,
+					1.05f,
+					IGEpilogue::MontageInnerRadius,
+					IGEpilogue::MontageFalloff,
+					EIGAudioBus::World);
+				AIGHorrorHUD::PushAudioCaption(
+					this,
+					NSLOCTEXT("IGMissingFloor", "EpilogueDoorCloseCaption", "[403호 문이 조용히 닫히는 소리]"),
+					2.2f);
+			}), 3.4f, false);
+		}
 		PresentScene(
 			EIGMissingFloorEpilogueScene::ServiceBay,
 			NSLOCTEXT(
@@ -784,6 +824,16 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 TArray<FText> AIGMissingFloorEpilogueDirector::BuildWorkshopLines() const
 {
 	TArray<FText> Lines;
+	// 0.10.0. 302호에서 찾아온 공구 주머니가 있으면 들어서며 입구 보관 상자에 먼저 넣는다.
+	// 조율 공구는 이미 팔려 나갔고 튜닝 해머는 5층에서 가져온 그 하나다. 주머니는 작업 공구다.
+	// 못 가져온 회차는 이 줄 없이 둘러본다. 빈자리를 짚지 않는다.
+	if (HasBroughtToolPouch())
+	{
+		Lines.Add(NSLOCTEXT(
+			"IGMissingFloor",
+			"EpilogueWorkshopPouch",
+			"가져온 오빠 공구 주머니를 입구 보관 상자에 넣는다."));
+	}
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
 		"EpilogueWorkshop1",
@@ -851,6 +901,14 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildAutumnLines() const
 			"EpilogueAutumn3Seen",
 			"라디오를 창밖 쪽으로 돌려놓으셨다. 골목까지 들리겠다."));
 	}
+	// 나린에게 오빠가 올 때마다 바나나우유를 둘 샀다는 말을 들은 회차만. 같은 걸 한다.
+	if (Narrative && Narrative->HasBeatPlayed(FName(TEXT("Day2.NarinMilk"))))
+	{
+		Lines.Add(NSLOCTEXT(
+			"IGMissingFloor",
+			"EpilogueAutumnMilk",
+			"편의점에서 바나나우유를 두 개 산다. 하나는 가방 앞주머니에 넣는다."));
+	}
 	// 202호 정우. 이름을 들은 회차에만 나온다. 엄마 목소리 이야기까지 들었으면 요즘
 	// 새벽이 어떤지도 정우한테서 듣는다.
 	if (Narrative && Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro"))))
@@ -908,11 +966,31 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildServiceBayLines() const
 				"IGMissingFloor",
 				"EpilogueServiceBayJeongwoo",
 				"짐은 정우 씨가 오토바이로 날라 줬다."));
+		// 0.10.0. 302호에서 둘이 같이 꺼낸 오빠 상자가 있으면 그것부터 옮긴다. 말은 한마디뿐이다.
+		if (CarriedDohaBoxTogether())
+		{
+			Lines.Add(NSLOCTEXT(
+				"IGMissingFloor",
+				"EpilogueServiceBayDohaBox",
+				"302호에서 같이 꺼낸 오빠 상자는 정우 씨가 제일 먼저 들고 나갔다."));
+			Lines.Add(NSLOCTEXT(
+				"IGMissingFloor",
+				"EpilogueServiceBayJeongwooDoor",
+				"“먼저 나가세요. 문은 제가 닫을게요.”"));
+		}
 	}
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
 		"EpilogueServiceBay4",
 		"방을 빼고 403호 열쇠를 돌려줬다."));
+	// A의 가을과 같은 조건. 나오는 길에 오빠가 하던 대로 둘을 산다.
+	if (Narrative && Narrative->HasBeatPlayed(FName(TEXT("Day2.NarinMilk"))))
+	{
+		Lines.Add(NSLOCTEXT(
+			"IGMissingFloor",
+			"EpilogueServiceBayMilk",
+			"나오는 길에 바나나우유를 두 개 샀다. 하나는 가방 앞주머니에 넣었다."));
+	}
 	return Lines;
 }
 
@@ -1061,6 +1139,7 @@ void AIGMissingFloorEpilogueDirector::FinishEpilogue()
 	bReplaySkipRewinding = false;
 	SetActorTickEnabled(false);
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(EpilogueDoorTimer);
 	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	StopBeds();
 	UpdateSkipHud();
@@ -1103,6 +1182,22 @@ void AIGMissingFloorEpilogueDirector::StopBeds()
 	{
 		ScoreBed->Stop();
 	}
+}
+
+bool AIGMissingFloorEpilogueDirector::HasBroughtToolPouch() const
+{
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const FName Pouch(TEXT("ToolPouch"));
+	return Narrative
+		&& (Narrative->HasLeftover(EIGLeftoverList::Stored, Pouch) || Narrative->HasLeftover(EIGLeftoverList::Taken, Pouch));
+}
+
+bool AIGMissingFloorEpilogueDirector::CarriedDohaBoxTogether() const
+{
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	return Narrative
+		&& Narrative->GetLeftover().JeongwooState == FName(TEXT("LeftTogether"))
+		&& Narrative->HasLeftover(EIGLeftoverList::Taken, FName(TEXT("DohaBox")));
 }
 
 UIGMissingFloorNarrativeSubsystem*
@@ -1169,6 +1264,7 @@ bool AIGMissingFloorEpilogueDirector::CompleteImmediatelyForProbe()
 		return false;
 	}
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(EpilogueDoorTimer);
 	const int32 CueCount = bEndingA
 		? static_cast<int32>(UE_ARRAY_COUNT(IGEpilogue::EndingATimes))
 		: static_cast<int32>(UE_ARRAY_COUNT(IGEpilogue::EndingBTimes));
@@ -1184,6 +1280,7 @@ void AIGMissingFloorEpilogueDirector::EndPlay(
 	const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(CueTimerHandle);
+	GetWorldTimerManager().ClearTimer(EpilogueDoorTimer);
 	GetWorldTimerManager().ClearTimer(FirstViewSkipTimer);
 	StopBeds();
 	// 장면 도중 불러오기나 액터 교체로 끊겨도 이동과 화면을 붙들어 두지 않는다.

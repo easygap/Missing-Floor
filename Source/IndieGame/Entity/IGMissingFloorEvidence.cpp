@@ -287,6 +287,9 @@ void AIGMissingFloorEvidence::CompleteInteraction_Implementation(
 	const FIGInteractionContext& Context)
 {
 	Super::CompleteInteraction_Implementation(Context);
+	LastInteractionPoint = Context.HitResult.bBlockingHit
+		? FVector(Context.HitResult.ImpactPoint)
+		: GetActorLocation();
 	const bool bRereadingReveal = RevealMaterial && bExamined;
 
 	// Interim stages: work done, noise made, nothing filed yet. The sound

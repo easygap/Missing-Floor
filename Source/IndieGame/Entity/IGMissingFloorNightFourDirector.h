@@ -21,9 +21,11 @@ DECLARE_MULTICAST_DELEGATE(FIGNightFourResolvedSignature);
  * The hydraulic mask is one physically named cleaning circuit, not four
  * arbitrary valves: roof cleaning drain -> float-valve bypass -> ground-floor
  * transfer pump. 이 순서로만 돈다. 순서가 틀린 조작은 기록되지 않고 경보와 함께 인터록이
- * 10초 선다(HandleControlMisorder). Five separate hammer interactions then
- * remove the real middle gypsum panel. The two final targets change only the
- * mourning choice; discovery and the second report remain common state.
+ * 10초 선다(HandleControlMisorder). 그다음 벽을 다섯 단계로 뜯는다(0.10.0,
+ * IGMissingFloorNightFourWall.cpp). 고정된 자리를 맞게 친 것만 단계가 되고, 엉뚱한 데를
+ * 친 것은 판이 들썩이거나 겉만 깨진다. 확장 전 저장에서 이미 망치질을 시작한 판은 예전
+ * 다섯 번 순서로 끝낸다. The two final targets change only the mourning
+ * choice; discovery and the second report remain common state.
  */
 UCLASS(NotBlueprintable, Transient)
 class INDIEGAME_API AIGMissingFloorNightFourDirector : public AActor
@@ -59,6 +61,31 @@ public:
 	AIGMissingFloorEvidence* GetFloatBypass() const { return FloatBypass; }
 	AIGMissingFloorEvidence* GetTransferPump() const { return TransferPump; }
 	AIGMissingFloorEvidence* GetWallBreakTarget() const { return WallBreakTarget; }
+
+	/** 벽 해체에서 손대는 자리. 순서는 EWallTarget과 같다. */
+	enum class EWallTarget : uint8
+	{
+		Survey,
+		Joint,
+		Overlay,
+		Brace,
+		OuterScrews,
+		Rebrace,
+		InnerScrewsSouth,
+		InnerScrewsNorth,
+		LastClip,
+		Count
+	};
+	AIGMissingFloorEvidence* GetWallTarget(EWallTarget Target) const;
+	/**
+	 * 검사용. 다음에 손댈 자리(망치든 손이든). 덧댄 것이 움직이거나 부름을 기다리는 중이라
+	 * 지금 쓸 데가 없으면 nullptr다. 예전 다섯 번 순서의 판이면 벽 전체 표적이다.
+	 */
+	AIGMissingFloorEvidence* GetNextWallActionForTesting() const;
+	/** 확장판 벽으로 뜯는 판인가(확장 전 저장의 이어 하던 망치질이 아니다). */
+	bool IsExpansionWall() const;
+	/** 검사용: 지금 저장 상태로 벽과 덧댄 것을 다시 맞춘다(불러오기와 같은 길). */
+	void RestoreWallForTesting();
 	/**
 	 * 벽이 열리는 자리. 그레이박스 프로브가 여기 마스킹을 재는데,
 	 * 좌표를 프로브 쪽에 적어 두면 벽을 옮겼을 때 옛 자리를 재면서
@@ -150,6 +177,39 @@ private:
 	void HandleFloatBypass(AIGMissingFloorEvidence* Evidence);
 	void HandleTransferPump(AIGMissingFloorEvidence* Evidence);
 	void HandleWallStrike(AIGMissingFloorEvidence* Evidence);
+
+	/** 망치 한 번의 소리. Level 0은 고정되지 않은 데를 친 둔한 소리, 1..5는 단계마다 깊어진다. */
+	void PlayWallStrikeSound(int32 Level, const FVector& Location, float Volume);
+	/** 셋째 단계: 진실 하나와 함께 목한수가 차단기를 내린다. */
+	void BeginPowerCutStage();
+	/** 둘째 단계 뒤: 303호가 문을 두드리고 묻는다. */
+	void BeginNeighbor303Call();
+	/** 넷째 단계: 401호의 대답, 손이 저려 잠깐 못 치는 사이 철문 밖의 부름과 벽 안의 대답. */
+	void BeginHammerCallStage();
+	/** 마지막 단계: 손전등이 죽었다 사는 사이 판이 내려앉는다. */
+	void BeginWallOpening(AIGMissingFloorEvidence* Evidence);
+	/** 프로브·밤 캡처처럼 기다리지 않고 곧장 다음으로 가는 실행인가. */
+	static bool IsImmediateWallRun();
+
+	// -- 벽 해체 다섯 단계(IGMissingFloorNightFourWall.cpp) ----------------------------
+	class AIGMissingFloorLeftoverDirector* GetLeftover() const;
+	void BuildWallStage(class UStaticMesh* CubeMesh);
+	void HandleWallTarget(AIGMissingFloorEvidence* Evidence);
+	/** 고정되지 않은 데를 쳤다. 판이 들썩이거나 겉만 깨진다. 단계는 그대로다. */
+	void HandleWallMiss(const FVector& Point, const FText& Reason);
+	/** 맞게 쳤다. Stage는 이 타격으로 끝난 단계(1..5). */
+	void AdvanceWallStage(int32 Stage, const FVector& StrikeLocation);
+	void PlaceHammerDent(const FVector& Point);
+	/** 저장 상태대로 덧댄 층·철물·틀·표적을 맞춘다. */
+	void RefreshWallStage();
+	void UpdateWallStageMotion(float DeltaSeconds);
+	void PlaceBraceFrame(uint8 Pose, float Seconds);
+	void BeginBraceSlip();
+	void BeginWallPushOut();
+	void PollWallPushOut();
+	void PollAnnexSpread();
+	bool HasWallLayer(FName Layer) const;
+	void AddWallLayer(FName Layer);
 	/** 선택이 열리는 프레임에 한 번. 양쪽을 다 보는 값을 낮춘다(§22.4). */
 	/**
 	 * §22.3. 목한수 앞에서 유담이 무엇을 말할 수 있는가는 그 회차에 무엇을
@@ -275,6 +335,29 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<AIGMissingFloorEvidence> WallBreakTarget;
+
+	/** 벽 해체에서 손대는 자리(EWallTarget 순서). */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AIGMissingFloorEvidence>> WallTargets;
+
+	/** 덧판, 이음 테이프(성한 것·뜯긴 것), 각재 둘, 안쪽 판 나사, ㄱ자 철물, 철골 틀. */
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> WallOverlayTop;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> WallJointTape;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> WallJointTorn;
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> WallBattens;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> WallInnerFixings;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> WallAngleClip;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> BraceFrame;
+	/** 빗나간 망치 자국. 돌려 쓴다. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> HammerDents;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AIGMissingFloorEvidence> EndingATarget;
@@ -404,10 +487,36 @@ private:
 	FTimerHandle HammerCallTimer;
 	FTimerHandle WallAnswerTimer;
 	FTimerHandle WallAnswerHitTimers[2];
+	/** 인터록이 선 동안 손잡이를 돌려 본 마지막 시각. 같은 생각이 연달아 뜨지 않게 한다. */
+	double LockoutNoticeSeconds = -100.0;
 	/** 인터록이 선 배관. 틀린 손잡이가 있던 자리에서 잦아든다. */
 	FTimerHandle ControlSettleTimer;
 	int32 ControlSettleIndex = 0;
 	FVector ControlSettleLocation = FVector::ZeroVector;
+
+	// -- 벽 해체 다섯 단계 ----------------------------------------------------------
+	mutable TWeakObjectPtr<class AIGMissingFloorLeftoverDirector> CachedLeftover;
+	/** 같은 단계에서 빗나간 수. 두 번째부터 어디를 칠지 알려 준다. */
+	int32 WallMissStage = INDEX_NONE;
+	int32 WallMissCount = 0;
+	int32 NextHammerDent = 0;
+	/** 바깥층(덧판·각재)이 떨어지는 짧은 움직임. 음수면 없다. */
+	float OuterFallSeconds = -1.0f;
+	/** 철골 틀: 0 기대 둠, 1 세움, 2 밀림, 3 밀려남. */
+	uint8 BracePose = 0;
+	FTransform BraceFrom;
+	FTransform BraceTo;
+	float BraceSeconds = 0.0f;
+	float BraceDuration = 0.0f;
+	bool bWallMotionActive = false;
+	bool bSpreadNoticed = false;
+	bool bWallPushOutRunning = false;
+	FTimerHandle BraceSlipTimer;
+	FTimerHandle BracePinTimer;
+	FTimerHandle WallPushOutTimer;
+	FTimerHandle WallPushOutPollTimer;
+	FTimerHandle AnnexSpreadPollTimer;
+	FTimerHandle WallThoughtTimer;
 
 	/** 관리실 토출관과 4층 설비 벽장의 수류. 물 베드와 같이 돌고 같이 멎는다. */
 	UPROPERTY(Transient)

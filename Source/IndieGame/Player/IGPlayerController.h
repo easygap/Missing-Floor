@@ -250,6 +250,9 @@ private:
 	FName HintGoalId;
 	int32 HintTier = 0;
 	double LastHintRequestTime = -10.0;
+	/** 마지막 단계(할 일 그대로)를 말하기 전에 한 번 물었다. 그때 시각. 진행이 바뀌면 지운다. */
+	double HintAnswerOfferedAt = -100.0;
+	bool bHintAnswerRevealed = false;
 	int32 SystemMenuSelection = 0;
 	int32 MissingFloorJournalPage = 0;
 	EIGSystemMenuMode SystemMenuMode = EIGSystemMenuMode::Hidden;

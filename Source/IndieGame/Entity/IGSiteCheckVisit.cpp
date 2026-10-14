@@ -20,13 +20,13 @@
 #include "GameFramework/PlayerController.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Kismet/GameplayStatics.h"
+#include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Player/IGHorrorHUD.h"
 
 namespace IGSiteCheckVisit
 {
 	// 걸음. 옥상 계단은 디딤판 22 cm, 단 17 cm라 가파르다. 둘 다 천천히 오른다.
 	constexpr float FlatSpeed = 85.0f;
-	constexpr float StairSpeed = 38.0f;
 	/** 수평 1 cm에 이보다 많이 오르내리는 구간은 계단이다. 옥상 계단은 0.77, 아래 네 단은 0.82다. */
 	constexpr float StairSlope = 0.3f;
 
@@ -47,7 +47,6 @@ namespace IGSiteCheckVisit
 
 	/** 어깨가 넓은 어른 남자 둘이다. 303호보다 한 치 크다. */
 	constexpr float CapsuleRadius = 25.0f;
-	constexpr float CapsuleHalfHeight = 86.0f;
 	/** 경찰관 머리 높이. 그녀가 그를 볼 수 있는지 잴 때 쓴다. */
 	constexpr float HeadHeight = 160.0f;
 
@@ -161,8 +160,8 @@ AIGSiteCheckVisit::AIGSiteCheckVisit()
 		// 플레이어 몸만 막는다. 시야와 상호작용 선은 지나간다.
 		OutBlocker = CreateDefaultSubobject<UCapsuleComponent>(*FString::Printf(TEXT("%sBlocker"), Name));
 		OutBlocker->SetupAttachment(OutFeet);
-		OutBlocker->InitCapsuleSize(IGSiteCheckVisit::CapsuleRadius, IGSiteCheckVisit::CapsuleHalfHeight);
-		OutBlocker->SetRelativeLocation(FVector(0.0f, 0.0f, IGSiteCheckVisit::CapsuleHalfHeight));
+		OutBlocker->InitCapsuleSize(IGSiteCheckVisit::CapsuleRadius, IGWalker::AdultCapsuleHalfHeight);
+		OutBlocker->SetRelativeLocation(FVector(0.0f, 0.0f, IGWalker::AdultCapsuleHalfHeight));
 		OutBlocker->SetCollisionObjectType(ECC_WorldDynamic);
 		OutBlocker->SetCollisionResponseToAllChannels(ECR_Ignore);
 		OutBlocker->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
@@ -678,7 +677,7 @@ bool AIGSiteCheckVisit::Walk(FWalker& Walker, const float DeltaSeconds, const bo
 	FVector Direction = FVector::ForwardVector;
 	bool bOnStair = false;
 	RoutePoint(Walker, Walker.Travelled, &Direction, &bOnStair);
-	const float Speed = bOnStair ? IGSiteCheckVisit::StairSpeed : IGSiteCheckVisit::FlatSpeed;
+	const float Speed = bOnStair ? IGWalker::StairWalkSpeed : IGSiteCheckVisit::FlatSpeed;
 	Walker.Travelled = FMath::Min(Walker.Travelled + Speed * DeltaSeconds, RouteLength(Walker));
 	const FVector At = RoutePoint(Walker, Walker.Travelled, &Direction, &bOnStair);
 	Walker.Feet->SetWorldLocation(At);
@@ -942,13 +941,55 @@ void AIGSiteCheckVisit::FinishChecked(const double Now)
 	LineDeadlineAt = Now + 6.0;
 }
 
-float AIGSiteCheckVisit::PushLine(const int32 Index)
+bool AIGSiteCheckVisit::HasCoverToShow() const
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GameInstance
+		? GameInstance->GetSubsystem<UIGMissingFloorNarrativeSubsystem>()
+		: nullptr;
+	if (!Narrative)
+	{
+		return false;
+	}
+	const FIGLeftoverState& Leftover = Narrative->GetLeftover();
+	return (Leftover.AssemblyStage >= 2 || Leftover.bSiteMatched)
+		&& Narrative->HasLeftover(EIGLeftoverList::Taken, FName(TEXT("Cover")));
+}
+
+int32 AIGSiteCheckVisit::GetLineCount() const
+{
+	return HasCoverToShow() ? 7 : 5;
+}
+
+float AIGSiteCheckVisit::PushLine(int32 Index)
 {
 	const FText OfficerName = NSLOCTEXT("IGMissingFloor", "PoliceOfficerSpeaker", "경찰관");
 	const FText Mok = NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수");
 	const FText Yudam = NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담");
 	FText Speaker;
 	FText Line;
+	// 덮개를 가져온 회차는 관리인의 「배관」 다음에 두 줄이 끼고, 뒤의 둘은 한 칸씩 밀린다.
+	if (HasCoverToShow())
+	{
+		if (Index == 3)
+		{
+			Speaker = Yudam;
+			Line = NSLOCTEXT("IGMissingFloor", "SiteCheckYudamCover", "저 구석 덧판 밑이 원래 점검구예요. 떼어 간 덮개를 제가 맞춰 봤어요.");
+			AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
+			return AIGHorrorHUD::EstimateDialogueSeconds(Line);
+		}
+		if (Index == 4)
+		{
+			Speaker = OfficerName;
+			Line = NSLOCTEXT("IGMissingFloor", "SiteCheckOfficerCover", "그 덮개도 찍어 둘게요. 버리지 말고 갖고 계세요.");
+			AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
+			return AIGHorrorHUD::EstimateDialogueSeconds(Line);
+		}
+		if (Index > 4)
+		{
+			Index -= 2;
+		}
+	}
 	switch (Index)
 	{
 	case 0:
@@ -990,7 +1031,7 @@ float AIGSiteCheckVisit::PushLine(const int32 Index)
 void AIGSiteCheckVisit::TickTalking(const float DeltaSeconds, const double Now)
 {
 	using namespace IGSiteCheckVisit;
-	constexpr int32 LineCount = 5;
+	const int32 LineCount = GetLineCount();
 	if (!IsPlayerOnRoof())
 	{
 		// 말하는 중에 내려갔다. 남은 말은 접는다.

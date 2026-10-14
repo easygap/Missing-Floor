@@ -162,9 +162,18 @@ public:
 		return Snapshot.Night.NightFourControlOrder;
 	}
 
-	/** Adds one physical hammer strike and returns the clamped 0..5 count. */
+	/** 실제로 휘두른 망치 한 번을 더하고 그 수를 돌려준다. 확장판은 빗나간 것도 센다. */
 	UFUNCTION(BlueprintCallable, Category = "Narrative|MissingFloor")
 	int32 RecordNightFourWallStrike();
+
+	/**
+	 * 벽을 어디까지 뜯었나(0..5). 확장판은 유효 단계, 망치질을 시작한 확장 전 저장은 예전
+	 * 다섯 번 순서의 망치질 수다. 정전·대답·개방은 이 값으로 정한다.
+	 */
+	int32 GetNightFourWallProgress() const;
+
+	/** 망치질 수의 상한. 빗나간 것까지 세므로 다섯보다 넉넉하다. */
+	static constexpr int32 MaxNightFourWallStrikes = 99;
 
 	UFUNCTION(BlueprintPure, Category = "Narrative|MissingFloor")
 	int32 GetNightFourWallStrikeCount() const
@@ -209,8 +218,21 @@ public:
 	/**
 	 * 밤 4에서 소비된 플레이 상태만 되돌린다. 확인한 진실, 첫 신고,
 	 * 다섯 번째 새벽의 기억과 누적 포획은 이미 일어난 역사로 보존한다.
+	 * 확장판에서 걷어 낸 벽의 층과 조립·조사는 그대로 남는다.
 	 */
 	void ResetNightFourForRetry();
+
+	// -- 302호에 남은 짐 ----------------------------------------------------
+
+	const FIGLeftoverState& GetLeftover() const { return Snapshot.Leftover; }
+	/** 단계·정우 상태처럼 이름 목록이 아닌 칸을 고칠 때. */
+	FIGLeftoverState& MutableLeftover() { return Snapshot.Leftover; }
+	/** 목록에 이름을 더한다. 처음 더하면 true. */
+	bool AddLeftover(EIGLeftoverList List, FName Name);
+	bool RemoveLeftover(EIGLeftoverList List, FName Name);
+	bool HasLeftover(EIGLeftoverList List, FName Name) const;
+	/** 확장 전 판을 이어 온 저장이다. */
+	bool IsLegacyRun() const { return Snapshot.Leftover.Version <= 0; }
 
 	// -- persistence -------------------------------------------------------
 
@@ -227,8 +249,10 @@ public:
 	 * 3 — §22.3 선택적 목격이 밤 상태에 덧붙었다. 마이그레이션이 따로 없는
 	 * 것이 마이그레이션이다: v2 저장은 아무것도 못 본 회차로 읽히고, 그게
 	 * 실제로 그 회차의 사실이다.
+	 * 4 — 「302호에 남은 짐」(Leftover)이 붙었다. 3 이하 저장은 Version 0(확장 전 판)으로
+	 * 읽고, 밤4 망치질을 1~4번 한 저장은 예전 다섯 번 순서로 끝내게 표시한다.
 	 */
-	static constexpr int32 SnapshotSchemaVersion = 3;
+	static constexpr int32 SnapshotSchemaVersion = 4;
 
 private:
 	/** Rebuilds bConfirmed on every record from its sources alone. */
@@ -236,6 +260,8 @@ private:
 	/** Drops unknown tags and duplicate records left by an older build. */
 	void NormalizeSnapshot();
 	FIGMissingFloorTruthRecord* FindRecord(const FGameplayTag& TruthTag);
+	TArray<FName>* LeftoverList(EIGLeftoverList List);
+	const TArray<FName>* LeftoverList(EIGLeftoverList List) const;
 	const FIGMissingFloorTruthRecord* FindRecord(const FGameplayTag& TruthTag) const;
 
 	FIGMissingFloorNarrativeSnapshot Snapshot;

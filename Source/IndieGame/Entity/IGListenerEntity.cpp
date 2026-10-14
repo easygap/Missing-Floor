@@ -16,6 +16,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Environment/IGDustSubsystem.h"
+#include "Entity/IGLiningEntity.h"
 #include "Interaction/IGBathroomRefuge.h"
 #include "Interaction/IGFireDoorWedge.h"
 #include "Interaction/IGHidingSpot.h"
@@ -1052,11 +1053,13 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 				const bool bHeardInside = GetWorld()->GetTimeSeconds() - LastHeardHiddenPlayerSeconds
 					<= IGListener::HiddenDetectMemorySeconds;
 				// 잠긴 욕실은 가구와 다르다. 그는 문을 열지 않으니 문 너머로 손을 넣지 못한다.
+				// 덧댄 것이 움직이거나 누르는 동안에는 손을 대지 않는다. 그때 잡으면 포획이 둘 겹친다.
 				if (bHeardInside
 					&& HidingPlayer->GetHidingSpot()
 					&& FVector::Dist2D(Player->GetActorLocation(), GetActorLocation())
 						<= IGListener::HiddenReachRadius
-					&& Tuning.bCaptureEnabled)
+					&& Tuning.bCaptureEnabled
+					&& !AIGLiningEntity::IsAnyBusy(GetWorld()))
 				{
 					BeginCapture(Player);
 				}
@@ -1077,7 +1080,8 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 				|| State == EIGListenerState::Chasing
 				|| State == EIGListenerState::Searching;
 			if (Distance <= CaptureRadius && bReachable && Tuning.bCaptureEnabled
-				&& (!bTouchCaptureSuppressed || bPursuing))
+				&& (!bTouchCaptureSuppressed || bPursuing)
+				&& !AIGLiningEntity::IsAnyBusy(GetWorld()))
 			{
 				BeginCapture(Player);
 			}

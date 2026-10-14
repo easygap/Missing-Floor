@@ -142,11 +142,17 @@ private:
 		const TArray<FColor>& Colors) const;
 	void HandleNightOneSolved();
 	void HandleNightTwoSolved();
-	/** §8 비트 2-5: reaching 403 is what ends night two, not confirming T7. */
+	/** §8 비트 2-5: 403호에 닿으면 밤2의 일을 마친 것이다. 밤은 침대에서 그녀가 끝낸다. */
 	void HandleNightTwoReturnedHome();
 	void HandleNightThreeSolved();
-	/** §8 비트 3-7: only 403's floor ends night three. */
+	/** §8 비트 3-7: 403호 안에 들어서면 밤3의 일을 마친 것이다. 밤은 침대에서 그녀가 끝낸다. */
 	void HandleNightThreeReturnedHome();
+	/** 밤의 일을 적었다(불러온 밤 포함). 침대를 「아침까지 쉬기」로 바꾼다. */
+	void HandleNightGoalRecorded(int32 NightIndex);
+	/** 낮에는 다음 밤으로 가는 잠자리, 밤에는 일을 마쳤을 때만 아침까지 쉬는 자리. */
+	void RefreshSleepTarget();
+	/** 밤에 침대를 길게 눌렀다. 문밖이 조용하면 아침으로 넘어간다. */
+	void HandleNightRestRequested();
 	/**
 	 * 대답을 들은 밤3의 05:30, 신호가 돌아오면 신고한다(§1 밤3 이후 현실 대응).
 	 * 귀가로 끝났든 시간이 다 됐든 새벽의 일이다. 대답을 못 들은 밤3은 신고할
@@ -177,6 +183,11 @@ private:
 	/** 에필로그가 끝나면 게임은 타이틀로 돌아간다(§9). */
 	void HandleEpilogueCompleted();
 	void HandleSleepRequested(class AIGMissingFloorEvidence* Evidence);
+	/** 밤1, P1 뒤 4층 복도 천장 밑에서 귀를 기울였다. */
+	void HandleNightOneCeilingListened(class AIGMissingFloorEvidence* Evidence);
+	void RefreshNightOneCeilingListen();
+	/** 귀를 기울인 소리를 위에서도 들었다. 천장에서 한 번 울리고 그가 4층 복도로 내려온다. */
+	void PlayNightOneAboveAnswer();
 	/** 눕는다 → 검은 화면 → 침대에서 네시 반. 자는 동안은 보여 주지 않는다. */
 	void BeginNightAfterSleep(int32 NightIndex);
 	void WakeIntoNight();
@@ -215,10 +226,6 @@ private:
 	FVector GetNightOneCeilingPoint() const;
 	/** 첫 밤, 노크를 들은 뒤 머리맡의 손전등을 켠다. 먼저 켰으면 아무것도 안 한다. */
 	void ReachForNightOneTorch();
-	/** P1이 맞물린 순간 그가 소리를 좇고 있으면 여유를 두지 않고 새벽으로 간다. */
-	bool IsNightOneSolveUnderThreat() const;
-	/** 밤1 결론 뒤의 새벽. 포획 암전이나 펼쳐 둔 종이 뒤로는 오지 않는다. */
-	void FinishNightOneAtDawn();
 	/** 밤1, 옥상에서 전동 드릴이 다섯 번 돌다 멈춘다. 목한수의 첫 흔적. */
 	void PlayRoofDriverBeat();
 	/** 렌치가 놓이고 독백이 읽힌 뒤에야 화면이 검어진다. */
@@ -334,6 +341,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<class AIGManagerPatrol> ManagerPatrol;
 
+	/** 「302호에 남은 짐」(0.10.0): 수거 공지, 안쪽 방, 302호의 정우, 덮개 조각, 덧댄 것. */
+	UPROPERTY(Transient)
+	TObjectPtr<class AIGMissingFloorLeftoverDirector> Leftover;
+
 	/**
 	 * §22.3의 선택적 목격 프롭. 어느 것도 진행을 잠그지 않으므로 생성에
 	 * 실패해도 스테이지는 유효하다 — ValidateFixtures가 이것들을 묻지 않는
@@ -412,6 +423,9 @@ private:
 	/** Day interactions: the bed that ends the day, 401's door that talks. */
 	UPROPERTY(Transient)
 	TObjectPtr<class AIGMissingFloorEvidence> SleepTarget;
+	/** 밤1 P1 뒤, 안정기 소리가 가장 큰 4층 복도 천장 밑. */
+	UPROPERTY(Transient)
+	TObjectPtr<class AIGMissingFloorEvidence> NightOneCeilingListen;
 
 	UPROPERTY(Transient)
 	TObjectPtr<class AIGMissingFloorEvidence> Unit401Door;
@@ -528,11 +542,10 @@ private:
 	FTimerHandle NightOneHoldTimer;
 	FTimerHandle NightOneTorchTimer;
 	FTimerHandle NightOneThoughtTimer;
-	/** 밤1 결론 뒤: 위에서 안정기, 「…위에 뭐가 있어.」, 그리고 새벽. */
+	/** 밤1 결론 뒤: 위에서 안정기, 「…위에 뭐가 있어.」. 새벽은 침대나 05:30이 데려온다. */
 	FTimerHandle NightOneBallastTimer;
 	FTimerHandle NightOneRealizationTimer;
-	FTimerHandle NightOneDawnTimer;
-	bool bNightOneDawnHeldByNote = false;
+	FTimerHandle NightOneAboveTimer;
 	/** 밤2 문 노크 전까지 복도 첫 칸의 그를 붙드는 한도. */
 	FTimerHandle NightTwoDoorHoldTimer;
 	/** 밤3·4를 여는 소리의 뒷부분(철문의 덜컹, 떠나는 발소리)과 한 줄. */

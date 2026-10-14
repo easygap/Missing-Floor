@@ -33,6 +33,13 @@ struct INDIEGAME_API FIGWalkerRoute
 /** 경로를 걷는 NPC가 같이 쓰는 것. 애니메이션 전환, 회전, 걸음 박자, 발소리, 계단실 방화문 판정. */
 namespace IGWalker
 {
+	/** 어른 남자 키(178 cm 안팎)를 막는 캡슐의 반 높이. 정우, 경찰관, 관리인이 같다. */
+	constexpr float AdultCapsuleHalfHeight = 86.0f;
+	/** 계단은 디딤판 한 칸에 한 걸음이다(cm/s). 옥상 계단과 건물 계단 모두 이 빠르기로 오른다. */
+	constexpr float StairWalkSpeed = 38.0f;
+	/** 이보다 높이가 많이 바뀌는 경로 구간은 계단이다(cm). */
+	constexpr float StairSegmentRise = 30.0f;
+
 	/** 애니메이션을 바꾼다. 같은 애니메이션이면 재생 속도만 바꾼다. Active에는 지금 재생 중인 애니메이션을 기억해 둔다. */
 	template <typename TActivePtr>
 	void PlayBody(USkeletalMeshComponent* Body, TActivePtr& Active, UAnimSequence* Sequence, const float Rate, const bool bLoop = true)

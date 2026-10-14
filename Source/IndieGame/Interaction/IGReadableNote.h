@@ -52,6 +52,12 @@ public:
 	/** 문단 사이의 빈 줄은 보존하고, 화면 폭에 따른 줄바꿈은 읽기 화면이 맡는다. */
 	void SetNoteText(const FText& InTitle, TArray<FText> InBodyLines);
 
+	/**
+	 * 보이는 것은 옆의 소품(구운 인쇄물, 보관함)이 맡고 이 판은 조준만 받는다. 감춰도 충돌은
+	 * 남아 조준 트레이스가 걸린다.
+	 */
+	void HidePresentation();
+
 	/** Uses a dark smartphone notification screen instead of a paper sheet. */
 	void SetPhoneNotificationPresentation();
 

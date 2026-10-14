@@ -19,6 +19,9 @@ class UIGMissingFloorNarrativeSubsystem;
 class UIGNoiseSubsystem;
 struct FIGNoiseEvent;
 
+/** 밤2 손수레 심부름을 마쳤다. bCaught면 그녀를 붙잡아 집에 데려다 놓고 끝났다. */
+DECLARE_MULTICAST_DELEGATE_OneParam(FIGManagerErrandFinished, bool /*bCaught*/);
+
 UENUM()
 enum class EIGManagerPatrolState : uint8
 {
@@ -99,6 +102,37 @@ public:
 	/** 월드에 열쇠를 찾으러 도는 관리인이 있는가. 그동안 손님은 403호 문을 두드리지 않는다. */
 	static bool IsAnyOnKeyHunt(const UWorld* World);
 
+	/**
+	 * 밤2, 관리실 장부를 맞춰 본 뒤(P2). 안쪽 방에서 깨어 문을 열고 필로티로 빈 손수레를
+	 * 가지러 나간다. 사슬을 한참 풀고, 손수레를 밀고 돌아와 관리실 앞에 세우고, 안쪽 방에
+	 * 다시 눕는다. 보고 듣고 쫓고 잡는 것은 밤3 순찰과 같다. Cart는 필로티에 묶어 둔 손수레,
+	 * ParkTransform은 돌아와 세워 둘 자리다. 안쪽 방 문은 감독이 미리 연다.
+	 */
+	void StartCartErrand(
+		AIGSwingDoor* InnerDoor,
+		AIGSwingDoor* BoothDoor,
+		AActor* Cart,
+		const FTransform& ParkTransform,
+		float FetchSeconds);
+	bool IsOnErrand() const { return bErrand; }
+	/**
+	 * 밤3, 302호에 정우가 갇혀 있는 동안은 3층(302호와 복도 끝)을 돌지 않고 3층 소리도 보러 가지
+	 * 않는다. 그가 302호 문간에서 정우를 보는 장면을 만들지 않는다. 2층과 4층, 열쇠 찾기는 평소대로다.
+	 * 3층을 돌던 중이면 안쪽 방으로 돌아간다. 쫓는 중이면 그 일을 마친 뒤다.
+	 */
+	void SetAvoidingStorage(bool bAvoid);
+	bool IsAvoidingStorage() const { return bAvoidStorageFloor; }
+	/** 사슬을 다 풀고 손수레를 밀며 돌아오는 중이다(바퀴 소리가 난다). */
+	bool IsErrandReturning() const;
+	/** 관리실 문을 나섰다. */
+	FSimpleMulticastDelegate OnErrandOutside;
+	/** 사슬을 풀고 손수레를 밀기 시작했다. 여기서부터 바퀴 소리가 다가온다. */
+	FSimpleMulticastDelegate OnErrandReturning;
+	FIGManagerErrandFinished OnErrandFinished;
+	/** 검사 전용: 사슬 푸는 시간을 바꾼다. 이미 풀고 있으면 남은 시간도 줄인다. */
+	void SetErrandFetchSecondsForTesting(float Seconds);
+	static bool IsAnyOnErrand(const UWorld* World);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -110,6 +144,8 @@ private:
 		bool bOnStair = false;
 		/** 열쇠를 찾으러 갈 때만 밟는 자리(4층 복도, 옥상 계단과 옥상). 평소 길은 여기를 지나지 않는다. */
 		bool bHuntOnly = false;
+		/** 밤2 손수레 심부름 때만 밟는 자리(안쪽 방, 관리실 안, 필로티 손수레 앞). */
+		bool bErrandOnly = false;
 		TArray<int32> Links;
 	};
 
@@ -146,6 +182,9 @@ private:
 
 	void BuildGraph();
 	int32 AddNode(const FVector& Feet, bool bOnStair, bool bHuntOnly = false);
+	int32 AddErrandNode(const FVector& Feet);
+	/** 지금 길 찾기에 쓸 수 있는 점인가. 열쇠 찾기·심부름 전용 점은 그때만 쓴다. */
+	bool IsNodeUsable(int32 Index) const;
 	void LinkNodes(int32 A, int32 B);
 	/** 다익스트라. 노드가 오십 개 남짓이라 매번 새로 푼다. */
 	bool FindPath(int32 From, int32 To, TArray<int32>& OutPath) const;
@@ -246,6 +285,40 @@ private:
 	void HandleNoise(const FIGNoiseEvent& Event);
 	void HandleListenerKnock(const FVector& Where);
 
+	/** 밤2 손수레 심부름의 단계. */
+	enum class EErrandStep : uint8
+	{
+		None,
+		/** 안쪽 방에서 관리실 문 밖까지. */
+		Leaving,
+		/** 연결통로와 필로티를 지나 손수레 앞까지. */
+		ToCart,
+		/** 손수레를 묶은 사슬을 푼다. 한참 걸린다. */
+		Fetching,
+		/** 손수레를 끌어내 돌린다. 바퀴가 끽끽거린다. */
+		Turning,
+		/** 손수레를 밀고 관리실 앞까지 온다. */
+		Pushing,
+		/** 손수레를 세워 둔다. */
+		Parking,
+		/** 안쪽 방으로 들어가 눕는다. */
+		Returning
+	};
+	void TickErrand(float DeltaSeconds);
+	void SetErrandStep(EErrandStep Step);
+	/** 걷던 길 끝에 닿았다. 심부름의 다음 단계로 넘어간다. */
+	void ArriveErrandStop();
+	/** 조사나 수색에서 돌아왔다. 하던 단계의 목적지로 다시 길을 잡는다. */
+	void ResumeErrandPath();
+	int32 GetErrandStepTarget() const;
+	/** 지나야 할 문이 닫혀 있으면 열고 다 열릴 때까지 선다. 서 있는 동안 true. */
+	bool WaitForErrandDoor(float DeltaSeconds);
+	void FinishErrand(bool bCaught);
+	/** 손수레를 잡거나 놓는다. 놓을 때 bPark면 세워 둘 자리에, 아니면 그 자리 바닥에 둔다. */
+	void AttachErrandCart(bool bAttach, bool bPark = true);
+	void PlayErrandChain();
+	void PlayErrandSqueak();
+
 	UPROPERTY(Transient)
 	TObjectPtr<USceneComponent> Root;
 	/** 몸과 손전등을 함께 흔든다. 메시의 정면은 -X라 몸만 180도 돌려 붙인다. */
@@ -298,6 +371,29 @@ private:
 	TArray<FRouteStop> Route;
 	int32 RestNode = INDEX_NONE;
 	int32 FourthFloorDoorNode = INDEX_NONE;
+
+	/** 밤3 302호 장면 동안 3층을 돌지 않는다. */
+	bool bAvoidStorageFloor = false;
+	bool IsStorageFloorNode(int32 Node) const;
+	/** 밤2 손수레 심부름. */
+	bool bErrand = false;
+	EErrandStep ErrandStep = EErrandStep::None;
+	TWeakObjectPtr<AIGSwingDoor> ErrandInnerDoor;
+	TWeakObjectPtr<AIGSwingDoor> ErrandBoothDoor;
+	TWeakObjectPtr<AActor> ErrandCart;
+	FTransform ErrandCartPark = FTransform::Identity;
+	float ErrandFetchSeconds = 110.0f;
+	double ErrandStepStart = 0.0;
+	double NextErrandSoundSeconds = 0.0;
+	double LastErrandCaptionSeconds = -100.0;
+	bool bErrandCartAttached = false;
+	bool bErrandDoorClosedBehind = false;
+	int32 ErrandCotNode = INDEX_NONE;
+	int32 ErrandInnerInNode = INDEX_NONE;
+	int32 ErrandInnerOutNode = INDEX_NONE;
+	int32 ErrandOfficeNode = INDEX_NONE;
+	int32 ErrandCartNode = INDEX_NONE;
+	int32 ErrandParkNode = INDEX_NONE;
 
 	/** 열쇠 찾기. 길과 자리, 문 셋, 지금 하는 일. */
 	TArray<FHuntStop> HuntStops;

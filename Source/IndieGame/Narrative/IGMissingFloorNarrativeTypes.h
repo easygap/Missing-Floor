@@ -134,7 +134,11 @@ enum class EIGMissingFloorWitness : uint8
 	/** 관리실 안쪽 방에서 새는 기계 험. 쓰는 방이라는 뜻이다. */
 	BoothInnerRoomHum = 12,
 	/** 5층 판재 더미 밑의 녹음기. 서일영이 그 새벽 올라오며 켜 둔 것을 끝까지 들었다. */
-	SeoVoiceRecorder = 13
+	SeoVoiceRecorder = 13,
+	/** 관리실 안쪽 방에서 떼어 낸 덮개 조각과 벽에서 움직인 것을 봤다. */
+	InnerRoomCoverPieces = 14,
+	/** 맞춘 덮개를 5층 배관 점검 자리에 대어 봤다. 떼어 가고 덧판으로 막은 자리다. */
+	InspectionCoverMatched = 15
 };
 
 /**
@@ -246,6 +250,92 @@ struct INDIEGAME_API FIGMissingFloorNightState
 	TArray<FName> Witnesses;
 };
 
+/** 「302호에 남은 짐」에서 이름으로 적는 목록. */
+UENUM()
+enum class EIGLeftoverList : uint8
+{
+	/** 손에 든 적이 있는 물증과 물건(Piece1..3, Frame, ToolPouch, DohaBox, JeongwooGloves). */
+	Taken,
+	/** 403호에 가져다 둔 것. */
+	Stored,
+	/** 살펴본 것. 두고 온 것도 들어간다. 일지와 대사는 이것만 본다. */
+	Examined,
+	/** 열어 둔 점검구(공간.이름). */
+	HatchesOpen,
+	/** 덧댄 것이 눌러 막은 틈. 다시 뜯으면 빠진다. */
+	GapsSealed,
+	/** 밤4에 걷어 낸 벽의 층과 푼 고정점. */
+	WallLayers
+};
+
+/**
+ * 「302호에 남은 짐」(0.10.0 확장). 물증·점검구·302호 작업·정우·밤4 해체의 진행이다.
+ * 불안정한 물리 좌표 대신 단계와 이름으로만 적는다. 장면 실행 여부는 CompletedBeats의
+ * Leftover.* 비트가 맡는다.
+ */
+USTRUCT(BlueprintType)
+struct INDIEGAME_API FIGLeftoverState
+{
+	GENERATED_BODY()
+
+	/** 0이면 확장 전 저장을 이어 온 판, 1이면 확장판에서 시작한 판. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	int32 Version = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	TArray<FName> Taken;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	TArray<FName> Stored;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	TArray<FName> Examined;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	TArray<FName> HatchesOpen;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	TArray<FName> GapsSealed;
+
+	/** 덮개 조립: 0 안 함, 1 테두리에 다 맞춤, 2 방수막을 들춰 막힌 통풍구까지 봄. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	int32 AssemblyStage = 0;
+
+	/** 조립한 덮개를 5층 원래 자리에 대어 봤다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	bool bSiteMatched = false;
+
+	/** 덧댄 것이 마지막으로 막고 있던 틈(공간.이름). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	FName LiningHeldGap;
+
+	/** 302호 쐐기: None, Brace(맞는 자리), Slipped(미끄러져 빠짐). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	FName WedgeSocket;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	bool bWardrobeMoved = false;
+
+	/** 정우: None, Trapped, Freed, LeftTogether, SelfEscaped. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	FName JeongwooState;
+
+	/** 밤4 해체의 유효 단계 0..5. 실제 망치질 수는 NightFourWallStrikeCount에 따로 있다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	int32 WallStage = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	TArray<FName> WallLayers;
+
+	/** 5층 보강 프레임을 덧댄 것의 관절에 걸었다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	bool bFramePlaced = false;
+
+	/** 확장 전 판에서 이미 망치질을 시작한 저장. 그 판은 예전 다섯 번 순서로 끝낸다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	bool bLegacyWallSequence = false;
+};
+
 /** 없는 층의 서사 상태 전부. FIGProgressSnapshot에 통째로 실린다. */
 USTRUCT(BlueprintType)
 struct INDIEGAME_API FIGMissingFloorNarrativeSnapshot
@@ -271,4 +361,8 @@ struct INDIEGAME_API FIGMissingFloorNarrativeSnapshot
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
 	EIGPurchaseProfile StorePurchaseProfile = EIGPurchaseProfile::Unset;
+
+	/** 「302호에 남은 짐」. 스키마 4에서 생겼다. 그 전 저장은 Version 0으로 읽힌다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	FIGLeftoverState Leftover;
 };

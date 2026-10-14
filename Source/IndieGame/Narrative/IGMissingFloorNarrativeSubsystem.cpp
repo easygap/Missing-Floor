@@ -208,6 +208,10 @@ namespace IGMissingFloorNarrative
 			return TEXT("Heard.BoothInnerRoomHum");
 		case EIGMissingFloorWitness::SeoVoiceRecorder:
 			return TEXT("Heard.SeoVoiceRecorder");
+		case EIGMissingFloorWitness::InnerRoomCoverPieces:
+			return TEXT("Seen.InnerRoomCoverPieces");
+		case EIGMissingFloorWitness::InspectionCoverMatched:
+			return TEXT("Seen.InspectionCoverMatched");
 		default:
 			return nullptr;
 		}
@@ -510,11 +514,24 @@ bool UIGMissingFloorNarrativeSubsystem::IsNightFourMaskRunning() const
 
 int32 UIGMissingFloorNarrativeSubsystem::RecordNightFourWallStrike()
 {
+	// 실제로 휘두른 수다. 확장판에서는 엉뚱한 데를 친 것도 센다. 벽을 어디까지 뜯었는지는
+	// 유효 단계(Leftover.WallStage)가 따로 센다.
 	Snapshot.Night.NightFourWallStrikeCount = FMath::Clamp(
 		Snapshot.Night.NightFourWallStrikeCount + 1,
 		0,
-		5);
+		MaxNightFourWallStrikes);
 	return Snapshot.Night.NightFourWallStrikeCount;
+}
+
+int32 UIGMissingFloorNarrativeSubsystem::GetNightFourWallProgress() const
+{
+	if (Snapshot.Night.bNightFourWallOpened)
+	{
+		return 5;
+	}
+	return Snapshot.Leftover.bLegacyWallSequence
+		? FMath::Min(Snapshot.Night.NightFourWallStrikeCount, 5)
+		: Snapshot.Leftover.WallStage;
 }
 
 void UIGMissingFloorNarrativeSubsystem::SetNightFourWallOpened(
@@ -523,7 +540,9 @@ void UIGMissingFloorNarrativeSubsystem::SetNightFourWallOpened(
 	Snapshot.Night.bNightFourWallOpened = bOpened;
 	if (bOpened)
 	{
-		Snapshot.Night.NightFourWallStrikeCount = 5;
+		// 유효 단계는 벽을 실제로 뜯은 쪽(밤4 감독)이 적는다. 열린 벽의 진행은
+		// GetNightFourWallProgress가 5로 읽는다.
+		Snapshot.Night.NightFourWallStrikeCount = FMath::Max(Snapshot.Night.NightFourWallStrikeCount, 5);
 	}
 }
 
@@ -572,6 +591,61 @@ void UIGMissingFloorNarrativeSubsystem::ResetNightFourForRetry()
 	Snapshot.Night.CompletedBeats.Remove(FName(TEXT("Night4.FinalConfrontation")));
 	Snapshot.Night.CompletedBeats.Remove(FName(TEXT("Night4.ChoiceOffered")));
 	Snapshot.Night.CompletedBeats.Remove(FName(TEXT("Night4.SecondReport")));
+	// 확장판: 걷어 낸 층과 푼 고정점, 건 프레임, 유효 단계, 조립과 조사는 남긴다. 다시 하는
+	// 밤에 같은 벽을 또 뜯게 하지 않는다. 3단계를 넘긴 판은 밤4 디렉터가 시간을 다시 열 때
+	// 정전을 걸어 둔 채로 이어 간다(바깥층이 이미 없다).
+	// 예전 다섯 번 순서로 하던 판은 망치질 수가 0으로 돌아가므로 새 순서로 다시 시작한다.
+	FIGLeftoverState& Leftover = Snapshot.Leftover;
+	if (Leftover.bLegacyWallSequence)
+	{
+		Leftover.bLegacyWallSequence = false;
+		Leftover.WallLayers.Reset();
+		Leftover.WallStage = 0;
+		Leftover.bFramePlaced = false;
+	}
+}
+
+TArray<FName>* UIGMissingFloorNarrativeSubsystem::LeftoverList(const EIGLeftoverList List)
+{
+	FIGLeftoverState& Leftover = Snapshot.Leftover;
+	switch (List)
+	{
+	case EIGLeftoverList::Taken: return &Leftover.Taken;
+	case EIGLeftoverList::Stored: return &Leftover.Stored;
+	case EIGLeftoverList::Examined: return &Leftover.Examined;
+	case EIGLeftoverList::HatchesOpen: return &Leftover.HatchesOpen;
+	case EIGLeftoverList::GapsSealed: return &Leftover.GapsSealed;
+	case EIGLeftoverList::WallLayers: return &Leftover.WallLayers;
+	default: return nullptr;
+	}
+}
+
+const TArray<FName>* UIGMissingFloorNarrativeSubsystem::LeftoverList(const EIGLeftoverList List) const
+{
+	return const_cast<UIGMissingFloorNarrativeSubsystem*>(this)->LeftoverList(List);
+}
+
+bool UIGMissingFloorNarrativeSubsystem::AddLeftover(const EIGLeftoverList List, const FName Name)
+{
+	TArray<FName>* Names = LeftoverList(List);
+	if (!Names || Name.IsNone() || Names->Contains(Name))
+	{
+		return false;
+	}
+	Names->Add(Name);
+	return true;
+}
+
+bool UIGMissingFloorNarrativeSubsystem::RemoveLeftover(const EIGLeftoverList List, const FName Name)
+{
+	TArray<FName>* Names = LeftoverList(List);
+	return Names && Names->Remove(Name) > 0;
+}
+
+bool UIGMissingFloorNarrativeSubsystem::HasLeftover(const EIGLeftoverList List, const FName Name) const
+{
+	const TArray<FName>* Names = LeftoverList(List);
+	return Names && Names->Contains(Name);
 }
 
 // -- persistence -----------------------------------------------------------
@@ -588,6 +662,15 @@ void UIGMissingFloorNarrativeSubsystem::RestoreSnapshot(
 	{
 		Snapshot.Truths.Reset();
 	}
+	if (Snapshot.SchemaVersion < 4)
+	{
+		// 확장 전 판. 302호 짐 이야기는 그 판이 다음에 여는 밤과 낮부터 붙는다. 이미 망치질을
+		// 시작한 밤4 저장은 예전 다섯 번 순서로 끝낸다(새 괴이 교습을 중간에 끼우지 않는다).
+		Snapshot.Leftover = FIGLeftoverState();
+		Snapshot.Leftover.bLegacyWallSequence = Snapshot.Night.NightIndex >= 4
+			&& !Snapshot.Night.bNightFourWallOpened
+			&& Snapshot.Night.NightFourWallStrikeCount > 0;
+	}
 
 	NormalizeSnapshot();
 	// A restore must not announce truths the player learned last session.
@@ -598,6 +681,7 @@ void UIGMissingFloorNarrativeSubsystem::RestoreSnapshot(
 void UIGMissingFloorNarrativeSubsystem::ResetNarrative()
 {
 	Snapshot = FIGMissingFloorNarrativeSnapshot();
+	Snapshot.Leftover.Version = 1;
 	// The opening voicemail is character memory, not a collectible. Seed it on
 	// reset as well as restore so a new-game reset cannot erase knowledge that
 	// the prologue has already established before the first playable frame.
@@ -744,7 +828,7 @@ void UIGMissingFloorNarrativeSubsystem::NormalizeSnapshot()
 			const FName Candidate = Snapshot.Night.Witnesses[Index];
 			bool bRecognized = false;
 			for (uint8 Raw = 1;
-				Raw <= static_cast<uint8>(EIGMissingFloorWitness::SeoVoiceRecorder);
+				Raw <= static_cast<uint8>(EIGMissingFloorWitness::InspectionCoverMatched);
 				++Raw)
 			{
 				if (Candidate == GetWitnessId(static_cast<EIGMissingFloorWitness>(Raw)))
@@ -781,10 +865,16 @@ void UIGMissingFloorNarrativeSubsystem::NormalizeSnapshot()
 	Snapshot.Night.NightFourWallStrikeCount = FMath::Clamp(
 		Snapshot.Night.NightFourWallStrikeCount,
 		0,
-		5);
+		MaxNightFourWallStrikes);
+	Snapshot.Leftover.WallStage = FMath::Clamp(Snapshot.Leftover.WallStage, 0, 5);
 	if (Snapshot.Night.bNightFourWallOpened)
 	{
-		Snapshot.Night.NightFourWallStrikeCount = 5;
+		Snapshot.Night.NightFourWallStrikeCount = FMath::Max(Snapshot.Night.NightFourWallStrikeCount, 5);
+	}
+	else if (Snapshot.Leftover.WallStage >= 5)
+	{
+		// 열리지 않은 벽에 다 뜯은 단계가 남을 수는 없다. 마지막 철물 앞에서 이어 간다.
+		Snapshot.Leftover.WallStage = 4;
 	}
 	if (!IGMissingFloorNarrative::IsEnding(Snapshot.Night.EndingChoice))
 	{

@@ -430,6 +430,11 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 				IGNightThree::AnnexBoltTravelCm,
 				NSLOCTEXT("IGMissingFloor", "AnnexBoltClosePrompt", "빗장 걸기"),
 				NSLOCTEXT("IGMissingFloor", "AnnexBoltOpenPrompt", "빗장 풀기"));
+			// 403호 현관은 같은 메시를 쓰지만 걸쇠라고 부른다. 빗장 문구는 이 철문에만 단다.
+			if (AnnexGate)
+			{
+				AnnexGate->SetLatchedOpenPrompt(NSLOCTEXT("IGMissingFloor", "BoltedOpenPrompt", "빗장 풀고 문 열기"));
+			}
 		}
 	}
 	float RouteLengthCentimeters = 0.0f;
@@ -1328,6 +1333,7 @@ void AIGMissingFloorNightThreeDirector::SetHourActive(const bool bHourActive)
 		// 새벽은 어떻게 왔든 복도를 비운다. 시간 초과로 왔다면 그를 낮의
 		// 복도에 세워 둔 채로 남기면 안 된다.
 		GetWorldTimerManager().ClearTimer(ReturnTimer);
+		GetWorldTimerManager().ClearTimer(FigureReleaseTimer);
 		ReleaseReturnFigure();
 		if (ReturnStage != EIGNightThreeReturnStage::Home)
 		{
@@ -2817,9 +2823,27 @@ void AIGMissingFloorNightThreeDirector::AdvanceReturn()
 	{
 		ReturnStage = EIGNightThreeReturnStage::Home;
 		GetWorldTimerManager().ClearTimer(ReturnTimer);
-		// 그를 복도에서 거두는 것은 새벽이다(SetHourActive). 여기서 거두면 문
-		// 너머로 돌아보던 그녀 눈앞에서 그가 사라진다.
+		// 돌아와도 밤은 이어진다. 그를 바로 거두면 문 너머로 돌아보던 그녀 눈앞에서 사라지므로,
+		// 그녀가 그를 보지 않는 3초를 기다렸다가 순찰로 돌려보낸다.
+		FigureUnseenSeconds = 0.0f;
+		GetWorldTimerManager().SetTimer(FigureReleaseTimer, this,
+			&AIGMissingFloorNightThreeDirector::PollReturnFigureRelease, 0.5f, true);
 		OnReturnedHome.Broadcast();
+	}
+}
+
+void AIGMissingFloorNightThreeDirector::PollReturnFigureRelease()
+{
+	if (!bHourCurrentlyActive || !bFigureStaged)
+	{
+		GetWorldTimerManager().ClearTimer(FigureReleaseTimer);
+		return;
+	}
+	FigureUnseenSeconds = IsReturnFigureInSight() ? 0.0f : FigureUnseenSeconds + 0.5f;
+	if (FigureUnseenSeconds >= 3.0f)
+	{
+		GetWorldTimerManager().ClearTimer(FigureReleaseTimer);
+		ReleaseReturnFigure();
 	}
 }
 

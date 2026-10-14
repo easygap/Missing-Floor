@@ -49,6 +49,7 @@ private:
 	void Shoot(const TCHAR* Name);
 	bool SaidLine(const FText& Line) const;
 	/** 벽을 한 번 친다. 칠 수 없으면 거짓이다. */
+	/** 다음 단계까지 손댄다(살펴보기·틀 세우기처럼 망치가 아닌 것도). 단계가 올랐으면 true. */
 	bool Strike();
 	bool IsCapturedSince(double Seconds) const;
 
@@ -69,6 +70,8 @@ private:
 	bool bOpenDoor = false;
 	bool bActed = false;
 	int32 Struck = 0;
+	float LastActionSeconds = -10.0f;
+	float ThirdStageSeconds = -1.0f;
 	bool bSawHeld = false;
 	bool bSawCall = false;
 	bool bSawCaughtOnBolt = false;

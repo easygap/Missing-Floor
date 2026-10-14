@@ -12,11 +12,18 @@ class APlayerController;
 class UIGMissingFloorNarrativeSubsystem;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FIGHourActiveSignature, bool /*bActive*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FIGNightGoalSignature, int32 /*NightIndex*/);
 
 /**
  * 새벽 04:30부터 05:30까지의 시간과 건물 출입을 관리한다.
- * 경과 시간을 게임 속 시각으로 환산하며, 밤의 목표를 마치거나 시간이
- * 다 되면 아침으로 넘어간다. 포획으로 돌아와도 경과 시간은 유지한다.
+ * 경과 시간을 게임 속 시각으로 환산한다. 밤의 일을 마친 것(CompleteNightGoal)과
+ * 아침으로 넘어가는 것(ConcludeNight, 05:30)은 따로다. 일을 마쳐도 더 둘러볼 수 있고,
+ * 403호 침대에서 「아침까지 쉬기」를 골라야 날이 샌다. 포획으로 돌아와도 경과 시간은 유지한다.
+ *
+ * 시간 흐름: 일시정지 메뉴는 세계째 멈춘다. 문서를 펼쳐 읽는 동안에는 이야기 시계만 선다
+ * (그는 계속 움직인다). 퍼즐 조작과 짧은 연출 중에는 흐르지만, 05:30이 그 한가운데 오면
+ * 손에 든 조작이나 연출이 끝날 때까지 새벽을 미룬다(최대 40초). 벽 안의 막간과 결말 연출은
+ * 시계를 세운다. 잡히면 정신을 잃은 만큼 앞으로 민다(05:30 30초 전까지).
  */
 UCLASS(NotBlueprintable, Transient)
 class INDIEGAME_API AIGNightPhaseDirector
@@ -44,11 +51,20 @@ public:
 	void RestartTheHour(int32 NightIndex);
 
 	/**
-	 * Ends the hour early because the night's goal was met. Morning is the
-	 * same exit as the timeout, so both routes leave identical world state.
+	 * 그 밤에 할 일을 마쳤다고 적는다. 새벽은 오지 않는다 — 발견한 뒤 둘러볼 시간이 있고,
+	 * 403호 침대에서 스스로 밤을 끝낸다(ConcludeNight). 조용할 때 저장한다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Night")
 	void CompleteNightGoal();
+	/**
+	 * 지금 아침으로 넘어간다. 침대의 「아침까지 쉬기」와 결말처럼 이야기가 밤을 닫는 자리,
+	 * 자동 검사만 부른다. 05:30과 같은 출구라 세계는 어느 길로 와도 같다.
+	 */
+	void ConcludeNight();
+	/** 이 밤의 할 일을 적었다. 불러온 밤이면 저장된 비트로 되살린다. */
+	bool IsGoalComplete() const { return bGoalComplete; }
+	/** 할 일을 적을 때마다(불러온 밤을 되살릴 때도) 밤 번호와 함께 알린다. 침대가 「아침까지 쉬기」를 켠다. */
+	FIGNightGoalSignature OnNightGoalRecorded;
 	/** 채운 밤의 기록. 못 채운 밤은 다음 저녁에 같은 밤이 온다(§5.4). */
 	static FName GoalBeatId(int32 NightIndex);
 	/** 그날 황순금과 대화를 마쳤는지 저장해 낮 안내에 반영한다. */
@@ -103,21 +119,24 @@ public:
 	FIGHourActiveSignature OnHourActiveChanged;
 
 	/**
-	 * 한 시간이 실제로 몇 초인가. 이야기 시간은 04:30~05:30이지만 실제로는
-	 * 밤마다 22, 26, 32, 28분으로 줄인다. 밤은 보통 목표를 채워서 먼저 끝나고,
-	 * 05:30은 막힌 사람을 낮(황순금의 힌트)으로 넘겨주는 끝이다. 예전에는 네
-	 * 밤 모두 20분이었는데, 처음 하는 사람이 셋째 밤(목표 20~30분)을 다 못
-	 * 마치고 한 단계 거세진 그를 다시 만났다.
+	 * 한 시간이 실제로 몇 초인가(상한). 이야기 시간은 04:30~05:30이고, 실제로는 밤마다
+	 * 32, 42, 55, 48분까지 둔다. 밤은 보통 할 일을 마친 사람이 침대에서 먼저 끝내고,
+	 * 05:30은 막힌 사람을 낮(황순금의 힌트)으로 넘겨주는 끝이다.
+	 *
+	 * 임시값이다. 처음 하는 사람의 기록이 아직 없어서, 밤마다 하는 일(읽기, 퍼즐 조작,
+	 * 돌아가는 길, 잡힌 뒤 복구)을 어림한 시간에 여유를 얹었다. 밤1 17~29분, 밤2 19~33분,
+	 * 밤3 27~47분, 밤4 24~40분을 어림했다. 기록이 모이면 다시 맞춘다. 0.9.1까지는 22, 26,
+	 * 32, 28분이었고 0.10.0 초안은 22, 31, 41, 34분이었다.
 	 */
 	static float GetHourDurationSeconds(int32 NightIndex)
 	{
 		switch (NightIndex)
 		{
-		case 1: return 1320.0f;
-		case 2: return 1560.0f;
-		case 3: return 1920.0f;
-		case 4: return 1680.0f;
-		default: return 1320.0f;
+		case 1: return 1920.0f;
+		case 2: return 2520.0f;
+		case 3: return 3300.0f;
+		case 4: return 2880.0f;
+		default: return 1920.0f;
 		}
 	}
 	/** 손목 시계. 경과 초를 이야기 시각(분, 04:30이 270)으로 옮긴다. */
@@ -157,6 +176,8 @@ private:
 	void HoldListenersForDawn();
 	void ReleaseHeldListeners();
 	bool IsCaptureResetInFlight() const;
+	/** 05:30이 와도 끝까지 둘 일이 있다(손에 든 퍼즐 조각, 진행 중인 짧은 연출). */
+	bool IsDawnHeldByActivity() const;
 	APlayerController* GetDawnController() const;
 	void ApplySealedPresentation(bool bSealed);
 	void RequestMissingFloorAutosave(bool bAtNight);
@@ -181,6 +202,8 @@ private:
 	bool bImmediateDawn = false;
 	/** 새벽의 눈 감기가 화면을 쥐고 있다. FinishDawnPresentation이 놓는다. */
 	bool bDawnTransitionInProgress = false;
+	/** 05:30 뒤에 조작·연출이 끝나기를 기다린 시간. 밤마다 0부터 센다. */
+	float DawnHoldSeconds = 0.0f;
 	FTimerHandle HourTimer;
 	FTimerHandle DawnTimer;
 	FTimerHandle DawnWorldTimer;

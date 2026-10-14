@@ -1,0 +1,343 @@
+﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "IGMissingFloorLeftoverDirector.generated.h"
+
+class AIGAccessHatch;
+class AIGJeongwooFigure;
+class AIGLeftoverTarget;
+class AIGLiningEntity;
+class AIGListenerEntity;
+class AIGManagerPatrol;
+class AIGMissingFloorNightTwoBeatDirector;
+class AIGNightLoopDirector;
+class AIGNightPhaseDirector;
+class AIGPlayerCharacter;
+class AIGPrologueWorldScene;
+class AIGReadableNote;
+class AIGSwingDoor;
+class UIGMissingFloorNarrativeSubsystem;
+class UStaticMesh;
+class UStaticMeshComponent;
+enum class EIGCaptureKind : uint8;
+
+/**
+ * 「302호에 남은 짐」(0.10.0). 수거 공지와 옮겨지는 짐, 관리실 안쪽 방, 302호의 정우, 떼어 낸
+ * 덮개(P6), 남겨 둘 틈(P7), 셋째 괴이 덧댄 것의 자리를 한곳에서 쥔다.
+ *
+ * 흐름(낮은 NightIndex 기준, 밤 N 다음 낮이 NightIndex N이다).
+ * - 낮1: 1층에 「대형 폐기물 수거 안내」가 붙는다. 날짜를 줄 긋고 목요일 아침으로 고쳤다.
+ *   정우가 관리실 안쪽 방의 「주인 없는 짐」을 302호로 나르다 3층 방화문에서 막힌다. 문을
+ *   잡아 주면 같이 302호로 가고, 상자 하나에서 오빠 이름을 본다. 정우가 그 상자를 따로 둔다.
+ * - 밤2: 장부를 맞춘 뒤(P2) 안쪽 방에서 목한수가 깬다. 빈 손수레를 가지러 필로티로 나간
+ *   사이 안쪽 방에 들어간다. 작업대와 벽 방수막의 덮개 조각 둘, 정우의 장갑 주머니, 두
+ *   점검구와 벽에 접힌 덧댄 것. 손수레 소리가 돌아오기 전에 나와야 한다. 관리실을 나서면
+ *   예전처럼 귀환 추격이 시작된다.
+ * - 낮2: 장갑 주머니를 보여 주면 정우가 302호 짐을 새벽 네 시쯤 빼러 오겠다고 한다.
+ * - 밤3: 정우가 상자를 빼다 04:30에 갇혔다. 덧댄 것이 북벽 작업 틈을 누르며 마감판을 밀어
+ *   길을 막았다. 쐐기로 판을 받치고, 장롱을 밀어 큰 점검구를 열면 덧댄 것이 옮겨 가고 길이
+ *   열린다. 정우가 판을 받치는 동안 오빠 상자를 빼낼 수도 있다. 남은 덮개 조각과 금속 틀이
+ *   열린 길 옆 마대에 있다. 302호 상자 뚜껑에서 덮개를 맞추고 5층 원래 자리에 대 본다.
+ * - 낮3: 필로티 적치 자리가 비었다. 수거차가 새벽에 다녀갔다.
+ * - 밤4: 덧댄 것은 5층에 있다. 벽 해체 단계는 밤4 감독이 이 감독의 5층 함수를 부른다.
+ *
+ * 저장은 서사 스냅샷의 Leftover(FIGLeftoverState)와 Leftover.* 비트다. 좌표는 적지 않는다.
+ */
+UCLASS(NotBlueprintable, Transient)
+class INDIEGAME_API AIGMissingFloorLeftoverDirector : public AActor
+{
+	GENERATED_BODY()
+
+public:
+	AIGMissingFloorLeftoverDirector();
+
+	bool Configure(
+		AIGPrologueWorldScene* InScene,
+		AIGPlayerCharacter* InPlayer,
+		AIGListenerEntity* InListener,
+		AIGNightLoopDirector* InNightLoop,
+		AIGNightPhaseDirector* InNightPhase,
+		AIGMissingFloorNightTwoBeatDirector* InNightTwoBeats,
+		AIGManagerPatrol* InManager);
+
+	/** 그 시간이 열리거나 닫혔다(GBD가 부른다). 공간마다 문·괴이·사람을 다시 놓는다. */
+	void SetHourActive(bool bActive);
+
+	/**
+	 * 밤2 P2가 풀렸다. 안쪽 방이 깨는 장면을 맡으면 true. false면 부르는 쪽이 예전처럼 곧장
+	 * 귀환 추격을 건다(관리인이 없거나, 이미 한 밤이거나, 옛 저장의 이어 하기).
+	 */
+	bool BeginNightTwoInnerRoom();
+
+	/**
+	 * 낮의 정우(오토바이)에게 말을 걸었다. 이 감독이 맡는 줄이면 띄우고 true. 예전 줄
+	 * (소개·손님 이야기·걸쇠)은 부르는 쪽이 띄운다. bKnown은 이름을 들은 회차인가.
+	 */
+	bool TryJeongwooTalk(bool bKnown, bool bGuestTalkDone);
+
+	/** 신고 문자와 경찰 현장 확인에 덧붙일 것. */
+	bool HasCoverEvidence() const;
+	bool WasJeongwooRescuedTogether() const;
+
+	/** 지금 정우나 관리인 장면이 돌고 있다. 그동안 다른 괴이는 오지 않는다. */
+	bool IsSceneActive() const;
+	static bool IsAnySceneActive(const UWorld* World);
+	/** 05:30이 와도 끝까지 둘 일이 있다. 손에 든 덮개 조각, 진행 중인 장면. */
+	static bool IsHoldingDawn(const UWorld* World);
+	/**
+	 * 그녀가 실제로 본 자리. 대사와 힌트를 고를 때만 쓰고 진행 조건으로 쓰지 않는다. 저장에 남고,
+	 * 그 자리를 이미 다룬 저장(대 보기, 벽 단계, 틀 세움)은 본 것으로 친다.
+	 */
+	static const FName SeenAnnexInspectionBeat;
+	static const FName SeenBraceFrameBeat;
+
+	// -- 밤4 벽 해체가 부르는 5층 덧댄 것(IGMissingFloorLeftoverAnnex.cpp) -----------
+	/** 5층 벽에 놓는다(밤4 시작, 불러오기, 재도전). 지난 단계면 그 단계의 자리에 곧장 놓는다. */
+	void PrepareAnnexLining(int32 WallStage, bool bBracePlaced);
+	/** 아직 5층에 놓이지 않았으면 지금 저장의 단계대로 놓는다. */
+	void EnsureAnnexLining();
+	/** 1단계: 이음 테이프가 뜯겨 덧판 이음매가 들떴다. 덧댄 것이 그 틈으로 간다. */
+	void OpenAnnexSeam();
+	/** 2단계: 남쪽 덧판을 떼어 배관 점검구가 열렸다. 덧댄 것이 옮겨 가 벽과 천장 사이로 몸을 편다. */
+	void OpenAnnexInspection();
+	/** 천장까지 다 폈다. 이때부터 철골 틀로 무릎 마디를 걸 수 있다. */
+	bool IsAnnexSpread() const;
+	/** 철골 틀 위 런너가 무릎 마디를 걸었다. 2단계의 마무리다. */
+	void PinAnnexKnee();
+	/** 3단계: 바깥층이 떨어져 새 틈이 났다. 걸린 몸이 버티며 틀을 민다. */
+	void StrainAnnexLining();
+	/** 4단계: 마지막 판을 열기 전, 틀과 함께 작업할 자리에서 밀려난다. bInstant면 곧장 그 자리다. */
+	void PushOutAnnexLining(bool bInstant);
+	/** 벽이 열렸다. 그 뒤로는 돌아오지 않는다. */
+	void HideAnnexLining();
+	/** 5층 덧댄 것이 움직이는 중이다. 그동안 다른 포획은 오지 않는다. */
+	bool IsAnnexLiningBusy() const;
+	/** 덧판 자리(배관 점검구)가 아직 덮여 있다. */
+	bool IsInspectionOverlayOn() const;
+	/** 철골 틀이 무릎 마디를 거는 자리. 밤4 감독이 틀을 여기에 맞춰 세운다. */
+	static FVector GetAnnexKneePin();
+	AIGLiningEntity* GetLining() const { return Lining; }
+
+	/** 검사용. */
+	AIGSwingDoor* GetInnerDoor() const { return InnerDoor; }
+	AIGReadableNote* GetCollectionNotice() const { return CollectionNotice; }
+	AIGReadableNote* GetCabinetLedger() const { return CabinetLedger; }
+	AIGJeongwooFigure* GetJeongwoo() const { return Jeongwoo; }
+	AIGAccessHatch* GetHatch(FName Id) const;
+	AIGLeftoverTarget* FindTarget(FName Key) const;
+	/** 검사용. 세운 소품 하나(없으면 null). */
+	UStaticMeshComponent* GetPropForTesting(const FName Key) const { return Props.FindRef(Key); }
+	FName GetStorageStage() const;
+	bool IsInnerRoomErrandRunning() const;
+	/**
+	 * 검사용: 깨어나는 안쪽 방 장면을 접고 곧장 귀환 추격을 건다. 비트는 남기지 않는다(겪지 않은
+	 * 장면이다). 회색 상자 계약이 예전 2-5를 그대로 보게 한다. 안쪽 방은 -IGLeftoverProbe가 본다.
+	 */
+	bool SkipNightTwoInnerRoomForTesting();
+	/** 검사용: 낮1 짐 장면을 곧바로 시작한다(계단 3층 아래 참에 정우를 세운다). */
+	void StartDayOneBoxesForTesting();
+	/** 검사용: 밤3 302호 장면을 곧바로 세운다(정우가 갇히고 덧댄 것이 틈을 누른다). */
+	void StageStorageTrapForTesting();
+
+protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	/** 세운 액터(덧댄 것, 정우, 문, 점검구, 손대는 자리, 손수레, 공지)를 같이 거둔다. */
+	virtual void Destroyed() override;
+
+private:
+	// -- 공통 -------------------------------------------------------------------
+	UIGMissingFloorNarrativeSubsystem* GetNarrative() const;
+	int32 GetNightIndex() const;
+	bool IsHourActive() const;
+	bool IsLegacyRun() const;
+	bool HasTaken(FName Item) const;
+	void Take(FName Item);
+	bool HasExamined(FName Item) const;
+	void MarkExamined(FName Item);
+	bool PlayBeat(FName Beat);
+	bool HasBeat(FName Beat) const;
+	/** 셋째 밤 302호에서 정우 말에 붙일 이름. 아직 이름을 못 들었으면 「302호 안」이다. */
+	const FText& StorageVoice() const;
+	void Say(const FText& Speaker, const FText& Line, float MinSeconds = 0.0f);
+	void Think(const FText& Line, float Seconds = 3.6f);
+	void Caption(const FText& Line, const FVector& Where, float Seconds = 2.4f);
+	void PlaySound(USoundBase* Sound, const FVector& Where, float Volume, float Pitch = 1.0f, float Inner = 120.0f, float Outer = 1400.0f);
+	void PhoneBuzz();
+	FVector GetPlayerFeet() const;
+	bool IsPlayerNear(const FVector& Where, float Radius, float MaxHeight = 200.0f) const;
+	AIGLeftoverTarget* SpawnTarget(FName Key, const FVector& Location, const FRotator& Rotation, const FVector& Extent,
+		const FText& Prompt, float HoldSeconds, float Noise);
+	UStaticMeshComponent* SpawnProp(FName Key, UStaticMesh* Mesh, const FTransform& Transform, bool bCollision);
+	void ShowProp(FName Key, bool bShow);
+	void SetTargetLive(AIGLeftoverTarget* Target, bool bLive);
+	void RefreshAll();
+	void HandleGripped(AIGLiningEntity* Entity);
+	void HandleCaptureSettled(EIGCaptureKind Kind, const FVector& Spot);
+	void HandleLiningSealed(AIGLiningEntity* Entity, FName GapId);
+	void HandleLiningTarget(AIGLiningEntity* Entity, FName GapId);
+	void HandleLiningFirstMove(AIGLiningEntity* Entity);
+	void HandleHatchOpened(AIGAccessHatch* Hatch);
+	void HandleHatchClosed(AIGAccessHatch* Hatch);
+	void HandleHatchReopened(AIGAccessHatch* Hatch);
+	FName HatchId(const AIGAccessHatch* Hatch) const;
+	/** 공간 하나의 틈들을 덧댄 것에 다시 준다. */
+	void LoadGapsFor(FName Space);
+	void PlaceLining();
+	void SpreadAnnexLining(float Seconds);
+	void PollPlayer();
+
+	// -- 안쪽 방(관리실) -----------------------------------------------------------
+	void BuildInnerRoom();
+	void RefreshInnerRoom();
+	void LockInnerDoor(bool bLocked);
+	void SetBoothHooksEnabled(bool bEnabled);
+	void PlayInnerRoomWake();
+	void StartManagerErrand();
+	void HandleErrandOutside();
+	void HandleErrandReturning();
+	void HandleErrandFinished(bool bCaught);
+	void ArmNightTwoReturn(bool bWithThought);
+	void PollNightTwo();
+	void HandleInnerTarget(AIGLeftoverTarget* Target);
+	void PlaceCoverPieceOnWall();
+	UFUNCTION()
+	void HandleLedgerRead(AIGReadableNote* Note, bool bOpened);
+	UFUNCTION()
+	void HandleNoticeRead(AIGReadableNote* Note, bool bOpened);
+
+	// -- 낮 ------------------------------------------------------------------
+	void BuildDayProps();
+	void RefreshDay();
+	void PollDayOneBoxes();
+	void BeginDayOneBoxes();
+	void HandleDayOneArrived();
+	void HandleDayTarget(AIGLeftoverTarget* Target);
+	void FinishDayOneBoxes();
+	void RefreshLoadingArea();
+
+	// -- 302호(밤3) ----------------------------------------------------------------
+	void BuildStorage();
+	void RefreshStorage();
+	void PollStorage();
+	void BeginStorageTrap(bool bAnnounce);
+	void HandleStorageTarget(AIGLeftoverTarget* Target);
+	void HandleStorageTap(AIGLeftoverTarget* Target);
+	void SetBoardPose(int32 Pose, bool bAnimate);
+	/** 판(과 그 밑에 끼인 상자)을 옮기는 60 Hz 타이머. 다 옮기면 스스로 멈춘다. */
+	void TickBoardMove();
+	/** 판이 다 돈 뒤 정우가 구석에서 걸어 나온다. */
+	void WalkJeongwooOut();
+	void TryPlaceWedge(int32 Socket);
+	void PushWardrobe();
+	void TickWardrobeMove();
+	void ReleaseBoard();
+	void FreeJeongwoo();
+	void JeongwooBraceForBox();
+	void PullDohaBox();
+	void JeongwooLeave();
+	void SelfEscapeAtDawn();
+	void UpdateJeongwooArrival();
+	void HandleJeongwooArrived();
+	bool StorageRoomBoxContainsPlayer() const;
+
+	// -- 덮개 조립(P6) ------------------------------------------------------------
+	void BuildAssembly();
+	void RefreshAssembly();
+	void HandleAssemblyTarget(AIGLeftoverTarget* Target);
+	void HandleAssemblyTap(AIGLeftoverTarget* Target);
+	void HoldPiece(int32 Piece);
+	void ApplyHeldTransform();
+	void TryFit(int32 Slot);
+	void SeatPiece(int32 Piece);
+	void SetClamp(int32 Clamp, int32 Pose);
+	void FinishAssemblyFlip();
+	void LiftMembrane();
+	void TickMembraneLift();
+	void TakeAssembledCover();
+	/** 5층 구석 덧판과 기대 둔 철골 틀을 그녀가 봤는지 본다(손전등이 비추는 시야 안, 가려지지 않음). */
+	void PollSightings();
+	/** 403호 책상에 둔 오빠 공구 주머니. 가져와 둔 회차에만 놓이고 살펴볼 수 있다. */
+	void RefreshHomePouch();
+	void HandleHomePouch(AIGLeftoverTarget* Target);
+	FTransform PieceSlotTransform(int32 Piece) const;
+	FTransform PieceHoverTransform(int32 Piece) const;
+	void HandleSiteMatch(AIGLeftoverTarget* Target);
+
+	UPROPERTY(Transient) TObjectPtr<AIGPrologueWorldScene> Scene;
+	UPROPERTY(Transient) TObjectPtr<AIGPlayerCharacter> Player;
+	UPROPERTY(Transient) TObjectPtr<AIGListenerEntity> Listener;
+	UPROPERTY(Transient) TObjectPtr<AIGNightLoopDirector> NightLoop;
+	UPROPERTY(Transient) TObjectPtr<AIGNightPhaseDirector> NightPhase;
+	UPROPERTY(Transient) TObjectPtr<AIGMissingFloorNightTwoBeatDirector> NightTwoBeats;
+	UPROPERTY(Transient) TObjectPtr<AIGManagerPatrol> Manager;
+	UPROPERTY(Transient) TObjectPtr<AIGLiningEntity> Lining;
+	UPROPERTY(Transient) TObjectPtr<AIGJeongwooFigure> Jeongwoo;
+	UPROPERTY(Transient) TObjectPtr<AIGSwingDoor> InnerDoor;
+	UPROPERTY(Transient) TObjectPtr<AIGSwingDoor> BoothDoor;
+	UPROPERTY(Transient) TObjectPtr<AActor> Cart;
+	UPROPERTY(Transient) TMap<FName, TObjectPtr<AIGAccessHatch>> Hatches;
+	UPROPERTY(Transient) TMap<FName, TObjectPtr<AIGLeftoverTarget>> Targets;
+	UPROPERTY(Transient) TMap<FName, TObjectPtr<UStaticMeshComponent>> Props;
+	UPROPERTY(Transient) TObjectPtr<AIGReadableNote> CollectionNotice;
+	UPROPERTY(Transient) TObjectPtr<AIGReadableNote> CabinetLedger;
+	UPROPERTY(Transient) TObjectPtr<USceneComponent> PropRoot;
+	/** 덮개 조립대의 틀(누운 채 뒷면이 위)과 고정쇠 넷, 조각 셋. */
+	UPROPERTY(Transient) TObjectPtr<USceneComponent> FrameRoot;
+	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> Clamps;
+	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> PieceMeshes;
+	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> FlapMeshes;
+
+	FName CurrentSpace;
+	bool bHourActive = false;
+	bool bConfigured = false;
+	FTimerHandle PollTimer;
+	FTimerHandle SceneTimer;
+	FTimerHandle WakeTimer;
+	FTimerHandle BoardTimer;
+	FTimerHandle JeongwooWalkTimer;
+	FTimerHandle WardrobeTimer;
+	FTimerHandle MembraneTimer;
+	FTimerHandle FitFeedbackTimer;
+	FDelegateHandle CaptureSettledHandle;
+
+	// 밤2
+	enum class ENightTwo : uint8 { Idle, Waking, Errand, Done };
+	ENightTwo NightTwoStage = ENightTwo::Idle;
+	bool bReturnArmed = false;
+	bool bLiningGripPending = false;
+
+	// 낮1
+	enum class EDayOne : uint8 { Idle, Climbing, AtDoor, Walking, Unloading, Talking, Done };
+	EDayOne DayOneStage = EDayOne::Idle;
+	double DayOneStageAt = 0.0;
+	bool bDayOneDoorHeld = false;
+
+	// 302호(밤3)
+	enum class EStorage : uint8 { Idle, Trapped, Released, Fallen, Freed, Bracing, Leaving, Gone };
+	EStorage StorageStage = EStorage::Idle;
+	double StorageStageAt = 0.0;
+	/** 판 자세: 0 몸에 눌린 채 기댐, 1 받친 채 기댐, 2 미끄러져 더 누움, 3 비켜 둠. */
+	int32 BoardPose = 0;
+	FTransform BoardFrom;
+	FTransform BoardTo;
+	FTransform BoxFrom;
+	FTransform BoxTo;
+	double BoardMoveStart = 0.0;
+	float BoardMoveSeconds = 0.0f;
+	bool bWedgeInHand = false;
+	int32 DohaBoxPulls = 0;
+	FVector WardrobeFrom = FVector::ZeroVector;
+	double WardrobeMoveStart = -1.0;
+
+	// 조립
+	int32 HeldPiece = INDEX_NONE;
+	int32 HeldRotation = 0;
+	bool bHeldFlipped = true;
+	int32 PieceRotation[3] = {2, 1, 3};
+	bool bPieceFlipped[3] = {true, true, true};
+	int32 WrongFits = 0;
+	double FitFeedbackUntil = 0.0;
+	int32 FitFeedbackPiece = INDEX_NONE;
+	double MembraneLiftStart = -1.0;
+};

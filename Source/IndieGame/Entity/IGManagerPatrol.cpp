@@ -14,6 +14,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Entity/IGLiningEntity.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGNightLoopDirector.h"
 #include "Entity/IGNightThreatDirector.h"
@@ -110,6 +111,17 @@ namespace IGManagerPatrol
 
 	/** 소리가 들리는 거리. 자막도 이 안에서만 띄운다. */
 	constexpr float AudibleDistance = 1600.0f;
+
+	// 밤2 손수레 심부름. 손수레는 그의 앞 60 cm에 손잡이를 그에게 두고 붙는다. 미는 걸음은
+	// 느리고, 바퀴 하나가 일정하게 끽끽거린다. 사슬은 6~9초마다 한 번씩 철컥거린다.
+	constexpr float CartPushSpeed = 50.0f;
+	const FVector CartHoldOffset(60.0f, 0.0f, 0.0f);
+	constexpr double CartTurnSeconds = 5.0;
+	constexpr double CartParkSeconds = 2.0;
+	constexpr double ChainIntervalMin = 6.0;
+	constexpr double ChainIntervalJitter = 3.0;
+	constexpr double SqueakIntervalSeconds = 0.85;
+	constexpr float ErrandCaptionGapSeconds = 7.0f;
 
 	// 열쇠 찾기(밤3, 한 번). 도어락 번호를 누르고 문이 걸리는지 보기까지, 열쇠를 꺼내 자물쇠를
 	// 돌리기까지, 문간에서 비추는 시간, 걸린 문 앞에서 서 있는 시간, 문을 닫고 돌아서기까지.
@@ -316,6 +328,20 @@ void AIGManagerPatrol::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 // -- 길 ----------------------------------------------------------------------
 
+int32 AIGManagerPatrol::AddErrandNode(const FVector& Feet)
+{
+	const int32 Index = AddNode(Feet, false, false);
+	Nodes[Index].bErrandOnly = true;
+	return Index;
+}
+
+bool AIGManagerPatrol::IsNodeUsable(const int32 Index) const
+{
+	return Nodes.IsValidIndex(Index)
+		&& !(Nodes[Index].bHuntOnly && !bKeyHunt)
+		&& !(Nodes[Index].bErrandOnly && !bErrand);
+}
+
 int32 AIGManagerPatrol::AddNode(const FVector& Feet, const bool bOnStair, const bool bHuntOnly)
 {
 	FPatrolNode& Node = Nodes.AddDefaulted_GetRef();
@@ -345,6 +371,21 @@ void AIGManagerPatrol::BuildGraph()
 	const int32 Bay = AddNode(FVector(-230.0f, -295.0f, 0.0f), false);
 	LinkNodes(RestNode, Connector);
 	LinkNodes(Connector, Bay);
+	// 밤2 손수레 심부름 길. 안쪽 방 간이침대 곁에서 문 안쪽, 문 바깥(관리실), 관리실 문 안쪽을
+	// 지나 문 밖으로. 손수레는 필로티 뒷벽에 사슬로 묶여 있고, 돌아와서는 관리실 문 동쪽
+	// 연결통로에 세운다. 이 점들은 심부름 때만 쓴다(밤3 순찰은 안쪽 방에 몸이 없다).
+	ErrandCotNode = AddErrandNode(FVector(40.0f, 30.0f, 0.0f));
+	ErrandInnerInNode = AddErrandNode(FVector(240.0f, 15.0f, 0.0f));
+	ErrandInnerOutNode = AddErrandNode(FVector(240.0f, -118.0f, 0.0f));
+	ErrandOfficeNode = AddErrandNode(FVector(165.0f, -200.0f, 0.0f));
+	ErrandCartNode = AddErrandNode(FVector(-205.0f, -345.0f, 0.0f));
+	ErrandParkNode = AddErrandNode(FVector(235.0f, -290.0f, 0.0f));
+	LinkNodes(ErrandCotNode, ErrandInnerInNode);
+	LinkNodes(ErrandInnerInNode, ErrandInnerOutNode);
+	LinkNodes(ErrandInnerOutNode, ErrandOfficeNode);
+	LinkNodes(ErrandOfficeNode, RestNode);
+	LinkNodes(Bay, ErrandCartNode);
+	LinkNodes(RestNode, ErrandParkNode);
 
 	// 계단탑. 출입구는 층 노드로 나눠 쓴다.
 	int32 Doorways[4] = {INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE};
@@ -488,7 +529,7 @@ bool AIGManagerPatrol::FindPath(const int32 From, const int32 To, TArray<int32>&
 		Done[Best] = true;
 		for (const int32 Next : Nodes[Best].Links)
 		{
-			if (Nodes[Next].bHuntOnly && !bKeyHunt)
+			if (!IsNodeUsable(Next))
 			{
 				continue;
 			}
@@ -521,7 +562,7 @@ int32 AIGManagerPatrol::FindNearestNode(const FVector& Feet) const
 	float BestSeenScore = TNumericLimits<float>::Max();
 	for (int32 Index = 0; Index < Nodes.Num(); ++Index)
 	{
-		if (Nodes[Index].bHuntOnly && !bKeyHunt)
+		if (!IsNodeUsable(Index))
 		{
 			continue;
 		}
@@ -573,12 +614,12 @@ void AIGManagerPatrol::RefreshDuty()
 	const bool bScripted =
 		FParse::Param(FCommandLine::Get(), TEXT("IGListenerGreyboxProbe"))
 		|| FParse::Param(FCommandLine::Get(), TEXT("IGNightCapture"));
-	const bool bShouldPatrol = !bScripted
+	const bool bShouldPatrol = bErrand || (!bScripted
 		&& Narrative
 		&& Narrative->GetNightIndex() == 3
 		&& Narrative->IsHourSealed()
 		&& !Narrative->HasTruth(EIGMissingFloorTruth::WaitingForAnAnswer)
-		&& Player.IsValid();
+		&& Player.IsValid());
 	if (bShouldPatrol && !bOnDuty)
 	{
 		GoOnDuty();
@@ -594,6 +635,16 @@ void AIGManagerPatrol::RefreshDuty()
 	// 누가 잡았든 그녀가 잡히면 그는 안쪽 방으로 돌아가 있다. 깨는 동안 복도에 서
 	// 있으면 깬 사람 눈앞에서 순간이동한 사람이 된다. 그가 잡는 중이면 화면이 다
 	// 덮일 때까지 그 자리에 있다(HandleCaptureSettled).
+	// 심부름 중에 다른 것이 그녀를 잡으면 그는 하던 일을 한다. 그가 잡았으면 화면이 다 덮인
+	// 뒤 HandleCaptureSettled가 심부름을 끝낸다.
+	if (bErrand)
+	{
+		if (const AIGNightLoopDirector* Loop = NightLoop.Get())
+		{
+			SeenCaptureCount = Loop->GetCaptureCount();
+		}
+		return;
+	}
 	if (const AIGNightLoopDirector* Loop = NightLoop.Get())
 	{
 		const bool bHisCatch = State == EIGManagerPatrolState::Catching && Loop->IsCaptureResetInFlight();
@@ -696,6 +747,22 @@ bool AIGManagerPatrol::IsAnyPursuing(const UWorld* World)
 	return false;
 }
 
+bool AIGManagerPatrol::IsAnyOnErrand(const UWorld* World)
+{
+	if (!World)
+	{
+		return false;
+	}
+	for (TActorIterator<AIGManagerPatrol> It(const_cast<UWorld*>(World)); It; ++It)
+	{
+		if (It->IsOnErrand())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool AIGManagerPatrol::IsAnyOnKeyHunt(const UWorld* World)
 {
 	if (!World)
@@ -776,6 +843,11 @@ void AIGManagerPatrol::EnterRestingAtDoor(const float RestSeconds)
 
 void AIGManagerPatrol::BeginInvestigation(const FVector& Where, const bool bAlarmed)
 {
+	const float StorageFloorZ = AIGPrologueWorldScene::GetStoreyFloorZ(2);
+	if (bAvoidStorageFloor && Where.Z > StorageFloorZ - 30.0f && Where.Z < StorageFloorZ + 270.0f)
+	{
+		return;
+	}
 	if (State == EIGManagerPatrolState::Chasing
 		|| State == EIGManagerPatrolState::Catching
 		|| State == EIGManagerPatrolState::Frozen
@@ -784,6 +856,12 @@ void AIGManagerPatrol::BeginInvestigation(const FVector& Where, const bool bAlar
 	{
 		return;
 	}
+	if (bErrand && bErrandCartAttached)
+	{
+		AttachErrandCart(false, false);
+	}
+	UE_LOG(LogTemp, Display, TEXT("MANAGER_INVESTIGATE at=%s where=%s alarmed=%d"),
+		*GetFeet().ToCompactString(), *Where.ToCompactString(), bAlarmed ? 1 : 0);
 	State = EIGManagerPatrolState::Investigating;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
 	const FVector Target = IsForbiddenNow(Where)
@@ -821,7 +899,16 @@ void AIGManagerPatrol::BeginChase()
 			return;
 		}
 	}
+	if (bErrand && bErrandCartAttached)
+	{
+		AttachErrandCart(false, false);
+	}
 	const bool bWasChasing = State == EIGManagerPatrolState::Chasing;
+	if (!bWasChasing)
+	{
+		UE_LOG(LogTemp, Display, TEXT("MANAGER_CHASE at=%s player=%s exposure=%.2f errand=%d"),
+			*GetFeet().ToCompactString(), *GetPlayerFeet().ToCompactString(), Exposure, bErrand ? 1 : 0);
+	}
 	State = EIGManagerPatrolState::Chasing;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
 	LastSeenSeconds = StateStartSeconds;
@@ -874,7 +961,7 @@ void AIGManagerPatrol::QueueSearchStops(const FVector& Around)
 	for (int32 Index = 0; Index < Nodes.Num(); ++Index)
 	{
 		if (Index == Start || Index == RestNode || Nodes[Index].bOnStair
-			|| (Nodes[Index].bHuntOnly && !bKeyHunt)
+			|| !IsNodeUsable(Index)
 			|| FMath::Abs(Nodes[Index].Feet.Z - Nodes[Start].Feet.Z) > 40.0f
 			|| IsForbiddenNow(Nodes[Index].Feet)
 			|| IsInsideAnnex(Nodes[Index].Feet))
@@ -904,11 +991,23 @@ void AIGManagerPatrol::BeginRetreat(const float RestAfterSeconds)
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
 	RestAfterRetreat = RestAfterSeconds;
 	Exposure = 0.0f;
+	// 심부름 중이면 안쪽 방으로 돌아가 눕는다. 손수레를 밀고 있었으면 관리실 앞에 세운다.
+	if (bErrand)
+	{
+		if (bErrandCartAttached)
+		{
+			AttachErrandCart(false);
+		}
+		SetErrandStep(EErrandStep::Returning);
+		SetDestination(ErrandCotNode);
+		return;
+	}
 	SetDestination(RestNode);
 }
 
 void AIGManagerPatrol::BeginCatch()
 {
+	UE_LOG(LogTemp, Display, TEXT("MANAGER_CATCH at=%s player=%s"), *GetFeet().ToCompactString(), *GetPlayerFeet().ToCompactString());
 	State = EIGManagerPatrolState::Catching;
 	StateStartSeconds = GetWorld()->GetTimeSeconds();
 	CatchStartSeconds = StateStartSeconds;
@@ -996,6 +1095,18 @@ void AIGManagerPatrol::HandleCaptureSettled(const EIGCaptureKind Kind, const FVe
 	if (const AIGNightLoopDirector* Loop = NightLoop.Get())
 	{
 		SeenCaptureCount = Loop->GetCaptureCount();
+	}
+	if (bErrand)
+	{
+		// 심부름 중 남이 잡은 포획에는 하던 일을 한다. 그가 잡았으면 그녀를 집에 데려다 놓고
+		// 안쪽 방에 눕는다. 계단 열쇠는 밤2에 아직 그녀 손에 없다.
+		if (!bHisCatch)
+		{
+			return;
+		}
+		FinishErrand(true);
+		PlayEscortAftermath(false);
+		return;
 	}
 	EnterRestingAtDoor(IGManagerPatrol::CaptureRestSeconds);
 	if (!bHisCatch)
@@ -1125,6 +1236,11 @@ void AIGManagerPatrol::Tick(const float DeltaSeconds)
 	{
 		return;
 	}
+	if (bErrand && State == EIGManagerPatrolState::Patrolling)
+	{
+		TickErrand(DeltaSeconds);
+		return;
+	}
 	if (bKeyHunt && bHuntAction && State == EIGManagerPatrolState::Patrolling)
 	{
 		TickHuntAction(DeltaSeconds);
@@ -1199,6 +1315,11 @@ void AIGManagerPatrol::TickWalking(const float DeltaSeconds, const float Speed)
 			RelaxTorch(DeltaSeconds);
 			return;
 		}
+		if (bErrand)
+		{
+			FinishErrand(false);
+			return;
+		}
 		IGAudio::SpawnOneShotAt(
 			this, UIGToneSequenceSoundWave::CreateDoorCreak(this, true),
 			GetFeet() + FVector(0.0f, 30.0f, 110.0f), 0.5f, 0.92f, 200.0f, 1500.0f, EIGAudioBus::World);
@@ -1206,6 +1327,11 @@ void AIGManagerPatrol::TickWalking(const float DeltaSeconds, const float Speed)
 		return;
 	case EIGManagerPatrolState::Patrolling:
 	{
+		if (bErrand)
+		{
+			ArriveErrandStop();
+			return;
+		}
 		if (bKeyHunt)
 		{
 			// 열쇠 찾기 마지막 지점은 관리실 문이다. 유담이 보고 있으면 문으로 들어가지 않는다.
@@ -1331,6 +1457,11 @@ int32 AIGManagerPatrol::GetFourthFloorStandNode() const
 void AIGManagerPatrol::AdvanceRoute()
 {
 	RouteCursor = (RouteCursor + 1) % Route.Num();
+	int32 Guard = Route.Num();
+	while (bAvoidStorageFloor && Guard-- > 0 && IsStorageFloorNode(Route[RouteCursor].Node))
+	{
+		RouteCursor = (RouteCursor + 1) % Route.Num();
+	}
 	// 4층 목은 위층 사람이 그 근처에 있으면 건너뛴다. 그는 그것이 있는 데로 가지 않는다.
 	if (Route[RouteCursor].Node == FourthFloorDoorNode)
 	{
@@ -1396,6 +1527,11 @@ void AIGManagerPatrol::TickDwell(const float DeltaSeconds)
 		StateStartSeconds = GetWorld()->GetTimeSeconds();
 		Exposure = 0.0f;
 		bHuntAction = false;
+		if (bErrand)
+		{
+			ResumeErrandPath();
+			return;
+		}
 		SetDestination(bKeyHunt && HuntStops.IsValidIndex(HuntCursor)
 			? HuntStops[HuntCursor].Node
 			: Route[FMath::Clamp(RouteCursor, 0, Route.Num() - 1)].Node);
@@ -1482,10 +1618,13 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 			RelaxTorch(Step);
 		}
 	};
+	// 덧댄 것이 움직이거나 누르는 동안에는 손을 뻗지 않는다. 그때 잡으면 포획이 둘 겹친다.
+	const bool bLiningBusy = AIGLiningEntity::IsAnyBusy(GetWorld());
 	if (bSawPlayerHide && Character->IsConcealedInHidingSpot())
 	{
 		if (FVector::Dist2D(Feet, HideSpotFeet) <= IGManagerPatrol::HideReach
-			&& FMath::Abs(HideSpotFeet.Z - Feet.Z) <= IGManagerPatrol::CatchHeight)
+			&& FMath::Abs(HideSpotFeet.Z - Feet.Z) <= IGManagerPatrol::CatchHeight
+			&& !bLiningBusy)
 		{
 			BeginCatch();
 			return;
@@ -1493,7 +1632,8 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 	}
 	else if (Planar <= IGManagerPatrol::CatchReach
 		&& FMath::Abs(PlayerFeet.Z - Feet.Z) <= IGManagerPatrol::CatchHeight
-		&& HasClearLine(Feet + FVector(0.0f, 0.0f, 120.0f), Character->GetActorLocation()))
+		&& HasClearLine(Feet + FVector(0.0f, 0.0f, 120.0f), Character->GetActorLocation())
+		&& !bLiningBusy)
 	{
 		BeginCatch();
 		return;
@@ -1575,6 +1715,374 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 		TickWalking(DeltaSeconds, IGManagerPatrol::ChaseSpeed);
 	}
 	AimChaseTorch(DeltaSeconds);
+}
+
+// -- 밤2 손수레 심부름 ----------------------------------------------------------
+
+void AIGManagerPatrol::StartCartErrand(
+	AIGSwingDoor* InnerDoor,
+	AIGSwingDoor* BoothDoor,
+	AActor* Cart,
+	const FTransform& ParkTransform,
+	const float FetchSeconds)
+{
+	if (bErrand || !Nodes.IsValidIndex(ErrandCotNode))
+	{
+		return;
+	}
+	ErrandInnerDoor = InnerDoor;
+	ErrandBoothDoor = BoothDoor;
+	ErrandCart = Cart;
+	ErrandCartPark = ParkTransform;
+	ErrandFetchSeconds = FMath::Max(5.0f, FetchSeconds);
+	bErrand = true;
+	bErrandCartAttached = false;
+	bErrandDoorClosedBehind = false;
+	bKeyHunt = false;
+	bHuntAction = false;
+	bOnDuty = true;
+	Exposure = 0.0f;
+	bSawPlayerHide = false;
+	Path.Reset();
+	PathCursor = 0;
+	bHasFinalTarget = false;
+	DwellRemaining = 0.0f;
+	SetActorLocation(Nodes[ErrandCotNode].Feet);
+	SetActorRotation(FRotator(0.0f, -45.0f, 0.0f));
+	State = EIGManagerPatrolState::Patrolling;
+	StateStartSeconds = GetWorld()->GetTimeSeconds();
+	ShowBody(true);
+	PlayKeys(true);
+	SetErrandStep(EErrandStep::Leaving);
+	SetDestination(RestNode);
+	SetActorTickEnabled(true);
+	UE_LOG(LogTemp, Display, TEXT("MANAGER_ERRAND start fetch=%.0f"), ErrandFetchSeconds);
+}
+
+void AIGManagerPatrol::SetAvoidingStorage(const bool bAvoid)
+{
+	bAvoidStorageFloor = bAvoid;
+	if (!bAvoid || !bOnDuty || bErrand || bKeyHunt)
+	{
+		return;
+	}
+	// 3층을 돌던 중이거나 3층으로 가던 중이면 그 길을 접고 안쪽 방으로 돌아간다.
+	const bool bOnStorageFloor = FMath::Abs(GetFeet().Z - AIGPrologueWorldScene::GetStoreyFloorZ(2)) < 60.0f;
+	const bool bHeadingThere = Route.IsValidIndex(RouteCursor) && IsStorageFloorNode(Route[RouteCursor].Node);
+	if ((bOnStorageFloor || bHeadingThere)
+		&& (State == EIGManagerPatrolState::Patrolling || State == EIGManagerPatrolState::Investigating
+			|| State == EIGManagerPatrolState::Staring))
+	{
+		BeginRetreat(IGManagerPatrol::RoundRestSeconds);
+	}
+}
+
+bool AIGManagerPatrol::IsStorageFloorNode(const int32 Node) const
+{
+	return Nodes.IsValidIndex(Node)
+		&& FMath::Abs(Nodes[Node].Feet.Z - AIGPrologueWorldScene::GetStoreyFloorZ(2)) < 60.0f;
+}
+
+bool AIGManagerPatrol::IsErrandReturning() const
+{
+	return bErrand
+		&& (ErrandStep == EErrandStep::Turning
+			|| ErrandStep == EErrandStep::Pushing
+			|| ErrandStep == EErrandStep::Parking);
+}
+
+void AIGManagerPatrol::SetErrandFetchSecondsForTesting(const float Seconds)
+{
+	ErrandFetchSeconds = FMath::Max(0.5f, Seconds);
+}
+
+void AIGManagerPatrol::SetErrandStep(const EErrandStep Step)
+{
+	ErrandStep = Step;
+	ErrandStepStart = GetWorld()->GetTimeSeconds();
+	NextErrandSoundSeconds = ErrandStepStart + 1.0;
+	UE_LOG(LogTemp, Display, TEXT("MANAGER_ERRAND step=%d at %s"), static_cast<int32>(Step), *GetFeet().ToCompactString());
+}
+
+int32 AIGManagerPatrol::GetErrandStepTarget() const
+{
+	switch (ErrandStep)
+	{
+	case EErrandStep::Leaving: return RestNode;
+	case EErrandStep::ToCart: return ErrandCartNode;
+	case EErrandStep::Pushing: return ErrandParkNode;
+	case EErrandStep::Returning: return ErrandCotNode;
+	default: return INDEX_NONE;
+	}
+}
+
+void AIGManagerPatrol::ResumeErrandPath()
+{
+	// 조사나 수색에서 돌아왔다. 사슬을 풀던 중이면 손수레 앞으로, 밀던 중이면 손수레를 다시
+	// 잡을 수 없으니(조사하러 손을 놓았다) 그 자리에 세우고 안쪽 방으로 간다.
+	switch (ErrandStep)
+	{
+	case EErrandStep::Fetching:
+		SetDestination(ErrandCartNode);
+		break;
+	case EErrandStep::Turning:
+	case EErrandStep::Pushing:
+	case EErrandStep::Parking:
+		// 손수레는 놓아 둔 자리에 남는다. 아침에 다시 가져가면 된다.
+		SetErrandStep(EErrandStep::Returning);
+		SetDestination(ErrandCotNode);
+		break;
+	default:
+		if (GetErrandStepTarget() != INDEX_NONE)
+		{
+			SetDestination(GetErrandStepTarget());
+		}
+		break;
+	}
+}
+
+bool AIGManagerPatrol::WaitForErrandDoor(const float DeltaSeconds)
+{
+	if (PathCursor >= Path.Num())
+	{
+		return false;
+	}
+	const int32 Next = Path[PathCursor];
+	const int32 Here = FindNearestNode(GetFeet());
+	AIGSwingDoor* Door = nullptr;
+	// 안쪽 방 문은 안팎 두 점 사이, 관리실 문은 관리실 안쪽 점과 문 밖 점 사이에 있다.
+	const auto Crosses = [&](const int32 A, const int32 B)
+	{
+		return (Here == A && Next == B) || (Here == B && Next == A)
+			|| (Next == B && FVector::Dist2D(GetFeet(), Nodes[A].Feet) < 60.0f)
+			|| (Next == A && FVector::Dist2D(GetFeet(), Nodes[B].Feet) < 60.0f);
+	};
+	if (Crosses(ErrandInnerInNode, ErrandInnerOutNode))
+	{
+		Door = ErrandInnerDoor.Get();
+	}
+	else if (Crosses(ErrandOfficeNode, RestNode))
+	{
+		Door = ErrandBoothDoor.Get();
+	}
+	if (!Door || (Door->IsOpen() && !Door->IsSwinging()))
+	{
+		return false;
+	}
+	if (Door->IsFullyClosed())
+	{
+		Door->BeginScriptedSwingWithLoudness(true, IGManagerPatrol::FireDoorOpenLoudness, 1.0f);
+	}
+	FaceYaw((Door->GetComponentsBoundingBox().GetCenter() - GetFeet()).Rotation().Yaw, DeltaSeconds);
+	AnimateGait(DeltaSeconds, 0.0f);
+	return true;
+}
+
+void AIGManagerPatrol::TickErrand(const float DeltaSeconds)
+{
+	const double Now = GetWorld()->GetTimeSeconds();
+	switch (ErrandStep)
+	{
+	case EErrandStep::Fetching:
+	{
+		// 손수레 앞에 서서 사슬을 푼다. 손전등은 손수레를 비춘다.
+		AnimateGait(DeltaSeconds, 0.0f);
+		FaceYaw(90.0f, DeltaSeconds, 120.0f);
+		if (const AActor* Cart = ErrandCart.Get())
+		{
+			AimTorch(Cart->GetActorLocation() + FVector(0.0f, 0.0f, 30.0f), DeltaSeconds);
+		}
+		if (Now >= NextErrandSoundSeconds)
+		{
+			PlayErrandChain();
+			StepSeed = StepSeed * 1664525u + 1013904223u;
+			NextErrandSoundSeconds = Now + IGManagerPatrol::ChainIntervalMin
+				+ IGManagerPatrol::ChainIntervalJitter * static_cast<double>(StepSeed % 100u) / 100.0;
+		}
+		if (Now - ErrandStepStart >= ErrandFetchSeconds)
+		{
+			AttachErrandCart(true);
+			SetErrandStep(EErrandStep::Turning);
+			OnErrandReturning.Broadcast();
+		}
+		return;
+	}
+	case EErrandStep::Turning:
+	{
+		// 손수레를 끌어내 관리실 쪽으로 돌린다.
+		AnimateGait(DeltaSeconds, 20.0f);
+		FaceYaw(5.0f, DeltaSeconds, 22.0f);
+		RelaxTorch(DeltaSeconds);
+		if (Now >= NextErrandSoundSeconds)
+		{
+			PlayErrandSqueak();
+			NextErrandSoundSeconds = Now + IGManagerPatrol::SqueakIntervalSeconds;
+		}
+		if (Now - ErrandStepStart >= IGManagerPatrol::CartTurnSeconds)
+		{
+			SetErrandStep(EErrandStep::Pushing);
+			SetDestination(ErrandParkNode);
+		}
+		return;
+	}
+	case EErrandStep::Parking:
+	{
+		AnimateGait(DeltaSeconds, 0.0f);
+		RelaxTorch(DeltaSeconds);
+		if (Now - ErrandStepStart >= IGManagerPatrol::CartParkSeconds)
+		{
+			SetErrandStep(EErrandStep::Returning);
+			SetDestination(ErrandCotNode);
+		}
+		return;
+	}
+	default:
+		break;
+	}
+	if (WaitForErrandDoor(DeltaSeconds))
+	{
+		return;
+	}
+	// 안쪽 방에 들어서면 문을 닫는다. 그 뒤로는 문을 다시 열지 않는다.
+	if (ErrandStep == EErrandStep::Returning && !bErrandDoorClosedBehind
+		&& FVector::Dist2D(GetFeet(), Nodes[ErrandInnerInNode].Feet) < 40.0f)
+	{
+		if (AIGSwingDoor* Door = ErrandInnerDoor.Get(); Door && Door->IsOpen() && !Door->IsSwinging())
+		{
+			Door->BeginScriptedSwingWithLoudness(false, IGManagerPatrol::FireDoorOpenLoudness, 1.2f);
+		}
+		bErrandDoorClosedBehind = true;
+	}
+	const bool bPushing = ErrandStep == EErrandStep::Pushing;
+	if (bPushing && Now >= NextErrandSoundSeconds)
+	{
+		PlayErrandSqueak();
+		NextErrandSoundSeconds = Now + IGManagerPatrol::SqueakIntervalSeconds;
+	}
+	TickWalking(DeltaSeconds, bPushing ? IGManagerPatrol::CartPushSpeed : IGManagerPatrol::WalkSpeed);
+}
+
+void AIGManagerPatrol::ArriveErrandStop()
+{
+	switch (ErrandStep)
+	{
+	case EErrandStep::Leaving:
+		OnErrandOutside.Broadcast();
+		SetErrandStep(EErrandStep::ToCart);
+		SetDestination(ErrandCartNode);
+		return;
+	case EErrandStep::ToCart:
+		SetErrandStep(EErrandStep::Fetching);
+		PlayErrandChain();
+		return;
+	case EErrandStep::Pushing:
+		AttachErrandCart(false);
+		SetErrandStep(EErrandStep::Parking);
+		return;
+	case EErrandStep::Returning:
+		if (IsPlayerWatching(GetFeet()))
+		{
+			return;
+		}
+		FinishErrand(false);
+		return;
+	default:
+		return;
+	}
+}
+
+void AIGManagerPatrol::AttachErrandCart(const bool bAttach, const bool bPark)
+{
+	AActor* Cart = ErrandCart.Get();
+	if (!Cart || bErrandCartAttached == bAttach)
+	{
+		return;
+	}
+	bErrandCartAttached = bAttach;
+	if (bAttach)
+	{
+		// 손잡이(손수레 +X)가 그를 향하고, 몸은 그의 앞 60 cm에 온다.
+		Cart->AttachToComponent(Root, FAttachmentTransformRules::KeepWorldTransform);
+		Cart->SetActorRelativeLocation(IGManagerPatrol::CartHoldOffset);
+		Cart->SetActorRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
+		IGAudio::SpawnOneShotAt(
+			this,
+			IGAudio::SampleOr(TEXT("Lock_Rattle"), [this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateLockedRattle(this); }),
+			Cart->GetActorLocation() + FVector(0.0f, 0.0f, 20.0f), 0.6f, 0.78f, 200.0f, 1600.0f, EIGAudioBus::World);
+		Caption(
+			NSLOCTEXT("IGMissingFloor", "CaptionMokChainDrop", "[사슬이 바닥에 떨어지는 소리]"),
+			Cart->GetActorLocation(), LastErrandCaptionSeconds, 0.0f);
+		return;
+	}
+	Cart->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	if (bPark)
+	{
+		Cart->SetActorTransform(ErrandCartPark);
+		return;
+	}
+	// 쫓거나 살피러 손을 놓았다. 그 자리 바닥에 선다.
+	FVector Where = Cart->GetActorLocation();
+	Where.Z = GetFeet().Z;
+	Cart->SetActorLocation(Where);
+}
+
+void AIGManagerPatrol::FinishErrand(const bool bCaught)
+{
+	if (!bErrand)
+	{
+		return;
+	}
+	if (bErrandCartAttached)
+	{
+		AttachErrandCart(false);
+	}
+	if (AIGSwingDoor* Door = ErrandInnerDoor.Get(); Door && Door->IsOpen())
+	{
+		if (Door->IsSwinging())
+		{
+			Door->ForceOpenState(false);
+		}
+		else
+		{
+			Door->BeginScriptedSwingWithLoudness(false, IGManagerPatrol::FireDoorOpenLoudness, 1.2f);
+		}
+	}
+	bErrand = false;
+	ErrandStep = EErrandStep::None;
+	State = EIGManagerPatrolState::Resting;
+	Exposure = 0.0f;
+	ShowBody(false);
+	GoOffDuty();
+	UE_LOG(LogTemp, Display, TEXT("MANAGER_ERRAND done caught=%d"), bCaught ? 1 : 0);
+	OnErrandFinished.Broadcast(bCaught);
+}
+
+void AIGManagerPatrol::PlayErrandChain()
+{
+	const AActor* Cart = ErrandCart.Get();
+	const FVector Where = Cart ? Cart->GetActorLocation() + FVector(0.0f, 0.0f, 25.0f) : GetFeet() + FVector(0.0f, 60.0f, 40.0f);
+	StepSeed = StepSeed * 1664525u + 1013904223u;
+	IGAudio::SpawnOneShotAt(
+		this,
+		IGAudio::SampleOr(TEXT("Lock_Rattle"), [this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateLockedRattle(this); }),
+		Where, 0.55f, 0.82f + static_cast<float>(StepSeed % 7u) * 0.02f, 200.0f, 1700.0f, EIGAudioBus::World);
+	Caption(
+		NSLOCTEXT("IGMissingFloor", "CaptionMokChain", "[쇠사슬이 철컥거리는 소리]"),
+		Where, LastErrandCaptionSeconds, IGManagerPatrol::ErrandCaptionGapSeconds);
+}
+
+void AIGManagerPatrol::PlayErrandSqueak()
+{
+	const AActor* Cart = ErrandCart.Get();
+	const FVector Where = Cart ? Cart->GetActorLocation() + FVector(0.0f, 0.0f, 10.0f) : GetFeet();
+	StepSeed = StepSeed * 1664525u + 1013904223u;
+	IGAudio::SpawnExpendableOneShotAt(
+		this,
+		IGAudio::SampleOr(TEXT("Cart_Squeak"), [this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateToolCartRoll(this); }),
+		Where, 0.5f, 0.95f + static_cast<float>(StepSeed % 9u) * 0.012f, 200.0f, 1800.0f, EIGAudioBus::World);
+	Caption(
+		NSLOCTEXT("IGMissingFloor", "CaptionMokCartSqueak", "[손수레 바퀴가 끽끽거리는 소리]"),
+		Where, LastErrandCaptionSeconds, IGManagerPatrol::ErrandCaptionGapSeconds);
 }
 
 // -- 열쇠 찾기 ---------------------------------------------------------------
@@ -1992,7 +2500,7 @@ void AIGManagerPatrol::UpdateSenses(const float DeltaSeconds)
 	const float DistanceToPlayer = FVector::Dist(Feet, GetPlayerFeet());
 
 	// 처음 들리는 거리. 열쇠와 슬리퍼가 누구인지 그녀가 먼저 안다.
-	if (bBodyShown && DistanceToPlayer < 1400.0f)
+	if (bBodyShown && DistanceToPlayer < 1400.0f && !bErrand)
 	{
 		ThinkOnce(TEXT("Night3.MokFirstHeard"),
 			NSLOCTEXT("IGMissingFloor", "YudamMokFirstHeard", "관리인 아저씨네. 어제 관리실 들어간 걸 알아챘나?"));

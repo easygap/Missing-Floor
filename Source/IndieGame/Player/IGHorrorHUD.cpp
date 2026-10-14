@@ -1576,6 +1576,18 @@ void AIGHorrorHUD::DrawNightClock()
 		EIGHudTextRole::Objective,
 		GetResolutionTextScale(0.85f),
 		false);
+	// 그 밤의 일을 마쳤으면 낮의 목표 줄 자리(위 가운데)에 밤을 끝내는 법과 그 결과를 적는다.
+	// 아래쪽은 대사와 소리 자막이 쓴다.
+	if (Narrative->HasBeatPlayed(AIGNightPhaseDirector::GoalBeatId(Narrative->GetNightIndex())))
+	{
+		FLinearColor RestColour = IGHorrorHUD::PaleGray;
+		RestColour.A *= Guidance.ObjectiveAlpha();
+		DrawCenteredText(
+			NSLOCTEXT("IGHUD", "NightRestAvailable", "403호 침대에서 아침까지 쉴 수 있다 · 오늘 밤은 거기서 끝난다"),
+			42.0f,
+			RestColour,
+			EIGHudTextRole::Objective);
+	}
 }
 
 void AIGHorrorHUD::DrawSaveIndicator(const double CurrentTime)
@@ -2184,7 +2196,7 @@ bool AIGHorrorHUD::DrawEndCredits()
 		{NSLOCTEXT("IGHUD", "CreditsMaterials", "일부 재질    ambientCG · CC0"), EIGHudTextRole::Hint, 1.0f, 38.0f},
 		{NSLOCTEXT("IGHUD", "CreditsProps", "일부 소품    Poly Haven · CC0"), EIGHudTextRole::Hint, 1.0f, 38.0f},
 		{NSLOCTEXT("IGHUD", "CreditsSounds", "일부 소리    OpenGameArt · Kenney · Owlish Media · CC0"), EIGHudTextRole::Hint, 1.0f, 38.0f},
-		{NSLOCTEXT("IGHUD", "CreditsFonts", "글꼴    Pretendard · 고운바탕 · SIL OFL"), EIGHudTextRole::Hint, 1.0f, 140.0f},
+		{NSLOCTEXT("IGHUD", "CreditsFonts", "글꼴    Pretendard · 고운바탕 · Noto Sans CJK · SIL OFL"), EIGHudTextRole::Hint, 1.0f, 140.0f},
 		{NSLOCTEXT("IGHUD", "EndCreditsThanks", "끝까지 플레이해 주셔서 감사합니다."), EIGHudTextRole::Prompt, 1.0f, 0.0f},
 	};
 	float ContentHeight = 0.0f;
@@ -2325,6 +2337,11 @@ void AIGHorrorHUD::DrawContextTip(const float Alpha)
 			NSLOCTEXT("IGHUD", "TipHint", "[ {0} ]  힌트  ·  막혔을 때 누르기"),
 			GetBoundKeyLabel(EIGBindableAction::RequestHint, bUsingGamepad));
 		break;
+	case EIGContextTip::HintAnswer:
+		Line = FText::Format(
+			NSLOCTEXT("IGHUD", "TipHintAnswer", "[ {0} ]  답 보기  ·  할 일을 그대로 떠올린다"),
+			GetBoundKeyLabel(EIGBindableAction::RequestHint, bUsingGamepad));
+		break;
 	default:
 		return;
 	}
@@ -2423,6 +2440,11 @@ void AIGHorrorHUD::OfferHintTip()
 	{
 		ContextTips.Offer(EIGContextTip::Hint);
 	}
+}
+
+void AIGHorrorHUD::ShowHintAnswerTip()
+{
+	ContextTips.Show(EIGContextTip::HintAnswer);
 }
 
 void AIGHorrorHUD::ToggleGameplayGuide()
@@ -2603,8 +2625,12 @@ void AIGHorrorHUD::DrawHUD()
 		NightClockBand = StoryMinute >= 5 * 60 + 25 ? 3
 			: (StoryMinute >= 5 * 60 + 20 ? 2 : (StoryMinute >= 5 * 60 ? 1 : 0));
 	}
+	// 그 밤의 일을 마친 순간도 한 번 보여 준다(침대에서 아침까지 쉬기 안내).
+	const bool bNightGoalDone = bNightPresentation && Narrative
+		&& Narrative->HasBeatPlayed(AIGNightPhaseDirector::GoalBeatId(Narrative->GetNightIndex()));
 	const FString ObjectiveKey = bNightPresentation
-		? FString::Printf(TEXT("Night.%d.%d.%d"), Narrative ? Narrative->GetNightIndex() : 1, NightClockBand, NightClockRevealSerial)
+		? FString::Printf(TEXT("Night.%d.%d.%d.%d"), Narrative ? Narrative->GetNightIndex() : 1, NightClockBand,
+			NightClockRevealSerial, bNightGoalDone ? 1 : 0)
 		: Objective.ToString();
 	const bool bGuideAllowed = CanShowGameplayGuide();
 	NoteCompletedInteractions(Interaction);
@@ -3307,6 +3333,59 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 	const float SafeInset = FMath::Max(30.0f * Scale, Canvas->ClipX * 0.072f);
 	const float ContentLeft = SafeInset;
 	const float ContentWidth = Canvas->ClipX - SafeInset * 2.0f;
+	const float TopY = Canvas->ClipY * 0.16f;
+	const float BottomY = Canvas->ClipY - FMath::Max(24.0f * Scale, Canvas->ClipY * 0.04f);
+
+	// 글 묶음부터 잰다. 본 것이 많은 회차나 글자를 키운 설정, 긴 번역에서는 줄이 늘어
+	// 각주가 화면 밖으로 밀렸다. 글이 들어갈 높이를 먼저 잡고 남는 높이만 사진에 준다.
+	// 긴 줄은 폭에서 바꾸고, 같은 문장 안의 줄은 조금 좁게 붙인다.
+	UFont* EpilogueBodyFont = GetFontForRole(EIGHudTextRole::Dialogue);
+	TArray<TArray<FString>> WrappedBody;
+	const auto MeasureEpilogueText = [&](const float BodyScale)
+	{
+		const float Stride = 42.0f * FMath::Max(Scale, BodyScale * 0.74f);
+		float Height = MissingFloorEpilogueHeading.IsEmpty()
+			? 0.0f
+			: 40.0f * FMath::Max(Scale, BodyScale * 0.72f);
+		WrappedBody.Reset();
+		for (const FText& Line : MissingFloorEpilogueBodyLines)
+		{
+			TArray<FString>& Wrapped = WrappedBody.AddDefaulted_GetRef();
+			if (Line.IsEmpty())
+			{
+				Height += Stride * 0.55f;
+				continue;
+			}
+			FString Remainder;
+			WrapHudText(
+				Line.ToString(),
+				EpilogueBodyFont,
+				0.90f * BodyScale,
+				ContentWidth,
+				3,
+				Wrapped,
+				Remainder);
+			if (Wrapped.IsEmpty())
+			{
+				Wrapped.Add(Line.ToString());
+			}
+			Height += Stride * (1.0f + 0.78f * static_cast<float>(Wrapped.Num() - 1));
+		}
+		if (!MissingFloorEpilogueFootnote.IsEmpty())
+		{
+			Height += 12.0f * Scale + 34.0f * FMath::Max(Scale, BodyScale * 0.70f);
+		}
+		return Height;
+	};
+	float BodyScale = TypeScale;
+	float TextHeight = MeasureEpilogueText(BodyScale);
+	if (TextHeight > BottomY - TopY)
+	{
+		// 사진을 빼도 넘치는 드문 경우(가장 큰 글자 + 가장 긴 번역)만 글자를 줄인다.
+		BodyScale = FMath::Max(TypeScale * (BottomY - TopY) / TextHeight, TypeScale * 0.72f);
+		TextHeight = MeasureEpilogueText(BodyScale);
+	}
+	const float LineStride = 42.0f * FMath::Max(Scale, BodyScale * 0.74f);
 
 	// 정지 화면은 있으면 얹고 없으면 넘어간다. 에필로그의 뜻은 문장에
 	// 있으므로 텍스처가 아직 임포트되지 않은 빌드에서도 장면이 성립한다.
@@ -3329,8 +3408,10 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 		break;
 	}
 
-	float PenY = Canvas->ClipY * 0.16f;
-	if (SceneTexture && SceneTexture->GetResource())
+	// 사진이 없거나 들어갈 자리가 없으면 글은 화면 높이의 30% 지점에서 시작한다. 길면 그보다 위에서.
+	float PenY = FMath::Clamp(BottomY - TextHeight, TopY, Canvas->ClipY * 0.30f);
+	const float RoomForPlate = BottomY - TopY - 40.0f * Scale - TextHeight;
+	if (SceneTexture && SceneTexture->GetResource() && RoomForPlate >= 120.0f * Scale)
 	{
 		// 판을 원본 비례로 맞춘다. 고정 높이를 쓰면 세로 사진이 가로로
 		// 눌려 건물이 납작해지는데, 그건 이 화면에서 가장 눈에 띄는 거짓말이다.
@@ -3339,10 +3420,12 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 		const float SourceHeight =
 			FMath::Max(static_cast<float>(SceneTexture->GetSizeY()), 1.0f);
 		const float SourceAspect = SourceWidth / SourceHeight;
-		const float MaximumHeight = FMath::Clamp(
-			Canvas->ClipY * 0.46f,
-			190.0f * Scale,
-			560.0f * Scale);
+		const float MaximumHeight = FMath::Min(
+			FMath::Clamp(
+				Canvas->ClipY * 0.46f,
+				190.0f * Scale,
+				560.0f * Scale),
+			RoomForPlate);
 		float PlateWidth = ContentWidth;
 		float PlateHeight = PlateWidth / SourceAspect;
 		if (PlateHeight > MaximumHeight)
@@ -3356,6 +3439,7 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 		const float Drift = bReducedMotion
 			? 0.0f
 			: (1.0f - Entrance) * 16.0f * Scale;
+		PenY = TopY;
 		FCanvasTileItem Plate(
 			FVector2D(PlateLeft, PenY - Drift),
 			SceneTexture->GetResource(),
@@ -3370,10 +3454,7 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 			FVector2D(PlateLeft + PlateWidth, PenY - Drift + PlateHeight));
 		PenY += PlateHeight + 40.0f * Scale;
 	}
-	else
-	{
-		PenY = Canvas->ClipY * 0.30f;
-	}
+	const float TextTop = PenY;
 
 	if (!MissingFloorEpilogueHeading.IsEmpty())
 	{
@@ -3385,36 +3466,18 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 			GetFittedTextScale(
 				MissingFloorEpilogueHeading,
 				EIGHudTextRole::Speaker,
-				0.76f * TypeScale,
+				0.76f * BodyScale,
 				ContentWidth,
-				0.76f * TypeScale * 0.7f));
-		PenY += 40.0f * FMath::Max(Scale, TypeScale * 0.72f);
+				0.76f * BodyScale * 0.7f));
+		PenY += 40.0f * FMath::Max(Scale, BodyScale * 0.72f);
 	}
 
-	// 글자를 키우거나 번역이 길면 기사 한 줄이 화면 폭을 넘는다. 폭에서 줄을
-	// 바꾸고, 같은 문장 안의 줄은 조금 좁게 붙인다.
-	const float LineStride = 42.0f * FMath::Max(Scale, TypeScale * 0.74f);
-	UFont* EpilogueBodyFont = GetFontForRole(EIGHudTextRole::Dialogue);
-	for (const FText& Line : MissingFloorEpilogueBodyLines)
+	for (const TArray<FString>& Wrapped : WrappedBody)
 	{
-		if (Line.IsEmpty())
+		if (Wrapped.IsEmpty())
 		{
 			PenY += LineStride * 0.55f;
 			continue;
-		}
-		TArray<FString> Wrapped;
-		FString Remainder;
-		WrapHudText(
-			Line.ToString(),
-			EpilogueBodyFont,
-			0.90f * TypeScale,
-			ContentWidth,
-			3,
-			Wrapped,
-			Remainder);
-		if (Wrapped.IsEmpty())
-		{
-			Wrapped.Add(Line.ToString());
 		}
 		for (int32 Piece = 0; Piece < Wrapped.Num(); ++Piece)
 		{
@@ -3423,7 +3486,7 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 				FVector2D(ContentLeft, PenY),
 				FLinearColor(0.88f, 0.87f, 0.83f, Entrance),
 				EIGHudTextRole::Dialogue,
-				0.90f * TypeScale);
+				0.90f * BodyScale);
 			PenY += Piece + 1 < Wrapped.Num() ? LineStride * 0.78f : LineStride;
 		}
 	}
@@ -3439,15 +3502,16 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 			GetFittedTextScale(
 				MissingFloorEpilogueFootnote,
 				EIGHudTextRole::Hint,
-				0.74f * TypeScale,
+				0.74f * BodyScale,
 				ContentWidth,
-				0.74f * TypeScale * 0.7f));
-		PenY += 34.0f * FMath::Max(Scale, TypeScale * 0.70f);
+				0.74f * BodyScale * 0.7f));
+		PenY += 34.0f * FMath::Max(Scale, BodyScale * 0.70f);
 	}
 
+	// 넘치면 검사에 걸리도록 잘라 내지 않고 실제 끝을 남긴다.
 	RecordLayoutValidationRect(
-		FVector2D(ContentLeft, Canvas->ClipY * 0.16f),
-		FVector2D(ContentLeft + ContentWidth, FMath::Min(PenY, Canvas->ClipY)));
+		FVector2D(ContentLeft, TextTop),
+		FVector2D(ContentLeft + ContentWidth, PenY));
 	DrawSensoryInterludeSkip();
 	return true;
 }
@@ -7438,7 +7502,7 @@ void AIGHorrorHUD::DrawSystemMenuPanel()
 			NSLOCTEXT("IGHUD", "CreditsMaterials", "일부 재질    ambientCG · CC0"),
 			NSLOCTEXT("IGHUD", "CreditsProps", "일부 소품    Poly Haven · CC0"),
 			NSLOCTEXT("IGHUD", "CreditsSounds", "일부 소리    OpenGameArt · Kenney · Owlish Media · CC0"),
-			NSLOCTEXT("IGHUD", "CreditsFonts", "글꼴    Pretendard · 고운바탕 · SIL OFL"),
+			NSLOCTEXT("IGHUD", "CreditsFonts", "글꼴    Pretendard · 고운바탕 · Noto Sans CJK · SIL OFL"),
 			FText::FromString(TEXT("Copyright 2026 easygap. All rights reserved."))
 		};
 		for (int32 Line = 0; Line < UE_ARRAY_COUNT(CreditLines); ++Line)

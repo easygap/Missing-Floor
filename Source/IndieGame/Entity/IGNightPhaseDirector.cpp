@@ -9,9 +9,13 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
+#include "Entity/IGMissingFloorLeftoverDirector.h"
 #include "Entity/IGMissingFloorNightFourDirector.h"
 #include "Entity/IGNightLoopDirector.h"
+#include "Entity/IGNightThreatDirector.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/PlayerController.h"
+#include "Interaction/IGReadableNote.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
@@ -43,6 +47,8 @@ namespace IGNightPhase
 	constexpr float DawnFadeInSeconds = 0.9f;
 	/** 포획으로 시계를 밀어도 05:30 앞에 남기는 시간. */
 	constexpr float CaptureDawnMarginSeconds = 30.0f;
+	/** 05:30에 손에 든 조작이나 짧은 연출이 있으면 이만큼까지 기다린다. */
+	constexpr float MaxDawnHoldSeconds = 40.0f;
 	/** 공동현관 유리문의 전자 잠금. 문 자체는 (604, -385)에 서 있다. */
 	const FVector EntranceLatchLocation(604.0f, -385.0f, 100.0f);
 	/**
@@ -122,6 +128,7 @@ void AIGNightPhaseDirector::BeginTheHour(const int32 NightIndex)
 	bFailureEndingSuspended = false;
 	bHourPaused = false;
 	HourElapsedSeconds = 0.0f;
+	DawnHoldSeconds = 0.0f;
 	HourDurationSeconds = GetHourDurationSeconds(NightIndex);
 
 	// 같은 번호의 밤이 다시 오면 카드가 그것을 안다. 못 채운 밤의 되풀이와
@@ -236,6 +243,12 @@ void AIGNightPhaseDirector::ResumeTheHour(
 	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
 	{
 		Narrative->SetNightElapsedSeconds(HourElapsedSeconds);
+		// 일을 마친 뒤 저장한 밤이면 침대가 다시 「아침까지 쉬기」를 켠다.
+		if (Narrative->HasBeatPlayed(GoalBeatId(NightIndex)))
+		{
+			bGoalComplete = true;
+			OnNightGoalRecorded.Broadcast(NightIndex);
+		}
 	}
 }
 
@@ -266,12 +279,32 @@ void AIGNightPhaseDirector::CompleteNightGoal()
 	}
 	bGoalComplete = true;
 	// 채운 밤은 기록에 남는다. 못 채운 밤은 다음 저녁에 다시 온다(§5.4).
-	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const int32 NightIndex = Narrative ? Narrative->GetNightIndex() : 0;
+	if (Narrative)
 	{
-		Narrative->MarkBeatPlayed(GoalBeatId(Narrative->GetNightIndex()));
+		Narrative->MarkBeatPlayed(GoalBeatId(NightIndex));
 	}
-	// The goal and the timeout share one exit so morning is always the same
-	// world state, whichever way the player got there.
+	// 여기서 날이 새지 않는다. 발견한 것을 다시 보고, 물건을 챙기고, 403호 침대에서 스스로
+	// 밤을 끝낸다. 쫓기는 중이면 끝난 뒤에 저장한다.
+	OnNightGoalRecorded.Broadcast(NightIndex);
+	if (UWorld* World = GetWorld())
+	{
+		AIGNightThreatDirector::RequestAutosaveWhenQuiet(
+			this,
+			FGameplayTag::RequestGameplayTag(FName(TEXT("Chapter.MissingFloor")), false),
+			World->GetOutermost()->GetFName(),
+			FGameplayTag::RequestGameplayTag(FName(TEXT("Checkpoint.MissingFloor.Night")), false));
+	}
+}
+
+void AIGNightPhaseDirector::ConcludeNight()
+{
+	if (!bHourActive)
+	{
+		return;
+	}
+	// 05:30과 같은 출구다. 어느 길로 와도 아침의 세계는 같다.
 	ReleaseAtDawn();
 }
 
@@ -295,6 +328,11 @@ void AIGNightPhaseDirector::TickHour()
 	{
 		return;
 	}
+	// 문서를 펼쳐 읽는 동안 이야기 시계는 서 있다. 느리게 읽었다고 밤을 잃지 않는다.
+	if (AIGReadableNote::GetOpenNote() != nullptr)
+	{
+		return;
+	}
 	HourElapsedSeconds += IGNightPhase::TickIntervalSeconds;
 	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
 	{
@@ -308,8 +346,19 @@ void AIGNightPhaseDirector::TickHour()
 		{
 			return;
 		}
+		// 손에 든 조각을 놓기 전, 정우가 문을 잡고 선 한가운데에서 화면을 감지 않는다.
+		if (!bImmediateDawn && DawnHoldSeconds < IGNightPhase::MaxDawnHoldSeconds && IsDawnHeldByActivity())
+		{
+			DawnHoldSeconds += IGNightPhase::TickIntervalSeconds;
+			return;
+		}
 		ReleaseAtDawn();
 	}
+}
+
+bool AIGNightPhaseDirector::IsDawnHeldByActivity() const
+{
+	return AIGMissingFloorLeftoverDirector::IsHoldingDawn(GetWorld());
 }
 
 void AIGNightPhaseDirector::ReleaseAtDawn()

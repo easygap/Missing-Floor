@@ -64,6 +64,8 @@ namespace IGNightLoop
 		{1.30f, 0.80f, 1.3f, 60.0f},
 		// 관리인. 손전등에 눈이 멀고 손목을 잡힌다. 403호까지 끌려가는 동안 눈은 하얗다.
 		{1.20f, 1.60f, 0.0f, 180.0f},
+		// 덧댄 것. 판과 몸 사이에 눌려 숨이 막힌다. 몸이 물러난 자리 옆 넓은 데서 깬다.
+		{1.10f, 0.90f, 1.4f, 60.0f},
 	};
 	const FCaptureSpec& SpecFor(const EIGCaptureKind Kind)
 	{
@@ -524,10 +526,19 @@ void AIGNightLoopDirector::FinishReset()
 	}
 
 	// 정신을 잃은 동안 흐른 시간. 깨어나며 손목시계를 보면 그만큼 지나 있다.
+	// 추격 없음에서 덧댄 것에 눌린 것은 밀려난 것뿐이다. 시간은 흐르지 않는다.
+	float LostSeconds = Spec.LostSeconds;
+	if (Kind == EIGCaptureKind::Lining)
+	{
+		if (const AIGListenerEntity* Upstairs = ListenerEntity.Get(); Upstairs && !Upstairs->GetTuning().bCaptureEnabled)
+		{
+			LostSeconds = 0.0f;
+		}
+	}
 	LastLostSeconds = 0.0f;
 	for (TActorIterator<AIGNightPhaseDirector> It(GetWorld()); It; ++It)
 	{
-		LastLostSeconds = It->ConsumeHourSeconds(Spec.LostSeconds);
+		LastLostSeconds = It->ConsumeHourSeconds(LostSeconds);
 		break;
 	}
 
@@ -581,6 +592,10 @@ void AIGNightLoopDirector::FinishReset()
 		else if (Kind == EIGCaptureKind::Eoduksini)
 		{
 			Thought = NSLOCTEXT("IGMissingFloor", "YudamWakeUnderLight", "내가 언제 여기까지 왔지?");
+		}
+		else if (Kind == EIGCaptureKind::Lining)
+		{
+			Thought = NSLOCTEXT("IGMissingFloor", "YudamWakePressed", "숨이 막혔어. 저게 지나가는 자리엔 서 있으면 안 돼.");
 		}
 		if (!Thought.IsEmpty())
 		{

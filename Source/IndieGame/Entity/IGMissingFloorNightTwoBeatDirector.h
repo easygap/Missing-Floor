@@ -113,7 +113,13 @@ public:
 	 * player was released straight to dawn from inside the management booth, which
 	 * skipped the whole beat.
 	 */
-	void ArmReturnChase();
+	/**
+	 * bWithConclusion이면 장부를 맞춘 결론과 「403호까지」 두 줄을 먼저 띄운다. 관리실 안쪽 방
+	 * 장면(짐 줄기 감독)이 결론을 먼저 띄운 뒤 나서는 순간에 부를 때는 false다.
+	 */
+	void ArmReturnChase(bool bWithConclusion = true);
+	/** 관리인이 잡아 집 문 앞까지 데려다 놓았다. 그 밤은 집에 돌아온 것으로 끝난다. */
+	void CompleteReturnAfterEscort();
 
 	/**
 	 * 잡히면 403호 현관에서 깨어날 수도 있다(손님, 관리인). 그것이 「집에 도착」으로

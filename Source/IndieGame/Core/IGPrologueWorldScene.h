@@ -8,6 +8,7 @@ class AIGCheckoutCounter;
 class APawn;
 class AIGElevator;
 class AIGFridge;
+class AIGHidingSpot;
 class AIGInspectable;
 class AIGNeighborhoodLifeDirector;
 class AIGPickupItem;
@@ -20,6 +21,7 @@ class UAudioComponent;
 class UDirectionalLightComponent;
 class UExponentialHeightFogComponent;
 class UMaterialInterface;
+class UMaterialInstanceDynamic;
 class UPointLightComponent;
 class UPostProcessComponent;
 class UPrimitiveComponent;
@@ -291,6 +293,16 @@ public:
 	bool OpenMissingFloorCavity();
 	/** 밤 4 재시도 때 탈착 패널의 외형과 충돌을 함께 복구한다. */
 	bool ResetMissingFloorCavity();
+	/** 5층 남쪽 끝 배관 점검 자리의 석고 덧판. 뜯으면 큰 점검구가 열린다(밤4 두 번째 단계). */
+	bool SetMissingFloorInspectionOverlayRemoved(bool bRemoved);
+	bool IsMissingFloorInspectionOverlayRemoved() const { return bMissingFloorInspectionOverlayRemoved; }
+	/** 관리실 안쪽 방 백열등. 끌 때는 세기만 0이다(구역 표시는 UpdateLightZones가 쥔다). */
+	void SetInnerRoomBulbOn(bool bOn);
+	bool IsInnerRoomBulbOn() const { return bInnerRoomBulbOn; }
+	/** 302호 장롱(짐 줄기 감독이 한 번 민다). */
+	UStaticMeshComponent* GetWardrobe302() const { return Wardrobe302Mesh; }
+	/** 302호 장롱 문틈 숨는 자리. 장롱을 밀면 감독이 같이 옮긴다. */
+	AIGHidingSpot* GetWardrobe302HidingSpot() const { return Wardrobe302Hide; }
 	bool IsMissingFloorCavityOpen() const { return bMissingFloorCavityOpen; }
 
 	/**
@@ -490,6 +502,8 @@ private:
 	/** 2층과 3층 복도, 201호 자재 창고와 302호 빈집. */
 	void BuildLowerFloors();
 	void BuildLobby();
+	/** 관리실 안쪽 방(BuildLobby가 부른다). */
+	void BuildInnerRoom();
 	/**
 	 * 없는 층 밤3: extends the real 4F stair to the roof, builds the 6.4 m
 	 * tank-side lane, and places the half-finished annex on the same slab.
@@ -793,6 +807,21 @@ private:
 	/** The middle bay's removable gypsum face; studs and evidence remain. */
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> MissingFloorCavityWallPanel;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> MissingFloorInspectionOverlay;
+	bool bMissingFloorInspectionOverlayRemoved = false;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> InnerRoomBulb;
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> InnerRoomBulbGlow;
+	UPROPERTY(Transient)
+	TObjectPtr<UPointLightComponent> InnerRoomBulbLight;
+	bool bInnerRoomBulbOn = false;
+	static constexpr float InnerRoomBulbIntensity = 1500.0f;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> Wardrobe302Mesh;
+	UPROPERTY(Transient)
+	TObjectPtr<AIGHidingSpot> Wardrobe302Hide;
 
 	/** Front-face hand residue follows the gypsum panel when it is removed. */
 	UPROPERTY(Transient)

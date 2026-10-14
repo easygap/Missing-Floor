@@ -14,7 +14,9 @@
 #include "EngineUtils.h"
 #include "Environment/IGStairSensorLights.h"
 #include "Entity/IGListenerEntity.h"
+#include "Entity/IGLiningEntity.h"
 #include "Entity/IGManagerPatrol.h"
+#include "Entity/IGMissingFloorLeftoverDirector.h"
 #include "Entity/IGStairwellPresence.h"
 #include "Entity/IGMissingFloorEpilogueDirector.h"
 #include "Entity/IGMissingFloorEvidence.h"
@@ -457,6 +459,19 @@ void AIGNightThreatDirector::Update()
 	}
 }
 
+void AIGNightThreatDirector::HoldQuietAfterDiscovery(const UObject* WorldContext, const float Seconds)
+{
+	UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+	if (!World)
+	{
+		return;
+	}
+	for (TActorIterator<AIGNightThreatDirector> It(World); It; ++It)
+	{
+		It->DiscoveryQuietUntil = FMath::Max(It->DiscoveryQuietUntil, World->GetTimeSeconds() + Seconds);
+	}
+}
+
 void AIGNightThreatDirector::RequestAutosaveWhenQuiet(
 	const UObject* WorldContext,
 	const FGameplayTag ChapterId,
@@ -500,7 +515,10 @@ bool AIGNightThreatDirector::IsEventInProgress() const
 	if ((GuestStage != EIGGuestStage::Idle && GuestStage != EIGGuestStage::Spent)
 		|| IsEoduksiniManifested()
 		|| IsPursuitActive()
-		|| AIGManagerPatrol::IsAnyOnKeyHunt(World))
+		|| AIGManagerPatrol::IsAnyOnKeyHunt(World)
+		|| AIGManagerPatrol::IsAnyOnErrand(World)
+		|| AIGLiningEntity::IsAnyBusy(World)
+		|| AIGMissingFloorLeftoverDirector::IsAnySceneActive(World))
 	{
 		return true;
 	}
@@ -547,8 +565,21 @@ bool AIGNightThreatDirector::IsQuietWindow() const
 			return false;
 		}
 	}
+	// 큰 발견 바로 뒤. 읽은 것과 본 것을 받아들일 틈을 둔다.
+	if (World->GetTimeSeconds() < DiscoveryQuietUntil)
+	{
+		return false;
+	}
 	// 관리인이 열쇠를 찾아 403호 문까지 오는 밤에는 손님이 같은 문을 두드리지 않는다.
 	if (AIGManagerPatrol::IsAnyOnKeyHunt(World))
+	{
+		return false;
+	}
+	// 밤2 관리인의 손수레 심부름, 덧댄 것이 움직이거나 누르는 동안, 정우와의 장면. 지금 보고
+	// 들어야 할 것 위로 다른 것이 오지 않는다.
+	if (AIGManagerPatrol::IsAnyOnErrand(World)
+		|| AIGLiningEntity::IsAnyBusy(World)
+		|| AIGMissingFloorLeftoverDirector::IsAnySceneActive(World))
 	{
 		return false;
 	}
@@ -874,6 +905,24 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 			Figure->SetTargetLocation(Stop, Speed);
 		}
 		Figure->SetTrembling(true);
+		// 반쯤 커지면 숨이 한 번 더 깊어진다. 소리 자막만 보는 사람도 커졌다는 걸 안다.
+		if (PreviousGrowth < 0.5f && EoduksiniGrowth >= 0.5f)
+		{
+			IGAudio::SpawnOneShotAt(
+				this,
+				UIGToneSequenceSoundWave::CreateDarknessInhale(this),
+				Chest,
+				0.9f,
+				0.86f,
+				140.0f,
+				1600.0f,
+				EIGAudioBus::Entity);
+			AIGHorrorHUD::PushAudioCaptionAt(
+				this,
+				NSLOCTEXT("IGMissingFloor", "CaptionDarknessGrows", "[숨소리가 더 깊고 가까워진다]"),
+				2.4f,
+				Chest);
+		}
 		if (UIGStressComponent* Stress = Player->GetStress())
 		{
 			if (PreviousGrowth < 0.5f && EoduksiniGrowth >= 0.5f)
@@ -1454,6 +1503,14 @@ bool AIGNightThreatDirector::BeginHammerCall()
 	if (bHammerCallUsed || !IsHammerPhase() || !AnnexDoor.IsValid() || !CanRunHammerCall()
 		|| (GuestStage != EIGGuestStage::Idle && GuestStage != EIGGuestStage::Spent))
 	{
+		const AIGListenerEntity* Upstairs = Listener.Get();
+		const AIGNightLoopDirector* Loop = NightLoop.Get();
+		UE_LOG(LogTemp, Display, TEXT("NIGHT4_HAMMER_CALL refused used=%d phase=%d door=%d can=%d guest=%d listener=%d reset=%d since_capture=%.1f"),
+			bHammerCallUsed ? 1 : 0, IsHammerPhase() ? 1 : 0, AnnexDoor.IsValid() ? 1 : 0,
+			CanRunHammerCall() ? 1 : 0, static_cast<int32>(GuestStage),
+			Upstairs ? static_cast<int32>(Upstairs->GetListenerState()) : -1,
+			Loop && Loop->IsCaptureResetInFlight() ? 1 : 0,
+			Loop ? GetWorld()->GetTimeSeconds() - Loop->GetLastCaptureSeconds() : -1.0);
 		return false;
 	}
 	// 한 번에 하나다. 서 있던 어둠은 물러난다.
@@ -1481,9 +1538,12 @@ bool AIGNightThreatDirector::CanRunHammerCall() const
 			return false;
 		}
 	}
+	// 덧댄 것에 눌린 것은 짧은 눌림이다(0.10.0). 그걸로 40초를 미루면 넷째 단계의 부름이
+	// 통째로 빠진다. 깨는 중이면 그래도 기다린다.
 	if (const AIGNightLoopDirector* Loop = NightLoop.Get(); Loop
 		&& (Loop->IsCaptureResetInFlight()
-			|| GetWorld()->GetTimeSeconds() - Loop->GetLastCaptureSeconds() < IGNightThreat::CaptureGraceSeconds))
+			|| (Loop->GetLastCaptureKind() != EIGCaptureKind::Lining
+				&& GetWorld()->GetTimeSeconds() - Loop->GetLastCaptureSeconds() < IGNightThreat::CaptureGraceSeconds)))
 	{
 		return false;
 	}

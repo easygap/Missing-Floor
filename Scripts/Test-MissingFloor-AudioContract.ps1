@@ -290,7 +290,7 @@ if ($wallResponseCalls -ne 3) {
 }
 $assertions++
 Require-All $nightFour @(
-	'UIGToneSequenceSoundWave::CreateHammerImpact(this, StrikeCount - 1)',
+	'UIGToneSequenceSoundWave::CreateHammerImpact(this, FMath::Max(Index - 1, 0))',
 	'UIGToneSequenceSoundWave::CreateValveOpen(',
 	'UIGToneSequenceSoundWave::CreateVentDuctSpinUp(this)'
 ) '§21.3 night four impact and controls'

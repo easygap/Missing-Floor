@@ -1,0 +1,303 @@
+﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "IGLiningEntity.generated.h"
+
+class AIGAccessHatch;
+class AIGLiningEntity;
+class UBoxComponent;
+class UCapsuleComponent;
+class UPoseableMeshComponent;
+
+/**
+ * 덧댄 것이 노리는 틈 하나. 같은 벽 속 공간으로 이어진 시공 틈만 넣는다. 세대문·창문은
+ * 틈이 아니다. 덮개(Hatch)가 있으면 덮개가 열려 있을 때만 열린 틈이고, 덮개 없이 판을 떼어
+ * 낸 자리는 bAlwaysOpen이다. 몸이 눌러 막으면 bSealed가 되고 다시 뜯기 전에는 고르지 않는다.
+ */
+struct FIGLiningGap
+{
+	FName Id;
+	/** 틈 가운데. 벽 면 위다. */
+	FVector Center = FVector::ZeroVector;
+	/** 벽에서 방 쪽으로 나온 법선. */
+	FVector Normal = FVector::ForwardVector;
+	/** 몸을 붙일 때 몸 앞쪽(+X)이 향할 벽 위의 방향. 보통 위. */
+	FVector Up = FVector::UpVector;
+	/** 가로·세로(cm). 넓이로 고른다. */
+	FVector2D Size = FVector2D(45.0f, 45.0f);
+	TWeakObjectPtr<AIGAccessHatch> Hatch;
+	bool bAlwaysOpen = false;
+	bool bSealed = false;
+
+	float Area() const { return Size.X * Size.Y; }
+};
+
+UENUM()
+enum class EIGLiningState : uint8
+{
+	/** 없다(다른 밤, 다른 공간). */
+	Hidden,
+	/** 벽이나 바닥에 접혀 붙어 있다. 보강재 더미처럼 보인다. */
+	Folded,
+	/** 처음 움직인다. 패드 하나가 벽에서 떨어지고 다리가 드러난다. */
+	Peeling,
+	/** 두 다리로 짚고 몸을 당기고, 남은 두 다리를 옮긴다. */
+	Stepping,
+	/** 틈 둘레를 네 다리로 짚는다. */
+	Bracing,
+	/** 몸으로 틈을 눌러 막는다. */
+	Pressing,
+	/** 막은 틈 위에 그대로 있다. 다른 열린 틈을 본다. */
+	Holding,
+	/** 5층에서 천장과 벽을 짚고 몸을 다 폈다. */
+	Spread,
+	/** 정한 자리로 물러나 접힌다. */
+	Retreating,
+	/** 사람을 판과 몸 사이에 눌렀다(포획). */
+	Gripping
+};
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FIGLiningGapEvent, AIGLiningEntity*, FName /*GapId*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FIGLiningEvent, AIGLiningEntity*);
+
+/**
+ * 셋째 괴이, 덧댄 것(개발용 이름). 은폐 공사에 쓰고 남은 방음재·방수막·실리콘·ㄷ자 철골로 된
+ * 낮고 넓은 몸에 넓적한 버팀다리 넷이 있다. 눈·입·머리·손발은 없다(SK_Lining, rig_lining.py).
+ *
+ * 하는 일은 하나다. 같은 벽 속 공간으로 이어진 열린 틈 가운데 가장 넓은 것을 골라 거기로
+ * 가서, 네 다리로 둘레를 짚고, 몸으로 눌러 막는다. 다 막은 뒤에야 다음 틈을 고른다. 가는
+ * 도중에 새 틈이 열려도 방향을 바꾸지 않는다. 막은 자리는 접착층이 눌려 바람이 새지 않고,
+ * 다시 뜯어내야 대상이 된다. 소리·시선·손전등·사람에게는 반응하지 않는다. 걷는 길에 서 있거나
+ * 누르는 자리와 판 사이에 끼면 눌린다(포획).
+ *
+ * 움직임은 굽지 않은 뼈 자세다. 두 다리가 벽이나 천장을 짚고 몸을 당긴 뒤 나머지 두 다리가
+ * 지지점을 옮긴다. 다리는 두 마디 IK(엉덩이→무릎→발목)에 패드가 짚은 면을 따라 돈다.
+ * 접혔을 때는 접자처럼 몸 옆구리에 포개진다.
+ *
+ * 이야기는 모른다. 공간을 맡은 디렉터가 틈과 쉬는 자리를 정하고 이벤트를 받는다.
+ * 틱은 움직이는 동안에만 켠다.
+ */
+UCLASS(NotBlueprintable, Transient)
+class INDIEGAME_API AIGLiningEntity : public AActor
+{
+	GENERATED_BODY()
+
+public:
+	static constexpr int32 LegCount = 4;
+
+	AIGLiningEntity();
+
+	/** SK_Lining을 불러 뼈를 찾는다. 없으면 false이고 이 괴이는 나오지 않는다. */
+	bool LoadBody();
+	bool HasBody() const { return Body != nullptr; }
+
+	/** 벽이나 바닥에 접혀 붙는다. Normal은 그 면에서 방 쪽, Forward는 몸 앞쪽이 향할 곳. */
+	void RestOnSurface(const FVector& Point, const FVector& Normal, const FVector& Forward);
+	/**
+	 * 그 틈을 이미 눌러 막고 있는 자세로 바로 놓는다(밤이 열릴 때, 불러오기). 소리와 이벤트가
+	 * 없다. 틈은 막힌 것으로 적고 덮개는 걸린 채 둔다. 틈이 없으면 아무것도 하지 않는다.
+	 */
+	void PlaceHolding(FName GapId);
+
+	/** 틈을 넣거나 같은 Id를 고친다. */
+	void SetGap(const FIGLiningGap& Gap);
+	void ClearGaps();
+	const FIGLiningGap* FindGap(FName Id) const;
+	/** 덮개가 열리거나 닫혔다. 쉬는 중이면 곧 고르고, 움직이는 중이면 지금 동작을 마친 뒤에 본다. */
+	void NotifyGapsChanged();
+	/** 막힌 틈을 다시 뜯었다(덮개 쪽이 부른다). */
+	void UnsealGap(FName Id);
+	bool IsGapSealed(FName Id) const;
+	bool IsGapOpen(FName Id) const;
+	/** 몸이나 다리가 이 틈의 덮개 자리에 걸려 있다. */
+	bool IsObstructingGap(FName Id) const;
+
+	EIGLiningState GetState() const { return State; }
+	/** 떨어지기·걷기·짚기·누르기·펴기·물러나기 중이다. */
+	bool IsMoving() const;
+	/** 움직이거나 사람을 누르는 중이다. 위협 감독이 다른 괴이를 막는다. */
+	bool IsBusy() const { return IsMoving() || State == EIGLiningState::Gripping; }
+	/** 월드에 움직이거나 누르는 덧댄 것이 있는가. 그동안 다른 괴이는 끼어들지 않는다. */
+	static bool IsAnyBusy(const UWorld* World);
+	FName GetTargetGap() const { return TargetGap; }
+	FName GetHeldGap() const { return HeldGap; }
+	bool HasMovedOnce() const { return bHasMoved; }
+	FVector GetBodyCenter() const { return BodyCenter; }
+	FVector GetBodyUp() const { return BodyRotation.GetUpVector(); }
+	/** 다리 패드 자리(검사·연출용). */
+	FVector GetPadLocation(int32 Leg) const;
+	FVector GetKneeLocation(int32 Leg) const;
+	/** 이 점이 몸이나 다리 둘레 Radius 안에 든다. */
+	bool IsPointNearBody(const FVector& Point, float Radius) const;
+
+	/** 5층: 정한 자리를 짚고 몸을 천장까지 편다. */
+	void SpreadTo(
+		const FVector& InBodyCenter,
+		const FVector& InBodyUp,
+		const FVector& InBodyForward,
+		const TArray<FVector>& Pads,
+		const TArray<FVector>& PadNormals,
+		float Seconds);
+	/** 프레임이 다리(Leg)의 무릎에 걸렸다. 무릎이 그 자리에 묶이고 몸을 접지 못한다. */
+	void PinKnee(int32 Leg, const FVector& KneeWorld);
+	void ReleasePin();
+	bool IsKneePinned() const { return PinnedLeg != INDEX_NONE; }
+	int32 GetPinnedLeg() const { return PinnedLeg; }
+	/** 정한 면으로 물러나 접힌다. */
+	void RetreatTo(const FVector& Point, const FVector& Normal, const FVector& Forward, float Seconds);
+	void Hide();
+
+	/** 사람을 누를 수 있는지. 연출 중(5층 대치 직전 등)에는 끈다. */
+	void SetGripEnabled(bool bEnabled) { bGripEnabled = bEnabled; }
+	/** 눌린 사람이 깨어날 넓은 자리. 공간 디렉터가 정한다. */
+	void SetGripRecoveryTransform(const FTransform& InTransform) { GripRecovery = InTransform; }
+	/** 포획 연출이 끝났다. 하던 움직임을 이어 간다. */
+	void ReleaseGrip();
+	/** 검사·장면용: 걸음 빠르기 배율. */
+	void SetPaceScale(float Scale) { PaceScale = FMath::Clamp(Scale, 0.25f, 4.0f); }
+	/** 소리를 낸다(검사에서 끌 수 있다). */
+	void SetAudible(bool bInAudible) { bAudible = bInAudible; }
+	/** 검사용: 뼈 자리를 로그로 남긴다. */
+	void LogPose(const TCHAR* Tag) const;
+
+	/** 새 틈으로 가기 시작했다. */
+	FIGLiningGapEvent OnTargetChosen;
+	/** 틈을 다 눌러 막았다. */
+	FIGLiningGapEvent OnGapSealed;
+	/** 처음으로 벽에서 떨어졌다. */
+	FIGLiningEvent OnFirstMove;
+	/** 사람을 판과 몸 사이에 눌렀다. */
+	FIGLiningEvent OnGrippedPlayer;
+	/** 지금 동작을 마치고 멈췄다(막기·펴기·물러나기 끝). */
+	FIGLiningEvent OnSettled;
+
+	virtual void Tick(float DeltaSeconds) override;
+
+protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+private:
+	struct FLeg
+	{
+		/** 지금 짚은 자리(패드 가운데)와 그 면의 바깥 법선. */
+		FVector Pad = FVector::ZeroVector;
+		FVector Normal = FVector::UpVector;
+		/** 옮기는 중이면 출발과 도착. */
+		FVector FromPad = FVector::ZeroVector;
+		FVector FromNormal = FVector::UpVector;
+		FVector ToPad = FVector::ZeroVector;
+		FVector ToNormal = FVector::UpVector;
+		float SwingAlpha = 1.0f;
+		bool bSwinging = false;
+		/** 1이면 접자처럼 접은 자세, 0이면 짚은 자세. 처음 옮길 때 펴진다. */
+		float Fold = 1.0f;
+		float FoldFrom = 1.0f;
+		float FoldTo = 1.0f;
+		/** 마지막으로 푼 관절 자리(검사·충돌용). */
+		FVector Hip = FVector::ZeroVector;
+		FVector Knee = FVector::ZeroVector;
+		FVector Ankle = FVector::ZeroVector;
+	};
+
+	void SetState(EIGLiningState NewState);
+	void StartTicking();
+	bool ChooseTarget();
+	void BeginTravelTo(FName GapId);
+	void BuildPath(const FVector& Start, const FVector& StartUp, const FVector& Goal, const FVector& GoalNormal);
+	FVector PathPoint(float Distance) const;
+	float PathLength() const { return PathDistances.IsEmpty() ? 0.0f : PathDistances.Last(); }
+	FQuat BodyRotationAt(float Alpha) const;
+	void UpdatePeeling(float DeltaSeconds);
+	void UpdateStepping(float DeltaSeconds);
+	void UpdateBracing(float DeltaSeconds);
+	void UpdatePressing(float DeltaSeconds);
+	void UpdateHolding(float DeltaSeconds);
+	void UpdateSpread(float DeltaSeconds);
+	void UpdateRetreating(float DeltaSeconds);
+	void UpdateSwings(float DeltaSeconds);
+	void StartSwing(int32 Leg, const FVector& Pad, const FVector& Normal, float FoldTarget);
+	bool FindContact(int32 Leg, const FVector& FutureBody, const FQuat& FutureRotation, const FVector& Travel, FVector& OutPad, FVector& OutNormal) const;
+	FVector HipWorld(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
+	void PoseBody();
+	void SolveLeg(int32 Leg);
+	void UpdateColliders();
+	void CheckGrip();
+	void SetObstructions(FName GapId, bool bObstructed);
+	void SealGap(FName GapId);
+	void PlayCue(const TCHAR* Sample, int32 Variants, const FVector& Where, float Volume, float Pitch);
+	void Caption(const FText& Text, const FVector& Where, float Seconds, double& LastAt, float MinInterval);
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<USceneComponent> Root;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UPoseableMeshComponent> Body;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UBoxComponent> BodyBlocker;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UCapsuleComponent>> LegBlockers;
+
+	// 뼈 이름과 쉬는 자세(컴포넌트 공간).
+	FName BodyBone;
+	FName SegmentBones[LegCount][3];
+	FTransform RestBody;
+	FTransform RestSegment[LegCount][3];
+	FVector RestPad[LegCount];
+	/** 쉬는 자세의 엉덩이 자리(몸 기준, cm). */
+	FVector HipLocal[LegCount];
+	float Length1[LegCount] = {};
+	float Length2[LegCount] = {};
+	/** 쉬는 자세에서 다리가 뻗은 수평 방향(몸 기준). */
+	FVector RestOutward[LegCount];
+
+	TArray<FIGLiningGap> Gaps;
+	FLeg Legs[LegCount];
+	EIGLiningState State = EIGLiningState::Hidden;
+	EIGLiningState StateBeforeGrip = EIGLiningState::Hidden;
+	FName TargetGap;
+	FName HeldGap;
+	FVector BodyCenter = FVector::ZeroVector;
+	FQuat BodyRotation = FQuat::Identity;
+	float StateSeconds = 0.0f;
+	bool bHasMoved = false;
+	bool bGapsDirty = false;
+	bool bGripEnabled = true;
+	bool bAudible = true;
+	float PaceScale = 1.0f;
+	FTransform GripRecovery = FTransform::Identity;
+
+	// 걷는 길.
+	TArray<FVector> PathPoints;
+	TArray<float> PathDistances;
+	float PathTravelled = 0.0f;
+	FQuat PathStartRotation = FQuat::Identity;
+	FQuat PathGoalRotation = FQuat::Identity;
+	/** 당기기 단계인가(아니면 두 다리를 옮기는 단계). */
+	bool bPulling = true;
+	float PhaseSeconds = 0.0f;
+	float PullFrom = 0.0f;
+	float PullTo = 0.0f;
+	int32 SwingGroup = 0;
+	int32 PeelLeg = 0;
+
+	// 누르기·펴기·물러나기의 출발과 도착.
+	FVector MoveFromCenter = FVector::ZeroVector;
+	FVector MoveToCenter = FVector::ZeroVector;
+	FQuat MoveFromRotation = FQuat::Identity;
+	FQuat MoveToRotation = FQuat::Identity;
+	float MoveSeconds = 1.0f;
+	TArray<FVector> SpreadPads;
+	TArray<FVector> SpreadNormals;
+
+	int32 PinnedLeg = INDEX_NONE;
+	FVector PinnedKnee = FVector::ZeroVector;
+
+	double LastCreakCaptionAt = -100.0;
+	double LastPressCaptionAt = -100.0;
+	double LastCreakAt = -100.0;
+	uint32 CueSeed = 23u;
+	float HoldingCheckSeconds = 0.0f;
+};

@@ -106,6 +106,10 @@ $requiredFiles = @(
 	'Source/IndieGame/UI/Fonts/GowunBatang-Bold.ttf',
 	'Source/IndieGame/UI/Fonts/OFL-Pretendard.txt',
 	'Source/IndieGame/UI/Fonts/OFL-GowunBatang.txt',
+	'Source/IndieGame/UI/Fonts/NotoSansJP-Regular.otf',
+	'Source/IndieGame/UI/Fonts/NotoSansSC-Regular.otf',
+	'Source/IndieGame/UI/Fonts/NotoSansTC-Regular.otf',
+	'Source/IndieGame/UI/Fonts/OFL-NotoSansCJK.txt',
 	'Docs/Media/readme-route-preview.gif',
 	'Docs/IMAGEGEN_PROMPTS_2026-09-30.md',
 	'Docs/IMAGEGEN_PROMPTS_2026-08-12.md',
@@ -730,7 +734,19 @@ $reviewedTickingFiles = @(
 	'IGStairwellPresenceProbe.cpp',
 	# 밤3의 관리인. 그 시간이 밤3이고 벽의 대답을 아직 못 들었을 때만 켠다.
 	# 걸음과 손전등, 원뿔 시야가 매 프레임 일이고, 당번이 끝나면 스스로 끈다.
-	'IGManagerPatrol.cpp'
+	'IGManagerPatrol.cpp',
+	# 덧댄 것. 떨어지고 짚고 옮기고 누르는 동안과 사람을 누른 동안에만 켜고, 접혀 붙으면 끈다.
+	'IGLiningEntity.cpp',
+	# 벽 점검구. 문짝이 도는 동안과 열린 틈으로 먼지가 빨려 드는 동안에만 켠다.
+	'IGAccessHatch.cpp',
+	# 정우. 걷거나 상자를 나르거나 몸짓이 바뀌는 동안에만 켜고, 멈추면 끈다.
+	'IGJeongwooFigure.cpp',
+	# -IGLiningProbe에서만 생성한다. 덧댄 것의 동작을 한 번씩 돌려 보고 종료한다.
+	'IGLiningProbe.cpp',
+	# -IGLeftoverProbe에서만 생성한다. 「302호에 남은 짐」을 낮1부터 밤4 벽까지 겪고 종료한다.
+	'IGLeftoverProbe.cpp',
+	# -IGNightFlowProbe에서만 생성한다. 밤의 목표·쉬기·05:30·불러오기를 한 번씩 겪고 종료한다.
+	'IGNightFlowProbe.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)

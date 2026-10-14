@@ -27,8 +27,6 @@ namespace IGStairNeighbor
 	// 계단 길은 디딤판 윗면 가운데를 잇는 경사라, 한 단 26.7 cm를 0.67초에 간다.
 	constexpr float FlatSpeed = 100.0f;
 	constexpr float StairSpeed = 40.0f;
-	/** 이보다 높이가 많이 바뀌는 구간은 계단이다. */
-	constexpr float StairSegmentRise = 30.0f;
 
 	// 리깅한 몸의 걸음 주기. Scripts/blender/rig_walker.py의 resident Walk(32프레임,
 	// 두 걸음 50 cm씩)와 같다.
@@ -136,7 +134,7 @@ bool AIGStairNeighbor::CanWatchThirdFloorDoor(const FVector& PlayerFeet)
 
 void AIGStairNeighbor::SetRoute(const TArray<FVector>& Points)
 {
-	Path.StairRise = IGStairNeighbor::StairSegmentRise;
+	Path.StairRise = IGWalker::StairSegmentRise;
 	Path.Set(Points);
 	Travelled = 0.0f;
 }

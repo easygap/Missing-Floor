@@ -277,6 +277,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 				Check(Hour->IsHourActive() && !IsShown(Notes[1].Get()), TEXT("night1_no_second_note_yet"));
 			}
 			Hour->CompleteNightGoal();
+			Hour->ConcludeNight();
 		}
 		else if (bActed && IsDay())
 		{
@@ -348,6 +349,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			Check(Hour->IsHourActive() && !JeongwooTalk->IsInteractionEnabled() && !IsShown(Notes[2].Get()),
 				TEXT("night2_jeongwoo_gone_no_third_note"));
 			Hour->CompleteNightGoal();
+			Hour->ConcludeNight();
 		}
 		else if (bActed && IsDay())
 		{

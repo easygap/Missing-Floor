@@ -34,7 +34,9 @@ enum class EIGCaptureKind : uint8
 	/** 문간의 손님. 종이가 안으로 날려 들어오고 목소리가 등 뒤에서 말을 맺는다. */
 	Guest,
 	/** 관리인. 얼굴에 들이댄 손전등에 눈이 멀고 손목을 잡힌다. 말은 없다(§8 3-1b). */
-	Manager
+	Manager,
+	/** 덧댄 것. 지나는 길이나 누르는 자리에 서 있다가 판과 몸 사이에 눌린다. 가까운 넓은 자리에서 정신이 든다. */
+	Lining
 };
 
 /** First-person player pawn with asset-driven Enhanced Input bindings. */

@@ -2643,8 +2643,26 @@ void AIGPlayerController::RequestManualHint()
 	{
 		HintGoalId = Step.GoalId;
 		HintTier = 0;
+		HintAnswerOfferedAt = -100.0;
+		bHintAnswerRevealed = false;
 	}
 	const int32 Tier = FMath::Clamp(HintTier, 0, Step.Tiers.Num() - 1);
+	// 세 단계 이상인 힌트의 마지막은 할 일을 그대로 말한다. 처음 거기 닿으면 한 번 묻고,
+	// 10초 안에 다시 누를 때만 말한다. 원하는 만큼만 도움을 받게 한다.
+	const bool bAnswerTier = Step.Tiers.Num() >= 3 && Tier == Step.Tiers.Num() - 1;
+	if (bAnswerTier && !bHintAnswerRevealed)
+	{
+		if (Now - HintAnswerOfferedAt > 10.0)
+		{
+			HintAnswerOfferedAt = Now;
+			if (AIGHorrorHUD* Hud = Cast<AIGHorrorHUD>(GetHUD()))
+			{
+				Hud->ShowHintAnswerTip();
+			}
+			return;
+		}
+		bHintAnswerRevealed = true;
+	}
 	AIGHorrorHUD::PushThought(this, Step.Tiers[Tier], 3.2f);
 	HintTier = FMath::Min(Tier + 1, Step.Tiers.Num() - 1);
 }

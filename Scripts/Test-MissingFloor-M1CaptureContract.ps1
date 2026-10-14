@@ -93,7 +93,9 @@ Assert-ContainsAll $night @(
 	'SpawnCaptureHandprint(Character);',
 	'DropFlashlightAt(*Character);',
 	'Torch->DrainBattery(IGNightLoop::EoduksiniBatteryCost);',
-	'It->ConsumeHourSeconds(Spec.LostSeconds)',
+	# 잃는 시간은 포획 종류의 값이다. 추격 없음에서 덧댄 것에 눌린 것만 0으로 덮는다(0.10.0).
+	'float LostSeconds = Spec.LostSeconds;',
+	'It->ConsumeHourSeconds(LostSeconds)',
 	'Entity->ReturnAfterCapture(IGNightLoop::ListenerGraceSeconds);',
 	'OnCaptureSettled.Broadcast(Kind, LastCaptureSpot);',
 	'WallProbeCount = 8',

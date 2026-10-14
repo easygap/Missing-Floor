@@ -356,6 +356,11 @@ void AIGMissingFloorPuzzleOneDirector::HandleCommonLighting(AIGMissingFloorEvide
 	IGAudio::SpawnOneShotAt(this, UIGToneSequenceSoundWave::CreateBreakerThrow(this),
 		IGPuzzleOne::CommonBreakerFace, .9f, bCommonLightsEnabled ? 1.12f : 1.04f,
 		120.f, 1400.f, EIGAudioBus::Puzzle);
+	// 소리를 못 듣는 사람도 어느 차단기를 건드렸는지, 그게 얼마나 컸는지 알아야 비교가 된다.
+	AIGHorrorHUD::PushAudioCaptionAt(this, bCommonLightsEnabled
+		? NSLOCTEXT("IGMissingFloor", "P1CommonUpCaption", "[복도등 차단기를 올리는 소리]")
+		: NSLOCTEXT("IGMissingFloor", "P1CommonDownCaption", "[복도등 차단기를 내리는 소리]"),
+		2.2f, IGPuzzleOne::CommonBreakerFace);
 }
 
 void AIGMissingFloorPuzzleOneDirector::HandleBreakerThrown(
@@ -401,6 +406,10 @@ void AIGMissingFloorPuzzleOneDirector::HandleBreakerThrown(
 		120.0f,
 		1400.0f,
 		EIGAudioBus::Puzzle);
+	AIGHorrorHUD::PushAudioCaptionAt(this, bBreakerThrown
+		? NSLOCTEXT("IGMissingFloor", "P1BreakerUpCaption", "[이름표 없는 차단기를 탁 올리는 소리]")
+		: NSLOCTEXT("IGMissingFloor", "P1BreakerDownCaption", "[이름표 없는 차단기를 내리는 소리]"),
+		2.4f, IGPuzzleOne::BreakerFace);
 
 	if (BallastHum)
 	{

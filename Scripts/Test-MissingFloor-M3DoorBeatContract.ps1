@@ -194,8 +194,9 @@ Require-All $greybox @(
 # 밤2는 종이가 모순되는 자리가 아니라 403호 문에서 끝난다. 원문 복원이 밤을
 # 끝내면 관리실 안에서 새벽으로 풀려나고 이 비트가 통째로 사라진다. T7은
 # 밤3의 열쇠 고리 옆에서 닫힌다(2026-09-10).
+# 0.10.0: 안쪽 방 장면 뒤에 거는 귀환은 장부 결론을 다시 말하지 않는다(bWithConclusion=false).
 Require-All $beatHeader @(
-	'void ArmReturnChase();',
+	'void ArmReturnChase(bool bWithConclusion = true);',
 	'void NotifyCaptureReset();',
 	'FIGNightTwoReturnedSignature OnReturnedHome;',
 	'AwaitingExit,',

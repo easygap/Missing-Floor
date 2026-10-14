@@ -16,6 +16,7 @@
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGMissingFloorEvidence.h"
+#include "Entity/IGMissingFloorLeftoverDirector.h"
 #include "Entity/IGMissingFloorFifthDawnDirector.h"
 #include "Entity/IGMissingFloorMercyDirector.h"
 #include "Entity/IGMissingFloorNightThreeDirector.h"
@@ -299,8 +300,13 @@ void AIGMissingFloorNightFourDirector::Tick(const float DeltaSeconds)
 	{
 		UpdateEndingHammer(DeltaSeconds);
 	}
+	if (bWallMotionActive)
+	{
+		UpdateWallStageMotion(DeltaSeconds);
+	}
 	UpdateFinaleDetailLayers();
-	if (!bFinalRevealActive && !bMokRetreatActive && !bEndingHammerMoving && !bValveMotionActive)
+	if (!bFinalRevealActive && !bMokRetreatActive && !bEndingHammerMoving && !bValveMotionActive
+		&& !bWallMotionActive)
 	{
 		SetActorTickEnabled(
 			bCavityPresentationVisible || bMokPresentationVisible);
@@ -579,7 +585,9 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 	WallBreakTarget->Configure(
 		CubeMesh,
 		nullptr,
-		FVector(3.0f, 92.0f, 168.0f),
+		// 시신 벽 칸 전체(각재 바깥까지, 바닥에서 천장까지). 확장판에서는 고정되지 않은
+		// 자리를 친 것을 받는다. 단계마다 칠 자리는 그 앞에 따로 선다(BuildWallStage).
+		FVector(3.0f, 116.0f, 276.0f),
 		NSLOCTEXT("IGMissingFloor", "WallBreakPrompt", "벽을 망치로 두드리기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
@@ -593,6 +601,7 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 	// The real gypsum panel remains the visible surface. This trace receiver is
 	// invisible so it cannot z-fight or read as a second wall laid over it.
 	WallBreakTarget->GetPresentationMesh()->SetVisibility(false, true);
+	BuildWallStage(CubeMesh);
 
 	EndingATarget->Configure(
 		CubeMesh,
@@ -1228,6 +1237,13 @@ void AIGMissingFloorNightFourDirector::ResetFinaleTimers()
 		GetWorldTimerManager().ClearTimer(HitTimer);
 	}
 	bHammerHeldForCall = false;
+	GetWorldTimerManager().ClearTimer(BraceSlipTimer);
+	GetWorldTimerManager().ClearTimer(BracePinTimer);
+	GetWorldTimerManager().ClearTimer(WallPushOutTimer);
+	GetWorldTimerManager().ClearTimer(WallPushOutPollTimer);
+	GetWorldTimerManager().ClearTimer(AnnexSpreadPollTimer);
+	GetWorldTimerManager().ClearTimer(WallThoughtTimer);
+	bWallPushOutRunning = false;
 	GetWorldTimerManager().ClearTimer(RecordingLiftTimer);
 	// 「오빠다.」 뒤 3초. 그 사이 05:30이 오면 막간은 낮에 시작하면 안 된다.
 	GetWorldTimerManager().ClearTimer(InterludeTimer);
@@ -1727,6 +1743,12 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 	// 대답이고, 그것도 이 장면에서 성립한다.
 	TArray<FText> ReplyLines;
 	BuildConfrontationReplyLines(ReplyLines);
+	// 덮개 이야기에는 그가 바로 받는다. 다른 추궁에는 끝까지 대답하지 않는다.
+	const FText CoverReply = NSLOCTEXT(
+		"IGMissingFloor",
+		"MokHansooCoverReply",
+		"그거 내려놔요. 공사하고 남은 거라니까.");
+	bool bCoverAnswered = false;
 	for (const FText& ReplyLine : ReplyLines)
 	{
 		AIGHorrorHUD::PushDialogue(
@@ -1736,6 +1758,17 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 			EIGDialogueChannel::Conversation,
 			IGNightFour::ConfrontationReplySeconds,
 			EIGDialoguePriority::Critical);
+		if (!bCoverAnswered && ReplyLine.EqualTo(NSLOCTEXT("IGMissingFloor", "ConfrontationReplyCover", "이 판, 위에서 떼어 왔죠?")))
+		{
+			bCoverAnswered = true;
+			AIGHorrorHUD::PushDialogue(
+				this,
+				NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
+				CoverReply,
+				EIGDialogueChannel::Conversation,
+				3.0f,
+				EIGDialoguePriority::Critical);
+		}
 	}
 	// 추궁이 있든 없든, 열린 벽 앞에서 그는 제 몫부터 던다(§3.3 회계). 7월 26일에 민
 	// 사람이 403호에 살던 서일영이라는 것이 여기서 처음 말로 나온다. 게시글과 마지막
@@ -1788,6 +1821,10 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 		{
 			CaptionScale = Accessibility->GetCaptionDurationScale();
 		}
+	}
+	if (bCoverAnswered)
+	{
+		ReplySeconds += AIGHorrorHUD::EstimateDialogueSeconds(CoverReply, 3.0f);
 	}
 	const float SpokenSeconds = (AIGHorrorHUD::EstimateDialogueSeconds(MokLine, 3.0f)
 		+ ReplySeconds
@@ -2199,7 +2236,21 @@ void AIGMissingFloorNightFourDirector::ActivateControl(
 	}
 
 	const int32 OrderIndex = Narrative->GetNightFourControlOrder().Num();
-	if (bControlLockoutActive || Narrative->HasNightFourControl(ControlId))
+	if (bControlLockoutActive)
+	{
+		// 옥상에서 틀렸으면 1층 고장등이 안 보인다. 손에 걸리는 것으로 안다.
+		const double Now = GetWorld()->GetTimeSeconds();
+		if (Now - LockoutNoticeSeconds > 3.0)
+		{
+			LockoutNoticeSeconds = Now;
+			AIGHorrorHUD::PushThought(
+				this,
+				NSLOCTEXT("IGMissingFloor", "P5LockoutThought", "꽉 물려서 안 돌아가. 배관이 조용해지면 다시 해 보자."),
+				3.0f);
+		}
+		return;
+	}
+	if (Narrative->HasNightFourControl(ControlId))
 	{
 		return;
 	}
@@ -2321,16 +2372,8 @@ void AIGMissingFloorNightFourDirector::HandleControlMisorder(
 				"P5PressureAlarm",
 				"펌프가 멈췄다. 고장등 꺼질 때까지 기다리자."),
 		3.8f);
-	// 인터록이 선다. 그동안은 어느 손잡이도 안 돈다.
+	// 인터록이 선다. 그동안은 어느 손잡이도 안 돈다. 돌려 보면 막혔다는 것만 알려 준다.
 	bControlLockoutActive = true;
-	for (AIGMissingFloorEvidence* Control :
-		{CleaningDrain.Get(), FloatBypass.Get(), TransferPump.Get()})
-	{
-		if (Control)
-		{
-			Control->SetInteractionEnabled(false);
-		}
-	}
 	RefreshPresentation();
 	GetWorldTimerManager().SetTimer(
 		ControlLockoutTimer,
@@ -2367,6 +2410,14 @@ void AIGMissingFloorNightFourDirector::PlayControlSettleKnock()
 		150.0f,
 		1500.0f,
 		EIGAudioBus::Puzzle);
+	if (Index == 0)
+	{
+		AIGHorrorHUD::PushAudioCaptionAt(
+			this,
+			NSLOCTEXT("IGMissingFloor", "P5SettleCaption", "[배관이 쿵, 쿵 울리다 잦아드는 소리]"),
+			5.0f,
+			ControlSettleLocation);
+	}
 	if (ControlSettleIndex < IGNightFour::ControlSettleKnockCount)
 	{
 		GetWorldTimerManager().SetTimer(
@@ -2631,8 +2682,17 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 	{
 		return;
 	}
+	if (IsExpansionWall())
+	{
+		// 확장판: 벽 전체 표적은 고정되지 않은 자리다. 들썩이거나 겉만 깨진다.
+		HandleWallMiss(
+			Evidence ? Evidence->GetLastInteractionPoint() : IGNightFour::WallBreakLocation,
+			FText::GetEmpty());
+		return;
+	}
 
-	const int32 StrikeCount = Narrative->RecordNightFourWallStrike();
+	// 확장 전 저장에서 이미 망치질을 시작한 판. 예전 다섯 번 순서로 끝낸다.
+	const int32 StrikeCount = FMath::Min(Narrative->RecordNightFourWallStrike(), 5);
 	if (StrikeCount == 1)
 	{
 		// 녹음은 첫 타격부터 돌아야 한다 — 벽이 열린 순간부터 레벨을 그리려면.
@@ -2643,66 +2703,17 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 	const FVector StrikeLocation = Evidence
 		? Evidence->GetActorLocation()
 		: IGNightFour::WallBreakLocation;
-	// §21.3 망치 임팩트. The strike index escalates the §10.3 three-stage
-	// fracture, so the wall audibly goes from bruised to broken through and the
-	// player never needs the counter to know where they are.
-	USoundBase* HitSound = IGAudio::SampleVariantOr(
-		TEXT("Hammer_Hit"), 2, static_cast<uint32>(StrikeCount) * 2654435761u,
-		[this, StrikeCount]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateHammerImpact(this, StrikeCount - 1); });
-	IGAudio::SpawnOneShotAt(
-		this,
-		HitSound,
-		StrikeLocation,
-		1.0f,
-		1.0f,
-		160.0f,
-		1400.0f,
-		EIGAudioBus::Puzzle);
-	// 녹음 두 벌은 망치 머리가 판에 닿는 0.2초만 갖고 있어서 다섯 번이 다
-	// 같다. 몇 번째인지 — 멍, 찢기며 비는 울림, 뚫림 — 는 파쇄 층이 말한다.
-	// 합성으로 내려간 판은 그 단계를 이미 품고 있으니 겹치지 않는다.
-	if (HitSound && !Cast<UIGToneSequenceSoundWave>(HitSound))
-	{
-		constexpr float FractureVolumes[] = {0.62f, 0.72f, 0.82f, 0.92f, 1.0f};
-		IGAudio::SpawnOneShotAt(
-			this,
-			UIGToneSequenceSoundWave::CreateHammerFractureLayer(this, StrikeCount - 1),
-			StrikeLocation,
-			FractureVolumes[FMath::Clamp(StrikeCount - 1, 0, 4)],
-			1.0f,
-			160.0f,
-			1400.0f,
-			EIGAudioBus::Puzzle);
-	}
+	PlayWallStrikeSound(StrikeCount, StrikeLocation, 1.0f);
 	// 반동은 손에 온다. 마지막 한 번이 가장 크다.
-	AIGPlayerCharacter* Striker =
-		Cast<AIGPlayerCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
-	if (Striker)
+	if (AIGPlayerCharacter* Striker =
+		Cast<AIGPlayerCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
 	{
 		Striker->PlayScareKick(StrikeCount >= 5 ? 0.9f : 0.3f + 0.1f * StrikeCount);
 	}
 
 	if (StrikeCount == 3)
 	{
-		Narrative->RegisterTruthSource(
-			EIGMissingFloorTruth::StillCoveringIt,
-			EIGMissingFloorSource::BreakerCutIntervention);
-		Narrative->MarkBeatPlayed(IGNightFour::PowerCutBeat);
-		// 불은 망치가 떨어지고 잠깐 뒤에 나간다. 같은 프레임에 꺼지면 원인이
-		// 내 망치로 읽힌다. 프로브는 3타를 친 프레임에 정전까지 본다.
-		if (IGNightFour::IsImmediateFinaleRun())
-		{
-			CutAnnexPower();
-		}
-		else
-		{
-			GetWorldTimerManager().SetTimer(
-				PowerCutTimer,
-				this,
-				&AIGMissingFloorNightFourDirector::CutAnnexPower,
-				IGNightFour::PowerCutDelaySeconds,
-				false);
-		}
+		BeginPowerCutStage();
 	}
 	else if (StrikeCount < 5)
 	{
@@ -2715,96 +2726,188 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 					? NSLOCTEXT("IGMissingFloor", "NightFourStrikeSecond", "조금만 더.")
 					: NSLOCTEXT("IGMissingFloor", "NightFourStrikeFourth", "손이 저리다. 한 번만 더."),
 			2.2f);
-		if (StrikeCount == 2 && !IGNightFour::IsImmediateFinaleRun())
+		if (StrikeCount == 2)
 		{
-			Neighbor303CallStage = 0;
-			GetWorldTimerManager().SetTimer(
-				Neighbor303CallTimer,
-				this,
-				&AIGMissingFloorNightFourDirector::PlayNeighbor303Call,
-				IGNightFour::Neighbor303DoorDelaySeconds,
-				false);
+			BeginNeighbor303Call();
 		}
 		if (StrikeCount == 4)
 		{
-			// 401호가 듣고 있다. 망치 소리에 그 노인이 아래에서 답한다 — 둘,
-			// 쉬고, 하나. 7월 29일에 한 번 했던 것을 다시. 이 밤에 사람 쪽에서
-			// 오는 유일한 대답이다(303호는 2타 뒤에 묻기만 하고 119를 누른다). 망치와 같은 프레임에 내면 앞의 둘이 건물
-			// 울림에 통째로 묻힌다. 꼬리가 걷힌 뒤에 온다.
-			GetWorldTimerManager().SetTimer(
-				Unit401ReplyTimer,
-				FTimerDelegate::CreateWeakLambda(this, [this]()
-				{
-					const UIGMissingFloorNarrativeSubsystem* ReplyNarrative = GetNarrative();
-					if (!ReplyNarrative || !bHourCurrentlyActive || bFailureEndingActive
-						|| bWallOpeningPending || ReplyNarrative->IsNightFourWallOpened())
-					{
-						return;
-					}
-					// 아래층에서 오는 둔한 쿵이다. 거리 감쇠는 걷고 층 가림만 남긴다.
-					// 물 베드와 같은 PUZZLE이다. 대답 리듬은 퍼즐의 단서라서, WORLD의
-					// 슬라이더와 듣기 더킹을 타면 이 밤에 이 소리만 사라진다.
-					IGAudio::SpawnOneShotAt(
-						this,
-						UIGToneSequenceSoundWave::CreateAnswerKnockPattern(this, 0.72f),
-						IGNightFour::Unit401ReplyLocation,
-						1.0f,
-						1.0f,
-						1100.0f,
-						2400.0f,
-						EIGAudioBus::Puzzle);
-					AIGMissingFloorNightThreeDirector::PushAnswerRhythmCaptions(
-						this,
-						NSLOCTEXT("IGMissingFloor", "Unit401ReplyCaption", "401호에서 두 번 두드리는 소리"),
-						IGNightFour::Unit401ReplyLocation);
-				}),
-				IGNightFour::Unit401ReplyDelaySeconds,
-				false);
-			// 벽이 열리기 직전, 5층 철문 밖에서 누가 부른다. 손이 저려 잠깐 못 친다. 그 사이
-			// 부름이 오고 벽 안에서 둘, 쉬고, 하나가 오면 다시 든다. 대답할 쪽은 벽이다.
-			// 프로브와 밤 캡처는 다섯 번을 곧장 친다.
-			if (!IGNightFour::IsImmediateFinaleRun())
-			{
-				bHammerHeldForCall = true;
-				GetWorldTimerManager().SetTimer(
-					HammerCallTimer,
-					this,
-					&AIGMissingFloorNightFourDirector::BeginHammerCallAtDoor,
-					IGNightFour::HammerCallDelaySeconds,
-					false);
-			}
+			BeginHammerCallStage();
 		}
 	}
 
 	if (StrikeCount >= 5)
 	{
-		// 판은 손전등이 죽어 있는 사이에 내려앉는다. 치는 프레임에 지우면 무너진
-		// 게 아니라 사라진 것이 된다. 그 틈에 한 번 더 치지 못하게 먼저 잠근다.
-		bWallOpeningPending = true;
-		if (Evidence)
-		{
-			Evidence->SetInteractionEnabled(false);
-		}
-		if (UIGFlashlightComponent* Flashlight = Striker ? Striker->GetFlashlight() : nullptr)
-		{
-			Flashlight->TriggerBrownOut(IGNightFour::WallBrownOutSeconds);
-		}
-		// 프로브는 5타를 친 프레임에 공동이 열렸는지 본다.
-		if (FParse::Param(FCommandLine::Get(), TEXT("IGListenerGreyboxProbe")))
-		{
-			OpenWallAfterFinalStrike();
-		}
-		else
-		{
-			GetWorldTimerManager().SetTimer(
-				WallOpenTimer,
-				this,
-				&AIGMissingFloorNightFourDirector::OpenWallAfterFinalStrike,
-				IGNightFour::WallCollapseDelaySeconds,
-				false);
-		}
+		BeginWallOpening(Evidence);
 	}
 	RefreshPresentation();
+}
+
+bool AIGMissingFloorNightFourDirector::IsImmediateWallRun()
+{
+	return IGNightFour::IsImmediateFinaleRun();
+}
+
+void AIGMissingFloorNightFourDirector::PlayWallStrikeSound(
+	const int32 Level,
+	const FVector& Location,
+	const float Volume)
+{
+	// §21.3 망치 임팩트. 단계가 오를수록 §10.3의 세 겹 파쇄가 깊어져, 벽이 멍들었다가
+	// 찢기고 뚫리는 것을 숫자 없이 귀로 안다. 0은 고정되지 않은 데를 친 둔한 소리다.
+	const int32 Index = FMath::Clamp(Level, 0, 5);
+	USoundBase* HitSound = IGAudio::SampleVariantOr(
+		TEXT("Hammer_Hit"), 2, static_cast<uint32>(FMath::Max(Index, 1)) * 2654435761u,
+		[this, Index]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateHammerImpact(this, FMath::Max(Index - 1, 0)); });
+	IGAudio::SpawnOneShotAt(
+		this,
+		HitSound,
+		Location,
+		Volume,
+		Index == 0 ? 0.92f : 1.0f,
+		160.0f,
+		1400.0f,
+		EIGAudioBus::Puzzle);
+	// 녹음 두 벌은 망치 머리가 판에 닿는 0.2초만 갖고 있어서 다섯 번이 다
+	// 같다. 몇 번째인지 — 멍, 찢기며 비는 울림, 뚫림 — 는 파쇄 층이 말한다.
+	// 합성으로 내려간 판은 그 단계를 이미 품고 있으니 겹치지 않는다.
+	if (HitSound && !Cast<UIGToneSequenceSoundWave>(HitSound))
+	{
+		constexpr float FractureVolumes[] = {0.62f, 0.72f, 0.82f, 0.92f, 1.0f};
+		IGAudio::SpawnOneShotAt(
+			this,
+			UIGToneSequenceSoundWave::CreateHammerFractureLayer(this, FMath::Max(Index - 1, 0)),
+			Location,
+			FractureVolumes[FMath::Clamp(Index - 1, 0, 4)] * (Index == 0 ? 0.55f : 1.0f) * Volume,
+			1.0f,
+			160.0f,
+			1400.0f,
+			EIGAudioBus::Puzzle);
+	}
+}
+
+void AIGMissingFloorNightFourDirector::BeginPowerCutStage()
+{
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative)
+	{
+		return;
+	}
+	Narrative->RegisterTruthSource(
+		EIGMissingFloorTruth::StillCoveringIt,
+		EIGMissingFloorSource::BreakerCutIntervention);
+	Narrative->MarkBeatPlayed(IGNightFour::PowerCutBeat);
+	// 불은 망치가 떨어지고 잠깐 뒤에 나간다. 같은 프레임에 꺼지면 원인이
+	// 내 망치로 읽힌다. 프로브는 셋째 단계를 친 프레임에 정전까지 본다.
+	if (IGNightFour::IsImmediateFinaleRun())
+	{
+		CutAnnexPower();
+	}
+	else
+	{
+		GetWorldTimerManager().SetTimer(
+			PowerCutTimer,
+			this,
+			&AIGMissingFloorNightFourDirector::CutAnnexPower,
+			IGNightFour::PowerCutDelaySeconds,
+			false);
+	}
+}
+
+void AIGMissingFloorNightFourDirector::BeginNeighbor303Call()
+{
+	if (IGNightFour::IsImmediateFinaleRun())
+	{
+		return;
+	}
+	Neighbor303CallStage = 0;
+	GetWorldTimerManager().SetTimer(
+		Neighbor303CallTimer,
+		this,
+		&AIGMissingFloorNightFourDirector::PlayNeighbor303Call,
+		IGNightFour::Neighbor303DoorDelaySeconds,
+		false);
+}
+
+void AIGMissingFloorNightFourDirector::BeginHammerCallStage()
+{
+	// 401호가 듣고 있다. 망치 소리에 그 노인이 아래에서 답한다 — 둘,
+	// 쉬고, 하나. 7월 29일에 한 번 했던 것을 다시. 이 밤에 사람 쪽에서
+	// 오는 유일한 대답이다(303호는 둘째 단계 뒤에 묻기만 하고 119를 누른다). 망치와 같은
+	// 프레임에 내면 앞의 둘이 건물 울림에 통째로 묻힌다. 꼬리가 걷힌 뒤에 온다.
+	GetWorldTimerManager().SetTimer(
+		Unit401ReplyTimer,
+		FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			const UIGMissingFloorNarrativeSubsystem* ReplyNarrative = GetNarrative();
+			if (!ReplyNarrative || !bHourCurrentlyActive || bFailureEndingActive
+				|| bWallOpeningPending || ReplyNarrative->IsNightFourWallOpened())
+			{
+				return;
+			}
+			// 아래층에서 오는 둔한 쿵이다. 거리 감쇠는 걷고 층 가림만 남긴다.
+			// 물 베드와 같은 PUZZLE이다. 대답 리듬은 퍼즐의 단서라서, WORLD의
+			// 슬라이더와 듣기 더킹을 타면 이 밤에 이 소리만 사라진다.
+			IGAudio::SpawnOneShotAt(
+				this,
+				UIGToneSequenceSoundWave::CreateAnswerKnockPattern(this, 0.72f),
+				IGNightFour::Unit401ReplyLocation,
+				1.0f,
+				1.0f,
+				1100.0f,
+				2400.0f,
+				EIGAudioBus::Puzzle);
+			AIGMissingFloorNightThreeDirector::PushAnswerRhythmCaptions(
+				this,
+				NSLOCTEXT("IGMissingFloor", "Unit401ReplyCaption", "401호에서 두 번 두드리는 소리"),
+				IGNightFour::Unit401ReplyLocation);
+		}),
+		IGNightFour::Unit401ReplyDelaySeconds,
+		false);
+	// 벽이 열리기 직전, 5층 철문 밖에서 누가 부른다. 손이 저려 잠깐 못 친다. 그 사이
+	// 부름이 오고 벽 안에서 둘, 쉬고, 하나가 오면 다시 든다. 대답할 쪽은 벽이다.
+	// 프로브와 밤 캡처는 곧장 친다.
+	if (!IGNightFour::IsImmediateFinaleRun())
+	{
+		bHammerHeldForCall = true;
+		GetWorldTimerManager().SetTimer(
+			HammerCallTimer,
+			this,
+			&AIGMissingFloorNightFourDirector::BeginHammerCallAtDoor,
+			IGNightFour::HammerCallDelaySeconds,
+			false);
+	}
+}
+
+void AIGMissingFloorNightFourDirector::BeginWallOpening(AIGMissingFloorEvidence* Evidence)
+{
+	// 판은 손전등이 죽어 있는 사이에 내려앉는다. 치는 프레임에 지우면 무너진
+	// 게 아니라 사라진 것이 된다. 그 틈에 한 번 더 치지 못하게 먼저 잠근다.
+	bWallOpeningPending = true;
+	if (Evidence)
+	{
+		Evidence->SetInteractionEnabled(false);
+	}
+	AIGPlayerCharacter* Striker =
+		Cast<AIGPlayerCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (UIGFlashlightComponent* Flashlight = Striker ? Striker->GetFlashlight() : nullptr)
+	{
+		Flashlight->TriggerBrownOut(IGNightFour::WallBrownOutSeconds);
+	}
+	// 프로브는 마지막 단계를 친 프레임에 공동이 열렸는지 본다.
+	if (FParse::Param(FCommandLine::Get(), TEXT("IGListenerGreyboxProbe")))
+	{
+		OpenWallAfterFinalStrike();
+	}
+	else
+	{
+		GetWorldTimerManager().SetTimer(
+			WallOpenTimer,
+			this,
+			&AIGMissingFloorNightFourDirector::OpenWallAfterFinalStrike,
+			IGNightFour::WallCollapseDelaySeconds,
+			false);
+	}
 }
 
 void AIGMissingFloorNightFourDirector::PlayNeighbor303Call()
@@ -2917,6 +3020,17 @@ void AIGMissingFloorNightFourDirector::PlayWallAnswerBetweenStrikes()
 			NSLOCTEXT("IGMissingFloor", "WallAnswerTwoCaption", "벽 안에서 두 번 두드리는 소리"),
 			AIGMissingFloorNightThreeDirector::GetWallAnswerLocation());
 		UE_LOG(LogTemp, Display, TEXT("NIGHT4_WALL_ANSWER between strikes"));
+		// 확장판: 대답이 다 들린 뒤에 틀이 휘며 빠지고 덧댄 것이 밀려난다. 그 소리가
+		// 벽의 대답을 덮지 않게 둘째 노크의 꼬리 뒤로 미룬다.
+		if (IsExpansionWall() && Narrative->GetLeftover().WallStage == 4)
+		{
+			GetWorldTimerManager().SetTimer(
+				WallPushOutTimer,
+				this,
+				&AIGMissingFloorNightFourDirector::BeginWallPushOut,
+				2.8f,
+				false);
+		}
 	}
 	RefreshPresentation();
 }
@@ -3050,6 +3164,11 @@ void AIGMissingFloorNightFourDirector::OpenWallAfterFinalStrike()
 		WallBreakTarget->SetInteractionEnabled(false);
 		WallBreakTarget->SetActorHiddenInGame(true);
 	}
+	// 판이 내려앉는 사이 덧댄 것은 구석에서 사라진다. 도하를 찾은 뒤로는 돌아오지 않는다.
+	if (AIGMissingFloorLeftoverDirector* LeftoverDirector = GetLeftover())
+	{
+		LeftoverDirector->HideAnnexLining();
+	}
 	BeginCavityReveal();
 	GetWorldTimerManager().SetTimer(
 		WallDustTimer,
@@ -3109,6 +3228,14 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 
 	const FReplyEntry Documents[] =
 	{
+		{
+			// 0.10.0. 5층 남쪽 점검구에 떼어 간 덮개를 대 봤다. 이 회차에 손에 쥔 가장 단단한 물증이다.
+			EIGMissingFloorWitness::InspectionCoverMatched,
+			NSLOCTEXT(
+				"IGMissingFloor",
+				"ConfrontationReplyCover",
+				"이 판, 위에서 떼어 왔죠?"),
+		},
 		{
 			EIGMissingFloorWitness::BoothSoundproofing,
 			NSLOCTEXT(
@@ -3942,6 +4069,8 @@ void AIGMissingFloorNightFourDirector::ResetAfterFailureEnding()
 	{
 		Narrative->ResetNightFourForRetry();
 	}
+	WallMissStage = INDEX_NONE;
+	WallMissCount = 0;
 	// 시간이 04:30으로 돌아가면 그 사이의 테이프도 없던 것이다. 다시 치는 첫
 	// 망치가 새로 켠다.
 	if (UIGRecordingSubsystem* Recording = GetWorld()
@@ -3955,6 +4084,12 @@ void AIGMissingFloorNightFourDirector::ResetAfterFailureEnding()
 	{
 		SceneActor->ResetMissingFloorCavity();
 		SceneActor->SetMissingFloorAnnexPower(true);
+	}
+	if (AIGMissingFloorLeftoverDirector* LeftoverDirector = Narrative && IsExpansionWall() ? GetLeftover() : nullptr)
+	{
+		LeftoverDirector->PrepareAnnexLining(
+			Narrative->GetLeftover().WallStage,
+			Narrative->GetLeftover().bFramePlaced);
 	}
 	if (WaterMaskBed)
 	{
@@ -4052,7 +4187,7 @@ void AIGMissingFloorNightFourDirector::RefreshPresentation()
 			EIGMissingFloorTruth::StillCoveringIt,
 			EIGMissingFloorSource::EvictionWarning));
 
-	auto RefreshControl = [bNightFour, Narrative, bLockout = bControlLockoutActive](
+	auto RefreshControl = [bNightFour, Narrative](
 		AIGMissingFloorEvidence* Control,
 		const FName ControlId)
 	{
@@ -4062,7 +4197,8 @@ void AIGMissingFloorNightFourDirector::RefreshPresentation()
 		}
 		const bool bActivated = Narrative->HasNightFourControl(ControlId);
 		Control->SetActorHiddenInGame(false);
-		Control->SetInteractionEnabled(bNightFour && !bActivated && !bLockout);
+		// 인터록이 서도 손잡이는 잡힌다. 돌려 보면 막혔다고 알려 준다(ActivateControl).
+		Control->SetInteractionEnabled(bNightFour && !bActivated);
 	};
 	RefreshControl(CleaningDrain, IGNightFour::CleaningDrainId);
 	RefreshControl(FloatBypass, IGNightFour::FloatBypassId);
@@ -4084,9 +4220,9 @@ void AIGMissingFloorNightFourDirector::RefreshPresentation()
 	}
 
 
-	// 3타의 정전은 CutAnnexPower가 낸다. 그 전에 여기서 끄면 망치가 떨어진
+	// 셋째 단계의 정전은 CutAnnexPower가 낸다. 그 전에 여기서 끄면 망치가 떨어진
 	// 프레임에 불이 나간다.
-	if (Narrative->GetNightFourWallStrikeCount() >= 3
+	if (Narrative->GetNightFourWallProgress() >= 3
 		&& !GetWorldTimerManager().IsTimerActive(PowerCutTimer))
 	{
 		if (AIGPrologueWorldScene* SceneActor = Scene.Get())
@@ -4110,6 +4246,7 @@ void AIGMissingFloorNightFourDirector::RefreshPresentation()
 		&& !bHammerHeldForCall;
 	WallBreakTarget->SetActorHiddenInGame(!bCanBreak);
 	WallBreakTarget->SetInteractionEnabled(bCanBreak);
+	RefreshWallStage();
 
 	const bool bCanChoose = bNightFour
 		&& bWallOpened

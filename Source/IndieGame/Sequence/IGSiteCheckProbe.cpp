@@ -249,6 +249,7 @@ void AIGSiteCheckProbe::Tick(const float DeltaSeconds)
 		if (NightPhase->IsHourActive())
 		{
 			NightPhase->CompleteNightGoal();
+			NightPhase->ConcludeNight();
 		}
 		Next(9);
 		break;

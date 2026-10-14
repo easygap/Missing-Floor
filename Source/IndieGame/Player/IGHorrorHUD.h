@@ -182,6 +182,8 @@ public:
 	bool IsHintRequestAvailable() const;
 	/** 막힌 것 같을 때 힌트 키를 한 번 알려 준다. 힌트를 끈 사람에게는 띄우지 않는다. */
 	void OfferHintTip();
+	/** H를 한 번 더 누르면 할 일을 그대로 떠올린다고 아래 줄에 띄운다(매번). */
+	void ShowHintAnswerTip();
 
 	/** Pushes a short inner-voice line onto the local player's HUD. */
 	static void PushThought(

@@ -31,8 +31,12 @@
 
 namespace IGNightFourHammerProbe
 {
-	/** 5층 동쪽 벽 앞, 망치를 드는 자리와 벽의 판 가운데. 월드 좌표다. */
-	const FVector WallFeet(175.0f, 700.0f, 1200.0f);
+	/**
+	 * 5층 동쪽 벽 앞, 망치를 드는 자리와 벽의 판 가운데. 월드 좌표다. 0.10.0부터 덧댄 것이 벽을
+	 * 따라 이음매로 오고, 옮겨 갈 때 몸판이 벽에서 60 cm 남짓 부푼다. 그래서 벽에서 110 cm 떨어져
+	 * 선다(망치는 220 cm까지 닿는다). 바짝 붙어 있으면 지나가는 몸판에 눌린다.
+	 */
+	const FVector WallFeet(140.0f, 700.0f, 1200.0f);
 	const FVector WallFace(246.0f, 700.0f, 1290.0f);
 	/** 넷째 타 뒤 벽 안의 대답까지(밤4 디렉터의 3.6 + 4.4초). 이보다 일찍 풀리면 부름을 건너뛴 것이다. */
 	constexpr float ExpectedReleaseSeconds = 8.0f;
@@ -130,15 +134,32 @@ bool AIGNightFourHammerProbe::SaidLine(const FText& Line) const
 bool AIGNightFourHammerProbe::Strike()
 {
 	AIGMissingFloorNightFourDirector* Director = NightFour.Get();
-	AIGMissingFloorEvidence* Wall = Director ? Director->GetWallBreakTarget() : nullptr;
-	if (!Wall || !Wall->IsInteractionEnabled())
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetGameInstance()
+		? GetGameInstance()->GetSubsystem<UIGMissingFloorNarrativeSubsystem>()
+		: nullptr;
+	if (!Director || !Narrative)
 	{
 		return false;
 	}
-	Wall->OnExamined.Broadcast(Wall);
-	++Struck;
-	UE_LOG(LogIndieGame, Display, TEXT("NIGHT4HAMMER strike=%d t=%.1f"), Struck, TotalSeconds);
-	return true;
+	// 0.10.0 벽은 단계마다 칠 자리가 따로다. 살펴보기·틀 세우기 같은 손일은 단계를 올리지 않으니
+	// 단계가 오를 때까지 다음 자리로 넘어간다. 덧댄 것이 움직이는 중이면 쓸 자리가 없다.
+	const int32 Before = Narrative->GetNightFourWallProgress();
+	for (int32 Guard = 0; Guard < 3; ++Guard)
+	{
+		AIGMissingFloorEvidence* Next = Director->GetNextWallActionForTesting();
+		if (!Next)
+		{
+			return false;
+		}
+		Next->OnExamined.Broadcast(Next);
+		if (Narrative->GetNightFourWallProgress() > Before)
+		{
+			++Struck;
+			UE_LOG(LogIndieGame, Display, TEXT("NIGHT4HAMMER stage=%d t=%.1f"), Narrative->GetNightFourWallProgress(), TotalSeconds);
+			return true;
+		}
+	}
+	return false;
 }
 
 bool AIGNightFourHammerProbe::IsCapturedSince(const double Seconds) const
@@ -251,34 +272,44 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 	}
 
 	case 1:
-		// 첫째에서 셋째 타. 셋째 뒤 0.7초에 차단기가 내려간다.
+		// 첫째에서 셋째 단계. 덧댄 것이 이음매로 왔다가 점검구로 옮겨 가 몸을 펴고, 틀에 걸린다.
+		// 셋째 뒤 0.7초에 차단기가 내려간다.
 		if (!bActed && PhaseSeconds >= 0.5f)
 		{
 			bActed = true;
 			Check(Wall->IsInteractionEnabled(), TEXT("wall_can_be_struck"));
 		}
-		for (int32 Swing = 0; Swing < 3; ++Swing)
+		if (bActed && Narrative->GetNightFourWallProgress() < 3 && PhaseSeconds - LastActionSeconds >= 0.6f)
 		{
-			const float At = 0.6f + Swing * 1.2f;
-			if (PhaseSeconds >= At && PhaseSeconds - DeltaSeconds < At)
+			if (Strike())
 			{
-				Strike();
+				LastActionSeconds = PhaseSeconds;
 			}
 		}
-		if (PhaseSeconds >= 4.4f)
+		if (ThirdStageSeconds < 0.0f && Narrative->GetNightFourWallProgress() >= 3)
+		{
+			ThirdStageSeconds = PhaseSeconds;
+		}
+		if (ThirdStageSeconds >= 0.0f && PhaseSeconds >= ThirdStageSeconds + 1.6f)
 		{
 			Check(Struck == 3 && !Building->IsMissingFloorAnnexPowered(), TEXT("third_strike_cuts_the_power"));
 			Check(Building->AreCommonInspectionLightsOff(), TEXT("corridor_lobby_and_sensor_lights_die"));
 			Next(2);
 		}
+		else if (PhaseSeconds >= 60.0f)
+		{
+			Check(false, TEXT("third_strike_cuts_the_power"));
+			Finish();
+		}
 		break;
 
 	case 2:
-		// 넷째 타. 손이 저려 잠깐 못 치고, 그 사이 철문 밖에서 부른다. 벽 안의 대답 뒤 다시 든다.
+		// 넷째 단계. 밀린 틀을 다시 세우고 안쪽 판 나사를 친다. 손이 저려 잠깐 못 치고, 그 사이
+		// 철문 밖에서 부른다. 벽 안의 대답 뒤 다시 든다.
 		if (!bActed && PhaseSeconds >= 0.3f)
 		{
 			bActed = true;
-			Check(Strike(), TEXT("fourth_strike"));
+			Check(Strike() && Narrative->GetNightFourWallProgress() == 4, TEXT("fourth_strike"));
 		}
 		if (bActed && PhaseSeconds >= 1.0f && PhaseSeconds < 7.0f)
 		{
@@ -381,11 +412,21 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 		break;
 
 	case 5:
-		// 다섯째 타. 벽이 열리면 어둠도 손님도 그친다.
-		if (!bActed && PhaseSeconds >= 0.3f)
+		// 다섯째 단계. 덧댄 것과 틀이 밀려난 뒤 남은 철물을 친다. 벽이 열리면 어둠도 손님도 그친다.
+		if (!bActed && PhaseSeconds >= 0.3f && Director->GetNextWallActionForTesting())
 		{
 			bActed = true;
+			PhaseSeconds = 0.3f;
 			Check(Strike(), TEXT("fifth_strike"));
+		}
+		if (!bActed && PhaseSeconds >= 30.0f)
+		{
+			Check(false, TEXT("fifth_strike"));
+			Finish();
+		}
+		if (!bActed)
+		{
+			break;
 		}
 		if (PhaseSeconds >= 2.0f)
 		{
