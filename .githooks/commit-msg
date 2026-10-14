@@ -1,33 +1,48 @@
 #!/bin/sh
-# 커밋 작성자와 메시지에 이 저장소 소유자 말고 다른 이름이 붙는 것을 막는다.
+# 커밋 작성자·커미터와 메시지에 이 저장소 소유자 말고 다른 이름이 붙는 것을 막는다.
 #
 # 왜 필요한가: AI 코딩 도구는 컨테이너 전역 git 설정과 자동 트레일러로
 # 자기 이름을 붙인다. Co-Authored-By 는 GitHub 이 contributor 를 세는 기준이라
 # 한 줄만 새어 나가도 저장소 기여자 목록에 이름이 올라간다. 커밋을 만드는
-# 쪽이 무엇이든 여기서 걸린다.
+# 쪽이 무엇이든 여기서 걸린다. 본문에 제작 도구 이름이나 생성 과정을 적는
+# 것도 같이 막는다. 그런 기록은 공개 저장소가 아니라 로컬 작업 자료에 둔다.
 
 message_file="$1"
+hook_dir=$(dirname "$0")
 
-if grep -qiE '^[[:space:]]*Co-Authored-By[[:space:]]*:' "$message_file"; then
+# 주석 줄과 `git commit -v`의 가위 줄 아래(차이 내용)는 메시지가 아니다.
+body=$(sed -e '/^# -\{24\} >8 -\{24\}$/,$d' -e '/^#/d' "$message_file")
+
+if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*Co-Authored-By[[:space:]]*:'; then
 	echo >&2 "커밋 거부: Co-Authored-By 트레일러를 지워 주세요."
 	exit 1
 fi
 
-if grep -qiE '^[[:space:]]*(Codex-Session|Claude-Session|Generated-By|AI-Assisted)[[:space:]]*:|^[[:space:]]*[A-Za-z0-9-]+[[:space:]]*:.*(claude|anthropic|copilot|cursor|codex|openai)' "$message_file"; then
+if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*(Codex-Session|Claude-Session|Generated-By|AI-Assisted)[[:space:]]*:|^[[:space:]]*[A-Za-z0-9-]+[[:space:]]*:.*(claude|anthropic|copilot|cursor|codex|openai)'; then
 	echo >&2 "커밋 거부: AI 도구 트레일러가 들어 있다."
 	echo >&2 "  해당 줄을 지우고 다시 커밋해라."
 	exit 1
 fi
 
-author_name=$(git var GIT_AUTHOR_IDENT | sed 's/ <.*//')
-author_email=$(git var GIT_AUTHOR_IDENT | sed 's/.*<//; s/>.*//')
-
-if [ "$author_name" != 'easygap' ] ||
-   [ "$author_email" != '103491329+easygap@users.noreply.github.com' ]; then
-	echo >&2 "커밋 거부: 작성자는 easygap 계정이어야 합니다."
-	echo >&2 "  git config user.name easygap"
-	echo >&2 "  git config user.email 103491329+easygap@users.noreply.github.com"
+if printf '%s\n' "$body" | sh "$hook_dir/tool-mentions" >/dev/null; then
+	echo >&2 "커밋 거부: 메시지에 제작 도구 이름이나 자동 작성 표기가 들어 있다."
+	printf '%s\n' "$body" | sh "$hook_dir/tool-mentions" | sed 's/^/  /' >&2
+	echo >&2 "  무엇을 바꿨는지만 적고 도구와 생성 과정은 빼라."
 	exit 1
 fi
+
+for who in AUTHOR COMMITTER; do
+	ident=$(git var "GIT_${who}_IDENT")
+	name=$(printf '%s' "$ident" | sed 's/ <.*//')
+	email=$(printf '%s' "$ident" | sed 's/.*<//; s/>.*//')
+	if [ "$name" != 'easygap' ] ||
+	   [ "$email" != '103491329+easygap@users.noreply.github.com' ]; then
+		echo >&2 "커밋 거부: 작성자와 커미터는 easygap 계정이어야 합니다($who: $name <$email>)."
+		echo >&2 "  git config user.name easygap"
+		echo >&2 "  git config user.email 103491329+easygap@users.noreply.github.com"
+		echo >&2 "  GIT_AUTHOR_* · GIT_COMMITTER_* 환경 변수가 덮고 있지 않은지도 확인해 주세요."
+		exit 1
+	fi
+done
 
 exit 0

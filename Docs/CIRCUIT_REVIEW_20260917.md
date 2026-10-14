@@ -21,9 +21,9 @@
 [LS EBS32Fb 실물 제품 사진](https://gs181215.cafe24.com/product/ls%EC%9D%BC%EB%A0%89%ED%8A%B8%EB%A6%AD-ebs32fb-30a-30ma-ce%EC%9D%B8%EC%A6%9D-%EB%B6%84%EC%A0%84%EB%B0%98%EC%9A%A9%EB%88%84%EC%A0%84%EC%B0%A8%EB%8B%A8%EA%B8%B0/27171/)에서 사출 몸체, 전면 덮개, 좁은 토글 홈, 시험 버튼과 손잡이 돌출량을 확인했다. 이 사진을 imagegen 내장 도구의 참고 이미지로 전달해 여러 각도의 시트를 만든 뒤 Blender에서 모델링했다.
 
 - [생성한 모델링 참고 시트](../Content/SourceArt/AI/CircuitPanelReference_20260917.png)
-- [실물 출처와 프롬프트 전문](../Content/SourceArt/AI/CircuitPanelReference_20260917.json)
+- 실물 출처: [에셋 대장의 참고 자료](ASSET_POLICY.md#생성-시안에-참고한-외부-자료)
 - [재현 가능한 Blender 빌더](../Scripts/blender/build_circuit_panel.py)
-- 복도 함체는 [KDM의 매입형 외함 실물](https://www.kdmsteel.com/es/caja-electrica-empotrada/)도 참고했다. [생성한 정면·측면·잠금쇠 참고도](../Content/SourceArt/AI/CorridorCabinetReference_20260917.png)와 [프롬프트·사진 주소](../Content/SourceArt/AI/CorridorCabinetReference_20260917.json)를 따로 남겼다.
+- 복도 함체는 [KDM의 매입형 외함 실물](https://www.kdmsteel.com/es/caja-electrica-empotrada/)도 참고했다. [생성한 정면·측면·잠금쇠 참고도](../Content/SourceArt/AI/CorridorCabinetReference_20260917.png)를 따로 남겼다.
 
 회로명과 정격은 정확한 글자로 별도 제작했다. 첫 반입에서는 작은 글씨가 함체 전체 아틀라스에 묻혀 뭉개졌다. 인쇄면을 별도 1K 아틀라스로 모으고, 글자가 빠진 함체는 2K에서 1K로 낮췄다. 토글은 256px 아틀라스를 다섯 개가 공유한다. 인쇄 UV만 보정해 한글과 회로의 좌우 배치를 맞췄다.
 

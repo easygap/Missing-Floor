@@ -1,0 +1,7 @@
+#!/bin/sh
+# 표준 입력의 글에서 제작 도구 이름·자동 작성 표기가 든 줄을 찾아 출력한다.
+# 찾으면 0, 없으면 1로 끝난다. commit-msg와 pre-push가 같이 쓴다.
+#
+# 엔진 식별자(AIController 등)나 제3자 라이선스 문구까지 막지 않도록 제품·서비스
+# 이름과 자동 서명 꼴만 본다.
+grep -inE 'claude|anthropic|codex|chatgpt|openai|copilot|gpt-image|gpt-[0-9]|trellis|midjourney|stable[ -]?diffusion|dall-?e|image_gen|generated (with|by)|assisted by|co-authored|claude\.ai|chatgpt\.com|🤖'

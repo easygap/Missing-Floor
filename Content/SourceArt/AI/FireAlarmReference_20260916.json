@@ -1,8 +1,0 @@
-{
-  "tool": "built-in image_gen",
-  "date": "2026-09-16",
-  "prompt": "Use case: product-mockup. Asset type: photorealistic multi-view modeling reference for a Korean apartment corridor prop. Input image 1 is an actual GFS manufacturer catalog page; use its product photograph and dimensional drawing as the structural reference, not as page layout. Make a new unbranded surface-mounted Korean manual fire alarm station set, exactly 250mm wide x 650mm tall x 95mm deep. Brushed stainless rectangular sheet metal enclosure, narrow beveled frame, one tall inset flat front. In vertical order: small red translucent indicator dome near top, small circular perforation grille for the internal bell in the middle, circular red manual call point at bottom with cream face, central protected push button, little black phone jack. Two flush screw heads and a small inset metal latch along left edge. This is an alarm, not a hose cabinet: no window or hose reel. Minimal correct Korean text on lower circular plate: 화재 and 누름. No brand or certification marks. Create a coherent reference sheet with straight front, 3/4 view, side depth and close-up of button and steel rim. All four views must show the same object and proportions. Neutral studio illumination, moderate satin sheen, tiny realistic handling marks, intact maintained hardware. No dramatic rust, fantasy geometry, extra knobs, cables, illustration, text annotations or measurements around the product.",
-  "reference_url": "https://www.gfs.co.kr/lib/download.asp?AttachFile=%2Fupload%2Fattachbase%2FCompanyBrochure%28KOR%29_2012.07.11.pdf",
-  "page": 23,
-  "usage": "금성방재공업 CP-201GS 실물 사진과 250×650×95mm 치수 도면을 대조한 무상표 발신기 세트 모델링 참조."
-}

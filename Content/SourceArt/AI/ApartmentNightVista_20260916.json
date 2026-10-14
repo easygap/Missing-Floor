@@ -1,7 +1,0 @@
-{
-  "tool": "built-in image_gen",
-  "date": "2026-09-16",
-  "prompt": "Use case: photorealistic-natural. Asset type: distant night exterior plate behind a real 3D apartment window in a Korean horror game. Input photo is a real Seoul residential alley, reference ONLY for Korean red-brown brickwork, dense low-rise homes, ordinary utility cables, window proportions and modest warm street lighting. Create a new natural photograph looking horizontally outward from the fourth floor of a small Korean villa at 4 a.m. Across a gap roughly 10 to 15 metres wide, see the upper floors and rooftops of three ordinary late-1990s red-brown brick villas, ivory PVC sliding windows, one muted warm lit room, simple exterior drainpipes and one distant rooftop water tank. Dark desaturated blue-gray night sky in top quarter. Mostly unlit windows, subtle streetlamp spill from below, calm lived-in neighborhood, documentary realism. Camera level, rectilinear normal lens, no fisheye, no dramatic converging verticals. Absolutely no foreground window frame, glass glare, room interior, letters, watermark, people, monsters, neon signs or cinematic fog. Landscape 3:2. Preserve plausible repeatable building dimensions and straight aligned floors; do not copy the source photograph composition. This plate is used only for distant inaccessible scenery; foreground frame and glass are separate 3D assets.",
-  "reference_url": "https://mediahub.seoul.go.kr/archives/2003713",
-  "usage": "403호 창 밖의 접근 불가능한 원경. 시선 방향에 따라 가상 원경 평면에 투영하며 창틀·가스켓은 3D 메시로 둔다."
-}

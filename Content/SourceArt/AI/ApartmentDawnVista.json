@@ -1,7 +1,0 @@
-{
-  "tool": "built-in image_gen",
-  "date": "2026-09-29",
-  "reference": "ApartmentNightVista_20260916.png",
-  "prompt": "Use case: lighting-weather. Asset type: game environment window-view texture, photographic realism. Edit this reference image into the exact SAME Korean residential neighborhood at early summer sunrise, about 05:30 at the end of July in Seoul. Keep camera position, crop, every building silhouette, brick wall, window, rooftop tank, antenna, electrical wire and vegetation in precisely the same positions. The only change is natural time-of-day lighting: pale soft gray-blue dawn sky, a slight warm glow from off-screen to the right, clearly readable weathered brick and concrete, subdued muted colors. Most interior lights are now off, no orange pool from street lamps. Retain subtle atmospheric haze in the distant hills. No dramatic sunset, no cinematic teal-orange grade, no stylization, no people, no new objects, no text, no logos. Match original 3:2 aspect ratio. This will be blended with the nighttime original inside a game material, so geometric alignment is essential.",
-  "usage": "밤이 끝난 뒤 403호와 복도 창문에 보이는 아침 동네. 기존 밤 사진과 같은 시선 좌표를 사용한다."
-}

@@ -75,8 +75,14 @@ Content/SourceArt/Atlas/*.png
 *.blend1
 *.blend2
 
-# gpt-image 스킬 작업 폴더. 채택한 원본은 Content/SourceArt/AI/로 옮기고 프롬프트는 옆 JSON에 남긴다
+# 이미지 생성 작업 폴더. 채택한 원본 이미지는 Content/SourceArt/AI/로 옮긴다.
 generated-images/
+
+# 생성 프롬프트와 도구 기록은 로컬 작업 자료다. 공개 저장소와 배포본에 넣지 않는다.
+# 서비스·날짜·원본·라이선스와 참고한 외부 자료 주소는 Docs/ASSET_POLICY.md에 남긴다.
+Content/SourceArt/AI/*.json
+Docs/IMAGEGEN_PROMPTS_*.md
+Docs/IMAGEGEN_GUIDE.md
 
 # ambientCG 원본 zip은 Get-PhotoTextures.ps1이 받는 캐시다.
 Content/SourceArt/PhotoZips/

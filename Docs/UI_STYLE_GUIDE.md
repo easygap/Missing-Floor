@@ -160,7 +160,7 @@ Assassin's Creed Shadows와 비교해 Canvas HUD에 적용했다. 나중에 UMG�
 - 파생 PNG: `Content/SourceArt/T_TitleBackground_D.png` (1920×1080)
 - 런타임: `Content/UI/Textures/T_TitleBackground_D.uasset`
 - Shipping 첫 실행 캡처: `Docs/Media/title-menu-first-run-1080.png`
-- 생성·해시·프롬프트: `Docs/IMAGEGEN_PROMPTS_2026-08-12.md`
+- 생성·해시: `Docs/ASSET_POLICY.md`
 
 Xbox Accessibility Guidelines 101·102·112·113·115·117의 글자, 대비,
 메뉴 이동 순서, 선택 표시, 위험한 동작의 확인, 움직임 제어 기준을 참고했다.

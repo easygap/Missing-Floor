@@ -36,7 +36,6 @@
 | --- | --- |
 | [BoothStationeryStudy_20260917.png](../Content/SourceArt/AI/BoothStationeryStudy_20260917.png) | 장부·접수철·연필의 여러 방향 참고도 |
 | [ComplaintRubbing_20260917.png](../Content/SourceArt/AI/ComplaintRubbing_20260917.png) | 종이 위 흑연 질감 |
-| [BoothPrompts_20260917.json](../Content/SourceArt/AI/BoothPrompts_20260917.json) | 사용한 프롬프트와 실물 출처 |
 
 한글은 생성 이미지에 맡기지 않았다. 표지와 접수 양식은 별도 인쇄 마스크로 만들었고, 눌린 글씨는 [나눔손글씨 펜](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/METADATA.pb)으로 그렸다. 글꼴 원본과 OFL은 `Scripts/fonts/NanumPenScript/`에 있다. 물체를 통째로 뒤집지 않고 인쇄 UV와 종이 표면 방향을 따로 맞췄다.
 

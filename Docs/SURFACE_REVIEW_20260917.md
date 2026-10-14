@@ -13,7 +13,7 @@
 | ![두꺼운 테두리와 각진 반사띠](Media/readme/cloth-before-vest-installed.webp) | ![얇은 테두리와 원단 주름](Media/readme/cloth-after-vest-installed.webp) |
 | ![수정 전 비스듬한 시점](Media/readme/cloth-before-vest-angle.webp) | ![수정 후 비스듬한 시점](Media/readme/cloth-after-vest-angle.webp) |
 
-[생성 원본](../Content/SourceArt/AI/WorkVestKnit_20260917.png)과 [최종 프롬프트·입력 사진·반영 값](../Content/SourceArt/AI/WorkVestFinish_20260917.json)을 보관했다. 내장 image_gen으로 생성했다. 게임 에셋은 삼각형 2,980개, 재질 하나, 2K 색·노멀·ORM 텍스처와 4단계 LOD를 사용한다. 실시간 천 계산은 없다.
+[생성 원본](../Content/SourceArt/AI/WorkVestKnit_20260917.png)을 보관했다. 내장 image_gen으로 생성했다. 게임 에셋은 삼각형 2,980개, 재질 하나, 2K 색·노멀·ORM 텍스처와 4단계 LOD를 사용한다. 실시간 천 계산은 없다.
 
 ## 붙잡히는 순간의 표면
 

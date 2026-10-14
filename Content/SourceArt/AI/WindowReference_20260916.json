@@ -1,7 +1,0 @@
-{
-  "tool": "built-in image_gen",
-  "date": "2026-09-16",
-  "prompt": "Use case: product-mockup. Asset type: consistent Blender modeling reference for an ordinary Korean villa PVC sliding window. Input photo is a real crescent latch: use its curved satin aluminum latch proportions, 70 mm mounting base and 95 mm total lever length, with two screw holes. Create a realistic 130 cm wide, 100 cm tall white PVC two-leaf sliding window, viewed FROM INSIDE the room. Overall frame depth 10 cm. Two offset sliding tracks; straight even-width 4 cm sash rails; narrow black rubber glass gaskets; crescent latch mounted ON THE CENTRAL MEETING STILE, never in the middle of a glass pane. Latch joins the two leaves physically. Satin off-white profiles, slightly old but regularly cleaned, no stains or theatrical damage. Glass clear with subtle neutral reflections, dark gray background outside. One reference sheet with a large front view, three-quarter view from inside showing frame depth, and a magnified center-latch detail. All views of the SAME window with identical geometry. Product photography with soft neutral light, crisp junctions, plausible extrusion profiles. No text, logos, watermarks, labels, curtains, scenery, humans or dimensional annotation.",
-  "reference_url": "https://www.coupang.com/vp/products/6753753342",
-  "usage": "실물 사진에서 만든 정면·측면·확대 참조. 3D 형태를 대조하며 제작하고 게임 화면에서 확인한다."
-}

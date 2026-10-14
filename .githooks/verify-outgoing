@@ -1,0 +1,53 @@
+#!/bin/sh
+# pre-push가 부른다. 원격에 처음 올라가는 커밋과 태그를 하나씩 본다.
+#   - 작성자와 커미터가 easygap 계정인가
+#   - 커밋 메시지에 제작 도구 이름이나 자동 작성 표기가 없는가
+#   - 주석 태그의 tagger도 easygap인가
+# 표준 입력은 pre-push가 받은 줄 그대로다: <로컬 참조> <로컬 SHA> <원격 참조> <원격 SHA>
+
+hook_dir=$(dirname "$0")
+owner_name='easygap'
+owner_email='103491329+easygap@users.noreply.github.com'
+zero=0000000000000000000000000000000000000000
+remote="$1"
+failed=0
+
+check_ident() {
+	# $1: 설명, $2: "이름 <메일>"
+	name=$(printf '%s' "$2" | sed 's/ <.*//')
+	email=$(printf '%s' "$2" | sed 's/.*<//; s/>.*//')
+	if [ "$name" != "$owner_name" ] || [ "$email" != "$owner_email" ]; then
+		echo >&2 "푸시 거부: $1 ($name <$email>)"
+		failed=1
+	fi
+}
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+	[ -z "$local_sha" ] && continue
+	[ "$local_sha" = "$zero" ] && continue
+	if [ "$(git cat-file -t "$local_sha" 2>/dev/null)" = tag ]; then
+		tagger=$(git cat-file -p "$local_sha" | sed -n 's/^tagger \(.*>\).*/\1/p')
+		check_ident "태그 $remote_ref 의 tagger가 easygap이 아니다" "$tagger"
+		if git cat-file -p "$local_sha" | sed '1,/^$/d' | sh "$hook_dir/tool-mentions" >/dev/null; then
+			echo >&2 "푸시 거부: 태그 $remote_ref 메시지에 제작 도구 이름이 있다."
+			failed=1
+		fi
+		local_sha=$(git rev-parse "$local_sha^{commit}")
+	fi
+	if [ "$remote_sha" = "$zero" ]; then
+		range="$local_sha --not --remotes=$remote"
+	else
+		range="$remote_sha..$local_sha"
+	fi
+	for commit in $(git rev-list $range); do
+		check_ident "커밋 $commit 작성자" "$(git log -1 --format='%an <%ae>' "$commit")"
+		check_ident "커밋 $commit 커미터" "$(git log -1 --format='%cn <%ce>' "$commit")"
+		if git log -1 --format='%B' "$commit" | sh "$hook_dir/tool-mentions" >/dev/null; then
+			echo >&2 "푸시 거부: 커밋 $commit 메시지에 제작 도구 이름이나 자동 작성 표기가 있다."
+			git log -1 --format='%B' "$commit" | sh "$hook_dir/tool-mentions" | sed 's/^/  /' >&2
+			failed=1
+		fi
+	done
+done
+
+exit $failed

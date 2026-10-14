@@ -12,7 +12,7 @@
 |---|---|
 | ![상자를 쌓은 침구와 검게 끊긴 벽 얼룩](Media/readme/bedroom-before-bed.webp) | ![베개와 늘어진 이불, 벽지가 이어지는 벽면](Media/readme/bedroom-after-bed.webp) |
 
-위 사진은 같은 위치에서 찍은 게임 화면이다. [생성 참고도](../Content/SourceArt/AI/BeddingStudy_20260917.png), [원단](../Content/SourceArt/AI/BeddingCotton_20260917.png), [프롬프트와 입력 사진](../Content/SourceArt/AI/Bedding_20260917.json)을 따로 보관했다. 생성 이미지를 완성 화면으로 제시하지 않았다.
+위 사진은 같은 위치에서 찍은 게임 화면이다. [생성 참고도](../Content/SourceArt/AI/BeddingStudy_20260917.png), [원단](../Content/SourceArt/AI/BeddingCotton_20260917.png)을 따로 보관했다. 생성 이미지를 완성 화면으로 제시하지 않았다.
 
 매트리스는 94×194×18cm, 베개는 70×45cm다. 이불의 옆면은 천 계산을 60프레임 돌려 늘어뜨렸고, 벽 쪽 가장자리는 3cm 틈 안으로 접었다. 첫 반입 때 베개가 납작해 보여 속이 찬 형태로 다시 고쳤다. [베개 근접 화면](Media/bedroom-after-pillow.png)과 [이불 끝 근접 화면](Media/bedroom-after-hem.png)에서 모서리와 두께를 확인했다.
 

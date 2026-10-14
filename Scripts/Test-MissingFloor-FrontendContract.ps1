@@ -53,10 +53,6 @@ $surfaceTextureScript = Get-Content -Raw -Encoding UTF8 -LiteralPath (
 	Join-Path $projectRoot 'Scripts/generate_surface_textures.py')
 $assetPolicy = Get-Content -Raw -Encoding UTF8 -LiteralPath (
 	Join-Path $projectRoot 'Docs/ASSET_POLICY.md')
-$iconPrompt = Get-Content -Raw -Encoding UTF8 -LiteralPath (
-	Join-Path $projectRoot 'Docs/IMAGEGEN_PROMPTS_2026-09-30.md')
-$titlePrompt = Get-Content -Raw -Encoding UTF8 -LiteralPath (
-	Join-Path $projectRoot 'Docs/IMAGEGEN_PROMPTS_2026-08-12.md')
 $iconPngPath = Join-Path $projectRoot 'Build/Windows/ApplicationIcon.png'
 $iconIcoPath = Join-Path $projectRoot 'Build/Windows/Application.ico'
 $iconPngBytes = [IO.File]::ReadAllBytes($iconPngPath)
@@ -355,6 +351,10 @@ Assert-ContainsAll $moduleRules @(
 	'GowunBatang-Bold.ttf',
 	'OFL-Pretendard.txt',
 	'OFL-GowunBatang.txt',
+	'NotoSansJP-Regular.otf',
+	'NotoSansSC-Regular.otf',
+	'NotoSansTC-Regular.otf',
+	'OFL-NotoSansCJK.txt',
 	'$(TargetOutputDir)/UI/Fonts/',
 	'StagedFileType.NonUFS'
 ) 'Shipping 한글 폰트·라이선스 스테이징'
@@ -386,7 +386,7 @@ Assert-True (-not $controllerSource.Contains('ToggleCursorMode')) `
 Assert-ContainsAll $gameConfig @(
 	'ProjectName=Missing Floor',
 	'ProjectDisplayedTitle=INVTEXT("Missing Floor")',
-	'ProjectVersion=0.9.1',
+	'ProjectVersion=0.10.0',
 	'Description=연락이 끊긴 오빠를 찾아 낡은 빌라로 이사 온 뒤, 새벽마다 천장을 두드리는 소리를 따라가는 1인칭 공포 게임',
 	'CompanyName=easygap',
 	'Homepage=https://github.com/easygap/Missing-Floor',
@@ -408,7 +408,7 @@ Assert-True (-not $gameConfig.Contains('BuildConfiguration=PPBC_Development')) `
 Assert-True (-not $gameConfig.Contains('ForDistribution=False')) `
 	'배포 플래그가 비활성화되어 있다'
 Assert-ContainsAll $gameTarget @(
-	'BuildVersion = "0.9.1";',
+	'BuildVersion = "0.10.0";',
 	'WindowsPlatform.bSetResourceVersions = true;'
 ) 'Win64 공개 버전 리소스 계약'
 $configuredVersion = [regex]::Match(
@@ -468,7 +468,6 @@ Assert-ContainsAll $assetPolicy @(
 	'Content/SourceArt/AI/ApplicationIcon_20260930.png',
 	'Build/Windows/ApplicationIcon.png',
 	'Build/Windows/Application.ico',
-	'Docs/IMAGEGEN_PROMPTS_2026-09-30.md',
 	'Pretendard 1.3.9',
 	'GowunBatang-Bold.ttf',
 	'SIL Open Font License 1.1',
@@ -476,14 +475,11 @@ Assert-ContainsAll $assetPolicy @(
 	'4831357AA6439F9CF93CC3D5CC4664DDF8EB995D59759E1F319504246CD57D39',
 	'/Game/UI/Textures/T_TitleBackground_D'
 ) '배포 아이콘 출처·라이선스 대장'
-Assert-ContainsAll $titlePrompt @(
-	'타이틀 배경 — 무영로 새벽 빌라',
-	'Content/SourceArt/AI/TitleBackgroundMissingFloor_v1.png',
-	'Content/UI/Textures/T_TitleBackground_D.uasset',
-	'4831357AA6439F9CF93CC3D5CC4664DDF8EB995D59759E1F319504246CD57D39',
-	'leave the left third uncluttered and dark enough for pale runtime text',
-	'absolutely no text, numbers, signage, logos, watermark, UI'
-) '타이틀 ImageGen 생성·경계·최종 프롬프트 기록'
+# 타이틀 원본은 대장에 적은 해시와 같아야 한다(프롬프트 문서는 로컬 작업 자료라 보지 않는다).
+$titleSource = Join-Path $projectRoot 'Content/SourceArt/AI/TitleBackgroundMissingFloor_v1.png'
+Assert-True (Test-Path -LiteralPath $titleSource) '타이틀 생성 원본이 없다'
+Assert-True ((Get-FileHash -LiteralPath $titleSource -Algorithm SHA256).Hash -eq '4831357AA6439F9CF93CC3D5CC4664DDF8EB995D59759E1F319504246CD57D39') `
+	'타이틀 생성 원본의 해시가 대장과 다르다'
 Assert-ContainsAll $prepareAiArtScript @(
 	"Source = 'TitleBackgroundMissingFloor_v1'",
 	"Target = 'T_TitleBackground_D.png'",
@@ -515,13 +511,15 @@ foreach ($relativePath in @(
 	Assert-True (Test-Path -LiteralPath (Join-Path $projectRoot $relativePath)) `
 		"타이틀 에셋이 없다: $relativePath"
 }
-Assert-ContainsAll $iconPrompt @(
-	'Windows 배포 아이콘',
-	'application icon for a Korean first-person horror game',
-	'rooftop room made of pale grey sandwich panels',
-	'No text, no numbers, no letters',
-	'16, 24, 32, 48, 64, 128, 256'
-) '배포 아이콘 최종 프롬프트·검수 기록'
+# 배포 아이콘 원본이 있고, 대장에 서비스·처리 과정·검수 기록이 남아 있다.
+Assert-True (Test-Path -LiteralPath (Join-Path $projectRoot 'Content/SourceArt/AI/ApplicationIcon_20260930.png')) `
+	'배포 아이콘 생성 원본이 없다'
+Assert-ContainsAll $assetPolicy @(
+	'Windows 배포 아이콘 생성 기록',
+	'OpenAI 이미지 생성',
+	'prepare_application_icon.py',
+	'16/24/32/48/64/128/256px'
+) '배포 아이콘 출처·처리·검수 기록'
 Assert-True ($iconPngBytes.Length -gt 100000) '등급 PNG가 비었거나 지나치게 작다'
 Assert-True (
 	$iconPngBytes[0] -eq 0x89 -and
@@ -583,7 +581,7 @@ Assert-ContainsAll $executableMetadataSyncScript @(
 ) 'Shipping 루트 런처 VERSIONINFO 동기화'
 Assert-ContainsAll $executableMetadataScript @(
 	"ExpectedProductName = 'Missing Floor'",
-	"ExpectedVersion = '0.9.1'",
+	"ExpectedVersion = '0.10.0'",
 	"ExpectedCompanyName = 'easygap'",
 	'FileDescription',
 	'FileVersion',

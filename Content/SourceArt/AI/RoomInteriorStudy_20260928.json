@@ -1,7 +1,0 @@
-{
-  "tool": "gpt-image 스킬(Codex 내장 image_gen, ChatGPT 구독 인증)",
-  "date": "2026-09-28",
-  "prompt": "Use case: interior-mapping texture for a real-time game window. Photorealistic night photograph of the inside of one small room of an ordinary 1990s Korean villa apartment, taken from exactly outside its window looking straight in. Strict one-point perspective: camera centred and level, the back wall perfectly parallel to the image plane and filling about the central half of the frame, the single vanishing point exactly at the image centre, the floor, ceiling and both side walls converging symmetrically toward it, the room opening filling the frame edge to edge. No window frame, no glass, no curtains or blinds in the foreground, nothing sticking out toward the camera; all furniture stands flat against the back wall or tight against the side walls. A student's study room lit by a single desk lamp: a desk with a closed laptop and stacked books against the back wall, a bookshelf against the right wall, pale grey wallpaper, dark laminate floor, a hoodie hanging on a hook on the left wall. Realistic low-light exposure, slight sensor grain, lived-in and ordinary. No people, no text, no readable labels, no logos, no watermark. Square 1:1.",
-  "sha256": "236BC45D2BCD92967789414C6F6920D89E9DFE5038ABDC538385A954CCF48040",
-  "usage": "골목 이웃 창 뒤의 방 3번. 스탠드를 켠 공부방. 1점 투시 사진을 M_RoomInterior가 방 상자에 원근대로 편다. 뒷벽이 사진 폭의 절반쯤이다."
-}
