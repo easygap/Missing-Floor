@@ -74,7 +74,8 @@ $required = @(
     'Windows/IndieGame/Content/Paks/global.utoc',
     'Windows/IndieGame/Content/Paks/global.ucas'
 )
-foreach ($font in @('Pretendard-Regular.otf', 'Pretendard-SemiBold.otf', 'GowunBatang-Bold.ttf', 'OFL-Pretendard.txt', 'OFL-GowunBatang.txt')) {
+foreach ($font in @('Pretendard-Regular.otf', 'Pretendard-SemiBold.otf', 'GowunBatang-Bold.ttf', 'OFL-Pretendard.txt', 'OFL-GowunBatang.txt',
+    'NotoSansJP-Regular.otf', 'NotoSansSC-Regular.otf', 'NotoSansTC-Regular.otf', 'OFL-NotoSansCJK.txt')) {
     $required += "$binaryRoot/UI/Fonts/$font"
 }
 foreach ($relative in $required) {
