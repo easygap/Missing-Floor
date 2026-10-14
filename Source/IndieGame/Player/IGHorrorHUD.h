@@ -440,6 +440,13 @@ public:
 	 * 즉시 차단 19 is about the sealed hour turning F9 and the journal down, and
 	 * "nothing happened" is also what a broken binding looks like.
 	 */
+	/** 검사용. 밤 제목 카드를 바로 걷는다(화면을 찍는 검사가 카드가 끝나기를 기다리지 않게). */
+	void ClearChapterCardForTesting()
+	{
+		ChapterCardTitle = FText::GetEmpty();
+		ChapterCardEndTime = -1.0;
+	}
+
 	FText GetActiveDialogueLineForTesting() const
 	{
 		return bHasCurrentDialogue ? CurrentDialogue.Line : FText::GetEmpty();

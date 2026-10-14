@@ -19,6 +19,7 @@
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "Player/IGHorrorHUD.h"
 #include "Player/IGPlayerCharacter.h"
 #include "ShaderCompiler.h"
 #include "TimerManager.h"
@@ -242,7 +243,16 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 		Check(Ceiling && Ceiling->IsInteractionEnabled(), TEXT("night_one_ceiling_listen_open"));
 		if (bShots)
 		{
-			// 침대를 본 화면(쉬기 안내와 시계 아래 줄)과 천장 밑 화면을 찍고 나서 귀를 기울인다.
+			// 침대를 본 화면(쉬기 안내와 시계 아래 줄)과 천장 밑 화면을 찍고 나서 귀를 기울인다. 밤 제목
+			// 카드는 바로 걷는다. 카드가 끝나기를 기다리면 그사이 그가 세 번 두드리는 창에 들어서서 천장
+			// 노크가 묻힌다(찍지 않는 실행과 같은 시각에 귀를 기울여야 같은 결과다).
+			if (APlayerController* Controller = GetWorld()->GetFirstPlayerController())
+			{
+				if (AIGHorrorHUD* HUD = Cast<AIGHorrorHUD>(Controller->GetHUD()))
+				{
+					HUD->ClearChapterCardForTesting();
+				}
+			}
 			Stand(IGNightFlowProbe::BedSideFeet, IGNightFlowProbe::BedLookAt);
 			Next(101);
 			return;
@@ -257,8 +267,7 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 		return;
 	}
 	case 101:
-		// 밤 제목 카드(4.2초와 페이드)가 걷힌 뒤에 찍는다.
-		if (PhaseSeconds < 6.0f)
+		if (PhaseSeconds < 0.4f)
 		{
 			return;
 		}
@@ -267,7 +276,7 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 		Next(102);
 		return;
 	case 102:
-		if (PhaseSeconds < 0.5f)
+		if (PhaseSeconds < 0.4f)
 		{
 			return;
 		}
@@ -277,6 +286,12 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 	case 103:
 	{
 		if (PhaseSeconds < 0.3f)
+		{
+			return;
+		}
+		// 제목 카드를 기다리는 사이 그가 세 번 두드리는 중일 수 있다. 그동안은 제 소리에 묻혀 천장 노크를
+		// 듣지 못하니(가려지는 창), 두드리기가 끝난 뒤에 귀를 기울인다.
+		if (Listener.IsValid() && Listener->GetListenerState() == EIGListenerState::Banging && PhaseSeconds < 15.0f)
 		{
 			return;
 		}
