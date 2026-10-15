@@ -14,6 +14,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Build-ArtAssets.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectFile = Join-Path $projectRoot 'IndieGame.uproject'
@@ -1118,3 +1122,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host 'ART_BUILD PASS uasset_audit=1 cook_audit=1'
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

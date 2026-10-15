@@ -7,6 +7,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-MissingFloor-SettingsPreview.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 if ([string]::IsNullOrWhiteSpace($ArchiveDirectory)) {
 	throw '검증할 BuildCookRun Shipping 아카이브의 -ArchiveDirectory가 필요합니다.'
@@ -51,3 +55,9 @@ Write-Host (
 	'MISSING_FLOOR_SETTINGS_PREVIEW PASS ' +
 	"display=$displaySource accessibility=$accessibilitySource") `
 	-ForegroundColor Green
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

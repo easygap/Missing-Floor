@@ -73,7 +73,16 @@ pwsh -NoProfile -File Scripts/Validate-Project.ps1
 
 리눅스에서는 `System.Drawing.Common`을 쓰는 검사 네 개가 못 돈다.
 .NET 6부터 윈도우 전용이고, 그 검사들은 맑은 고딕 글자 폭을 재는 것이라
-리눅스에서는 의미 자체가 없다. 나머지는 전부 돈다.
+리눅스에서는 의미 자체가 없다. 임시 파일 자동 정리 검사도 Windows 파일 잠금을 다루므로
+리눅스에서 건너뛴다. 나머지는 전부 돈다.
+
+## 임시 산출물 자동 정리
+
+빌드·검증 스크립트는 `Scripts/GeneratedArtifactCleanup.ps1`의 실행 잠금을 잡고,
+새 결과 폴더를 등록한 뒤 `finally`에서 정리를 마친다. 새 스크립트에도 같은 연결을 넣는다.
+원본·세이브·최신 배포본은 정리 대상에 넣지 않는다. 보관 기준과 예외는
+[임시 파일 정리](Docs/GENERATED_FILE_CLEANUP.md)를 따른다. 정리 로직을 바꾸면
+`Scripts/Test-GeneratedArtifactCleanup.ps1`을 실행한다.
 
 ## 에셋 파이프라인
 

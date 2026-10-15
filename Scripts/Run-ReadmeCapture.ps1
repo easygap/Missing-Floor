@@ -10,6 +10,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-ReadmeCapture.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $runLog = Join-Path $projectRoot 'Saved/Logs/ReadmeCapture.log'
@@ -75,3 +79,9 @@ finally {
 }
 $label = if ($Culture) { " ($Culture)" } else { '' }
 Write-Host "README_CAPTURE PASS 새 플레이 화면 8장, 1920×1080$label"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

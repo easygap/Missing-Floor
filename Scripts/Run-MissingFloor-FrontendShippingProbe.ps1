@@ -11,6 +11,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-MissingFloor-FrontendShippingProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $archiveRoot = (Resolve-Path -LiteralPath $ArchiveDirectory).Path.TrimEnd(
 	[char[]]@('\', '/'))
@@ -42,6 +46,8 @@ if (Test-Path -LiteralPath $evidenceRoot) {
 else {
 	New-Item -ItemType Directory -Force -Path $evidenceRoot | Out-Null
 }
+
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $evidenceRoot
 
 function ConvertTo-ProcessArgument {
 	param([Parameter(Mandatory = $true)][string]$Value)
@@ -369,3 +375,9 @@ Write-Host (
 	'MISSINGFLOOR_FRONTEND_SHIPPING PASS resolutions=4 input_events=44 ' +
 	"layout_samples=44 dialogue_cases=8 title_cases=4 archive_files=$($archiveManifestBefore.Count) " +
 	"summary=$summaryPath") -ForegroundColor Green
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

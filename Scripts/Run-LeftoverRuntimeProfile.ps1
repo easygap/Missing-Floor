@@ -16,11 +16,16 @@ param(
 # 경로를 실제 시간으로 돌리며 프레임을 기록하고 구간마다 요약한다. 창은 띄우지 않는다(오프스크린).
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-LeftoverRuntimeProfile.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $archiveRoot = (Resolve-Path -LiteralPath $ArchiveDirectory).Path
 if (Test-Path -LiteralPath $EvidenceDirectory) { throw "증거 폴더가 이미 있습니다: $EvidenceDirectory" }
 New-Item -ItemType Directory -Path $EvidenceDirectory -Force | Out-Null
 $evidenceRoot = (Resolve-Path -LiteralPath $EvidenceDirectory).Path
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $evidenceRoot
 
 $manifestArguments = @{ ArchiveDirectory = $archiveRoot; RequireCleanCommit = $RequireCleanCommit }
 if ($ExpectedCommit) { $manifestArguments.ExpectedCommit = $ExpectedCommit }
@@ -71,4 +76,10 @@ for ($run = 1; $run -le $RepeatCount; $run++) {
         --warmup-seconds $WarmupSeconds --target-fps $TargetFps
     if ($LASTEXITCODE -ne 0) { throw "프레임 기록 요약 실패: Run$run" }
     Write-Host "LEFTOVER_RUNTIME_PROFILE Run$run exit=$exitCode receipt=$receiptText"
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

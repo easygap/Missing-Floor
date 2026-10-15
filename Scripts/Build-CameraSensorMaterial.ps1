@@ -3,6 +3,10 @@ param()
 # 렌즈 왜곡 후처리 재질(M_PP_CameraSensor)을 만든다. 게임 모듈이 필요 없는 재질이라
 # Import-BlenderAssets.ps1이 쓰는 콘텐츠 전용 프로젝트(ArtImport)에서 만들고 되가져온다.
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Build-CameraSensorMaterial.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $root = Split-Path -Parent $PSScriptRoot
 $stage = Join-Path $env:LOCALAPPDATA 'IndieGame/ArtImport'
 if (-not (Get-ChildItem -LiteralPath $stage -Filter '*.uproject' -ErrorAction SilentlyContinue)) {
@@ -27,3 +31,9 @@ if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'CAME
 }
 Copy-Item -LiteralPath $stageAsset -Destination $repoAsset -Force
 Select-String -LiteralPath $log -Pattern 'CAMERA_SENSOR_MATERIAL PASS' | ForEach-Object { Write-Host $_.Line }
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

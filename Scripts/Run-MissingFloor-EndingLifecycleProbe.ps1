@@ -8,6 +8,10 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-MissingFloor-EndingLifecycleProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $archiveRoot = (Resolve-Path -LiteralPath $ArchiveDirectory).Path
 & (Join-Path $PSScriptRoot 'Test-WindowsPackageManifest.ps1') -ArchiveDirectory $archiveRoot
@@ -28,6 +32,7 @@ if ((Test-Path -LiteralPath $EvidenceDirectory) -and @(Get-ChildItem -LiteralPat
     throw "엔딩 검사는 새 결과 폴더에서 실행해야 합니다: $EvidenceDirectory"
 }
 New-Item -ItemType Directory -Path $EvidenceDirectory -Force | Out-Null
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $EvidenceDirectory
 $results = [Collections.Generic.List[object]]::new()
 
 function Invoke-EndingProcess([string]$Name, [string]$Mode, [string]$Ending, [string]$UserDirectory, [string[]]$ExtraArguments) {
@@ -141,3 +146,9 @@ if ((Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash -cne $manif
     allowLegacyProfilePathMetadata = $AllowLegacyProfilePathMetadata.IsPresent
 } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $EvidenceDirectory 'summary.json') -Encoding utf8
 Write-Host "ENDING_LIFECYCLE PASS $EvidenceDirectory"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

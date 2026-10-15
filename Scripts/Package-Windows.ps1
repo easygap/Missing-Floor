@@ -3,6 +3,10 @@ param([string]$ArchiveDirectory, [switch]$RequireCleanCommit)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Package-Windows.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $buildCommit = (& git -C $projectRoot rev-parse HEAD)
 if ($LASTEXITCODE -ne 0) { throw '패키징할 커밋을 확인하지 못했습니다.' }
@@ -19,6 +23,8 @@ if ((Test-Path -LiteralPath $ArchiveDirectory) -and
     @(Get-ChildItem -LiteralPath $ArchiveDirectory -Force).Count -gt 0) {
     throw "배포 폴더는 비어 있어야 합니다: $ArchiveDirectory"
 }
+
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $ArchiveDirectory
 
 # 한글 경로의 빌드 복사는 기존 스크립트 한 곳에서 관리한다.
 & (Join-Path $PSScriptRoot 'Build-ArtAssets.ps1') -CodeOnly
@@ -93,3 +99,9 @@ if ($afterCommit -ne $buildCommit -or ($buildStatus -join "`n") -cne ($afterStat
 & (Join-Path $PSScriptRoot 'Test-WindowsPackageManifest.ps1') -ArchiveDirectory $ArchiveDirectory `
     -ExpectedCommit $buildCommit -RequireCleanCommit:$RequireCleanCommit
 Write-Host "WINDOWS_PACKAGE PASS $ArchiveDirectory"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

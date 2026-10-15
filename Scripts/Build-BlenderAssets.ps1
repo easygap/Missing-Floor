@@ -14,6 +14,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Build-BlenderAssets.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $builderRoot = Join-Path $PSScriptRoot 'blender'
@@ -151,3 +155,9 @@ foreach ($builder in $selected) {
 	}
 }
 Write-Host ('BLENDER_BUILD PASS builders={0}' -f $selected.Count)
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

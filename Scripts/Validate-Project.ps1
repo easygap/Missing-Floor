@@ -2,10 +2,17 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Validate-Project.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectFile = Join-Path $projectRoot 'IndieGame.uproject'
 
 $requiredFiles = @(
+    'Scripts/GeneratedArtifactCleanup.ps1',
+    'Scripts/Test-GeneratedArtifactCleanup.ps1',
+    'Docs/GENERATED_FILE_CLEANUP.md',
     'IndieGame.uproject',
     'Config/DefaultEngine.ini',
     'Config/DefaultGame.ini',
@@ -379,8 +386,9 @@ foreach ($launchScript in $launchScripts) {
 	if (-not $launchesUnreal) { continue }
 	if ($launchText.Contains('visible-window: intentional')) { continue }
 	# 커맨드릿(-run=)과 UAT 쿠크는 처음부터 창을 만들지 않는다.
+	# Localize-Game.ps1 같은 파일 이름은 -game 실행 인자로 세지 않는다.
 	$runsOnlyCommandlets = ($launchText -match '(?i)-run=|RunUAT') -and
-		($launchText -notmatch '(?i)-game\b|-ExecutePythonScript')
+		($launchText -notmatch '(?i)-game(?![\w.-])|-ExecutePythonScript')
 	if ($runsOnlyCommandlets) { continue }
 	if ($launchText -notmatch '(?i)-RenderOffscreen') {
 		throw "게임이나 에디터 창이 화면에 뜰 수 있습니다. -RenderOffscreen을 넣거나 의도를 표시하세요: $($launchScript.FullName)"
@@ -1708,6 +1716,7 @@ if ($python) {
 & (Join-Path $PSScriptRoot 'Test-WindowsPackageManifestRegression.ps1')
 # 창을 띄우는 측정이 스위치 없이 시작되지 않는지 본다. 게임은 띄우지 않는다.
 & (Join-Path $PSScriptRoot 'Test-BackgroundLaunch.ps1')
+& (Join-Path $PSScriptRoot 'Test-GeneratedArtifactCleanup.ps1')
 
 if ($python) {
     & $python.Source (Join-Path $PSScriptRoot 'test_windows_telemetry.py')
@@ -1715,3 +1724,9 @@ if ($python) {
 }
 
 Write-Host 'Project structure validation passed (this is not an Unreal build).' -ForegroundColor Green
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

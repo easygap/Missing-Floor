@@ -21,12 +21,17 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-LeftoverProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $tag = $Variant + $(if ($Culture) { "-$Culture" } else { '' }) + $(if ($TextScale -gt 1) { "-x$TextScale" } else { '' }) + $(if ($Clean) { '-clean' } else { '' })
 $logPath = Join-Path $projectRoot "Saved/Logs/Leftover-$tag-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ('Saved/Validation/Leftover-' + $tag + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 $extra = @()
 if ($Culture) { $extra += ('-IGCulture=' + $Culture) }
 if ($TextScale -gt 1) { $extra += ('-IGCaptionScale=' + $TextScale) }
@@ -43,4 +48,10 @@ if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern '
 }
 if ($Shots) {
 	Write-Host ("LEFTOVER_SHOTS " + (Join-Path $probeUser 'Saved/LeftoverReview'))
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

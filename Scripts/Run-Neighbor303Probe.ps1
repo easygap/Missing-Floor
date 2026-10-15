@@ -7,12 +7,17 @@ param([ValidateSet(30, 60)][int]$FrameRate = 60)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-Neighbor303Probe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 foreach ($scenario in @('Neck', 'Stairs')) {
 	$logPath = Join-Path $projectRoot "Saved/Logs/Neighbor303-$scenario-$FrameRate.log"
 	$probeUser = Join-Path $projectRoot ("Saved/Validation/Neighbor303-$scenario-" + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+	Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 	$extra = @()
 	if ($scenario -eq 'Stairs') { $extra += '-IGNeighbor303Stairs' }
 	& $editor $projectPath -game -unattended -nosplash -nullrhi -nosound -NoLoadingScreen -RenderOffscreen `
@@ -23,4 +28,10 @@ foreach ($scenario in @('Neck', 'Stairs')) {
 	if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'NEIGHBOR303_PROBE PASS failures=0')) {
 		throw "303호 계단 검사($scenario)에 실패했습니다: $logPath"
 	}
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

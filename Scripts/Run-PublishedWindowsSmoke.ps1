@@ -6,10 +6,16 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-PublishedWindowsSmoke.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 # Windows PowerShell 5.1에는 ZipFile 형식이 기본으로 올라와 있지 않다.
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $root = [IO.Path]::GetFullPath($WorkDirectory)
 if (Test-Path -LiteralPath $root) { throw '공개 배포본 검사는 새 폴더에서 실행해야 합니다.' }
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $root
+
 $downloadRoot = Join-Path $root 'Download'
 $installRoot = Join-Path $root 'Game'
 $evidenceRoot = Join-Path $root 'Evidence'
@@ -102,3 +108,9 @@ $result = [ordered]@{
 }
 [IO.File]::WriteAllText((Join-Path $evidenceRoot 'summary.json'), ($result | ConvertTo-Json -Depth 5) + "`n", [Text.UTF8Encoding]::new($false))
 Write-Host "PUBLISHED_WINDOWS_SMOKE PASS version=$version terminal_stage=$terminalStage zip_sha256=$zipSha"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

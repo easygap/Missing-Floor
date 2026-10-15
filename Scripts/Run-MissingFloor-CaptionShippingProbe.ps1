@@ -9,6 +9,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-MissingFloor-CaptionShippingProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $archiveRoot = (Resolve-Path -LiteralPath $ArchiveDirectory).Path.TrimEnd('\', '/')
 $evidenceRoot = [IO.Path]::GetFullPath($EvidenceDirectory).TrimEnd('\', '/')
 if ($evidenceRoot -eq $archiveRoot -or
@@ -19,6 +23,7 @@ if ((Test-Path -LiteralPath $evidenceRoot) -and @(Get-ChildItem -LiteralPath $ev
     throw "자막 검사는 새 결과 폴더에서 실행해야 합니다: $evidenceRoot"
 }
 New-Item -ItemType Directory -Path $evidenceRoot -Force | Out-Null
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $evidenceRoot
 & (Join-Path $PSScriptRoot 'Test-WindowsPackageManifest.ps1') -ArchiveDirectory $archiveRoot
 $manifestPath = Join-Path $archiveRoot 'manifest.json'
 $manifestHash = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash
@@ -136,3 +141,9 @@ $summaryPath = Join-Path $evidenceRoot 'summary.json'
 $json = $summary | ConvertTo-Json -Depth 7
 [IO.File]::WriteAllText($summaryPath, $json + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 Write-Host "CAPTION_SHIPPING PASS pause_cases=4 night_five_captions=2 unlock_bypass=1 summary=$summaryPath"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

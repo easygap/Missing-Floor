@@ -6,6 +6,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-AudioPresentationProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $runLog = Join-Path $projectRoot "Saved/Logs/AudioPresentation-$FrameRate.log"
@@ -43,3 +47,9 @@ if (Select-String -LiteralPath $runLog -Pattern "Sound class 'BUS_.*does not exi
 & python (Join-Path $PSScriptRoot 'check_audio_presentation.py') $recording
 if ($LASTEXITCODE -ne 0) { throw "믹서 녹음 파형 검사 실패: $recording" }
 Write-Host "실제 믹서 녹음: $recording"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

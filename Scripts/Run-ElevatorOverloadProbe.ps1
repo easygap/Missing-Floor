@@ -7,12 +7,17 @@ param([switch]$Leave, [ValidateSet(30, 60)][int]$FrameRate = 60)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-ElevatorOverloadProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $variant = if ($Leave) { 'Leave' } else { 'Stay' }
 $logPath = Join-Path $projectRoot "Saved/Logs/ElevatorOverload-$variant-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ('Saved/Validation/ElevatorOverload-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 $extra = @()
 if ($Leave) { $extra += '-IGElevatorOverloadLeave' }
 & $editor $projectPath -game -unattended -nosplash -nullrhi -nosound -NoLoadingScreen -RenderOffscreen `
@@ -21,4 +26,10 @@ if ($Leave) { $extra += '-IGElevatorOverloadLeave' }
 Select-String -LiteralPath $logPath -Pattern 'ELEVATOR_(CHECK|PROBE|OVERLOAD)' | ForEach-Object { Write-Host $_.Line }
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'ELEVATOR_PROBE PASS failures=0')) {
 	throw "만원 검사에 실패했습니다: $logPath"
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

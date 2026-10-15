@@ -7,12 +7,17 @@ param([ValidateSet(30, 60)][int]$FrameRate = 60)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-NightFourHammerProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 foreach ($scenario in @('Bolted', 'Open')) {
 	$logPath = Join-Path $projectRoot "Saved/Logs/NightFourHammer-$scenario-$FrameRate.log"
 	$probeUser = Join-Path $projectRoot ("Saved/Validation/NightFourHammer-$scenario-" + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+	Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 	$extra = @()
 	if ($scenario -eq 'Open') { $extra += '-IGNightFourHammerOpen' }
 	& $editor $projectPath -game -unattended -nosplash -nullrhi -nosound -NoLoadingScreen -RenderOffscreen `
@@ -23,4 +28,10 @@ foreach ($scenario in @('Bolted', 'Open')) {
 	if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'NIGHT4HAMMER_PROBE PASS failures=0')) {
 		throw "밤4 망치질 검사($scenario)에 실패했습니다: $logPath"
 	}
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

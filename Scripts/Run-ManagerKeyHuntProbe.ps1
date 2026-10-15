@@ -15,6 +15,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-ManagerKeyHuntProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
@@ -26,6 +30,7 @@ foreach ($scenario in $Scenarios) {
 	$suffix = if ($Shots) { 'Shots' } else { "$FrameRate" }
 	$logPath = Join-Path $projectRoot "Saved/Logs/ManagerKeyHunt-$scenario-$suffix.log"
 	$probeUser = Join-Path $projectRoot ("Saved/Validation/ManagerKeyHunt-$scenario-" + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+	Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 	$extra = @()
 	if ($scenario -eq 'Open') { $extra += '-IGManagerKeyHuntOpen' }
 	if ($scenario -eq 'Hidden') { $extra += '-IGManagerKeyHuntHidden' }
@@ -52,4 +57,10 @@ foreach ($scenario in $Scenarios) {
 	if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'KEYHUNT_PROBE PASS failures=0')) {
 		throw "관리인 열쇠 찾기 검사($scenario)에 실패했습니다: $logPath"
 	}
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

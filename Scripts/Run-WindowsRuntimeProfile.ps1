@@ -24,6 +24,10 @@ $ErrorActionPreference = 'Stop'
 if ($PresentationMode -eq 'Windowed' -and -not $AllowVisibleWindow) {
     throw 'Windowed 측정은 게임 창을 화면 앞에 띄웁니다. 창이 떠도 괜찮을 때 -AllowVisibleWindow를 함께 주세요.'
 }
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-WindowsRuntimeProfile.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $archiveRoot = (Resolve-Path -LiteralPath $ArchiveDirectory).Path
 $evidenceRoot = [IO.Path]::GetFullPath($EvidenceDirectory)
@@ -61,6 +65,8 @@ if ($PresentationMode -eq 'Windowed') { $measurementScripts += @('Measure-Window
 $measurementHashes = @($measurementScripts | ForEach-Object {
     [ordered]@{ path = "Scripts/$_"; sha256 = (Get-FileHash -LiteralPath (Join-Path $PSScriptRoot $_) -Algorithm SHA256).Hash.ToLowerInvariant() }
 })
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $evidenceRoot
+
 $results = [Collections.Generic.List[object]]::new()
 for ($run = 1; $run -le $RepeatCount; $run++) {
     $runRoot = Join-Path $evidenceRoot "Run$run"
@@ -226,3 +232,9 @@ $report = [ordered]@{ scope = $scope;
     allLocalFrameGatesPassed = @($results | Where-Object { -not $_.frameGatePassed }).Count -eq 0;
     shippingReleaseCertified = $false; runs = @($results.ToArray()) }
 [IO.File]::WriteAllText((Join-Path $evidenceRoot 'summary.json'), ($report | ConvertTo-Json -Depth 10) + "`n", [Text.UTF8Encoding]::new($false))
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

@@ -39,6 +39,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-MissingFloor-CctvFeedProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $projectFile = Join-Path $projectRoot 'IndieGame.uproject'
 if (-not (Test-Path -LiteralPath $projectFile -PathType Leaf)) {
@@ -133,4 +137,10 @@ Write-Host $feed[-1].Line -ForegroundColor $(
 	if ($feed[-1].Line -match 'PASS') { 'Green' } else { 'Red' })
 if ($feed[-1].Line -notmatch 'PASS') {
 	throw "채널 5가 그림을 그리지 못했습니다. 로그: $runLog"
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

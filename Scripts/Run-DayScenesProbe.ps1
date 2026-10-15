@@ -7,11 +7,16 @@ param([ValidateSet(30, 60)][int]$FrameRate = 60)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-DayScenesProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $logPath = Join-Path $projectRoot "Saved/Logs/DayScenes-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ('Saved/Validation/DayScenes-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 & $editor $projectPath -game -unattended -nosplash -nullrhi -nosound -NoLoadingScreen -RenderOffscreen `
 	-IGListenerGreybox -IGDayScenesProbe -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
 	"-UserDir=$probeUser" "-abslog=$logPath" | Out-Null
@@ -22,4 +27,10 @@ if ($posted -ne 2) {
 }
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'DAYSCENES_PROBE PASS failures=0')) {
 	throw "낮 장면 검사에 실패했습니다: $logPath"
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

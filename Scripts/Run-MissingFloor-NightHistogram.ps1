@@ -24,6 +24,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-MissingFloor-NightHistogram.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $projectFile = Join-Path $projectRoot 'IndieGame.uproject'
 if (-not (Test-Path -LiteralPath $projectFile -PathType Leaf)) {
@@ -128,3 +132,9 @@ if (-not $passed) {
 	throw "§11 V5가 PASS를 남기지 않았습니다. 로그: $runLog"
 }
 Write-Host $passed[-1].Line -ForegroundColor Green
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

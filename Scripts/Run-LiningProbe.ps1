@@ -10,11 +10,16 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-LiningProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $logPath = Join-Path $projectRoot "Saved/Logs/Lining-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ('Saved/Validation/Lining-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 $render = if ($Shots) { @('-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLiningShots') } else { @('-nullrhi') }
 & $editor $projectPath -game -unattended -nosplash -nosound -NoLoadingScreen -RenderOffscreen @render `
 	-IGListenerGreybox -IGLiningProbe -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
@@ -25,4 +30,10 @@ if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern '
 }
 if ($Shots) {
 	Write-Host ("LINING_SHOTS " + (Join-Path $probeUser 'Saved/LiningReview'))
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

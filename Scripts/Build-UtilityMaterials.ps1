@@ -1,6 +1,10 @@
 ﻿[CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Build-UtilityMaterials.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $utilityRoot = Split-Path -Parent $PSScriptRoot
 $utilityStage = Join-Path $env:LOCALAPPDATA 'IndieGame/ArtImport'
 $utilityProject = Join-Path $utilityStage 'ArtImport.uproject'
@@ -76,3 +80,9 @@ foreach ($mesh in @('SM_BottleCap', 'SM_WaterBottle')) {
     Copy-Item -LiteralPath (Join-Path $utilityStage "Content/Meshes/$mesh.uasset") -Destination (Join-Path $utilityRoot 'Content/Meshes') -Force
 }
 Select-String -LiteralPath $utilityLog -Pattern 'UTILITY_MATERIALS PASS' | ForEach-Object { Write-Host $_.Line }
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

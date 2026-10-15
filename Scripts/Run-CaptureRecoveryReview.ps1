@@ -1,6 +1,10 @@
 [CmdletBinding()]
 param([int]$Width = 1920, [int]$Height = 1080)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-CaptureRecoveryReview.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $captureRoot = Split-Path -Parent $PSScriptRoot
 $captureEditor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $captureLog = Join-Path $captureRoot "Saved/Logs/CaptureRecovery-${Width}x${Height}.log"
@@ -27,3 +31,9 @@ foreach ($captureFrame in $captureFrames) {
 $captureFrames | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $captureOutput 'frames.json') -Encoding utf8
 Select-String -LiteralPath $captureLog -Pattern 'PHYSICAL_CAPTURE' | ForEach-Object { Write-Host $_.Line }
 Write-Host "연속 프레임 $($captureFrames.Count)장: $captureOutput"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

@@ -8,6 +8,10 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-WindowsPackageReview.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $archiveRoot = (Resolve-Path -LiteralPath $ArchiveDirectory).Path
 $manifestArguments = @{ ArchiveDirectory = $archiveRoot; RequireCleanCommit = $RequireCleanCommit }
@@ -28,6 +32,7 @@ if ((Test-Path -LiteralPath $EvidenceDirectory) -and @(Get-ChildItem -LiteralPat
     throw "검사 결과는 새 폴더에 저장해야 합니다: $EvidenceDirectory"
 }
 New-Item -ItemType Directory -Path $EvidenceDirectory -Force | Out-Null
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $EvidenceDirectory
 
 function Get-ArchiveHashes {
     @(Get-ChildItem -LiteralPath $archiveRoot -Recurse -File | Sort-Object FullName | ForEach-Object {
@@ -126,3 +131,9 @@ if (@(Compare-Object $before $after).Count) { throw '검사 중 배포 폴더의
     cases = $results.ToArray()
 } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $EvidenceDirectory 'summary.json') -Encoding utf8
 Write-Host "WINDOWS_PACKAGE_REVIEW PASS $EvidenceDirectory"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

@@ -1,6 +1,10 @@
 ﻿[CmdletBinding()]
 param([switch]$DoorPrint, [switch]$PropFinish, [switch]$Interior, [switch]$BakeCctv)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-FixtureReview.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $fixtureRoot = Split-Path -Parent $PSScriptRoot
 $fixtureProject = Join-Path $fixtureRoot 'IndieGame.uproject'
 $fixtureEditor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath $fixtureProject -Commandlet
@@ -38,3 +42,9 @@ foreach ($shot in $fixtureShots) {
     if ($file.LastWriteTime -lt $fixtureStart -or $file.Length -lt 10000) { throw "새 캡처 없음: $shot" }
 }
 Write-Host "FIXTURE_REVIEW PASS shots=$($fixtureShots.Count)"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

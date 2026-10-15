@@ -8,11 +8,16 @@ param()
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-EpilogueDoorStill.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $logPath = Join-Path $projectRoot 'Saved/Logs/EpilogueDoorStill.log'
 $probeUser = Join-Path $projectRoot ('Saved/Validation/EpilogueDoorStill-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 $settingsPath = Join-Path $projectRoot 'Saved/Config/WindowsEditor/GameUserSettings.ini'
 $settingsBytes = if (Test-Path -LiteralPath $settingsPath) { [IO.File]::ReadAllBytes($settingsPath) } else { $null }
 try {
@@ -32,3 +37,9 @@ $target = Join-Path $projectRoot 'Content/SourceArt/T_EpilogueDoorNote_D.png'
 & py -3.11 -c "import sys; from PIL import Image; Image.open(sys.argv[1]).convert('RGB').resize((1024, 1536), Image.LANCZOS).convert('RGBA').save(sys.argv[2])" $shot $target
 if ($LASTEXITCODE -ne 0) { throw '정지 화면을 옮기지 못했다.' }
 Write-Host "EPILOGUE_DOOR_STILL $target"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

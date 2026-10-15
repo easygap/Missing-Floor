@@ -1,6 +1,10 @@
 [CmdletBinding()]
 param([int]$Width=1920, [int]$Height=1080, [ValidateSet(1,2)][int]$TextScale=1, [string]$Culture='')
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-ReadingReview.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $readingRoot = Split-Path -Parent $PSScriptRoot
 $readingEditor = & "$PSScriptRoot/Resolve-UnrealEditor.ps1" -Commandlet
 $readingKey = "${Width}x${Height}-$TextScale" + $(if ($Culture) { "-$Culture" } else { '' })
@@ -33,4 +37,10 @@ $readingDestination = if ($Culture) { "$readingRoot/Saved/Validation/Culture/$Cu
 New-Item -ItemType Directory -Force -Path $readingDestination | Out-Null
 foreach ($shot in $readingShots) {
     Move-Item -LiteralPath $shot.FullName -Destination "$readingDestination/$($shot.BaseName)-$readingKey.png" -Force
+}
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }

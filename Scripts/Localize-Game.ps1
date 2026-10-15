@@ -11,6 +11,10 @@ param(
 # 저장소 경로에 한글이 있어서 편집기 커맨드릿은 Build-ArtAssets.ps1이 쓰는 ASCII
 # 미러에서 돌린다. 코드 빌드가 미러를 저장소와 맞추고 편집기 모듈도 최신으로 만든다.
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Localize-Game.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 if (-not $Gather -and -not $Compile) {
 	throw '-Gather 또는 -Compile 중 하나 이상을 고르세요.'
 }
@@ -76,3 +80,9 @@ if ($Compile) {
 Sync-Folder (Join-Path $mirror $localizationPart) (Join-Path $repoRoot $localizationPart)
 Get-ChildItem -LiteralPath (Join-Path $repoRoot $localizationPart) -Recurse -File |
 	ForEach-Object { Write-Host ("  {0}  {1:N0} bytes" -f $_.FullName.Substring($repoRoot.Length + 1), $_.Length) }
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

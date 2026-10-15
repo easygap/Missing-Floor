@@ -8,6 +8,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-MissingFloor-SaveRecoveryProbe.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $archiveRoot = (Resolve-Path -LiteralPath $ArchiveDirectory).Path.TrimEnd('\', '/')
 $seedPath = (Resolve-Path -LiteralPath $SeedSaveFile).Path
@@ -114,6 +118,7 @@ if ((Test-Path -LiteralPath $evidenceRoot) -and @(Get-ChildItem -LiteralPath $ev
     throw "검사 결과는 새 폴더에 저장해야 합니다: $evidenceRoot"
 }
 New-Item -ItemType Directory -Path $evidenceRoot -Force | Out-Null
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $evidenceRoot
 $results = [Collections.Generic.List[object]]::new()
 
 function Invoke-SaveCase([string]$Name, [int]$ValidSlot, [int[]]$DamagedSlots, [switch]$Truncated, [switch]$MissingMap, [string]$DamageKind) {
@@ -226,3 +231,9 @@ if ((Get-FileHash -LiteralPath $seedPath -Algorithm SHA256).Hash -ne $seedHash) 
     cases = $results.ToArray()
 } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $evidenceRoot 'summary.json') -Encoding UTF8
 Write-Host "SAVE_RECOVERY_PROBE PASS cases=$($results.Count) evidence=$evidenceRoot"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}

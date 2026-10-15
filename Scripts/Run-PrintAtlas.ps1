@@ -35,6 +35,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Run-PrintAtlas.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectFile = Join-Path $projectRoot 'IndieGame.uproject'
@@ -195,3 +199,9 @@ Invoke-AtlasPython `
 	-FailureMessage 'Atlassed textures are still reachable from the cook'
 
 Write-Host 'PRINT_ATLAS PASS atlas packed, imported and wired into the print materials'
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}
