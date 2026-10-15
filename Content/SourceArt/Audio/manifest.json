@@ -642,6 +642,125 @@
         "oga_owlish/Human/breath-female2.wav"
       ],
       "note": "유담이 짧게 숨을 들이킨다. 여성 호흡의 첫 숨만 사용, 피치 변경 없음"
+    },
+    {
+      "name": "Lining_Peel",
+      "file": "Lining_Peel.wav",
+      "loop": false,
+      "seconds": 1.455,
+      "sources": [
+        "oga_owlish/Paper/tissue-pull.wav",
+        "oga_owlish/Paper/crumples1.wav"
+      ],
+      "note": "방수막이 벽에서 쩍 떨어진다. 휴지 뽑는 소리를 낮춰 끈적하게 하고 비닐 구김을 얹었다"
+    },
+    {
+      "name": "Lining_Creak_0",
+      "file": "Lining_Creak_0.wav",
+      "loop": false,
+      "seconds": 1.477,
+      "sources": [
+        "oga_100_cc0_wood_metal/metal_sheet_01.ogg"
+      ],
+      "note": "몸무게를 받친 철골 마디와 고정쇠가 버티며 우는 소리. 얇은 철판을 낮췄다"
+    },
+    {
+      "name": "Lining_Creak_1",
+      "file": "Lining_Creak_1.wav",
+      "loop": false,
+      "seconds": 1.714,
+      "sources": [
+        "oga_100_cc0_wood_metal/metal_sheet_03.ogg"
+      ],
+      "note": "몸무게를 받친 철골 마디와 고정쇠가 버티며 우는 소리. 얇은 철판을 낮췄다"
+    },
+    {
+      "name": "Lining_Creak_2",
+      "file": "Lining_Creak_2.wav",
+      "loop": false,
+      "seconds": 1.335,
+      "sources": [
+        "oga_100_cc0_wood_metal/metal_sheet_05.ogg"
+      ],
+      "note": "몸무게를 받친 철골 마디와 고정쇠가 버티며 우는 소리. 얇은 철판을 낮췄다"
+    },
+    {
+      "name": "Lining_Plant_0",
+      "file": "Lining_Plant_0.wav",
+      "loop": false,
+      "seconds": 0.646,
+      "sources": [
+        "kenney_impact/Audio/impactSoft_heavy_000.ogg",
+        "kenney_impact/Audio/impactMetal_light_000.ogg"
+      ],
+      "note": "방음재 패드가 면을 짚는 둔탁한 소리와 발목 볼트의 짧은 딸깍"
+    },
+    {
+      "name": "Lining_Plant_1",
+      "file": "Lining_Plant_1.wav",
+      "loop": false,
+      "seconds": 0.711,
+      "sources": [
+        "kenney_impact/Audio/impactSoft_heavy_001.ogg",
+        "kenney_impact/Audio/impactMetal_light_001.ogg"
+      ],
+      "note": "방음재 패드가 면을 짚는 둔탁한 소리와 발목 볼트의 짧은 딸깍"
+    },
+    {
+      "name": "Lining_Plant_2",
+      "file": "Lining_Plant_2.wav",
+      "loop": false,
+      "seconds": 0.712,
+      "sources": [
+        "kenney_impact/Audio/impactSoft_heavy_002.ogg",
+        "kenney_impact/Audio/impactMetal_light_002.ogg"
+      ],
+      "note": "방음재 패드가 면을 짚는 둔탁한 소리와 발목 볼트의 짧은 딸깍"
+    },
+    {
+      "name": "Lining_Press",
+      "file": "Lining_Press.wav",
+      "loop": false,
+      "seconds": 0.85,
+      "sources": [
+        "kenney_impact/Audio/impactSoft_heavy_003.ogg",
+        "oga_owlish/Paper/crumples2.wav",
+        "oga_100_cc0_sfx2/sfx100v2_air_01.ogg"
+      ],
+      "note": "몸이 틈을 눌러 막는다. 새던 바람이 꺾이며 끊긴다"
+    },
+    {
+      "name": "Lining_FrameCatch",
+      "file": "Lining_FrameCatch.wav",
+      "loop": false,
+      "seconds": 0.658,
+      "sources": [
+        "oga_100_cc0_wood_metal/metal_hit_03.ogg",
+        "oga_100_cc0_wood_metal/metal_spring_01.ogg"
+      ],
+      "note": "철골 마디가 틀에 걸려 낀다"
+    },
+    {
+      "name": "Lining_Drag_0",
+      "file": "Lining_Drag_0.wav",
+      "loop": false,
+      "seconds": 1.1,
+      "sources": [
+        "oga_owlish/Cloth, Rustle/320141__owlstorm__blanket-movement-3.wav",
+        "oga_owlish/Impacts/scrape1.wav"
+      ],
+      "note": "몸을 당길 때 막이 바닥과 벽을 쓸고 방음재가 끌린다"
+    },
+    {
+      "name": "Lining_Drag_1",
+      "file": "Lining_Drag_1.wav",
+      "loop": false,
+      "seconds": 1.1,
+      "sources": [
+        "oga_owlish/Cloth, Rustle/320143__owlstorm__blanket-movement-5.wav",
+        "oga_owlish/Impacts/scrape2.wav"
+      ],
+      "note": "몸을 당길 때 막이 바닥과 벽을 쓸고 방음재가 끌린다"
     }
   ]
 }

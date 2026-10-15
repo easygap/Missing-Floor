@@ -305,6 +305,40 @@ def spec(packs: str):
     add("Hammer_Hit_1", [one(WM, "hammer_03.ogg")], lambda x: normalize(room(trim_silence(x), 0.018, 0.4, 0.4), 0.95))
     add("Settle_Creak_0", [one(WM, "wood_cracking_01.ogg")], lambda x: normalize(lowpass(pitch(trim_silence(x), 0.8), 3000.0), 0.55), note="건물이 뒤틀린다")
     add("Settle_Creak_1", [one(WM, "wood_cracking_03.ogg")], lambda x: normalize(lowpass(pitch(trim_silence(x), 0.75), 3000.0), 0.55))
+    # --- 덧댄 것. 막·방음재·실리콘·철골이 저마다 다른 소리를 낸다. -------------------
+    # 예전에는 합성기(포장 테이프, 걷어찬 소품, 나무 삐걱)로 대신했다. 철골이 나무 소리를 냈다.
+    add("Lining_Peel", [one(OW, "tissue-pull.wav"), one(OW, "crumples1.wav")],
+        lambda a, b: normalize(mix([
+            (fade(lowpass(pitch(trim_silence(a)[:int(0.8 * SR)], 0.55), 2600.0), 0.0, 0.35), 0.0, 1.0),
+            (fade(lowpass(pitch(trim_silence(b), 0.7), 1800.0)[:int(0.9 * SR)], 0.0, 0.3), 0.12, 0.55),
+        ]), 0.8), note="방수막이 벽에서 쩍 떨어진다. 휴지 뽑는 소리를 낮춰 끈적하게 하고 비닐 구김을 얹었다")
+    for i, src_name in enumerate(("metal_sheet_01.ogg", "metal_sheet_03.ogg", "metal_sheet_05.ogg")):
+        add(f"Lining_Creak_{i}", [one(WM, src_name)],
+            lambda x: normalize(room(lowpass(pitch(trim_silence(x), 0.62), 2400.0), 0.016, 0.3, 0.25), 0.7),
+            note="몸무게를 받친 철골 마디와 고정쇠가 버티며 우는 소리. 얇은 철판을 낮췄다")
+    for i in range(3):
+        add(f"Lining_Plant_{i}", [one(K, f"impactSoft_heavy_00{i}.ogg"), one(K, f"impactMetal_light_00{i}.ogg")],
+            lambda a, b: normalize(mix([
+                (lowpass(pitch(trim_silence(a), 0.8), 1400.0), 0.0, 1.0),
+                (highpass(pitch(trim_silence(b), 0.9), 600.0), 0.03, 0.18),
+            ]), 0.75), note="방음재 패드가 면을 짚는 둔탁한 소리와 발목 볼트의 짧은 딸깍")
+    add("Lining_Press", [one(K, "impactSoft_heavy_003.ogg"), one(OW, "crumples2.wav"), one(S2, "sfx100v2_air_01.ogg")],
+        lambda a, b, c: normalize(mix([
+            (lowpass(pitch(trim_silence(a), 0.7), 900.0), 0.0, 1.0),
+            (lowpass(pitch(trim_silence(b), 0.6), 1500.0)[:int(0.8 * SR)], 0.05, 0.6),
+            (fade(lowpass(c, 3000.0)[:int(0.7 * SR)], 0.0, 0.5), 0.0, 0.35),
+        ]), 0.85), note="몸이 틈을 눌러 막는다. 새던 바람이 꺾이며 끊긴다")
+    add("Lining_FrameCatch", [one(WM, "metal_hit_03.ogg"), one(WM, "metal_spring_01.ogg")],
+        lambda a, b: normalize(mix([
+            (pitch(trim_silence(a), 0.75), 0.0, 1.0),
+            (pitch(trim_silence(b), 0.7), 0.04, 0.5),
+        ]), 0.85), note="철골 마디가 틀에 걸려 낀다")
+    for i, src_name in enumerate(("320141__owlstorm__blanket-movement-3.wav", "320143__owlstorm__blanket-movement-5.wav")):
+        add(f"Lining_Drag_{i}", [one(OW, src_name), one(OW, f"scrape{i + 1}.wav")],
+            lambda a, b: normalize(mix([
+                (lowpass(pitch(trim_silence(a), 0.6), 1800.0)[:int(1.1 * SR)], 0.0, 1.0),
+                (lowpass(pitch(fade(trim_silence(b)[:int(0.9 * SR)], 0.0, 0.2), 0.55), 1200.0), 0.05, 0.45),
+            ]), 0.7), note="몸을 당길 때 막이 바닥과 벽을 쓸고 방음재가 끌린다")
     # Owlish Media가 여성 호흡으로 배포한 실제 녹음. 피치와 재생 속도는 바꾸지 않는다.
     # https://freesound.org/people/OwlStorm/sounds/151206/ (CC0)
     add("Player_Breath_Scared", [one(OW, "breath-female.wav")],

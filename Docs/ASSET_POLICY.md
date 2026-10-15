@@ -23,7 +23,7 @@
 | `/Game/Prototype/Textures/T_Photo_Blanket_*` | ambientCG.com — Fabric022 | CC0 1.0 | 2026-07-19 | 원본(2K JPG) | `Content/SourceArt/Photo/Blanket/` | 침구 원단 |
 | `/Game/Prototype/Textures/T_Photo_WoodDark_*` | ambientCG.com — Wood067 | CC0 1.0 | 2026-07-19 | 원본(2K JPG) | `Content/SourceArt/Photo/WoodDark/` | 가구 목재 |
 | `/Game/Prototype/Textures/T_Photo_MarbleFloor_*` | ambientCG.com — Marble016 | CC0 1.0 | 2026-07-26 | 원본(2K JPG) | `Content/SourceArt/Photo/MarbleFloor/` | 부엌 상판 돌. `M_CounterStoneUV` |
-| `/Game/Audio/S_*` (67종: 발소리 6면·문·노크·위층 사람·놀람·베드) | OpenGameArt rubberduck 「100 CC0 SFX」 1·2·wood-metal, Kenney 「Impact Sounds」, Owlish Media 「Sound Effects Pack」 | CC0 1.0 | 2026-09-11 | 가공(피치·저역·겹침·되울림·루프 이음) | `Content/SourceArt/Audio/manifest.json`, `Scripts/curate_cc0_audio.py` | 원본 팩은 `Saved/AudioCC0/`에 두고 저장소에는 가공본만 둔다. 게임은 `IGAudio::Sample`로 찾고 없으면 합성기 |
+| `/Game/Audio/S_*` (74종: 발소리 6면·문·노크·위층 사람·놀람·베드·덧댄 것) | OpenGameArt rubberduck 「100 CC0 SFX」 1·2·wood-metal, Kenney 「Impact Sounds」, Owlish Media 「Sound Effects Pack」 | CC0 1.0 | 2026-09-11 | 가공(피치·저역·겹침·되울림·루프 이음) | `Content/SourceArt/Audio/manifest.json`, `Scripts/curate_cc0_audio.py` | 원본 팩은 `Saved/AudioCC0/`에 두고 저장소에는 가공본만 둔다. 게임은 `IGAudio::Sample`로 찾고 없으면 합성기 |
 | `/Game/Meshes/SK_ListenerCrawler`, `A_ListenerCrawler_{Crawl,Listen,Bang,Lunge}`, `DA_IGCharacterLODs` | 프로젝트 제작 (사진 참고 → gpt-image 기준 이미지 → TRELLIS.2 → Blender 표면 정리·접지 리깅) | 프로젝트 소유 | 2026-09-14 | 새 원본으로 교체 | `Content/SourceArt/Blender/SK_ListenerCrawler/`, `Scripts/blender/rig_crawler.py` | 12,000삼각형, 21개 뼈, 네 동작, 스켈레탈 LOD 네 단계. `Docs/BLENDER_PIPELINE.md` 「리깅된 인물」 |
 | `Content/SourceArt/Reference/Listener/*` | Wikimedia Commons — 미 육군·해병대 낮은 포복 사진, 살아 있는 조각상 사진 | 파일별 공개 저작물·CC 라이선스, 참고 전용 | 2026-09-11 | 원본 | 파일명이 Commons 파일명 | 이번에 채택한 두 사진의 정확한 출처와 공개 조건은 `Docs/REALISM_REVIEW_2026-09-14.md`. 다른 사진의 라이선스까지 같은 것으로 간주하지 않는다 |
 | `Content/SourceArt/AI/ListenerPhotoAnchor_20260914.png`, `ListenerTurnaround_20260914.png` | OpenAI 이미지 생성 | 생성 원본, 프로젝트 제작 자료 | 2026-09-14 | 원본 | `Docs/REALISM_REVIEW_2026-09-14.md` | 가상 인물의 기준 이미지와 다각도·확대 시트. 게임 패키지에 직접 포함하지 않는다 |
@@ -49,7 +49,7 @@
 | `/Game/Meshes/SK_PolicePatrol`, `SK_PolicePatrol_Skeleton`, `A_PolicePatrol_{Idle,Walk,LookBack,Knock,Listen}`, `/Game/Prototype/Materials/MI_PolicePatrol`, `/Game/Prototype/Textures/T_PolicePatrol_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile officer`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PolicePatrolFront_20261012.png`, `Content/SourceArt/Generated/PolicePatrol/` | 셋째 아침 5층 현장 확인에 오는 순찰 경찰관. 벽을 세 번 두드리는 동작과 귀를 대는 동작이 있다 |
 | `/Game/Meshes/SK_PaperGuest`, `SK_PaperGuest_Skeleton`, `/Game/Prototype/Materials/MI_PaperGuest`, `/Game/Prototype/Textures/T_PaperGuest_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py --keep-color`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PaperGuestFront_20261012.png`, `Content/SourceArt/Generated/PaperGuest/` | 문 밖 손님의 종이 몸. 원기둥에 종이를 붙인 예전 몸을 바꿨다. 얼굴 자리에 SM_DoorDeliveryMagnet이 붙는다 |
 | `/Game/Meshes/SM_SeoVoiceRecorder`, `/Game/Prototype/Materials/MI_SeoVoiceRecorder`, `/Game/Prototype/Textures/T_SeoVoiceRecorder_{D,N,ORM}` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/SeoVoiceRecorder_20261012.png`, `Scripts/blender/build_seo_recorder.py` | 5층 첫 판재 더미 밑에 끈만 나와 있는 서일영 소형 녹음기. 윗면에만 석고 가루가 있고 스피커 구멍은 점 격자로 구웠다 |
-| `/Game/Meshes/SK_Lining`, `SK_Lining_Skeleton`, `/Game/Prototype/Materials/MI_Lining`, `/Game/Prototype/Textures/T_Lining_{D,N,ORM}` | 프로젝트 제작 (gpt-image 형태 시안과 타일 셋 → Blender 절차 모델링·리깅 `rig_lining.py`) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/Lining{ModelSheet,InSitu,FoamTile,MembraneTile,SteelTile}_20261013.png`, `Content/SourceArt/T_Lining{Foam,Membrane,Steel}_{D,N,R,A}.png`, `Scripts/blender/rig_lining.py` | 벌어진 벽을 몸으로 덮는 괴이(「302호에 남은 짐」). 방음재 판·방수막 띠·ㄷ자 철골 다리 넷. 동작은 굽지 않고 게임이 뼈 열세 개를 직접 놓는다. 방음재 타일은 채도를 반으로 내려 다시 구웠다 |
+| `/Game/Meshes/SK_Lining`, `SK_Lining_Skeleton`, `/Game/Prototype/Materials/MI_Lining`, `/Game/Prototype/Textures/T_Lining_{D,N,ORM}` | 프로젝트 제작 (gpt-image 시안 → 몸통은 TRELLIS.2 생성, 다리·막·패드는 Blender 절차 모델링, 리깅 `rig_lining.py`) | 프로젝트 소유 | 2026-10-13, 2026-10-15 다시 지음 | 원본 | `Content/SourceArt/AI/LiningTurnaround_20261015.png`, `Content/SourceArt/Generated/LiningBody/`, `Content/SourceArt/AI/Lining{ModelSheet,InSitu,FoamTile,MembraneTile,SteelTile}_20261013.png`, `Content/SourceArt/T_Lining{Foam,Membrane,Steel}_{D,N,R,A}.png`, `Scripts/blender/rig_lining.py` | 벌어진 벽을 몸으로 덮는 괴이(「302호에 남은 짐」). 방수막으로 감은 방음재 뭉치 몸통에 ㄷ자 철골 다리 넷, 다리 마디는 막 자루와 테이프로 감았다. 동작은 굽지 않고 게임이 뼈 열세 개를 직접 놓는다. 방음재 타일은 채도를 반으로 내려 다시 구웠다 |
 | `/Game/Meshes/SK_Jeongwoo`, `SK_Jeongwoo_Skeleton`, `A_Jeongwoo_{Idle,Walk,LookBack,Carry,CarryIdle,Crouch,Brace,HoldDoor}`, `MI_Jeongwoo`, `T_Jeongwoo_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile mover`) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/JeongwooFront_20261013.png`, `Content/SourceArt/Generated/Jeongwoo/` | 걸어 다니는 202호 정우. 상자 나르기·쪼그려 앉기·판 받치기·문 잡기 동작이 있다. 오토바이에 탄 모습은 예전 `SM_DeliveryScooterRidden` 그대로다 |
 | `/Game/Meshes/SM_InnerRoom{Cot,Cabinet,Workbench}`, `SM_HandCart`, `SM_WasteSack`, `SM_StorageBox`, `SM_RemovedBoards`, `SM_BareBulb`, `SM_LinedWallPanel{A,B}` | 프로젝트 제작 (gpt-image 시안과 타일 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/{FoldingCot,SteelCabinet,HandCart,SacksBoxes}_20261013.png`, `{CotCanvas,BlanketFloral,CabinetPaint,WorkbenchPlywood,WovenSack}Tile_20261013.png`, `Content/SourceArt/T_{CotCanvas,BlanketFloral,CabinetPaintGrey,WorkbenchPlywood,WovenSack}_*.png`, `Scripts/blender/build_inner_room.py` | 관리실 안쪽 방의 간이침대·보관함·작업대·손수레·마대·상자·떼어 낸 판재·백열등과 벽에 덧댄 방음 판 |
 | `/Game/Meshes/SM_AccessHatch{Frame,Door}{S,M,L}`, `SM_HatchSealPlug`, `SM_CoverPiece{A,B,C}`, `SM_CoverFlap{A,B}`, `SM_CoverFrame`, `SM_CoverClamp`, `SM_ToolPouch`, `SM_GlovePouch`, `SM_InspectionOverlayBoard`, `SM_BentShieldSheet`, `SM_FinishBoard`, `SM_TimberWedge` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크, 덮개 앞면은 시안 그림을 덮개 전체 좌표로 펴서 조각마다 굽는다) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/{AccessHatch,AccessCoverFront,ToolPouch}_20261013.png`, `Scripts/blender/build_leftover_props.py` | 벽 점검구 세 크기, 덧댄 것이 눌러 막은 자리, P6 덮개 조각·틀·고정쇠, 오빠의 공구 주머니, 정우의 장갑 주머니, 5층 점검 자리 덧판과 차폐판, 302호 마감판과 쐐기 |
@@ -692,6 +692,29 @@ OpenAI 이미지 생성으로 생성하고 각 항목의 생성 방식과 날짜
 - 런타임: AIGSeoRecorder가 5층 첫 판재 더미 남쪽 끝 받침목 사이에 눕혀 둔다. 그림자와 디스턴스 필드 조명은 끄고
   12 m 안에서만 렌더링한다. 줍기 판정은 판재 밖으로 나온 끝과 끈을 덮는 박스로 따로 둔다
 - 권리/참조: 특정 제품을 따라 만들지 않은 흔한 소형 녹음기다. 몸통에 글자나 상표가 없다
+
+## 2026-10-15 덧댄 것 다시 짓기
+
+- 도구/모드: OpenAI 이미지 생성(gpt-image), TRELLIS.2, Blender 5.2 절차 모델링
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/LiningTurnaround_20261015.png`
+    `F90426244C7A18F3AA5E97105110B674F3DEC8F9C0A025D212EB4FFC4262292A`
+  - `Content/SourceArt/Generated/LiningBody/source-body.png`
+    `B7A2763CA49108FDB42C658B82F4A86BE57D73A1EAA3DFD1A887AA95275A19F5`
+- 파생: 10월 13일 판은 흡음판 상자에 납작한 철판 다리를 붙인 꼴이라 벽 자재와 겹쳐 보였다. 전체 모습 시안(정면·옆·
+  4분의 3·위)을 다시 뽑고, 다리 없이 몸통만 그린 시안을 따로 뽑아 TRELLIS.2(1024, 시드 56)로 형상을 만들었다.
+  `rig_lining.py`가 그 형상을 몸 치수(80 × 120 × 40 cm)에 맞춰 2만 삼각형 껍데기로 줄이고, 생성기가 방수막에
+  섞은 금속성은 걷어 내 철골에만 남긴다. 다리 길이와 마디(80·78 cm)는 5층에서 편 몸에 맞춰져 있어 그대로 두고,
+  윗마디와 아랫마디를 방수막 자루로 감고 테이프로 묶었다. 옆구리에서 윗마디까지 막을 물갈퀴처럼 잇고, 패드는
+  위아래를 막으로 쌌다. 껍데기 색은 고밀도 형상에서, 다리와 패드는 10월 13일 타일 셋에서 한 장의 아틀라스로
+  굽는다. 삼각형 29,724개, 뼈 14개(게임이 놓는 것은 root를 뺀 13개)
+- 소리: `Lining_Peel`·`Lining_Creak_0~2`·`Lining_Plant_0~2`·`Lining_Press`·`Lining_FrameCatch`·`Lining_Drag_0~1`은
+  위 CC0 팩(rubberduck 「100 CC0 SFX」 2·wood-metal, Kenney 「Impact Sounds」, Owlish Media)을
+  `curate_cc0_audio.py`로 잘라 겹쳤다. 원본 파일은 `Content/SourceArt/Audio/manifest.json`에 적혀 있다
+- 런타임: AIGLiningEntity가 UPoseableMeshComponent로 띄운다. 메시에는 충돌이 없고, 플레이어 몸은 몸통 상자와
+  다리 마디마다 붙인 캡슐이 막는다
+- 권리/참조: 은폐 공사에 쓰는 흔한 자재(계란판 방음재, 아스팔트 방수막, 아연도금 철골, 실리콘)를 엮은 가상의
+  존재다. 특정 작품의 괴물을 본뜨지 않았고 얼굴·눈·이빨이 없다. 자재에 글자와 상표가 없다
 
 ## 생성 시안에 참고한 외부 자료
 

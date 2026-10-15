@@ -10,25 +10,26 @@
   "slots": [
     "Baked"
   ],
-  "triangles": 3724,
+  "triangles": 29724,
   "bounds_m": {
     "min": [
-      -1.8291,
-      -2.0191,
-      -0.004
+      -1.8333,
+      -2.0233,
+      -0.002
     ],
     "max": [
-      1.8199,
-      2.0191,
-      0.38
+      1.8279,
+      2.0233,
+      0.4002
     ]
   },
   "origin": "body-bottom-center",
   "emissive_strength": 0.0,
   "blender": "5.2.0 LTS",
-  "notes": "덧댄 것. 절차 모델(rig_lining.py), 뼈 열넷, 동작 없음(게임이 뼈를 놓는다)",
+  "notes": "덧댄 것. 생성 몸통(LiningBody trellis1024-s56)과 절차 다리·물갈퀴(rig_lining.py), 뼈 열넷, 동작 없음(게임이 뼈를 놓는다)",
   "skeletal": true,
   "animations": {},
+  "generated_from": "../Generated/LiningBody/trellis1024-s56/raw/pbr_00001_.glb",
   "bones": {
     "root": {
       "head_cm": [
