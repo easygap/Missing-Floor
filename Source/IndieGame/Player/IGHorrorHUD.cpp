@@ -1121,6 +1121,27 @@ float AIGHorrorHUD::CalculateDialogueDuration(
 		* GetCaptionDurationScale();
 }
 
+float AIGHorrorHUD::GetDialogueBacklogSeconds(const UObject* WorldContext)
+{
+	const UWorld* World = GEngine && WorldContext
+		? GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull)
+		: nullptr;
+	const APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	const AIGHorrorHUD* Hud = PlayerController ? Cast<AIGHorrorHUD>(PlayerController->GetHUD()) : nullptr;
+	if (!Hud)
+	{
+		return 0.0f;
+	}
+	float Seconds = Hud->bHasCurrentDialogue
+		? FMath::Max(0.0f, static_cast<float>(Hud->DialogueEndTime - World->GetTimeSeconds()))
+		: 0.0f;
+	for (const FIGDialogueMessage& Queued : Hud->DialogueQueue)
+	{
+		Seconds += Hud->CalculateDialogueDuration(Queued.Line.ToString(), Queued.MinimumDurationSeconds);
+	}
+	return Seconds;
+}
+
 void AIGHorrorHUD::ActivateDialogue(
 	FIGDialogueMessage&& Message,
 	const double CurrentTime)
@@ -2339,7 +2360,7 @@ void AIGHorrorHUD::DrawContextTip(const float Alpha)
 		break;
 	case EIGContextTip::HintAnswer:
 		Line = FText::Format(
-			NSLOCTEXT("IGHUD", "TipHintAnswer", "[ {0} ]  답 보기  ·  할 일을 그대로 떠올린다"),
+			NSLOCTEXT("IGHUD", "TipHintAnswer", "[ {0} ]  풀이 보기  ·  한 번 더 누르면 풀이가 나온다"),
 			GetBoundKeyLabel(EIGBindableAction::RequestHint, bUsingGamepad));
 		break;
 	default:

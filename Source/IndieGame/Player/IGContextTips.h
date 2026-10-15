@@ -22,7 +22,7 @@ enum class EIGContextTip : uint8
 	Journal,
 	/** 한동안 새로 알아낸 것이 없을 때. */
 	Hint,
-	/** H 힌트가 다음에 할 일을 그대로 말하기 직전. 매번 띄운다. */
+	/** H 힌트가 풀이를 말하기 직전. 매번 띄운다. */
 	HintAnswer
 };
 

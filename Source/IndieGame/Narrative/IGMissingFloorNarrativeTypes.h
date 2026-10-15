@@ -220,7 +220,7 @@ struct INDIEGAME_API FIGMissingFloorNightState
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
 	TArray<FName> NightFourControlOrder;
 
-	/** Completed hammer blows against the cavity panel, clamped to 0..5. */
+	/** 벽에 휘두른 망치 수(엉뚱한 데를 친 것 포함, 0..99). 뜯은 단계는 Leftover.WallStage에 따로 있다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
 	int32 NightFourWallStrikeCount = 0;
 

@@ -83,8 +83,14 @@ public:
 	/** 지금 정우나 관리인 장면이 돌고 있다. 그동안 다른 괴이는 오지 않는다. */
 	bool IsSceneActive() const;
 	static bool IsAnySceneActive(const UWorld* World);
-	/** 05:30이 와도 끝까지 둘 일이 있다. 손에 든 덮개 조각, 진행 중인 장면. */
+	/** 05:30이 와도 끝까지 둘 일이 있다. 조립대에서 손에 든 덮개 조각, 진행 중인 장면. */
 	static bool IsHoldingDawn(const UWorld* World);
+	/** 힌트용: 그녀가 302호 조립대 곁에 있다. */
+	bool IsPlayerAtAssemblyTable() const;
+	/** 힌트용: 그녀가 3층 302호 안이나 문 앞 복도에 있다. */
+	bool IsPlayerNearStorage() const;
+	/** 힌트용 조립 단계. -1 맞출 것이 없음, 0 조각을 맞추는 중, 1 다 맞춤, 2 뒤집음, 3 막을 들춤. */
+	int32 GetAssemblyHintStage() const;
 	/**
 	 * 그녀가 실제로 본 자리. 대사와 힌트를 고를 때만 쓰고 진행 조건으로 쓰지 않는다. 저장에 남고,
 	 * 그 자리를 이미 다룬 저장(대 보기, 벽 단계, 틀 세움)은 본 것으로 친다.
@@ -236,6 +242,12 @@ private:
 	void JeongwooBraceForBox();
 	void PullDohaBox();
 	void JeongwooLeave();
+	/** 받치던 판을 놓는다(그녀가 자리를 떴거나 오래 안 당겼다). 정우는 다시 문을 잡으러 간다. */
+	void JeongwooStopBracing();
+	/** 정우가 먼저 계단으로 내려간다. bTogether면 같이 나온 것이다. */
+	void JeongwooGoDownstairs(bool bTogether);
+	/** 손에 들고 있던 조각을 조립대 옆에 내려놓는다(자리를 떴거나 새벽이 왔다). */
+	void PutDownHeldPiece();
 	void SelfEscapeAtDawn();
 	void UpdateJeongwooArrival();
 	void HandleJeongwooArrived();
@@ -260,6 +272,9 @@ private:
 	/** 403호 책상에 둔 오빠 공구 주머니. 가져와 둔 회차에만 놓이고 살펴볼 수 있다. */
 	void RefreshHomePouch();
 	void HandleHomePouch(AIGLeftoverTarget* Target);
+	/** 정우가 빼다 403호 문 앞에 둔 오빠 상자(셋째 밤에 같이 못 뺐을 때). */
+	void RefreshDeliveredBox();
+	void HandleDeliveredBox(AIGLeftoverTarget* Target);
 	FTransform PieceSlotTransform(int32 Piece) const;
 	FTransform PieceHoverTransform(int32 Piece) const;
 	void HandleSiteMatch(AIGLeftoverTarget* Target);
@@ -279,6 +294,8 @@ private:
 	UPROPERTY(Transient) TMap<FName, TObjectPtr<AIGAccessHatch>> Hatches;
 	UPROPERTY(Transient) TMap<FName, TObjectPtr<AIGLeftoverTarget>> Targets;
 	UPROPERTY(Transient) TMap<FName, TObjectPtr<UStaticMeshComponent>> Props;
+	/** 보일 때 몸을 막는 소품(만들 때 정한다). */
+	TSet<FName> BlockingProps;
 	UPROPERTY(Transient) TObjectPtr<AIGReadableNote> CollectionNotice;
 	UPROPERTY(Transient) TObjectPtr<AIGReadableNote> CabinetLedger;
 	UPROPERTY(Transient) TObjectPtr<USceneComponent> PropRoot;

@@ -2647,7 +2647,7 @@ void AIGPlayerController::RequestManualHint()
 		bHintAnswerRevealed = false;
 	}
 	const int32 Tier = FMath::Clamp(HintTier, 0, Step.Tiers.Num() - 1);
-	// 세 단계 이상인 힌트의 마지막은 할 일을 그대로 말한다. 처음 거기 닿으면 한 번 묻고,
+	// 세 단계 이상인 힌트의 마지막은 풀이다. 처음 거기 닿으면 한 번 묻고,
 	// 10초 안에 다시 누를 때만 말한다. 원하는 만큼만 도움을 받게 한다.
 	const bool bAnswerTier = Step.Tiers.Num() >= 3 && Tier == Step.Tiers.Num() - 1;
 	if (bAnswerTier && !bHintAnswerRevealed)

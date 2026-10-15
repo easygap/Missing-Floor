@@ -49,6 +49,10 @@ namespace IGNightPhase
 	constexpr float CaptureDawnMarginSeconds = 30.0f;
 	/** 05:30에 손에 든 조작이나 짧은 연출이 있으면 이만큼까지 기다린다. */
 	constexpr float MaxDawnHoldSeconds = 40.0f;
+	/** 종이 한 번 펼쳐 세울 수 있는 이야기 시계. 긴 기록도 큰 글씨로 다 읽을 만큼이다. */
+	constexpr float MaxReadingPauseSeconds = 180.0f;
+	/** 이보다 빨리 움직이면 읽는 게 아니라 종이를 든 채 걷는 것이다(cm/s). */
+	constexpr float ReadingStillSpeed = 60.0f;
 	/** 공동현관 유리문의 전자 잠금. 문 자체는 (604, -385)에 서 있다. */
 	const FVector EntranceLatchLocation(604.0f, -385.0f, 100.0f);
 	/**
@@ -328,12 +332,22 @@ void AIGNightPhaseDirector::TickHour()
 	{
 		return;
 	}
-	// 문서를 펼쳐 읽는 동안 이야기 시계는 서 있다. 느리게 읽었다고 밤을 잃지 않는다.
-	if (AIGReadableNote::GetOpenNote() != nullptr)
+	// 문서를 펼쳐 읽는 동안 이야기 시계는 서 있다. 느리게 읽었다고 밤을 잃지 않는다. 종이를 든
+	// 채 걸으면 시계가 간다(펼쳐 놓고 건물을 돌아다니면 밤이 끝나지 않는다). 한 번 펼친 종이로
+	// 세우는 시간에도 끝이 있다. 05:30 뒤에는 아래 새벽 유예가 읽기를 같이 센다.
+	const bool bReadingHold = IsReadingHold();
+	if (bReadingHold)
 	{
-		return;
+		ReadingPauseSeconds += IGNightPhase::TickIntervalSeconds;
+		if (HourElapsedSeconds < HourDurationSeconds)
+		{
+			return;
+		}
 	}
-	HourElapsedSeconds += IGNightPhase::TickIntervalSeconds;
+	else
+	{
+		HourElapsedSeconds += IGNightPhase::TickIntervalSeconds;
+	}
 	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
 	{
 		Narrative->SetNightElapsedSeconds(HourElapsedSeconds);
@@ -346,8 +360,10 @@ void AIGNightPhaseDirector::TickHour()
 		{
 			return;
 		}
-		// 손에 든 조각을 놓기 전, 정우가 문을 잡고 선 한가운데에서 화면을 감지 않는다.
-		if (!bImmediateDawn && DawnHoldSeconds < IGNightPhase::MaxDawnHoldSeconds && IsDawnHeldByActivity())
+		// 손에 든 조각을 놓기 전, 정우가 문을 잡고 선 한가운데, 펼쳐 읽는 종이 앞에서 화면을 감지
+		// 않는다. 다 합쳐 40초까지다.
+		if (!bImmediateDawn && DawnHoldSeconds < IGNightPhase::MaxDawnHoldSeconds
+			&& (bReadingHold || IsDawnHeldByActivity()))
 		{
 			DawnHoldSeconds += IGNightPhase::TickIntervalSeconds;
 			return;
@@ -358,7 +374,27 @@ void AIGNightPhaseDirector::TickHour()
 
 bool AIGNightPhaseDirector::IsDawnHeldByActivity() const
 {
-	return AIGMissingFloorLeftoverDirector::IsHoldingDawn(GetWorld());
+	return AIGMissingFloorLeftoverDirector::IsHoldingDawn(GetWorld())
+		|| AIGMissingFloorNightFourDirector::IsHoldingDawn(GetWorld());
+}
+
+bool AIGNightPhaseDirector::IsReadingHold()
+{
+	const AIGReadableNote* Note = AIGReadableNote::GetOpenNote();
+	if (!Note)
+	{
+		PausedNote = nullptr;
+		ReadingPauseSeconds = 0.0f;
+		return false;
+	}
+	if (PausedNote.Get() != Note)
+	{
+		PausedNote = Note;
+		ReadingPauseSeconds = 0.0f;
+	}
+	const AIGPlayerCharacter* Reader = Player.Get();
+	const bool bStill = !Reader || Reader->GetVelocity().Size2D() < IGNightPhase::ReadingStillSpeed;
+	return bStill && ReadingPauseSeconds < IGNightPhase::MaxReadingPauseSeconds;
 }
 
 void AIGNightPhaseDirector::ReleaseAtDawn()

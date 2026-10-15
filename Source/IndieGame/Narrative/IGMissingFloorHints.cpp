@@ -30,6 +30,86 @@ namespace
 		return Step;
 	}
 
+	const AIGMissingFloorLeftoverDirector* FindLeftover(const UObject* WorldContext)
+	{
+		const UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+		for (TActorIterator<AIGMissingFloorLeftoverDirector> It(World); World && It; ++It)
+		{
+			return *It;
+		}
+		return nullptr;
+	}
+
+	/**
+	 * 302호 조립대 앞에서만 꺼내는 덮개 맞추기(P6) 힌트. 고르는 일이라 밤의 길을 가로채지 않는다.
+	 * 관찰할 것 → 둘을 잇는 관계 → 풀이 순서다.
+	 */
+	bool ResolveAssembly(const UObject* WorldContext, FIGHintStep& Out)
+	{
+		const AIGMissingFloorLeftoverDirector* Leftover = FindLeftover(WorldContext);
+		if (!Leftover || !Leftover->IsPlayerAtAssemblyTable())
+		{
+			return false;
+		}
+		switch (Leftover->GetAssemblyHintStage())
+		{
+		case 0:
+			Out = Make(TEXT("Hint.Leftover.Assembly"), {
+				NSLOCTEXT("IGHint", "AssemblyFit1", "틀은 뒷면이 위로 누워 있어. 귀퉁이 고정쇠부터 보자."),
+				NSLOCTEXT("IGHint", "AssemblyFit2", "조각 뒷면에도 구멍이 있어. 고정쇠가 그 구멍에 물려야 해."),
+				NSLOCTEXT("IGHint", "AssemblyFit3", "조각을 뒤집어 구멍 쪽이 위로 오게 하고, 구멍이 고정쇠 앞에 오도록 돌려서 대 보자. 긴 조각은 긴 칸이야.") });
+			return true;
+		case 1:
+			Out = Make(TEXT("Hint.Leftover.AssemblyFlip"), {
+				NSLOCTEXT("IGHint", "AssemblyFlip1", "다 맞췄어. 앞면은 어떻게 생겼을까."),
+				NSLOCTEXT("IGHint", "AssemblyFlip2", "맞춘 덮개를 뒤집어 보자.") });
+			return true;
+		case 2:
+			Out = Make(TEXT("Hint.Leftover.AssemblyMembrane"), {
+				NSLOCTEXT("IGHint", "AssemblyMembrane1", "얼룩 한쪽에 방수막이 덧대져 있어."),
+				NSLOCTEXT("IGHint", "AssemblyMembrane2", "방수막을 들춰 보자.") });
+			return true;
+		case 3:
+			Out = Make(TEXT("Hint.Leftover.AssemblyTake"), {
+				NSLOCTEXT("IGHint", "AssemblyTake1", "다 봤어. 덮개를 챙기자.") });
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	/** 셋째 밤 302호 구출(P7). 302호 곁에 있거나 밤의 일을 마친 뒤에만 꺼낸다. */
+	bool ResolveStorageRescue(const UObject* WorldContext, const UIGMissingFloorNarrativeSubsystem* N, FIGHintStep& Out)
+	{
+		const FIGLeftoverState& Leftover = N->GetLeftover();
+		if (Leftover.JeongwooState != FName(TEXT("Trapped")))
+		{
+			return false;
+		}
+		const AIGMissingFloorLeftoverDirector* Director = FindLeftover(WorldContext);
+		const bool bNear = Director && Director->IsPlayerNearStorage();
+		if (!bNear && !Beat(N, TEXT("Night3.Goal")))
+		{
+			return false;
+		}
+		const bool bFallen = Director && Director->GetStorageStage() == FName(TEXT("Fallen"));
+		const FText Last = Leftover.WedgeSocket != FName(TEXT("Brace"))
+			? NSLOCTEXT("IGHint", "NightThreeStorage3Wedge", "판 밑동이 바닥에 걸리는 자리에 쐐기를 끼우자.")
+			: bFallen
+			? NSLOCTEXT("IGHint", "NightThreeStorage3Lift", "쐐기를 물렸으니 넘어진 판을 다시 세워 받치자.")
+			: (!Leftover.bWardrobeMoved
+				? NSLOCTEXT("IGHint", "NightThreeStorage3Wardrobe", "장롱을 밀면 뒤에 큰 점검구가 있어. 그걸 열자.")
+				: NSLOCTEXT("IGHint", "NightThreeStorage3Hatch", "장롱 뒤 점검구를 열자. 저게 그리로 옮겨 가면 판이 풀려."));
+		// 2단계는 생각할 관계까지만. 관리실에서 큰 점검구로 옮겨 가는 것을 봤으면 그걸 떠올린다.
+		Out = Make(TEXT("Hint.Night3.Storage"), {
+			NSLOCTEXT("IGHint", "NightThreeStorage1", "302호에 판이 넘어와서 정우 씨가 못 나오고 있어."),
+			Beat(N, TEXT("Leftover.SeenMove"))
+				? NSLOCTEXT("IGHint", "NightThreeStorage2Seen", "판은 밑동에서 밀려 나와. 관리실에선 큰 점검구를 열자 저게 그리로 옮겨 갔지.")
+				: NSLOCTEXT("IGHint", "NightThreeStorage2", "판은 밑동에서 밀려 나와. 누르는 걸 다른 데로 돌릴 수는 없을까."),
+			Last });
+		return true;
+	}
+
 	FIGHintStep ResolvePrologue(const UIGMissingFloorNarrativeSubsystem* N)
 	{
 		if (!Beat(N, TEXT("Arrival.Contract")))
@@ -137,22 +217,7 @@ namespace
 		const UObject* WorldContext,
 		const UIGMissingFloorNarrativeSubsystem* N)
 	{
-		const FIGLeftoverState& Leftover = N->GetLeftover();
-		if (Leftover.JeongwooState == FName(TEXT("Trapped")))
-		{
-			const FText Last = Leftover.WedgeSocket != FName(TEXT("Brace"))
-				? NSLOCTEXT("IGHint", "NightThreeStorage3Wedge", "판 밑동이 바닥에 걸리는 자리에 쐐기를 끼우자.")
-				: (!Leftover.bWardrobeMoved
-					? NSLOCTEXT("IGHint", "NightThreeStorage3Wardrobe", "장롱을 밀면 뒤에 큰 점검구가 있어. 그걸 열자.")
-					: NSLOCTEXT("IGHint", "NightThreeStorage3Hatch", "장롱 뒤 점검구를 열자. 저게 그리로 옮겨 가면 판이 풀려."));
-			// 2단계는 생각할 관계까지만. 관리실에서 큰 점검구로 옮겨 가는 것을 봤으면 그걸 떠올린다.
-			return Make(TEXT("Hint.Night3.Storage"), {
-				NSLOCTEXT("IGHint", "NightThreeStorage1", "302호에 판이 넘어와서 정우 씨가 못 나오고 있어."),
-				Beat(N, TEXT("Leftover.SeenMove"))
-					? NSLOCTEXT("IGHint", "NightThreeStorage2Seen", "판은 밑동에서 밀려 나와. 관리실에선 큰 점검구를 열자 저게 그리로 옮겨 갔지.")
-					: NSLOCTEXT("IGHint", "NightThreeStorage2", "판은 밑동에서 밀려 나와. 누르는 걸 다른 데로 돌릴 수는 없을까."),
-				Last });
-		}
+		// 302호 구출(P7)은 Resolve가 302호 곁에서만 먼저 본다. 여기서는 밤의 길만 본다.
 		const bool bSomeoneInWall = N->HasTruth(ETruth::SomeoneInTheWall);
 		const bool bAnswered = N->HasTruth(ETruth::WaitingForAnAnswer);
 		if (bAnswered)
@@ -355,6 +420,16 @@ FIGHintStep IGMissingFloorHints::Resolve(const UObject* WorldContext)
 	if (NightIndex <= 0)
 	{
 		return ResolvePrologue(N);
+	}
+	// 고르는 일(조립대 앞의 덮개, 302호 곁의 정우)은 그 자리에 있을 때만 그 힌트를 꺼낸다.
+	FIGHintStep Local;
+	if (NightIndex >= 3 && ResolveAssembly(WorldContext, Local))
+	{
+		return Local;
+	}
+	if (NightIndex == 3 && N->IsHourSealed() && ResolveStorageRescue(WorldContext, N, Local))
+	{
+		return Local;
 	}
 	if (!N->IsHourSealed())
 	{

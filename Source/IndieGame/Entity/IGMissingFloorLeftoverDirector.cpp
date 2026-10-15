@@ -413,7 +413,11 @@ UStaticMeshComponent* AIGMissingFloorLeftoverDirector::SpawnProp(
 	Component->bDisallowNanite = true;
 	if (bCollision)
 	{
+		// 몸과 덧댄 것의 짚기 검사는 막고, 상호작용 시선(Visibility)은 지나간다. 마대 열기·상자 당기기·조립대
+		// 조각 같은 대상이 소품 안이나 겉면에 걸쳐 있어서 시선을 막으면 겨눌 수 없다.
 		Component->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+		Component->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+		BlockingProps.Add(Key);
 	}
 	else
 	{
@@ -431,8 +435,8 @@ void AIGMissingFloorLeftoverDirector::ShowProp(const FName Key, const bool bShow
 	{
 		(*Found)->SetVisibility(bShow, true);
 		(*Found)->SetHiddenInGame(!bShow, true);
-		const bool bBlocks = (*Found)->GetCollisionProfileName() == UCollisionProfile::BlockAll_ProfileName;
-		(*Found)->SetCollisionEnabled(bShow && bBlocks ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+		// 프로필 이름으로 가르면 한 번 숨긴 뒤에는 Custom이 되어 다시 보여도 충돌이 안 돌아온다.
+		(*Found)->SetCollisionEnabled(bShow && BlockingProps.Contains(Key) ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 	}
 }
 
@@ -476,8 +480,11 @@ FName AIGMissingFloorLeftoverDirector::HatchId(const AIGAccessHatch* Hatch) cons
 
 bool AIGMissingFloorLeftoverDirector::IsSceneActive() const
 {
+	// 판이 풀려 정우가 밀고 나오는 1~2초(Released)도 장면이다. 그 사이 새벽이 오면 구출이 혼자
+	// 빠져나간 것으로 적혔다.
 	return NightTwoStage == ENightTwo::Waking
 		|| (DayOneStage != EDayOne::Idle && DayOneStage != EDayOne::Done)
+		|| StorageStage == EStorage::Released
 		|| StorageStage == EStorage::Bracing
 		|| StorageStage == EStorage::Leaving;
 }
@@ -509,7 +516,8 @@ bool AIGMissingFloorLeftoverDirector::IsHoldingDawn(const UWorld* World)
 	}
 	for (TActorIterator<AIGMissingFloorLeftoverDirector> It(const_cast<UWorld*>(World)); It; ++It)
 	{
-		if (It->IsSceneActive() || It->HeldPiece != INDEX_NONE)
+		// 조각을 들고 자리를 뜨면 내려놓는다(PollPlayer). 들고 조립대 앞에 있을 때만 기다린다.
+		if (It->IsSceneActive() || (It->HeldPiece != INDEX_NONE && It->IsPlayerAtAssemblyTable()))
 		{
 			return true;
 		}
@@ -541,6 +549,7 @@ void AIGMissingFloorLeftoverDirector::SetHourActive(const bool bActive)
 	// 밤3이 끝났는데 정우가 아직 판 뒤에 있다. 압이 풀린 새벽에 혼자 판을 밀고 나간다.
 	if (bWasActive && !bActive)
 	{
+		PutDownHeldPiece();
 		SelfEscapeAtDawn();
 		if (NightTwoStage != ENightTwo::Done && NightTwoStage != ENightTwo::Idle)
 		{
@@ -617,6 +626,12 @@ void AIGMissingFloorLeftoverDirector::PollPlayer()
 	UpdateJeongwooArrival();
 	PollSightings();
 	RefreshHomePouch();
+	RefreshDeliveredBox();
+	// 조각을 든 채 조립대를 떠나면 내려놓는다. 들고 다니는 물건이 아니다.
+	if (HeldPiece != INDEX_NONE && !IsPlayerAtAssemblyTable())
+	{
+		PutDownHeldPiece();
+	}
 	// 들고 다니던 것은 403호에 들어서면 내려놓는다(Stored).
 	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
 	{
@@ -690,6 +705,11 @@ void AIGMissingFloorLeftoverDirector::LoadGapsFor(const FName Space)
 		Narrow.Normal = FVector(0.0f, -1.0f, 0.0f);
 		Narrow.Up = FVector::UpVector;
 		Narrow.Size = FVector2D(30.0f, 110.0f);
+		// 틈 동쪽 바로 옆에 마감판(서쪽 끝 X 25..48)이 기울어 서 있다. 120 cm 몸이 틈 가운데에 오면 동쪽
+		// 3분의 1이 판을 뚫어서, 서쪽으로 36 cm 비켜 판 서쪽 끝에 몸을 붙인다(몸 X -96..24, 틈 X -10..20을
+		// 다 덮는다). 틈 밑이 바닥에서 20 cm라 아래 다리는 접는다.
+		Narrow.BodyOffset = FVector(-36.0f, 0.0f, 0.0f);
+		Narrow.bTuckLowerLegs = true;
 		Narrow.bAlwaysOpen = true;
 		Narrow.bSealed = Sealed(IGLeftover::GapStorageNarrow);
 		Lining->SetGap(Narrow);
@@ -822,7 +842,7 @@ void AIGMissingFloorLeftoverDirector::HandleLiningSealed(AIGLiningEntity* Entity
 	if (GapId == IGLeftover::GapInnerLarge && HasBeat(IGLeftover::BeatFirstMove)
 		&& PlayBeat(IGLeftover::BeatSecondMove))
 	{
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverMovedToLarge", "큰 쪽으로 옮겨 갔어."), 3.0f);
+		Think(NSLOCTEXT("IGMissingFloor", "LeftoverMovedToLarge", "저리로 옮겨 갔어."), 3.0f);
 	}
 	if (CurrentSpace == IGLeftover::SpaceStorage)
 	{
@@ -1084,7 +1104,7 @@ void AIGMissingFloorLeftoverDirector::HandleLedgerRead(AIGReadableNote* Note, co
 		AIGNightThreatDirector::HoldQuietAfterDiscovery(this, 60.0f);
 		GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverLedgerThought", "오빠 짐을 맡아 놓고, 주인 없는 짐으로 바꿔 적었어."), 4.0f);
+			Think(NSLOCTEXT("IGMissingFloor", "LeftoverLedgerThought", "오빠 이름까지 적어 놓고 주인이 없대."), 4.0f);
 		}), 0.6f, false);
 	}
 }
@@ -1242,7 +1262,7 @@ void AIGMissingFloorLeftoverDirector::HandleInnerTarget(AIGLeftoverTarget* Targe
 			return;
 		}
 		Take(IGLeftover::PieceB);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "같은 덮개의 다른 조각이야. 얼룩이 이어져."), 3.4f);
+		Think(NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "이것도 방수막째 잘린 조각이야."), 3.4f);
 	}
 	else if (Key == FName(TEXT("Inner.GloveBoxOpen")))
 	{
@@ -1536,18 +1556,22 @@ void AIGMissingFloorLeftoverDirector::RefreshDay()
 			// 번호를 아는 사이(이름을 들었거나 낮에 302호 얘기를 나눈 회차)일 때만 온다.
 			const FName State = Narrative->GetLeftover().JeongwooState;
 			const bool bHasNumber = HasBeat(IGLeftover::JeongwooIntroBeat) || HasBeat(IGLeftover::BeatDayTwoTalk);
+			// 같이 나왔는데 오빠 상자는 그 밤에 못 뺐다. 정우가 아침에 짐을 빼면서 그 상자를 403호 문 앞에 두었다.
+			const bool bBoxAtDoor = State == IGLeftover::JeongwooLeftTogether && !HasTaken(IGLeftover::DohaBox);
 			if ((State == IGLeftover::JeongwooSelfEscaped || State == IGLeftover::JeongwooLeftTogether)
 				&& bHasNumber && Narrative->MarkBeatPlayed(IGLeftover::BeatDayThreeText))
 			{
-				GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this, State]()
+				GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this, State, bBoxAtDoor]()
 				{
 					PhoneBuzz();
 					const bool bKnown = HasBeat(IGLeftover::JeongwooIntroBeat);
 					AIGHorrorHUD::PushDialogue(this,
 						bKnown ? IGLeftover::JeongwooName() : NSLOCTEXT("IGMissingFloor", "LeftoverUnknownSender", "202호"),
-						State == IGLeftover::JeongwooLeftTogether
-							? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooThanks", "새벽엔 진짜 고마웠어요. 짐은 아침에 제가 마저 뺐어요. 그 방엔 이제 혼자 들어가지 마세요.")
-							: NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooAlone", "새벽에 판이 갑자기 헐거워져서 겨우 밀고 나왔어요. 상자는 못 챙겼어요. 302호 혼자 가지 마세요."),
+						State != IGLeftover::JeongwooLeftTogether
+							? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooAlone", "새벽에 판이 갑자기 헐거워져서 겨우 밀고 나왔어요. 상자는 못 챙겼어요. 302호 혼자 가지 마세요.")
+							: bBoxAtDoor
+							? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooBoxAtDoor", "새벽엔 진짜 고마웠어요. 표시해 둔 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요.")
+							: NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooThanks", "새벽엔 진짜 고마웠어요. 짐은 아침에 제가 마저 뺐어요. 그 방엔 이제 혼자 들어가지 마세요."),
 						EIGDialogueChannel::Device, 0.0f, EIGDialoguePriority::Story);
 				}), 14.0f, false);
 			}
@@ -1690,8 +1714,9 @@ void AIGMissingFloorLeftoverDirector::HandleJeongwooArrived()
 		RefreshStorage();
 		return;
 	case EStorage::Leaving:
+		// 복도에서 서쪽 문설주를 잡는다. 문간은 비어 있다.
 		Jeongwoo->SetPose(AIGJeongwooFigure::EPose::HoldDoor);
-		Jeongwoo->FaceYaw(90.0f);
+		Jeongwoo->FaceTowards(FVector(-72.0f, -236.0f, Jeongwoo->GetFeet().Z));
 		return;
 	case EStorage::Gone:
 		Jeongwoo->Vanish();

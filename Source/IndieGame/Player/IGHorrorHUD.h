@@ -182,7 +182,7 @@ public:
 	bool IsHintRequestAvailable() const;
 	/** 막힌 것 같을 때 힌트 키를 한 번 알려 준다. 힌트를 끈 사람에게는 띄우지 않는다. */
 	void OfferHintTip();
-	/** H를 한 번 더 누르면 할 일을 그대로 떠올린다고 아래 줄에 띄운다(매번). */
+	/** H를 한 번 더 누르면 풀이가 나온다고 아래 줄에 띄운다(매번). */
 	void ShowHintAnswerTip();
 
 	/** Pushes a short inner-voice line onto the local player's HUD. */
@@ -233,6 +233,11 @@ public:
 	static float EstimateDialogueSeconds(
 		const FText& Line,
 		float MinimumDurationSeconds = 0.0f);
+	/**
+	 * 지금 떠 있는 줄과 밀려 있는 줄이 다 지나가기까지 남은 시간. 대사 뒤에 이어지는 소리를 큐에
+	 * 맞출 때 쓴다. HUD가 없으면 0이다.
+	 */
+	static float GetDialogueBacklogSeconds(const UObject* WorldContext);
 
 	/** Shows a non-dialogue sound caption when the accessibility option is on. */
 	static void PushAudioCaption(

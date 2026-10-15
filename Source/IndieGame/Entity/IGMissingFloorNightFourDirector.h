@@ -57,6 +57,11 @@ public:
 	 * 사람이 곁에서 종이를 붙이는 꼴이 된다.
 	 */
 	static bool CanHearEvictionPosting(const FVector& ListenerLocation);
+	/**
+	 * 05:30이 와도 끝까지 둘 벽 연출이 있다. 마지막 판이 내려앉는 순간, 부름을 기다리며 망치를
+	 * 못 드는 몇 초, 3단계 정전이 걸리는 순간이다. 그 사이 새벽이 오면 벽을 연 밤이 결말 C로 끊긴다.
+	 */
+	static bool IsHoldingDawn(const UWorld* World);
 	AIGMissingFloorEvidence* GetCleaningDrain() const { return CleaningDrain; }
 	AIGMissingFloorEvidence* GetFloatBypass() const { return FloatBypass; }
 	AIGMissingFloorEvidence* GetTransferPump() const { return TransferPump; }

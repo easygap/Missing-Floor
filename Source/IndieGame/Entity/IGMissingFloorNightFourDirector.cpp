@@ -2201,6 +2201,23 @@ bool AIGMissingFloorNightFourDirector::IsEvictionNoticePosted() const
 	return Narrative && Narrative->HasBeatPlayed(IGNightFour::EvictionPostedBeat);
 }
 
+bool AIGMissingFloorNightFourDirector::IsHoldingDawn(const UWorld* World)
+{
+	if (!World)
+	{
+		return false;
+	}
+	for (TActorIterator<AIGMissingFloorNightFourDirector> It(const_cast<UWorld*>(World)); It; ++It)
+	{
+		const FTimerManager& Timers = It->GetWorldTimerManager();
+		if (It->bHammerHeldForCall || Timers.IsTimerActive(It->WallOpenTimer) || Timers.IsTimerActive(It->BlackoutTimer))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool AIGMissingFloorNightFourDirector::CanHearEvictionPosting(
 	const FVector& ListenerLocation)
 {

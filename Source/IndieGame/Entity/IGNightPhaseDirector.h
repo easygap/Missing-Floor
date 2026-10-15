@@ -178,6 +178,8 @@ private:
 	bool IsCaptureResetInFlight() const;
 	/** 05:30이 와도 끝까지 둘 일이 있다(손에 든 퍼즐 조각, 진행 중인 짧은 연출). */
 	bool IsDawnHeldByActivity() const;
+	/** 종이를 펼쳐 놓고 서서 읽는 중이고, 그 종이로 세울 시간이 남았다. */
+	bool IsReadingHold();
 	APlayerController* GetDawnController() const;
 	void ApplySealedPresentation(bool bSealed);
 	void RequestMissingFloorAutosave(bool bAtNight);
@@ -204,6 +206,9 @@ private:
 	bool bDawnTransitionInProgress = false;
 	/** 05:30 뒤에 조작·연출이 끝나기를 기다린 시간. 밤마다 0부터 센다. */
 	float DawnHoldSeconds = 0.0f;
+	/** 지금 펼친 종이와, 그 종이로 시계를 세운 시간. 접으면 0으로 돌아간다. */
+	TWeakObjectPtr<const class AIGReadableNote> PausedNote;
+	float ReadingPauseSeconds = 0.0f;
 	FTimerHandle HourTimer;
 	FTimerHandle DawnTimer;
 	FTimerHandle DawnWorldTimer;
