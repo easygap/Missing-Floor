@@ -927,7 +927,7 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 		NightOneBeats.Get(), NightTwoBeats.Get(), PuzzleTwo.Get(),
 		NightThree.Get(), Mercy.Get(), FifthDawn.Get(), Epilogue.Get(),
 		NightFour.Get(), NightThreats.Get(), ManagerPatrol.Get(), Leftover.Get(), SleepTarget.Get(), Unit401Door.Get(),
-		UsedListingNote.Get(), NeighborhoodDeliveryNote.Get(), NightOneCeilingListen.Get(),
+		UsedListingNote.Get(), NeighborhoodDeliveryNote.Get(), StoreParcelReceipt.Get(), NightOneCeilingListen.Get(),
 		// SpawnOptionalWitnesses가 세우는 다섯. 지금은 마지막 실패 경로보다
 		// 뒤에 있어 새어 나갈 수 없지만, 그 사이에 실패가 하나 생기면 이름이
 		// 살아남아 재시도를 막는다.
@@ -964,6 +964,8 @@ void AIGListenerGreyboxDirector::DestroyPartialStage()
 	Unit401Door = nullptr;
 	UsedListingNote = nullptr;
 	NeighborhoodDeliveryNote = nullptr;
+	StoreParcelReceipt = nullptr;
+	GetWorldTimerManager().ClearTimer(StoreReceiptTimer);
 	NightOneCeilingListen = nullptr;
 	GetWorldTimerManager().ClearTimer(NeighborhoodSoundTimer);
 	GetWorldTimerManager().ClearTimer(ArrivalHandSoundTimer);
@@ -1731,6 +1733,29 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			NSLOCTEXT("IGMissingFloor", "Delivery3", "맡기신 뒤 받는 분께 연락 부탁드립니다."),
 			NSLOCTEXT("IGMissingFloor", "Delivery4", "달빛빌라 관리실  목한수") });
 		NeighborhoodDeliveryNote->OnReadStateChanged.AddDynamic(this, &AIGListenerGreyboxDirector::HandleNeighborhoodDeliveryRead);
+	}
+
+	// 계산대 위, 포스와 카드 단말기 사이에서 손님 쪽으로 밀어 둔 자리. 나린이 포스에서 뽑아 준
+	// 감열지 한 장이다(뽑기 전에는 없다).
+	Parameters.Name = TEXT("StoreParcelReceipt");
+	StoreParcelReceipt = World->SpawnActor<AIGReadableNote>(AIGReadableNote::StaticClass(),
+		FTransform(FRotator(0.0f, 100.0f, 0.0f), FVector(2645.0f, -220.0f, 99.1f)), Parameters);
+	if (StoreParcelReceipt)
+	{
+		StoreParcelReceipt->ConfigurePrototypeVisuals(CubeMesh,
+			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/M_PaperClean.M_PaperClean")),
+			FVector(8.0f, 19.0f, 0.12f));
+		StoreParcelReceipt->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "StoreReceiptPrompt", "택배 수령 내역 보기"));
+		StoreParcelReceipt->SetNoteText(NSLOCTEXT("IGMissingFloor", "StoreReceiptTitle", "새벽24  ·  택배 보관 조회"), {
+			NSLOCTEXT("IGMissingFloor", "StoreReceipt1", "받는 분: 달빛빌라 옥탑 백도하"),
+			NSLOCTEXT("IGMissingFloor", "StoreReceipt2", "보관 접수  2024.07.29  소형 1"),
+			NSLOCTEXT("IGMissingFloor", "StoreReceipt3", "수령  2024.08.02 14:12  대리 수령"),
+			NSLOCTEXT("IGMissingFloor", "StoreReceipt4", "수령인 서명: 목한수 (관리실)"),
+			NSLOCTEXT("IGMissingFloor", "StoreReceipt5", "메모: 본인 부탁 받았다고 함") });
+		StoreParcelReceipt->OnReadStateChanged.AddDynamic(this, &AIGListenerGreyboxDirector::HandleStoreReceiptRead);
+		StoreParcelReceipt->SetActorHiddenInGame(true);
+		StoreParcelReceipt->SetActorEnableCollision(false);
+		StoreParcelReceipt->SetInteractionEnabled(false);
 	}
 
 	// 401호 문선과 계단 사이의 빈 바닥. 종이까지 포함한 실제 메시 크기로 놓는다.
@@ -2781,12 +2806,123 @@ namespace IGListenerGreybox
 		return Narrative.GetNightIndex() == 1
 			&& !Narrative.HasBeatPlayed(NarinMilkBeat);
 	}
+	/**
+	 * 택배 얘기를 들은 뒤 한 번. 유담이 찾아간 기록을 묻고, 나린이 포스에서 찾아 뽑아 준다.
+	 * 둘이 같이 확인한 이 종이가 뒤의 진술로 이어진다.
+	 */
+	const FName NarinReceiptBeat(TEXT("Neighborhood.ParcelLedger"));
+	const FName NarinReceiptTakenBeat(TEXT("Neighborhood.ParcelReceipt"));
+	static bool IsNarinReceiptTalkDue(const UIGMissingFloorNarrativeSubsystem& Narrative)
+	{
+		return Narrative.HasBeatPlayed(FName(TEXT("Neighborhood.DeliveryDiscussed")))
+			&& !Narrative.HasBeatPlayed(NarinReceiptBeat);
+	}
 	static bool IsNarinRoofTalkDue(const UIGMissingFloorNarrativeSubsystem& Narrative)
 	{
 		return Narrative.GetNightIndex() == 2
 			&& Narrative.IsPuzzleSolved(FName(TEXT("P2")))
 			&& !Narrative.HasBeatPlayed(NarinRoofBeat);
 	}
+}
+
+bool AIGListenerGreyboxDirector::TalkAtStoreCounter()
+{
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative)
+	{
+		return false;
+	}
+	const double Now = GetWorld()->GetTimeSeconds();
+	if (Now - LastCounterTalkAt < 7.0)
+	{
+		return false;
+	}
+	LastCounterTalkAt = Now;
+	const bool bDeliveryQuestion = IGListenerGreybox::IsNarinDeliveryTalkDue(*Narrative);
+	const bool bReceiptQuestion = !bDeliveryQuestion
+		&& IGListenerGreybox::IsNarinReceiptTalkDue(*Narrative);
+	const bool bRoofQuestion = !bDeliveryQuestion && !bReceiptQuestion
+		&& IGListenerGreybox::IsNarinRoofTalkDue(*Narrative);
+	const bool bMilkTalk = !bDeliveryQuestion && !bReceiptQuestion && !bRoofQuestion
+		&& IGListenerGreybox::IsNarinMilkTalkDue(*Narrative);
+	AIGHorrorHUD::PushDialogue(this,
+		NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
+		bDeliveryQuestion
+			? NSLOCTEXT("IGMissingFloor", "NarinDeliveryQuestion", "뒤에 붙은 택배 안내문 보고 왔는데요. 백도하 앞으로 온 택배도 여기 맡긴 적 있어요?")
+			: bReceiptQuestion
+			? NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 남아 있어요?")
+			: bRoofQuestion
+			? NSLOCTEXT("IGMissingFloor", "NarinRoofQuestion", "저희 빌라 옥상 문이요, 원래 잠가 둬요? 자물쇠가 채워져 있던데.")
+			: (Narrative->GetNightIndex() == 0
+				? (Narrative->HasBeatPlayed(FName(TEXT("Arrival.Store")))
+					? NSLOCTEXT("IGMissingFloor", "NarinRepeatQuestion", "혹시 생각나는 게 더 있으세요?")
+					: NSLOCTEXT("IGMissingFloor", "NarinFirstQuestion", "달빛빌라 403호에 이사 왔어요. 백도하라는 사람 아세요? 제 오빠예요."))
+				: NSLOCTEXT("IGMissingFloor", "NarinLaterQuestion", "저 왔어요. 혹시 그 뒤로 뭐 들으신 건 없어요?")),
+		EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
+	AIGHorrorHUD::PushDialogue(this,
+		NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+		GetNarinCounterLine(), EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
+	if (bDeliveryQuestion)
+	{
+		Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.DeliveryDiscussed")));
+		RequestArrivalAutosave();
+	}
+	if (bReceiptQuestion)
+	{
+		// 나린이 포스를 뒤져 수령 기록을 찾고 한 장 뽑아 준다. 「찾아볼게요」가 화면에서 지나간 뒤에 단말기를
+		// 누르고, 찾은 날짜를 말한 뒤 「뽑아 드릴게요」에 맞춰 영수증이 나온다. 대사가 밀려 있으면 그만큼
+		// 늦추되, 밀린 큐가 아무리 길어도 14초 안에는 누른다.
+		Narrative->MarkBeatPlayed(IGListenerGreybox::NarinReceiptBeat);
+		RequestArrivalAutosave();
+		const FVector Counter(2608.0f, -190.0f, 110.0f);
+		const float TerminalAt = FMath::Clamp(AIGHorrorHUD::GetDialogueBacklogSeconds(this) + 0.6f, 4.8f, 14.0f);
+		GetWorldTimerManager().SetTimer(StoreReceiptTimer, FTimerDelegate::CreateWeakLambda(this, [this, Counter]()
+		{
+			IGAudio::SpawnOneShotAt(this, UIGToneSequenceSoundWave::CreateMenuTick(this, true), Counter,
+				0.5f, 0.85f, 60.0f, 700.0f, EIGAudioBus::World);
+			AIGHorrorHUD::PushAudioCaptionAt(this,
+				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기 누르는 소리]"), 2.2f, Counter);
+			GetWorldTimerManager().SetTimer(StoreReceiptTimer, FTimerDelegate::CreateWeakLambda(this, [this, Counter]()
+			{
+				const FText Found = NSLOCTEXT("IGMissingFloor", "NarinReceiptFound",
+					"작년 8월 2일이네요. 관리실 아저씨가 대신 받아 가셨어요. 뽑아 드릴게요.");
+				AIGHorrorHUD::PushDialogue(this, NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"), Found,
+					EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
+				const float PrintAt = FMath::Clamp(AIGHorrorHUD::GetDialogueBacklogSeconds(this) - 0.8f, 1.2f, 8.0f);
+				GetWorldTimerManager().SetTimer(StoreReceiptTimer, FTimerDelegate::CreateWeakLambda(this, [this, Counter]()
+				{
+					IGAudio::SpawnOneShotAt(this, UIGToneSequenceSoundWave::CreateJournalPageTurn(this), Counter,
+						0.45f, 1.35f, 60.0f, 700.0f, EIGAudioBus::World);
+					AIGHorrorHUD::PushAudioCaptionAt(this,
+						NSLOCTEXT("IGMissingFloor", "StorePrinterCaption", "[영수증이 뽑혀 나오는 소리]"), 2.2f, Counter);
+					RefreshStoreReceipt();
+				}), PrintAt, false);
+			}), 2.6f, false);
+		}), TerminalAt, false);
+	}
+	// 대답이 조건을 먼저 읽은 뒤에 찍는다. 옥상 얘기는 한 번이면 된다.
+	if (bRoofQuestion)
+	{
+		Narrative->MarkBeatPlayed(IGListenerGreybox::NarinRoofBeat);
+	}
+	if (bMilkTalk)
+	{
+		Narrative->MarkBeatPlayed(IGListenerGreybox::NarinMilkBeat);
+		// 나린의 말이 읽힐 무렵 떠올린다. 같이 띄우면 두 줄이 한꺼번에 뜬다.
+		FTimerHandle MilkThoughtTimer;
+		GetWorldTimerManager().SetTimer(
+			MilkThoughtTimer,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				AIGHorrorHUD::PushThought(
+					this,
+					NSLOCTEXT("IGMissingFloor", "YudamNarinMilkThought", "하나는 나 주던 거네. 올 때마다 들고 왔는데."),
+					3.4f);
+			}),
+			4.6f,
+			false);
+	}
+	return true;
 }
 
 void AIGListenerGreyboxDirector::HandleArrivalEvidence(
@@ -2809,55 +2945,9 @@ void AIGListenerGreyboxDirector::HandleArrivalEvidence(
 			60.0f,
 			900.0f,
 			EIGAudioBus::World);
-		const double Now = GetWorld()->GetTimeSeconds();
-		if (Now - LastCounterTalkAt < 7.0) { return; }
-		LastCounterTalkAt = Now;
-		const bool bDeliveryQuestion = IGListenerGreybox::IsNarinDeliveryTalkDue(*Narrative);
-		const bool bRoofQuestion = !bDeliveryQuestion
-			&& IGListenerGreybox::IsNarinRoofTalkDue(*Narrative);
-		const bool bMilkTalk = !bDeliveryQuestion && !bRoofQuestion
-			&& IGListenerGreybox::IsNarinMilkTalkDue(*Narrative);
-		AIGHorrorHUD::PushDialogue(this,
-			NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
-			bDeliveryQuestion
-				? NSLOCTEXT("IGMissingFloor", "NarinDeliveryQuestion", "뒤에 붙은 택배 안내문 보고 왔는데요. 백도하 앞으로 온 택배도 여기 맡긴 적 있어요?")
-				: bRoofQuestion
-				? NSLOCTEXT("IGMissingFloor", "NarinRoofQuestion", "저희 빌라 옥상 문이요, 원래 잠가 둬요? 자물쇠가 채워져 있던데.")
-				: (Narrative->GetNightIndex() == 0
-					? (Narrative->HasBeatPlayed(FName(TEXT("Arrival.Store")))
-						? NSLOCTEXT("IGMissingFloor", "NarinRepeatQuestion", "혹시 생각나는 게 더 있으세요?")
-						: NSLOCTEXT("IGMissingFloor", "NarinFirstQuestion", "달빛빌라 403호에 이사 왔어요. 백도하라는 사람 아세요? 제 오빠예요."))
-					: NSLOCTEXT("IGMissingFloor", "NarinLaterQuestion", "저 왔어요. 혹시 그 뒤로 뭐 들으신 건 없어요?")),
-			EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
-		AIGHorrorHUD::PushDialogue(this,
-			NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
-			GetNarinCounterLine(), EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
-		if (bDeliveryQuestion)
+		if (!TalkAtStoreCounter())
 		{
-			Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.DeliveryDiscussed")));
-			RequestArrivalAutosave();
-		}
-		// 대답이 조건을 먼저 읽은 뒤에 찍는다. 옥상 얘기는 한 번이면 된다.
-		if (bRoofQuestion)
-		{
-			Narrative->MarkBeatPlayed(IGListenerGreybox::NarinRoofBeat);
-		}
-		if (bMilkTalk)
-		{
-			Narrative->MarkBeatPlayed(IGListenerGreybox::NarinMilkBeat);
-			// 나린의 말이 읽힐 무렵 떠올린다. 같이 띄우면 두 줄이 한꺼번에 뜬다.
-			FTimerHandle MilkThoughtTimer;
-			GetWorldTimerManager().SetTimer(
-				MilkThoughtTimer,
-				FTimerDelegate::CreateWeakLambda(this, [this]()
-				{
-					AIGHorrorHUD::PushThought(
-						this,
-						NSLOCTEXT("IGMissingFloor", "YudamNarinMilkThought", "하나는 나 주던 거네. 올 때마다 들고 왔는데."),
-						3.4f);
-				}),
-				4.6f,
-				false);
+			return;
 		}
 	}
 	// 손 소리는 다음 날 다시 볼 때도 난다. 그래서 밤 번호로 돌려보내기 전에,
@@ -3197,6 +3287,42 @@ void AIGListenerGreyboxDirector::HandleNeighborhoodDeliveryRead(AIGReadableNote*
 	}), 1.4f, false);
 }
 
+void AIGListenerGreyboxDirector::HandleStoreReceiptRead(AIGReadableNote* Note, const bool bOpened)
+{
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Narrative)
+	{
+		return;
+	}
+	if (bOpened)
+	{
+		if (Narrative->MarkBeatPlayed(IGListenerGreybox::NarinReceiptTakenBeat))
+		{
+			RequestArrivalAutosave();
+		}
+		return;
+	}
+	// 다 읽고 접으면 그녀가 챙긴 것이다. 계산대에서 치운다.
+	AIGHorrorHUD::PushThought(this, NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "오빠가 부탁했다고?"), 2.8f);
+	RefreshStoreReceipt();
+}
+
+void AIGListenerGreyboxDirector::RefreshStoreReceipt()
+{
+	if (!StoreParcelReceipt)
+	{
+		return;
+	}
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const bool bOnCounter = Narrative
+		&& Narrative->HasBeatPlayed(IGListenerGreybox::NarinReceiptBeat)
+		&& (!Narrative->HasBeatPlayed(IGListenerGreybox::NarinReceiptTakenBeat) || StoreParcelReceipt->IsOpen())
+		&& !Narrative->IsHourSealed();
+	StoreParcelReceipt->SetActorHiddenInGame(!bOnCounter);
+	StoreParcelReceipt->SetActorEnableCollision(bOnCounter);
+	StoreParcelReceipt->SetInteractionEnabled(bOnCounter);
+}
+
 FText AIGListenerGreyboxDirector::GetNarinCounterLine() const
 {
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
@@ -3206,12 +3332,24 @@ FText AIGListenerGreyboxDirector::GetNarinCounterLine() const
 		return NSLOCTEXT("IGMissingFloor", "NarinDeliveryAnswer",
 			"작년 여름에 몇 번 맡겼어요. 마지막 건 건물주 아저씨가 찾아가셨고요. 오빠분이 부탁했다고 하던데요.");
 	}
+	if (Narrative && IGListenerGreybox::IsNarinReceiptTalkDue(*Narrative))
+	{
+		return NSLOCTEXT("IGMissingFloor", "NarinReceiptAnswer", "포스에 남아 있을 거예요. 잠깐만요, 찾아볼게요.");
+	}
 
 
 	// 마지막 방문의 대화는 이후 나린이 진술하게 되는 계기다.
 	if (NightIndex >= 3
 		|| (Narrative && Narrative->HasTruth(EIGMissingFloorTruth::StillCoveringIt)))
 	{
+		// 같이 찾은 수령 내역을 유담이 챙겼으면 나린도 그 종이 얘기를 한다.
+		if (Narrative && Narrative->HasBeatPlayed(IGListenerGreybox::NarinReceiptTakenBeat))
+		{
+			return NSLOCTEXT(
+				"IGMissingFloor",
+				"NarinLineLastDayReceipt",
+				"그 영수증 잘 챙겨 둬요. 필요하면 저도 본 대로 말할게요. 무슨 일 있으면 바로 이쪽으로 오세요.");
+		}
 		return NSLOCTEXT(
 			"IGMissingFloor",
 			"NarinLineLastDay",
@@ -3735,6 +3873,7 @@ void AIGListenerGreyboxDirector::HandleHourActiveChanged(const bool bActive)
 			ArrivalStoreBell->SetInteractionEnabled(!bActive);
 		}
 	}
+	RefreshStoreReceipt();
 	// 폰은 한 대다. 그 시간에는 머리맡에서 알람으로 울고 그 뒤로는 손에 있다.
 	RefreshTablePhone();
 	RefreshDoor403Notes();

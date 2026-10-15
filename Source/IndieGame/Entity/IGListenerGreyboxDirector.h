@@ -44,6 +44,9 @@ public:
 	void StartSiteCheckVisitForTesting();
 	class AIGSiteCheckVisit* GetSiteCheckVisitForTesting() const { return SiteCheckVisit.Get(); }
 	class AIGMissingFloorEvidence* GetSleepingPillsForTesting() const { return SleepingPills.Get(); }
+	/** 검사용. 계산대에서 나린과 말을 나눈다(호출벨을 누른 것과 같다). 회색 상자 실행에는 벨이 없다. */
+	bool TalkAtStoreCounterForTesting() { return TalkAtStoreCounter(); }
+	class AIGReadableNote* GetStoreParcelReceiptForTesting() const { return StoreParcelReceipt.Get(); }
 
 	virtual FText GetObjectiveText() const override;
 	virtual float GetObjectiveProgress() const override;
@@ -82,8 +85,12 @@ private:
 	void HandleUsedListingRead(class AIGReadableNote* Note, bool bOpened);
 	UFUNCTION()
 	void HandleNeighborhoodDeliveryRead(class AIGReadableNote* Note, bool bOpened);
+	UFUNCTION()
+	void HandleStoreReceiptRead(class AIGReadableNote* Note, bool bOpened);
 	void UpdateArrivalSequence();
 	void HandleArrivalEvidence(class AIGMissingFloorEvidence* Evidence);
+	/** 호출벨에 이어지는 나린과의 말. 벨 사이 7초 안이면 말없이 false다. */
+	bool TalkAtStoreCounter();
 	/** 계약서와 이삿짐 상자 셋을 만지는 손 소리. 처음 여는 상자는 테이프부터 뜯는다. */
 	void PlayArrivalHandSound(class AIGMissingFloorEvidence* Evidence, bool bFirstOpen);
 	void RequestArrivalAutosave();
@@ -380,6 +387,14 @@ private:
 	TObjectPtr<class AIGReadableNote> UsedListingNote;
 	UPROPERTY()
 	TObjectPtr<class AIGReadableNote> NeighborhoodDeliveryNote;
+	/**
+	 * 나린이 포스에서 찾아 뽑아 준 택배 수령 내역(계산대 위). 유담이 읽고 챙기면 계산대에서 사라지고,
+	 * 그 뒤 나린의 말과 결말의 진술이 이 종이를 따른다.
+	 */
+	UPROPERTY()
+	TObjectPtr<class AIGReadableNote> StoreParcelReceipt;
+	FTimerHandle StoreReceiptTimer;
+	void RefreshStoreReceipt();
 	FTimerHandle NeighborhoodSoundTimer;
 	double LastCounterTalkAt = -100.0;
 	/** 입주 손 소리의 둘째 겹(내용물)과, 휴대전화 진동을 한 번에서 끊는 타이머. */

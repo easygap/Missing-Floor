@@ -1103,6 +1103,15 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 	// 무엇으로 뒷받침됐는지까지 말한다. 근무표를 못 봤어도 뒤편 안내문을 보고
 	// 나린에게 택배를 물었다면, 그때 들은 말이 그대로 진술이 된다.
 	if (Narrative
+		&& Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.ParcelReceipt"))))
+	{
+		// 나린과 같이 찾아 뽑은 수령 내역을 그녀가 챙긴 회차다. 그 종이가 그대로 진술이 된다.
+		Lines.Add(NSLOCTEXT(
+			"IGMissingFloor",
+			"EpilogueNews5Receipt",
+			"인근 편의점 직원은 실종 일주일 뒤 건물주가 실종자의 택배를 대신 받아 간 기록을 경찰에 냈다"));
+	}
+	else if (Narrative
 		&& Narrative->HasWitness(EIGMissingFloorWitness::StoreNightRoster))
 	{
 		Lines.Add(NSLOCTEXT(
