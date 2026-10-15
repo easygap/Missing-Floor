@@ -445,6 +445,17 @@ public:
 	 * 즉시 차단 19 is about the sealed hour turning F9 and the journal down, and
 	 * "nothing happened" is also what a broken binding looks like.
 	 */
+	/** 검사용. 떠 있는 대사·소리 자막과 밀린 줄을 모두 걷는다(화면 검사가 새 줄 하나만 띄워 찍을 때). */
+	void ClearDialogueForTesting()
+	{
+		DialogueQueue.Reset();
+		bHasCurrentDialogue = false;
+		CurrentDialogueLines.Reset();
+		DialogueEndTime = -1.0;
+		AudioCaptionQueue.Reset();
+		CurrentAudioCaption = FText::GetEmpty();
+		AudioCaptionEndTime = -1.0;
+	}
 	/** 검사용. 밤 제목 카드를 바로 걷는다(화면을 찍는 검사가 카드가 끝나기를 기다리지 않게). */
 	void ClearChapterCardForTesting()
 	{

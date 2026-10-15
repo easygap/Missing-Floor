@@ -4,7 +4,8 @@ param(
 	# dawn: 밤3에 정우를 꺼내지 않고 새벽을 맞는 길. dawnbrace: 꺼낸 정우가 판을 받치는 한가운데 새벽(낮3 문 앞 상자).
 	# night2: 밤2 안쪽 방만. wall: 밤4 벽 단계마다 저장 상태로 되살린 모습(불러오기 길).
 	# input: 밤3 302호를 순간 이동 없이 실제 키·마우스 입력으로 지난다(구간별 시간을 남긴다).
-	[ValidateSet('full', 'dawn', 'dawnbrace', 'night2', 'wall', 'input')][string]$Variant = 'full',
+	# lines: 이 줄기의 새 문장을 한 줄씩 띄워 찍는다(-Shots, -Culture, -TextScale과 같이).
+	[ValidateSet('full', 'dawn', 'dawnbrace', 'night2', 'wall', 'input', 'lines')][string]$Variant = 'full',
 	[switch]$Shots,
 	# en·ja·zh-Hans·zh-Hant로 찍으면 이 줄기의 글(안내문·대장·힌트·자막)을 그 언어로 본다.
 	[string]$Culture,

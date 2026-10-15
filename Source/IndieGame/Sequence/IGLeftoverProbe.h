@@ -138,6 +138,9 @@ private:
 		const TCHAR* Segment = nullptr;
 	};
 	bool bInputVariant = false;
+	/** lines: 새 문장을 한 줄씩 화면에 띄워 찍는다(번역 길이·글자·줄바꿈을 언어마다 본다). -Shots와 같이 쓴다. */
+	bool bLinesVariant = false;
+	int32 LineIndex = 0;
 	TArray<FInputStep> InputSteps;
 	int32 InputIndex = 0;
 	float InputStepSeconds = 0.0f;

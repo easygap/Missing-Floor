@@ -85,6 +85,7 @@ void AIGLeftoverProbe::Configure(AIGPrologueWorldScene* InScene, AIGPlayerCharac
 	bNightTwoOnly = Variant == TEXT("night2");
 	bWallOnly = Variant == TEXT("wall");
 	bInputVariant = Variant == TEXT("input");
+	bLinesVariant = Variant == TEXT("lines");
 	if (UIGGameInstance* GameInstance = Cast<UIGGameInstance>(GetGameInstance()))
 	{
 		GameInstance->SetRuntimeProfileStage(0);
@@ -625,6 +626,11 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		{
 			// 입력 길은 밤3 302호부터다. 그 앞 장면은 전체 검사가 본다.
 			Next(30);
+			return;
+		}
+		if (bLinesVariant)
+		{
+			Next(400);
 			return;
 		}
 		Narrative->SetNightIndex(1);
@@ -1894,6 +1900,138 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		Next(70);
 		return;
+
+	case 400:
+	{
+		// 새 문장 진열. 큐를 비우고 한 줄만 띄운 뒤 찍는다(검사가 빨라 앞 줄이 밀려 있으면 새 줄이 안 보인다).
+		struct FLineShot
+		{
+			TCHAR Kind;
+			FText Speaker;
+			FText Line;
+			const TCHAR* Name;
+		};
+		static const FLineShot Lines[] = {
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
+				NSLOCTEXT("IGMissingFloor", "LeftoverLeaveLine", "문 잡고 있을게요. 더 볼 거 있으면 보고 나와요."), TEXT("LeftoverLeaveLine")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
+				NSLOCTEXT("IGMissingFloor", "LeftoverLeaveBoxLine", "문 잡고 있을게요. 상자 뺄 거면 말해요, 판 잡아 줄게요."), TEXT("LeftoverLeaveBoxLine")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
+				NSLOCTEXT("IGMissingFloor", "LeftoverBraceRelease", "판 놓을게요. 상자는 이따 다시 해요."), TEXT("LeftoverBraceRelease")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
+				NSLOCTEXT("IGMissingFloor", "LeftoverBraceAgain", "상자요? 잠깐만요, 판 잡을게요."), TEXT("LeftoverBraceAgain")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
+				NSLOCTEXT("IGMissingFloor", "LeftoverGoAheadLine", "저 먼저 내려갈게요. 문은 열어 둘게요. 오래 있지 마요."), TEXT("LeftoverGoAheadLine")},
+			{TEXT('P'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
+				NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooBoxAtDoor", "새벽엔 진짜 고마웠어요. 표시해 둔 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요."), TEXT("LeftoverJeongwooBoxAtDoor")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
+				NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 남아 있어요?"), TEXT("NarinReceiptQuestion")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+				NSLOCTEXT("IGMissingFloor", "NarinReceiptAnswer", "포스에 남아 있을 거예요. 잠깐만요, 찾아볼게요."), TEXT("NarinReceiptAnswer")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+				NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 관리실 아저씨가 대신 받아 가셨어요. 뽑아 드릴게요."), TEXT("NarinReceiptFound")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+				NSLOCTEXT("IGMissingFloor", "NarinLineLastDayReceipt", "그 영수증 잘 챙겨 둬요. 필요하면 저도 본 대로 말할게요. 무슨 일 있으면 바로 이쪽으로 오세요."), TEXT("NarinLineLastDayReceipt")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverFitWrongSlot", "잘린 면이 바깥으로 나와."), TEXT("LeftoverFitWrongSlot")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막에 미끄러져."), TEXT("LeftoverFitFlipped")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "자리는 맞는데 구멍 위치가 어긋나."), TEXT("LeftoverFitRotated")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakeThought", "이만한 덧판을 어디서 봤는데."), TEXT("LeftoverCoverTakeThought")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverFirstPickThought", "조각 셋에 틀 하나."), TEXT("LeftoverFirstPickThought")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverSackThought", "남은 조각 하나랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어."), TEXT("LeftoverSackThought")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverSackAllPieces", "점검구 덮개 조각 셋이랑 금속 틀이야."), TEXT("LeftoverSackAllPieces")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 고이는 나무 쐐기야."), TEXT("LeftoverWedgePicked")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverWedgeSlip1", "장판에서 미끄러져 빠졌어."), TEXT("LeftoverWedgeSlip1")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverWedgeSlip2", "또 빠졌어. 장판 위라 걸릴 데가 없어."), TEXT("LeftoverWedgeSlip2")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverLedgerThought", "오빠 이름까지 적어 놓고 주인이 없대."), TEXT("LeftoverLedgerThought")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverMovedToLarge", "저리로 옮겨 갔어."), TEXT("LeftoverMovedToLarge")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "이것도 방수막째 잘린 조각이야."), TEXT("LeftoverPieceBThought")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxThought", "정우 씨가 표시해 둔 그 상자야. 안에 오빠 공구 주머니가 있어."), TEXT("LeftoverDeliveredBoxThought")},
+			{TEXT('T'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "오빠가 부탁했다고?"), TEXT("StoreReceiptThought")},
+			{TEXT('C'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "CaptionLiningPress", "[두꺼운 비닐이 벽에 쩍 들러붙는 소리]"), TEXT("CaptionLiningPress")},
+			{TEXT('C'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverPushedCaption", "[휜 철골이 빠지고, 벽을 긁으며 물러나는 소리]"), TEXT("LeftoverPushedCaption")},
+			{TEXT('C'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기 누르는 소리]"), TEXT("StoreTerminalCaption")},
+			{TEXT('C'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "StorePrinterCaption", "[영수증이 뽑혀 나오는 소리]"), TEXT("StorePrinterCaption")},
+		};
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		AIGHorrorHUD* Hud = PC ? Cast<AIGHorrorHUD>(PC->GetHUD()) : nullptr;
+		if (!Hud)
+		{
+			Check(false, TEXT("lines_hud"));
+			Finish();
+			return;
+		}
+		const int32 Count = UE_ARRAY_COUNT(Lines) + 1;
+		if (LineIndex >= Count)
+		{
+			Check(true, TEXT("lines_shown"));
+			Finish();
+			return;
+		}
+		if (Step == 0)
+		{
+			if (LineIndex == 0)
+			{
+				// 4층 복도 남쪽 벽을 본다. 겨눌 것이 없어야 아래 줄의 안내가 가려지지 않는다.
+				Stand(FVector(190.0f, -300.0f, 900.0f), FVector(190.0f, -372.0f, 1000.0f));
+			}
+			Hud->ClearDialogueForTesting();
+			Hud->ClearChapterCardForTesting();
+			if (LineIndex < UE_ARRAY_COUNT(Lines))
+			{
+				const FLineShot& Shot = Lines[LineIndex];
+				if (Shot.Kind == TEXT('T'))
+				{
+					AIGHorrorHUD::PushThought(this, Shot.Line, 4.0f);
+				}
+				else if (Shot.Kind == TEXT('C'))
+				{
+					AIGHorrorHUD::PushAudioCaption(this, Shot.Line, 4.0f);
+				}
+				else
+				{
+					AIGHorrorHUD::PushDialogue(this, Shot.Speaker, Shot.Line,
+						Shot.Kind == TEXT('P') ? EIGDialogueChannel::Device : EIGDialogueChannel::Conversation,
+						4.0f, EIGDialoguePriority::Story);
+				}
+			}
+			else
+			{
+				// 힌트 마지막 단계 앞의 안내(「풀이 보기 · 한 번 더 누르면 풀이가 나온다」).
+				Hud->ShowHintAnswerTip();
+			}
+			Step = 1;
+			StepSeconds = 0.0f;
+			return;
+		}
+		StepSeconds += GetWorld()->GetDeltaSeconds();
+		if (StepSeconds < 0.9f)
+		{
+			return;
+		}
+		Shoot(LineIndex < UE_ARRAY_COUNT(Lines) ? *FString::Printf(TEXT("line_%s"), Lines[LineIndex].Name) : TEXT("line_TipHintAnswer"));
+		Step = 0;
+		++LineIndex;
+		return;
+	}
 
 	// -- 저장 왕복과 확장 전 저장 ---------------------------------------------------------
 	case 70:

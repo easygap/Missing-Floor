@@ -83,6 +83,10 @@ void AIGEpiloguePreviewProbe::Tick(const float DeltaSeconds)
 				Narrative->AddLeftover(EIGLeftoverList::Taken, FName(TEXT("ToolPouch")));
 				Narrative->AddLeftover(EIGLeftoverList::Taken, FName(TEXT("DohaBox")));
 				Narrative->MutableLeftover().JeongwooState = FName(TEXT("LeftTogether"));
+				// 나린과 찾은 수령 영수증을 챙긴 회차. 보도의 편의점 줄이 가장 길어진다.
+				Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.DeliveryDiscussed")));
+				Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.ParcelLedger")));
+				Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.ParcelReceipt")));
 				UE_LOG(LogIndieGame, Display, TEXT("EPILOGUE_PREVIEW all witnesses seen"));
 			}
 		}
