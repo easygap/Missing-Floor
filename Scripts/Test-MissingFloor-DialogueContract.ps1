@@ -78,6 +78,7 @@ Assert-ContainsAll $hudSource @(
 	'> static_cast<uint8>(CurrentDialogue.Priority)',
 	'DialogueQueue.Insert(MoveTemp(CurrentDialogue), 0)',
 	'if (!Next.bContinuation && CurrentTime - Next.QueuedAt > MaximumAge)',
+	'Next.Scope.Context == CompletedContext',
 	'void AIGHorrorHUD::SuspendDialoguePresentation(',
 	'void AIGHorrorHUD::ResumeDialoguePresentation(',
 	'DialogueEndTime += OccludedDuration'

@@ -30,6 +30,7 @@
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Player/IGFlashlightComponent.h"
 #include "Player/IGHorrorHUD.h"
+#include "Player/IGInteractionComponent.h"
 #include "Player/IGPlayerCharacter.h"
 #include "Player/IGPlayerController.h"
 #include "Save/IGSaveGame.h"
@@ -319,6 +320,15 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			Check(true, TEXT("jeongwoo_waits_on_scooter_day1"));
 			// 말은 오토바이 옆에서 건다. 들리는 거리 밖에서 건 말은 줄을 서지 않는다.
 			Stand(CurbFeet, CurbRiderFace);
+			// 아래는 대화를 바로 부르지만, 플레이어는 상호작용 시선으로 오토바이 위의 상자를 잡아야 말을 건다.
+			UIGInteractionComponent* Interaction = Player.IsValid()
+				? Player->FindComponentByClass<UIGInteractionComponent>() : nullptr;
+			if (Interaction)
+			{
+				Interaction->RefreshFocus();
+			}
+			Check(Interaction && Interaction->GetFocusedActor() == JeongwooTalk.Get(),
+				TEXT("jeongwoo_talk_focused_at_scooter"));
 			JeongwooTalk->OnExamined.Broadcast(JeongwooTalk.Get());
 			Check(Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro")))
 				&& SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooIntro",
@@ -526,10 +536,6 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 		}
 		AIGListenerGreyboxDirector* Counter = Greybox.Get();
 		AIGReadableNote* Slip = Receipt.Get();
-		const auto Crossed = [this, DeltaSeconds](const float At)
-		{
-			return PhaseSeconds >= At && PhaseSeconds - DeltaSeconds < At;
-		};
 		if (!bActed)
 		{
 			bActed = true;
@@ -554,10 +560,27 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 		{
 			break;
 		}
-		if (Crossed(7.5f))
+		if (PhaseSeconds >= 7.5f && SecondBellAt < 0.0f)
 		{
-			// 벨 사이 7초가 지나야 다음 말을 한다.
-			Check(Counter->TalkAtStoreCounterForTesting(), TEXT("second_bell_after_seven_seconds"));
+			// 벨 사이 7초가 지나야 다음 말을 한다. 그래도 나린이 앞의 말을 하는 중이면 묻지 않으니(렌더 실행),
+			// 그 말이 끝나면 다시 누른다. 화면이 없는 실행은 줄이 줄지 않으니 바로 묻는다.
+			const bool bNarinTalking = AIGHorrorHUD::IsPresentingDialogue(this)
+				&& AIGHorrorHUD::HasDialogueInContext(this, FName(TEXT("Store.CounterTalk")));
+			const bool bAsked = Counter->TalkAtStoreCounterForTesting();
+			if (bNarinTalking)
+			{
+				if (!bBellRefusalChecked)
+				{
+					bBellRefusalChecked = true;
+					Check(!bAsked, TEXT("bell_waits_while_narin_talks"));
+				}
+				if (!bAsked && PhaseSeconds < 40.0f)
+				{
+					break;
+				}
+			}
+			SecondBellAt = PhaseSeconds;
+			Check(bAsked, TEXT("second_bell_after_seven_seconds"));
 			Check(Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.ParcelLedger"))) && !IsShown(Slip),
 				TEXT("receipt_question_then_search"));
 			if (bShots)
@@ -566,14 +589,18 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 					TEXT("narin_looks_up_the_pos"));
 			}
 		}
-		// 단말기는 「찾아볼게요」가 지나간 뒤(밀린 대사가 길어도 14초 안), 찾은 날짜를 말하고 나서 영수증이
-		// 나온다. 나올 때까지 기다리고, 그 뒤 순서는 나온 때부터 센다.
-		if (PhaseSeconds > 7.5f && PrintedAt < 0.0f)
+		if (SecondBellAt < 0.0f)
+		{
+			break;
+		}
+		// 단말기는 「찾아볼게요」가 지나간 뒤, 찾은 날짜를 말하고 나서 영수증이 나온다. 나올 때까지
+		// 기다리고, 그 뒤 순서는 나온 때부터 센다.
+		if (PrintedAt < 0.0f)
 		{
 			if (IsShown(Slip))
 			{
 				PrintedAt = PhaseSeconds;
-				Check(PhaseSeconds > 7.5f + 4.8f + 2.6f, TEXT("receipt_waits_for_the_talk"));
+				Check(PhaseSeconds > SecondBellAt + 4.8f + 2.6f, TEXT("receipt_waits_for_the_talk"));
 				if (bShots)
 				{
 					// 영수증은 「뽑아 드릴게요」까지 다 들은 뒤에 나온다. 그 말이 들은 말 기록에 이미 있어야 한다.
@@ -582,7 +609,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 						TEXT("narin_reads_the_date"));
 				}
 			}
-			else if (PhaseSeconds > 45.0f)
+			else if (PhaseSeconds > SecondBellAt + 45.0f)
 			{
 				Check(false, TEXT("receipt_printed_on_counter"));
 				Finish();

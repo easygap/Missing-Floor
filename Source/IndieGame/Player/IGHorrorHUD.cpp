@@ -1808,6 +1808,8 @@ void AIGHorrorHUD::AdvanceDialogueQueue(const double CurrentTime)
 		FlushDialogueEndCallbacks();
 		return;
 	}
+	// 방금 끝까지 보인 줄의 사건. 같은 사건의 다음 줄은 그 대화가 이어지는 것이다.
+	FName CompletedContext = NAME_None;
 	if (bHasCurrentDialogue)
 	{
 		// 나눈 줄은 마지막 쪽까지 읽었을 때 원문 하나로 남긴다.
@@ -1815,6 +1817,7 @@ void AIGHorrorHUD::AdvanceDialogueQueue(const double CurrentTime)
 		{
 			RecordHeardLine(CurrentDialogue);
 		}
+		CompletedContext = CurrentDialogue.Scope.Context;
 		EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Completed);
 	}
 	bHasCurrentDialogue = false;
@@ -1843,6 +1846,13 @@ void AIGHorrorHUD::AdvanceDialogueQueue(const double CurrentTime)
 			? IGHorrorHUD::AmbientDialogueMaximumQueueAge
 			: IGHorrorHUD::StoryDialogueMaximumQueueAge)
 			* FMath::Max(1.0f, GetCaptionDurationScale());
+		// 질문 뒤의 대답처럼 같은 사건의 앞줄이 방금 끝났으면, 앞줄이 길었던 만큼 밀린 시간은 세지 않는다.
+		// 글자를 키우거나 줄이 여러 쪽으로 나뉘는 언어에서 대답이 화면에 오르기도 전에 버려졌다.
+		if (!CompletedContext.IsNone() && Next.Scope.Context == CompletedContext
+			&& Next.Scope.Lifetime == EIGDialogueLifetime::Story)
+		{
+			Next.QueuedAt = CurrentTime;
+		}
 		if (!Next.bContinuation && CurrentTime - Next.QueuedAt > MaximumAge)
 		{
 			EndDialogueMessage(Next, EIGDialogueEndReason::Expired);

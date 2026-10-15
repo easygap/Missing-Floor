@@ -2869,6 +2869,14 @@ bool AIGListenerGreyboxDirector::TalkAtStoreCounter()
 	{
 		return false;
 	}
+	// 나린이 앞의 말을 하는 중이면 벨을 눌러도 다음 질문을 하지 않는다. 질문이 줄에 쌓이면 대답이 오래
+	// 밀려 버려지고, 영수증은 말 없이 계산대에 놓였다. 화면이 그려지지 않는 실행은 줄이 줄지 않으니 보지 않는다.
+	if (AIGHorrorHUD::IsPresentingDialogue(this)
+		&& (AIGHorrorHUD::HasDialogueInContext(this, IGListenerGreybox::StoreCounterTalkContext)
+			|| AIGHorrorHUD::HasDialogueInContext(this, IGListenerGreybox::StoreReceiptContext)))
+	{
+		return false;
+	}
 	LastCounterTalkAt = Now;
 	// 말하던 중에 가게를 나갔다가 다시 벨을 누르면 끊긴 데부터 잇는다.
 	if (AIGHorrorHUD::ResumeInterruptedTalk(this, IGListenerGreybox::StoreCounterTalkContext))
@@ -12152,6 +12160,9 @@ void AIGListenerGreyboxDirector::SpawnJeongwooTalk(UStaticMesh* CubeMesh)
 		0.0f,
 		0.06f,
 		/*bPresentationVisible=*/false);
+	// Configure가 루트를 Static으로 굳히는데, 이 상자는 낮마다 오토바이 자리로 옮긴다.
+	// Static이면 옮기기가 거부돼 상자가 원점에 남고 오토바이 앞에서는 말을 걸 수 없다.
+	JeongwooTalk->GetRootComponent()->SetMobility(EComponentMobility::Movable);
 	JeongwooTalk->OnExamined.AddUObject(this, &AIGListenerGreyboxDirector::HandleJeongwooTalk);
 	JeongwooTalk->SetActorEnableCollision(false);
 	JeongwooTalk->SetInteractionEnabled(false);
