@@ -154,6 +154,15 @@ void AIGNeighbor303Probe::Tick(const float DeltaSeconds)
 		Finish();
 		return;
 	}
+	// 화면 없는 실행이라 HUD가 그려지지 않는다. 그리는 프레임이 하는 대로 대사 큐를 넘겨서
+	// 그녀의 말이 끝나는 때(내려가는 때와 뒤따르는 혼잣말)를 실제 플레이와 같게 둔다.
+	if (const APlayerController* Controller = GetWorld()->GetFirstPlayerController())
+	{
+		if (AIGHorrorHUD* Hud = Cast<AIGHorrorHUD>(Controller->GetHUD()))
+		{
+			Hud->AdvanceDialogueForTesting(GetWorld()->GetTimeSeconds());
+		}
+	}
 	using namespace IGNeighbor303Probe;
 	using EStage = AIGStairNeighbor::EStage;
 	UIGMissingFloorNarrativeSubsystem* Narrative = GetGameInstance()

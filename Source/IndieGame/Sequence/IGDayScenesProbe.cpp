@@ -20,6 +20,7 @@
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
 #include "IndieGame.h"
+#include "Kismet/GameplayStatics.h"
 #include "Interaction/IGInteractable.h"
 #include "Interaction/IGReadableNote.h"
 #include "Interaction/IGSwingDoor.h"
@@ -30,6 +31,8 @@
 #include "Player/IGFlashlightComponent.h"
 #include "Player/IGHorrorHUD.h"
 #include "Player/IGPlayerCharacter.h"
+#include "Player/IGPlayerController.h"
+#include "Save/IGSaveGame.h"
 #include "ShaderCompiler.h"
 #include "UnrealClient.h"
 
@@ -61,6 +64,8 @@ AIGDayScenesProbe::AIGDayScenesProbe()
 	// 검사기는 매 프레임 낮과 밤의 경계와 쪽지·정우·폰을 잰다. -IGDayScenesProbe로만 선다.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickGroup = TG_PostPhysics;
+	// 기록장은 게임을 멈춘다. 그 화면을 찍으려면 멈춘 동안에도 돌아야 한다.
+	PrimaryActorTick.bTickEvenWhenPaused = true;
 	SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
 }
 
@@ -312,11 +317,18 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 		if (JeongwooTalk->IsInteractionEnabled())
 		{
 			Check(true, TEXT("jeongwoo_waits_on_scooter_day1"));
+			// 말은 오토바이 옆에서 건다. 들리는 거리 밖에서 건 말은 줄을 서지 않는다.
+			Stand(CurbFeet, CurbRiderFace);
 			JeongwooTalk->OnExamined.Broadcast(JeongwooTalk.Get());
 			Check(Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro")))
 				&& SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooIntro",
 					"저 202호 살아요, 정우예요. 새벽에 오토바이 소리 나면 저예요. 죄송해요.")),
 				TEXT("jeongwoo_introduces_himself_day1"));
+			if (!bShots)
+			{
+				// 쪽지 붙이는 소리는 403호 안에서만 들린다. 렌더 실행은 오토바이 앞을 찍고 나서 돌아간다.
+				Stand(HomeFeet + Floor4, FVector(131.0f, -237.0f, 100.0f) + Floor4);
+			}
 			Next(3);
 		}
 		else if (PhaseSeconds >= 12.0f)
@@ -390,10 +402,15 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 		}
 		if (JeongwooTalk->IsInteractionEnabled())
 		{
+			Stand(CurbFeet, CurbRiderFace);
 			JeongwooTalk->OnExamined.Broadcast(JeongwooTalk.Get());
 			Check(Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Guest")))
 				&& SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooGuest3", "동네장터에도 올렸어요. 403호도 걸쇠 꼭 거세요.")),
 				TEXT("jeongwoo_tells_mother_voice_day2"));
+			if (!bShots)
+			{
+				Stand(HomeFeet + Floor4, FVector(131.0f, -237.0f, 100.0f) + Floor4);
+			}
 			Next(6);
 		}
 		else if (PhaseSeconds >= 12.0f)
@@ -523,10 +540,8 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 				break;
 			}
 			Check(!IsShown(Slip), TEXT("no_receipt_before_asking"));
-			if (bShots)
-			{
-				Stand(StoreFeet, StoreReceiptFace);
-			}
+			// 벨은 계산대 앞에서 누른다. 나린의 말과 영수증 장면은 그 자리에 있어야 이어진다.
+			Stand(StoreFeet, StoreReceiptFace);
 			// 뒤편 택배 안내문은 읽고 왔다고 친다. 첫 벨에는 택배 얘기를 한다.
 			Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.Delivery")));
 			Counter->TalkAtStoreCounterForTesting();
@@ -561,11 +576,13 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 				Check(PhaseSeconds > 7.5f + 4.8f + 2.6f, TEXT("receipt_waits_for_the_talk"));
 				if (bShots)
 				{
-					Check(SaidLine(NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 관리실 아저씨가 대신 받아 가셨어요. 뽑아 드릴게요.")),
+					// 영수증은 「뽑아 드릴게요」까지 다 들은 뒤에 나온다. 그 말이 들은 말 기록에 이미 있어야 한다.
+					const FText Found = NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 관리실 아저씨가 대신 받아 가셨어요. 뽑아 드릴게요.");
+					Check(Narrative->GetHeardLines().ContainsByPredicate([&Found](const FIGHeardLine& Entry) { return Entry.Line.EqualTo(Found); }),
 						TEXT("narin_reads_the_date"));
 				}
 			}
-			else if (PhaseSeconds > 7.5f + 14.0f + 2.6f + 8.0f + 1.0f)
+			else if (PhaseSeconds > 45.0f)
 			{
 				Check(false, TEXT("receipt_printed_on_counter"));
 				Finish();
@@ -628,8 +645,268 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 		}
 		if (SincePrint >= 12.0f)
 		{
-			Finish();
+			Next(bShots ? 15 : 20);
 		}
+		break;
+	}
+
+	case 15:
+	{
+		// 기록장의 「들은 말」. 나린과 나눈 말이 가장 최근 쪽에 남았는지 화면으로 본다.
+		AIGPlayerController* Controller = Cast<AIGPlayerController>(GetWorld()->GetFirstPlayerController());
+		AIGHorrorHUD* Hud = Controller ? Cast<AIGHorrorHUD>(Controller->GetHUD()) : nullptr;
+		if (!Controller || !Hud)
+		{
+			Check(false, TEXT("heard_lines_reach_the_journal"));
+			Next(20);
+			break;
+		}
+		++JournalFrames;
+		if (JournalFrames == 1)
+		{
+			Check(Narrative->GetHeardLines().Num() > 0
+				&& Hud->GetMissingFloorJournalPageCount() > Hud->GetMissingFloorJournalTruthPageCount(),
+				TEXT("heard_lines_reach_the_journal"));
+			Controller->OpenMissingFloorJournalForTesting();
+		}
+		else if (JournalFrames == 4)
+		{
+			// 첫 쪽에서 ←를 누르면 가장 최근에 들은 말이 있는 쪽이다.
+			Controller->MoveMissingFloorJournalPageForTesting(-1);
+		}
+		else if (JournalFrames == 30)
+		{
+			Shoot(TEXT("dayscenes-journal-heard"));
+		}
+		else if (JournalFrames >= 40)
+		{
+			Controller->CloseMissingFloorJournalForTesting();
+			Next(20);
+		}
+		break;
+	}
+
+	case 20:
+	{
+		// 대사 규칙. 화면 없이 큐를 직접 넘기며 본다(그리는 프레임이 하는 일과 같다).
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		AIGHorrorHUD* Hud = PC ? Cast<AIGHorrorHUD>(PC->GetHUD()) : nullptr;
+		if (!Hud)
+		{
+			Check(false, TEXT("dialogue_rules_hud"));
+			Finish();
+			break;
+		}
+		const double T0 = GetWorld()->GetTimeSeconds();
+		const FText Speaker = FText::FromString(TEXT("검사"));
+		const auto Scoped = [](const FName Context, const EIGDialogueLifetime Lifetime)
+		{
+			FIGDialogueScope Scope;
+			Scope.Context = Context;
+			Scope.Lifetime = Lifetime;
+			return Scope;
+		};
+		const FText LineA = FText::FromString(TEXT("규칙 검사 반응 하나."));
+		const FText LineB = FText::FromString(TEXT("규칙 검사 이야기 둘."));
+
+		// 1. 사건을 거두면 떠 있는 줄과 밀린 줄이 함께 사라진다.
+		Hud->ClearDialogueForTesting();
+		AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::Conversation, 0.0f,
+			EIGDialoguePriority::Story, Scoped(TEXT("Rule.X"), EIGDialogueLifetime::Reaction));
+		AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::InnerVoice, 0.0f,
+			EIGDialoguePriority::Story, Scoped(TEXT("Rule.X"), EIGDialogueLifetime::Reaction));
+		AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+			EIGDialoguePriority::Story, Scoped(TEXT("Rule.Y"), EIGDialogueLifetime::Story));
+		Hud->AdvanceDialogueForTesting(T0);
+		AIGHorrorHUD::CancelDialogue(this, TEXT("Rule.X"));
+		Hud->AdvanceDialogueForTesting(T0 + 0.05);
+		Check(!Hud->HasDialogueInContextForTesting(TEXT("Rule.X"))
+			&& Hud->GetActiveDialogueLineForTesting().ToString() == LineB.ToString(), TEXT("cancel_removes_current_and_queued"));
+
+		// 2. 짧은 반응은 메뉴에 한참 가려졌다 돌아오면 다시 보이지 않는다. 이야기 대사는 남은 시간부터 잇는다.
+		Hud->ClearDialogueForTesting();
+		AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::Conversation, 0.0f,
+			EIGDialoguePriority::Story, Scoped(TEXT("Rule.R"), EIGDialogueLifetime::Reaction));
+		Hud->AdvanceDialogueForTesting(T0);
+		Hud->SuspendDialogueForTesting(T0 + 1.0);
+		Hud->ResumeDialogueForTesting(T0 + 4.0);
+		Check(Hud->GetQueuedDialogueCountForTesting() == 0, TEXT("stale_reaction_dropped_after_menu"));
+		Hud->ClearDialogueForTesting();
+		AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+			EIGDialoguePriority::Story, Scoped(TEXT("Rule.S"), EIGDialogueLifetime::Story));
+		Hud->AdvanceDialogueForTesting(T0);
+		const double EndBefore = Hud->GetDialogueEndTimeForTesting();
+		Hud->SuspendDialogueForTesting(T0 + 1.0);
+		Hud->ResumeDialogueForTesting(T0 + 4.0);
+		Check(Hud->GetActiveDialogueLineForTesting().ToString() == LineB.ToString()
+			&& FMath::IsNearlyEqual(Hud->GetDialogueEndTimeForTesting(), EndBefore + 3.0, 0.01),
+			TEXT("story_line_resumes_after_menu"));
+
+		// 3. 같은 말을 거듭 내도 처음 뜬 때부터 한 번 읽을 시간까지만 둔다.
+		Hud->ClearDialogueForTesting();
+		AIGHorrorHUD::PushDialogue(this, Speaker, LineB);
+		Hud->AdvanceDialogueForTesting(T0);
+		const double FirstEnd = Hud->GetDialogueEndTimeForTesting();
+		for (int32 Repeat = 0; Repeat < 6; ++Repeat)
+		{
+			AIGHorrorHUD::PushDialogue(this, Speaker, LineB);
+		}
+		Check(FMath::IsNearlyEqual(Hud->GetDialogueEndTimeForTesting(), FirstEnd, 0.01), TEXT("repeat_does_not_extend"));
+
+		// 4. 지금 행동에 대한 반응은 오래 밀리면(이미 지난 상황) 뜨지 않고 버려진다.
+		Hud->ClearDialogueForTesting();
+		AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+			EIGDialoguePriority::Story, Scoped(TEXT("Rule.Story"), EIGDialogueLifetime::Story));
+		AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::Conversation, 0.0f,
+			EIGDialoguePriority::Story, Scoped(TEXT("Rule.Late"), EIGDialogueLifetime::Reaction));
+		Hud->AdvanceDialogueForTesting(T0);
+		Hud->AdvanceDialogueForTesting(T0 + 12.0);
+		Check(Hud->GetQueuedDialogueCountForTesting() == 0, TEXT("late_reaction_expires"));
+
+		// 5. 낸 쪽이 사라지면 그 줄도 사라지고, 끝 알림은 한 번만 온다.
+		Hud->ClearDialogueForTesting();
+		int32 Ended = 0;
+		EIGDialogueEndReason LastReason = EIGDialogueEndReason::Completed;
+		AActor* LineOwner = GetWorld()->SpawnActor<AActor>();
+		{
+			FIGDialogueScope Scope = Scoped(TEXT("Rule.Owner"), EIGDialogueLifetime::Story);
+			Scope.Owner = LineOwner;
+			Scope.OnEnded = [&Ended, &LastReason](const EIGDialogueEndReason Reason) { ++Ended; LastReason = Reason; };
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, MoveTemp(Scope));
+		}
+		Hud->AdvanceDialogueForTesting(T0);
+		if (LineOwner)
+		{
+			LineOwner->Destroy();
+		}
+		Hud->AdvanceDialogueForTesting(T0 + 0.1);
+		Hud->AdvanceDialogueForTesting(T0 + 0.2);
+		Check(Hud->GetQueuedDialogueCountForTesting() == 0 && Ended == 1 && LastReason == EIGDialogueEndReason::Cancelled,
+			TEXT("owner_gone_cancels_once"));
+
+		// 6. 다 읽으면 Completed로 한 번 끝난다.
+		Hud->ClearDialogueForTesting();
+		Ended = 0;
+		{
+			FIGDialogueScope Scope = Scoped(TEXT("Rule.Done"), EIGDialogueLifetime::Story);
+			Scope.OnEnded = [&Ended, &LastReason](const EIGDialogueEndReason Reason) { ++Ended; LastReason = Reason; };
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, MoveTemp(Scope));
+		}
+		Hud->AdvanceDialogueForTesting(T0);
+		Hud->AdvanceDialogueForTesting(T0 + 30.0);
+		Hud->AdvanceDialogueForTesting(T0 + 31.0);
+		Check(Ended == 1 && LastReason == EIGDialogueEndReason::Completed, TEXT("completed_ends_once"));
+
+		// 7. 이미 사라진 쪽이 늦게 낸 말(멈춘 타이머·늦은 로딩)은 큐에 들어가지 않는다.
+		Hud->ClearDialogueForTesting();
+		{
+			FIGDialogueScope Scope = Scoped(TEXT("Rule.Late"), EIGDialogueLifetime::Story);
+			Scope.StillValid = []() { return false; };
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, MoveTemp(Scope));
+		}
+		Check(Hud->GetQueuedDialogueCountForTesting() == 0, TEXT("ended_scene_push_rejected"));
+
+		// 8. 장면이 바뀌면(밤 시작·새벽·붙잡힘) 떠 있는 줄과 밀린 줄, 소리 자막이 모두 사라진다.
+		AIGHorrorHUD::PushDialogue(this, Speaker, LineA);
+		AIGHorrorHUD::PushDialogue(this, Speaker, LineB);
+		AIGHorrorHUD::PushAudioCaption(this, LineA, 2.0f);
+		AIGHorrorHUD::ResetDialogueForSceneChange(this);
+		Check(Hud->GetQueuedDialogueCountForTesting() == 0 && !Hud->HasPendingAudioCaption(), TEXT("scene_change_clears_lines"));
+
+		// 9. 끝까지 보인 이야기 대사만 「들은 말」에 남는다. 짧은 반응과 거둔 말은 남지 않는다.
+		{
+			const FText Heard = FText::FromString(TEXT("규칙 검사 끝까지 들은 말."));
+			const FText Brief = FText::FromString(TEXT("규칙 검사 짧은 반응."));
+			const FText Dropped = FText::FromString(TEXT("규칙 검사 거둔 말."));
+			Hud->ClearDialogueForTesting();
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, Heard, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, Scoped(TEXT("Rule.Heard"), EIGDialogueLifetime::Story));
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, Brief, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, Scoped(TEXT("Rule.Brief"), EIGDialogueLifetime::Reaction));
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, Dropped, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, Scoped(TEXT("Rule.Dropped"), EIGDialogueLifetime::Story));
+			Hud->AdvanceDialogueForTesting(T0);
+			Hud->AdvanceDialogueForTesting(T0 + 2.5);
+			Hud->AdvanceDialogueForTesting(T0 + 5.0);
+			AIGHorrorHUD::CancelDialogue(this, TEXT("Rule.Dropped"));
+			const TArray<FIGHeardLine>& Log = Narrative->GetHeardLines();
+			const auto Logged = [&Log](const FText& Line)
+			{
+				return Log.ContainsByPredicate([&Line](const FIGHeardLine& Entry) { return Entry.Line.EqualTo(Line); });
+			};
+			Check(Log.Num() > 0 && Log.Last().Line.EqualTo(Heard) && Log.Last().Speaker.EqualTo(Speaker),
+				TEXT("heard_log_keeps_completed_story_line"));
+			Check(!Logged(Brief) && !Logged(Dropped), TEXT("heard_log_skips_reactions_and_cancelled"));
+
+			// 들은 말은 저장 파일에 실려 돌아온다. 실제 저장과 같은 직렬화(SaveGame 속성)를 거친다.
+			UIGSaveGame* Saved = NewObject<UIGSaveGame>(this);
+			Saved->Progress.MissingFloorNarrative = Narrative->GetSnapshot();
+			TArray<uint8> Bytes;
+			const bool bWritten = UGameplayStatics::SaveGameToMemory(Saved, Bytes);
+			const UIGSaveGame* Loaded = bWritten ? Cast<UIGSaveGame>(UGameplayStatics::LoadGameFromMemory(Bytes)) : nullptr;
+			const TArray<FIGHeardLine>* Restored = Loaded ? &Loaded->Progress.MissingFloorNarrative.Heard : nullptr;
+			Check(Restored && Restored->Num() == Log.Num() && Restored->Num() > 0
+				&& Restored->Last().Line.EqualTo(Heard) && Restored->Last().Speaker.EqualTo(Speaker),
+				TEXT("heard_log_survives_save_and_load"));
+		}
+
+		// 10. 마주 보고 하는 말은 화자에게서 멀어지면 끊기고, 돌아와 다시 말을 걸면 끊긴 데부터 잇는다.
+		if (AIGPlayerCharacter* Walker = Player.Get())
+		{
+			const FVector Here = Walker->GetActorLocation();
+			const auto MoveListener = [Walker](const FVector& Where)
+			{
+				Walker->SetActorLocation(Where, false, nullptr, ETeleportType::TeleportPhysics);
+			};
+			const auto TalkScope = [&Here]()
+			{
+				FIGDialogueScope Scope;
+				Scope.Context = TEXT("Rule.Talk");
+				Scope.SpeakerLocation = Here;
+				Scope.EarshotRadius = 600.0f;
+				Scope.bReplayIfInterrupted = true;
+				return Scope;
+			};
+			Hud->ClearDialogueForTesting();
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, TalkScope());
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, TalkScope());
+			Hud->AdvanceDialogueForTesting(T0);
+			MoveListener(Here + FVector(0.0f, 0.0f, 3000.0f));
+			Hud->AdvanceDialogueForTesting(T0 + 0.1);
+			Check(Hud->GetQueuedDialogueCountForTesting() == 0 && Hud->HasInterruptedTalkForTesting(TEXT("Rule.Talk")),
+				TEXT("walking_away_interrupts_talk"));
+			MoveListener(Here);
+			const bool bResumed = AIGHorrorHUD::ResumeInterruptedTalk(this, TEXT("Rule.Talk"));
+			Hud->AdvanceDialogueForTesting(T0 + 0.2);
+			Check(bResumed && Hud->GetQueuedDialogueCountForTesting() == 2
+				&& Hud->GetActiveDialogueLineForTesting().ToString() == LineA.ToString(),
+				TEXT("talk_resumes_where_it_stopped"));
+			MoveListener(Here + FVector(0.0f, 0.0f, 3000.0f));
+			Hud->AdvanceDialogueForTesting(T0 + 0.3);
+			AIGHorrorHUD::CancelDialogue(this, TEXT("Rule.Talk"));
+			Check(!Hud->HasInterruptedTalkForTesting(TEXT("Rule.Talk")) && Hud->GetQueuedDialogueCountForTesting() == 0,
+				TEXT("cancel_clears_held_talk"));
+			MoveListener(Here);
+
+			// 11. 소리 자막은 그 소리가 들리는 거리 안에서만 뜨고, 그 자리를 벗어나면 내린다.
+			Hud->ClearDialogueForTesting();
+			AIGHorrorHUD::PushAudioCaptionScoped(this, FText::FromString(TEXT("[규칙 검사 먼 소리]")), 2.0f,
+				Here + FVector(3000.0f, 0.0f, 0.0f), TEXT("Rule.Far"), 900.0f);
+			Check(!Hud->HasPendingAudioCaption(), TEXT("far_sound_caption_not_shown"));
+			AIGHorrorHUD::PushAudioCaptionScoped(this, FText::FromString(TEXT("[규칙 검사 가까운 소리]")), 5.0f,
+				Here, TEXT("Rule.Near"), 900.0f);
+			const bool bNearShown = Hud->HasPendingAudioCaption();
+			MoveListener(Here + FVector(0.0f, 0.0f, 3000.0f));
+			Hud->AdvanceAudioCaptionsForTesting();
+			Check(bNearShown && !Hud->HasPendingAudioCaption(), TEXT("caption_drops_when_out_of_earshot"));
+			MoveListener(Here);
+		}
+		Finish();
 		break;
 	}
 

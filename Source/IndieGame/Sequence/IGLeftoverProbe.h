@@ -49,6 +49,8 @@ private:
 	void Check(bool bCondition, const TCHAR* Name);
 	void Finish();
 	void Stand(const FVector& Feet, const FVector& LookAt);
+	/** 그 사건 이름의 대사가 지금 떠 있거나 밀려 있는가. */
+	bool HasLinesIn(FName Context) const;
 	void Shoot(const TCHAR* Name);
 	/** 정우가 판을 받치는 자리: 판·상자·손발 뼈를 판 좌표로 남기고 둘레 벽까지 잰다. */
 	void LogBraceGeometry();

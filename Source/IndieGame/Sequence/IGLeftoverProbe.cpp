@@ -197,6 +197,13 @@ void AIGLeftoverProbe::Finish()
 	FPlatformMisc::RequestExitWithStatus(false, Failures ? 1 : 0);
 }
 
+bool AIGLeftoverProbe::HasLinesIn(const FName Context) const
+{
+	const APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	const AIGHorrorHUD* Hud = PC ? Cast<AIGHorrorHUD>(PC->GetHUD()) : nullptr;
+	return Hud && Hud->HasDialogueInContextForTesting(Context);
+}
+
 void AIGLeftoverProbe::Stand(const FVector& Feet, const FVector& LookAt)
 {
 	AIGPlayerCharacter* Character = Player.Get();
@@ -1045,6 +1052,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		{
 			EndFrames();
 			Check(Narrative->GetLeftover().JeongwooState == FName(TEXT("Freed")), TEXT("n3_jeongwoo_freed_after_move"));
+			// 꺼낸 뒤에는 갇혔을 때의 부름과 반응이 떠 있거나 밀려 있지 않다.
+			Check(!HasLinesIn(IGLeftoverDialogue::Trapped), TEXT("n3_trapped_lines_gone_after_rescue"));
 			Next(34);
 			return;
 		}
@@ -1180,8 +1189,12 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		Stand(FVector(25.6f, -40.8f, 600.0f), FVector(56.8f, -10.6f, 617.0f));
 		Use(Target(TEXT("Storage.DohaPull")));
 		Check(!Taken(IGLeftoverProbe::DohaBox), TEXT("n3_box_catches_once"));
+		Check(HasLinesIn(IGLeftoverDialogue::BoxStuck), TEXT("n3_box_stuck_line_queued"));
 		Use(Target(TEXT("Storage.DohaPull")));
 		Check(Taken(IGLeftoverProbe::DohaBox) && Taken(IGLeftoverProbe::ToolPouch), TEXT("n3_box_and_pouch_out"));
+		// 상자가 빠졌다. 걸렸다는 말과 받치는 동안의 말은 떠 있거나 밀려 있지 않다.
+		Check(!HasLinesIn(IGLeftoverDialogue::BoxStuck) && !HasLinesIn(IGLeftoverDialogue::Brace),
+			TEXT("n3_box_stuck_line_cancelled"));
 		Next(36);
 		return;
 	case 36:
@@ -2261,6 +2274,16 @@ bool AIGLeftoverProbe::InputWalk(const FVector& Goal, const float Tolerance, con
 					*Start.ToCompactString(), Hit.GetActor() ? *Hit.GetActor()->GetName() : TEXT("none"),
 					Hit.GetComponent() ? *Hit.GetComponent()->GetName() : TEXT("none"),
 					*Hit.ImpactPoint.ToCompactString(), *Hit.ImpactNormal.ToCompactString());
+				// 무엇을 밟고 서 있는지도 적는다. 발밑이 들리면 머리가 문틀에 걸린다.
+				FHitResult Floor;
+				if (GetWorld()->SweepSingleByChannel(Floor, Start, Start - FVector(0.0f, 0.0f, 200.0f), FQuat::Identity,
+						Capsule->GetCollisionObjectType(),
+						FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight()), Params))
+				{
+					UE_LOG(LogIndieGame, Display, TEXT("INPUT_FLOOR actor=%s comp=%s impact=%s"),
+						Floor.GetActor() ? *Floor.GetActor()->GetName() : TEXT("none"),
+						Floor.GetComponent() ? *Floor.GetComponent()->GetName() : TEXT("none"), *Floor.ImpactPoint.ToCompactString());
+				}
 				// 덧댄 것의 다리에 막혔으면 다리 캡슐이 어디를 가로지르는지 다 적는다(바닥 높이에서 길을 고를 때 쓴다).
 				if (const AIGLiningEntity* Body = Cast<AIGLiningEntity>(Hit.GetActor()))
 				{
@@ -2325,6 +2348,19 @@ bool AIGLeftoverProbe::TickInputRoute(const float DeltaSeconds)
 			Check(false, Step_.Name);
 			UE_LOG(LogIndieGame, Display, TEXT("INPUT_STUCK %s at=%s goal=%s"), Step_.Name,
 				Player.IsValid() ? *Player->GetActorLocation().ToCompactString() : TEXT("none"), *Step_.Point.ToCompactString());
+			Shoot(TEXT("99_input_stuck"));
+			if (Player.IsValid())
+			{
+				for (TActorIterator<AIGSwingDoor> It(GetWorld()); It; ++It)
+				{
+					if (FVector::Dist(It->GetActorLocation(), Player->GetActorLocation()) < 250.0f)
+					{
+						UE_LOG(LogIndieGame, Display, TEXT("INPUT_DOOR %s at=%s open=%d closed=%d swinging=%d"), *It->GetName(),
+							*It->GetActorLocation().ToCompactString(), It->IsOpen() ? 1 : 0, It->IsFullyClosed() ? 1 : 0,
+							It->IsSwinging() ? 1 : 0);
+					}
+				}
+			}
 			if (bForwardDown)
 			{
 				SendKey(EKeys::W, false);
@@ -2384,6 +2420,9 @@ bool AIGLeftoverProbe::TickInputRoute(const float DeltaSeconds)
 	}
 	if (bDone)
 	{
+		// 막혔을 때 어디서부터 꼬였는지 보려고 단계마다 선 자리를 남긴다.
+		UE_LOG(LogIndieGame, Display, TEXT("INPUT_STEP %s at=%s"), Step_.Name,
+			Player.IsValid() ? *Player->GetActorLocation().ToCompactString() : TEXT("none"));
 		++InputIndex;
 		InputStepSeconds = 0.0f;
 	}
@@ -2468,6 +2507,8 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	Walk(FVector(40.0f, -110.0f, 690.0f), 20.0f, TEXT("input_step_aside"), TEXT("lining_moves"));
 	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Freed")); },
 		60.0f, TEXT("input_jeongwoo_freed"));
+	// 꺼내자마자 다른 걸 해도 판에 끼어 있던 때의 말은 다시 나오지 않는다.
+	Until([this]() { return !HasLinesIn(IGLeftoverDialogue::Trapped); }, 0.5f, TEXT("input_no_trapped_line_after_rescue"));
 	Wait(3.0f);
 	// 판 밑 상자를 정우와 같이 뺀다.
 	Walk(FVector(25.6f, -40.8f, 690.0f), 14.0f, TEXT("input_walk_to_box"), TEXT("box"));
@@ -2475,12 +2516,41 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_ask_brace"));
 	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Bracing"))
 		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking(); }, 25.0f, TEXT("input_jeongwoo_braces"));
+	// 받치는 동안 302호를 잠깐 나갔다 온다. 정우는 판을 놓고 문을 잡으러 가고, 돌아와 다시 부탁하면 다시 받친다.
+	// 받치는 정우가 등 뒤(동쪽)에 있다. 서쪽으로 돌아 나간다.
+	Walk(FVector(25.0f, -58.0f, 690.0f), 18.0f, TEXT("input_back_off_from_box"));
+	Walk(FVector(-15.0f, -70.0f, 690.0f), 20.0f, TEXT("input_round_the_legs_out"));
+	Walk(FVector(-32.0f, -125.0f, 690.0f), 25.0f, TEXT("input_head_for_door"));
+	Walk(FVector(-30.0f, -246.0f, 690.0f), 22.0f, TEXT("input_step_out_while_bracing"));
+	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Leaving")); },
+		3.0f, TEXT("input_leaving_releases_board"));
+	Until([this]() { return !HasLinesIn(IGLeftoverDialogue::Brace); }, 0.5f, TEXT("input_no_brace_line_after_release"));
+	Walk(FVector(-32.0f, -125.0f, 690.0f), 25.0f, TEXT("input_come_back_in"));
+	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Leaving"))
+		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking(); }, 20.0f, TEXT("input_jeongwoo_waits_at_door"));
+	Walk(FVector(40.0f, -110.0f, 690.0f), 20.0f, TEXT("input_return_past_legs"));
+	Walk(FVector(25.6f, -40.8f, 690.0f), 14.0f, TEXT("input_walk_back_to_box"));
+	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_aim_box_after_return"));
+	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_ask_brace_again"));
+	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Bracing"))
+		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking(); }, 25.0f, TEXT("input_jeongwoo_braces_again"));
 	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_aim_box_again"));
 	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_pull_box_1"));
 	Wait(0.6f);
 	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_pull_box_2"));
 	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->HasLeftover(EIGLeftoverList::Taken, FName(TEXT("DohaBox"))); },
 		3.0f, TEXT("input_box_out"));
+	// 연달아 당겨 빼도 「상자가 걸렸어요」가 뒤늦게 뜨지 않는다.
+	Until([this]() { return !HasLinesIn(IGLeftoverDialogue::BoxStuck); }, 0.5f, TEXT("input_no_stale_box_line"));
+	// 정우가 문을 잡고 기다리는 동안 상자 자리를 다시 본다. 지난 말(걸렸다, 받치겠다)이 되살아나지 않는다.
+	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Leaving"))
+		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking(); }, 20.0f, TEXT("input_jeongwoo_holds_door"));
+	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_look_at_box_spot"));
+	Press(nullptr, 0.3f, TEXT("input_press_at_box_spot"));
+	Wait(1.0f);
+	Until([this, WeakDirector]() { return !HasLinesIn(IGLeftoverDialogue::BoxStuck) && !HasLinesIn(IGLeftoverDialogue::Brace)
+		&& WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Leaving")); },
+		0.5f, TEXT("input_box_spot_again_no_stale_line"));
 	// 마대에서 남은 조각과 틀을 꺼낸다.
 	Walk(FVector(52.0f, -100.0f, 690.0f), 16.0f, TEXT("input_walk_to_sack"), TEXT("sack"));
 	AimAt(Target(TEXT("Storage.Sack")), FVector::ZeroVector, TEXT("input_aim_sack"));

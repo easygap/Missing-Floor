@@ -3,6 +3,8 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Audio/IGVoice.h"
+#include "Accessibility/IGAccessibilitySubsystem.h"
 #include "AudioMixerBlueprintLibrary.h"
 #include "AudioDevice.h"
 #include "AudioThread.h"
@@ -17,6 +19,8 @@
 #include "Misc/App.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
+#include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "Player/IGHorrorHUD.h"
 #include "Player/IGPlayerCharacter.h"
 #include "Player/IGStressComponent.h"
 #include "Sound/SoundClass.h"
@@ -138,6 +142,30 @@ void AIGAudioPresentationProbe::CheckChaseWave()
 	UE_LOG(LogTemp, Display, TEXT("AUDIO_PRESENTATION_WAVE seconds=%.6f peak=%.5f rms=%.5f"),
 		Wave->LoopSampleCount / 48000.0, Peak / 32767.0,
 		FMath::Sqrt(static_cast<double>(Energy) / Count) / 32767.0);
+}
+
+FText AIGAudioPresentationProbe::ProbeVoiceLine()
+{
+	// 키가 있는 문장이어야 목소리를 찾는다. 검사 문장이라 번역 목록에는 올리지 않는다.
+	return FText::AsLocalizable_Advanced(TEXT("IGVoiceProbe"), TEXT("ProbeVoiceLine"), TEXT("목소리 검사 줄."));
+}
+
+void AIGAudioPresentationProbe::SayProbeVoice()
+{
+	FIGDialogueScope Scope;
+	Scope.Context = TEXT("VoiceProbe");
+	Scope.Owner = this;
+	TWeakObjectPtr<AIGAudioPresentationProbe> WeakThis(this);
+	Scope.OnEnded = [WeakThis](const EIGDialogueEndReason Reason)
+	{
+		if (AIGAudioPresentationProbe* Self = WeakThis.Get())
+		{
+			++Self->VoiceEnded;
+			Self->VoiceLastReason = static_cast<uint8>(Reason);
+		}
+	};
+	const FVector Mouth = Player.IsValid() ? Player->GetActorLocation() + FVector(160, 0, 60) : FVector::ZeroVector;
+	IGVoice::Say(this, FText::FromString(TEXT("검사")), ProbeVoiceLine(), MoveTemp(Scope), [Mouth]() { return Mouth; });
 }
 
 void AIGAudioPresentationProbe::Tick(const float DeltaSeconds)
@@ -383,6 +411,113 @@ void AIGAudioPresentationProbe::Tick(const float DeltaSeconds)
 	{
 		Check(!Audio->PresenceComponent || !Audio->PresenceComponent->IsPlaying(),
 			TEXT("nearly_silent_pressure_loop_stops"));
+		// 목소리 줄. 녹음이 아직 없으니 2.6초짜리 녹음 샘플을 검사용 대사 키에 건다.
+		Audio->SetUserMasterVolume(1);
+		APlayerController* Controller = GetWorld()->GetFirstPlayerController();
+		Hud = Controller ? Cast<AIGHorrorHUD>(Controller->GetHUD()) : nullptr;
+		USoundBase* StandIn = IGAudio::Sample(TEXT("Entity_KnockTriple"));
+		Check(Hud.IsValid() && StandIn, TEXT("voice_probe_setup"));
+		if (!Hud.IsValid() || !StandIn)
+		{
+			Phase = 30; Seconds = 0;
+			return;
+		}
+		IGVoice::SetSoundForTesting(IGVoice::LineIdOf(ProbeVoiceLine()), StandIn);
+		Hud->ClearDialogueForTesting();
+		// 앞줄이 떠 있는 동안 녹음 줄은 줄만 서고 소리를 내지 않는다.
+		AIGHorrorHUD::PushDialogue(this, FText::FromString(TEXT("검사")), FText::FromString(TEXT("목소리 앞의 글 줄.")));
+		SayProbeVoice();
+		Check(!Hud->GetActiveDialogueVoiceForTesting() && Hud->GetQueuedDialogueCountForTesting() == 2,
+			TEXT("queued_voice_waits_for_its_turn"));
+		Phase = 20; Seconds = 0;
+	}
+	else if (Phase == 20 && Hud.IsValid() && Hud->GetActiveDialogueVoiceForTesting())
+	{
+		VoiceComponent = Hud->GetActiveDialogueVoiceForTesting();
+		Check(VoiceComponent->IsPlaying() && Hud->GetActiveDialogueLineForTesting().ToString() == ProbeVoiceLine().ToString(),
+			TEXT("voice_starts_when_its_line_shows"));
+		Phase = 21; Seconds = 0;
+	}
+	else if (Phase == 20 && Seconds > 8)
+	{
+		Check(false, TEXT("voice_starts_when_its_line_shows"));
+		Phase = 30; Seconds = 0;
+	}
+	else if (Phase == 21 && Seconds > 1.0f)
+	{
+		// 사람이 말하는 동안 내 숨은 한 칸, 음악은 한 칸 내려간다(§21.1).
+		Check(Audio->IsSpeechPlaying(), TEXT("speech_bus_reports_voice"));
+		CheckMixerGain(EIGAudioBus::Player, -7, TEXT("speech_ducks_player_breath"));
+		CheckMixerGain(EIGAudioBus::Speech, -2, TEXT("speech_bus_registered"));
+		Phase = 22; Seconds = 0;
+	}
+	else if (Phase == 22 && (VoiceEnded > 0 || Seconds > 6))
+	{
+		const UIGMissingFloorNarrativeSubsystem* Narrative = GetGameInstance()
+			? GetGameInstance()->GetSubsystem<UIGMissingFloorNarrativeSubsystem>() : nullptr;
+		Check(VoiceEnded == 1 && VoiceLastReason == static_cast<uint8>(EIGDialogueEndReason::Completed)
+			&& !(VoiceComponent.IsValid() && VoiceComponent->IsPlaying()), TEXT("voice_line_ends_with_its_sound"));
+		Check(Narrative && Narrative->GetHeardLines().Num() > 0
+			&& Narrative->GetHeardLines().Last().Line.EqualTo(ProbeVoiceLine()), TEXT("finished_voice_is_kept_as_heard"));
+		// 음성 대사 자막을 끄면 소리만 난다. 줄은 그대로 서서 끝을 알린다.
+		// 저장된 설정은 건드리지 않는다(검사가 끊겨도 사용자 설정이 꺼진 채 남지 않게).
+		if (UIGAccessibilitySubsystem* Accessibility = GetGameInstance()->GetSubsystem<UIGAccessibilitySubsystem>())
+		{
+			Accessibility->OverrideSubtitlesForTesting(false);
+		}
+		VoiceEnded = 0;
+		SayProbeVoice();
+		Phase = 23; Seconds = 0;
+	}
+	else if (Phase == 23 && Seconds > 0.6f)
+	{
+		const UAudioComponent* Voice = Hud.IsValid() ? Hud->GetActiveDialogueVoiceForTesting() : nullptr;
+		Check(Voice && Voice->IsPlaying() && !Hud->IsActiveDialogueDrawnForTesting(), TEXT("voice_plays_with_subtitles_off"));
+		Phase = 24; Seconds = 0;
+	}
+	else if (Phase == 24 && (VoiceEnded > 0 || Seconds > 6))
+	{
+		Check(VoiceEnded == 1 && VoiceLastReason == static_cast<uint8>(EIGDialogueEndReason::Completed),
+			TEXT("hidden_voice_line_still_ends"));
+		if (UIGAccessibilitySubsystem* Accessibility = GetGameInstance()->GetSubsystem<UIGAccessibilitySubsystem>())
+		{
+			Accessibility->OverrideSubtitlesForTesting(true);
+		}
+		VoiceEnded = 0;
+		SayProbeVoice();
+		Phase = 25; Seconds = 0;
+	}
+	else if (Phase == 25 && Seconds > 0.6f)
+	{
+		// 장면이 거두면 소리도 같이 멎는다.
+		VoiceComponent = Hud.IsValid() ? Hud->GetActiveDialogueVoiceForTesting() : nullptr;
+		const bool bWasPlaying = VoiceComponent.IsValid() && VoiceComponent->IsPlaying();
+		AIGHorrorHUD::CancelDialogue(this, TEXT("VoiceProbe"));
+		Check(bWasPlaying && !(VoiceComponent.IsValid() && VoiceComponent->IsPlaying())
+			&& VoiceEnded == 1 && VoiceLastReason == static_cast<uint8>(EIGDialogueEndReason::Cancelled),
+			TEXT("cancel_stops_the_voice"));
+		VoiceEnded = 0;
+		SayProbeVoice();
+		Phase = 26; Seconds = 0;
+	}
+	else if (Phase == 26 && Seconds > 0.6f)
+	{
+		// 소리가 밖에서 먼저 멎으면 끝까지 들은 줄로 치지 않는다. 다음 일도 이어지지 않는다.
+		if (UAudioComponent* Voice = Hud.IsValid() ? Hud->GetActiveDialogueVoiceForTesting() : nullptr)
+		{
+			Voice->Stop();
+		}
+		Phase = 27; Seconds = 0;
+	}
+	else if (Phase == 27 && Seconds > 0.3f)
+	{
+		Check(VoiceEnded == 1 && VoiceLastReason == static_cast<uint8>(EIGDialogueEndReason::Cancelled),
+			TEXT("cut_voice_is_not_counted_as_finished"));
+		IGVoice::SetSoundForTesting(IGVoice::LineIdOf(ProbeVoiceLine()), nullptr);
+		Phase = 30; Seconds = 0;
+	}
+	else if (Phase == 30)
+	{
 		UE_LOG(LogTemp, Display, TEXT("AUDIO_PRESENTATION_PROBE %s failures=%d"),
 			Failures ? TEXT("FAIL") : TEXT("PASS"), Failures);
 		const FString Summary = FString::Printf(TEXT("AUDIO_PRESENTATION_PROBE %s failures=%d\n"),

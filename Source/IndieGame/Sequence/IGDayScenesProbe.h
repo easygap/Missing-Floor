@@ -68,5 +68,7 @@ private:
 	bool bActed = false;
 	/** 영수증이 계산대에 나온 때(편의점 장면). */
 	float PrintedAt = -1.0f;
+	/** 기록장을 연 뒤 지난 프레임. 기록장은 게임을 멈추므로 시간 대신 센다. */
+	int32 JournalFrames = 0;
 	FVector NoteClosedAt = FVector::ZeroVector;
 };

@@ -1,7 +1,9 @@
 ﻿[CmdletBinding()]
 param(
 	# en·ja·zh-Hans·zh-Hant로 찍으면 번역 길이가 쪽지와 폰 화면에 들어가는지 본다. 프로필 언어는 그대로다.
-	[string]$Culture
+	[string]$Culture,
+	# 2면 자막·기록장 글자를 가장 크게 키운 설정으로 본다.
+	[ValidateSet(1, 2)][int]$TextScale = 1
 )
 
 # 낮 장면 검사를 렌더하며 몇 장면을 찍는다. 연석의 정우, 403호 문의 303호 쪽지 셋, 폰의 동네
@@ -23,6 +25,7 @@ $settingsPath = Join-Path $projectRoot 'Saved/Config/WindowsEditor/GameUserSetti
 $settingsBytes = if (Test-Path -LiteralPath $settingsPath) { [IO.File]::ReadAllBytes($settingsPath) } else { $null }
 $cultureArguments = @()
 if (-not [string]::IsNullOrWhiteSpace($Culture)) { $cultureArguments += ('-IGCulture=' + $Culture) }
+if ($TextScale -gt 1) { $cultureArguments += ('-IGCaptionScale=' + $TextScale) }
 try {
 	& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen -d3d12 -nosound `
 		-Windowed -ResX=1600 -ResY=900 -ForceRes -IGListenerGreybox -IGDayScenesProbe -IGDayScenesShots -IGSkipFrontend `

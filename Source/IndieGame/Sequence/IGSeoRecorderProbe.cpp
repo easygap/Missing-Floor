@@ -297,8 +297,15 @@ void AIGSeoRecorderProbe::Tick(const float DeltaSeconds)
 		}
 		// 트는 중에 새벽이 왔다. 멈추고, 목격은 없고, 녹음기는 제자리다.
 		Check(Machine->IsPlaying(), TEXT("playback_runs"));
-		Machine->SetHourActive(false);
-		Check(!Machine->IsPlaying(), TEXT("dawn_stops_the_playback"));
+		{
+			const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+			const AIGHorrorHUD* Hud = PC ? Cast<AIGHorrorHUD>(PC->GetHUD()) : nullptr;
+			Check(Hud && Hud->HasDialogueInContextForTesting(FName(TEXT("SeoRecorder.Playback"))), TEXT("playback_lines_queued"));
+			Machine->SetHourActive(false);
+			Check(!Machine->IsPlaying(), TEXT("dawn_stops_the_playback"));
+			// 멈춘 재생의 녹음 대사가 떠 있거나 밀려 있지 않다(나중에 혼자 이어지지 않는다).
+			Check(Hud && !Hud->HasDialogueInContextForTesting(FName(TEXT("SeoRecorder.Playback"))), TEXT("stopped_playback_lines_cancelled"));
+		}
 		Check(!Narrative->HasWitness(EIGMissingFloorWitness::SeoVoiceRecorder), TEXT("half_heard_leaves_no_witness"));
 		Check(!Machine->IsAvailable(), TEXT("not_taken_by_day"));
 		Machine->SetHourActive(true);
