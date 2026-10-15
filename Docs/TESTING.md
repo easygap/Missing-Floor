@@ -31,7 +31,7 @@ Missing Floor는 정식 출시 전에 두 가지를 확인해야 합니다. 여�
 
 다른 PC의 결과도 반갑습니다. 결과는 [성능 기준](PERFORMANCE.md)과 견줘 봅니다.
 
-## 2. 처음 플레이 기록 (두세 시간, 나눠서 해도 됩니다)
+## 2. 처음 플레이 기록 (오래 걸리니 나눠서 해도 됩니다)
 
 이 게임을 처음 하는 분께 부탁드립니다. 공략이나 다른 사람의 영상을 보지 않고
 평소처럼 플레이해 주세요.
@@ -68,7 +68,7 @@ Open the 테스트 도구 (Test Tools) folder in the extracted ZIP.
   graphics cards such as a GTX 1060 or RX 580, `성능 측정 - 낮음.bat` (Low). The game runs a
   fixed night route three times and writes `MissingFloor-performance-<date>.zip` to your
   desktop. Attach it to a [performance report](https://github.com/easygap/Missing-Floor/issues/new?template=performance_report.yml).
-- **First playthrough (about 90 minutes, first-time players only):** start the game with
+- **First playthrough (first-time players only; it takes a while, so feel free to split it up):** start the game with
   `플레이테스트로 시작.bat` and play without a walkthrough. You can stop whenever you like;
   use the same file when you return. Each session creates a new record. When you quit,
   the PlayRecords folder opens. Attach all your `playrecord-<date>.json` files to a
