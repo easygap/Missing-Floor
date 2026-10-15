@@ -29,6 +29,9 @@ class UIGMissingFloorNarrativeSubsystem;
  * 마지막 철물과 개방), 저장 왕복과 확장 전 저장의 처리까지다.
  *
  * -IGLeftoverProbe=dawn이면 밤3에 정우를 꺼내지 않고 새벽을 맞아 혼자 빠져나가는 길을 본다.
+ * -IGLeftoverProbe=input이면 밤3 302호를 순간 이동 없이 실제 입력(W, 마우스 축, E 누르기·길게 누르기)으로
+ * 지난다. 복도에서 걸어 들어가 쐐기·장롱·점검구·상자 당기기·덮개 맞추기를 하고 걸어 나온다. 시작 상태(밤3,
+ * 4층 관리인·위층 사람 재우기)만 검사가 만든다. 걸린 시간을 구간별로 남긴다.
  * -IGLeftoverProbe=wall이면 밤4 벽의 단계마다 저장 상태만 바꿔 되살린 모습을 보고 찍는다.
  * -IGLeftoverShots를 같이 주면 렌더가 있는 실행에서 걸음마다 화면을 찍는다(Saved/LeftoverReview).
  */
@@ -105,6 +108,8 @@ private:
 	/** H를 누르면 지금 이 힌트가 나오는가. 찍는 실행이면 가장 구체적인 단계를 띄우고 1.2초 뒤에 찍는다. */
 	bool HintIs(const TCHAR* GoalId, const TCHAR* ShotName);
 	bool bDawnVariant = false;
+	/** dawnbrace: 정우를 꺼내 판을 받치게 한 채 새벽을 맞는다. 낮3 403호 문 앞에 상자가 와 있어야 한다. */
+	bool bDawnBraceVariant = false;
 	/** night2: 낮1을 건너뛰고 밤2 안쪽 방만 본다. */
 	bool bNightTwoOnly = false;
 	/** wall: 밤4 벽 단계마다 저장 상태로 되살려 보고 찍는다(불러오기 길). */
@@ -116,4 +121,47 @@ private:
 	int32 Step = 0;
 	/** 한 단계 안에서 찍은 뒤 다음 행동까지 기다린 시간(PhaseSeconds를 쓰는 조건과 따로 센다). */
 	float StepSeconds = 0.0f;
+
+	// -- 실제 입력 길(input) -------------------------------------------------------------
+	enum class EInputStep : uint8 { Walk, Aim, Press, Wait, Until };
+	struct FInputStep
+	{
+		EInputStep Kind = EInputStep::Wait;
+		FVector Point = FVector::ZeroVector;
+		/** Walk 허용 거리, Press 누르는 시간, Wait 시간, Until 제한 시간. */
+		float Value = 0.0f;
+		const TCHAR* Name = TEXT("");
+		/** Press 전에 조준이 잡혀 있어야 하는 표적(비우면 보지 않는다). */
+		TWeakObjectPtr<AActor> Expect;
+		TFunction<bool()> Done;
+		/** 구간 이름이 있으면 여기서 시간 구간이 바뀐다. */
+		const TCHAR* Segment = nullptr;
+	};
+	bool bInputVariant = false;
+	TArray<FInputStep> InputSteps;
+	int32 InputIndex = 0;
+	float InputStepSeconds = 0.0f;
+	bool bInputKeyDown = false;
+	bool bForwardDown = false;
+	float MouseYawScale = 0.0f;
+	float MousePitchScale = 0.0f;
+	int32 CalibrateStage = 0;
+	float CalibrateYaw = 0.0f;
+	float CalibratePitch = 0.0f;
+	float StallSeconds = 0.0f;
+	/** 막힌 걸음마다 무엇에 막혔는지 한 번만 적는다. */
+	bool bBlockLogged = false;
+	FString InputSegment;
+	float InputSegmentStart = 0.0f;
+	void BuildStorageInputRoute();
+	/** 이번 틱의 입력 한 단계를 진행한다. 다 끝났으면 true. */
+	bool TickInputRoute(float DeltaSeconds);
+	bool CalibrateMouse();
+	bool InputWalk(const FVector& Goal, float Tolerance, float DeltaSeconds);
+	bool InputAim(const FVector& Point, float DeltaSeconds);
+	void SendKey(const FKey& Key, bool bPressed);
+	void SendMouse(float X, float Y);
+	AActor* FocusedActor() const;
+	FVector CameraLocation() const;
+	FRotator CameraRotation() const;
 };

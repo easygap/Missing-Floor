@@ -41,7 +41,9 @@
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Player/IGFlashlightComponent.h"
 #include "Player/IGHorrorHUD.h"
+#include "Player/IGInteractionComponent.h"
 #include "Player/IGPlayerCharacter.h"
+#include "InputCoreTypes.h"
 #include "ShaderCompiler.h"
 #include "UnrealClient.h"
 
@@ -79,8 +81,10 @@ void AIGLeftoverProbe::Configure(AIGPrologueWorldScene* InScene, AIGPlayerCharac
 	FString Variant;
 	FParse::Value(FCommandLine::Get(), TEXT("IGLeftoverProbe="), Variant);
 	bDawnVariant = Variant == TEXT("dawn");
+	bDawnBraceVariant = Variant == TEXT("dawnbrace");
 	bNightTwoOnly = Variant == TEXT("night2");
 	bWallOnly = Variant == TEXT("wall");
+	bInputVariant = Variant == TEXT("input");
 	if (UIGGameInstance* GameInstance = Cast<UIGGameInstance>(GetGameInstance()))
 	{
 		GameInstance->SetRuntimeProfileStage(0);
@@ -454,11 +458,15 @@ void AIGLeftoverProbe::Shoot(const TCHAR* Name)
 	{
 		GShaderCompilingManager->FinishAllCompilation();
 	}
-	if (bCleanShots)
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController(); PC && PC->MyHUD)
 	{
-		if (APlayerController* PC = GetWorld()->GetFirstPlayerController(); PC && PC->MyHUD)
+		if (bCleanShots)
 		{
 			PC->MyHUD->bShowHUD = false;
+		}
+		if (AIGHorrorHUD* Hud = Cast<AIGHorrorHUD>(PC->MyHUD))
+		{
+			Hud->ClearChapterCardForTesting();
 		}
 	}
 	const FString Directory = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("LeftoverReview")));
@@ -611,6 +619,12 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		if (bWallOnly)
 		{
 			Next(80);
+			return;
+		}
+		if (bInputVariant)
+		{
+			// 입력 길은 밤3 302호부터다. 그 앞 장면은 전체 검사가 본다.
+			Next(30);
 			return;
 		}
 		Narrative->SetNightIndex(1);
@@ -895,15 +909,81 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		Check(Narrative->GetLeftover().JeongwooState == FName(TEXT("Trapped")), TEXT("n3_jeongwoo_trapped"));
 		Check(Director->GetJeongwoo() && Director->GetJeongwoo()->IsShown(), TEXT("n3_jeongwoo_behind_board"));
 		Check(Lining && Lining->GetHeldGap() == FName(TEXT("Storage.Narrow")), TEXT("n3_lining_presses_work_gap"));
+		if (Lining)
+		{
+			// 틈을 누른 채 짚은 다리가 마감판·상자·바닥을 뚫지 않는다.
+			bool bClear = true;
+			for (int32 Leg = 0; Leg < AIGLiningEntity::LegCount; ++Leg)
+			{
+				const FString Hit = Lining->FindLegObstruction(Leg);
+				UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_LEG n3 leg=%d pad=%s knee=%s hit=%s"), Leg,
+					*Lining->GetPadLocation(Leg).ToCompactString(), *Lining->GetKneeLocation(Leg).ToCompactString(),
+					Hit.IsEmpty() ? TEXT("none") : *Hit);
+				if (Leg == 0)
+				{
+					UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_LEG n3 body=%s up=%s"), *Lining->GetBodyCenter().ToCompactString(),
+						*Lining->GetBodyUp().ToCompactString());
+					if (const UStaticMeshComponent* Board = Director->GetPropForTesting(FName(TEXT("Storage.Board"))))
+					{
+						UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_LEG n3 board loc=%s rot=%s box=%s collision=%d"),
+							*Board->GetComponentLocation().ToCompactString(), *Board->GetComponentRotation().ToCompactString(),
+							*Board->Bounds.GetBox().ToString(), static_cast<int32>(Board->GetCollisionEnabled()));
+					}
+				}
+				bClear &= Hit.IsEmpty();
+			}
+			Check(bClear, TEXT("n3_lining_legs_clear_of_props"));
+		}
 		Check(Mok->IsAvoidingStorage(), TEXT("n3_manager_skips_third_floor"));
 		Check(HintIs(TEXT("Hint.Night3.Storage"), TEXT("n3_hint")), TEXT("n3_hint_points_to_storage"));
 		CheckStorageContact(false, TEXT("n3_trapped"));
 		// 문 안쪽에서 넘어진 판과 그 너머 구석을 본다.
 		Stand(FVector(-40.0f, -190.0f, 600.0f), FVector(80.0f, 40.0f, 690.0f));
 		Shoot(TEXT("n3_trapped"));
+		Step = 0;
+		StepSeconds = 0.0f;
+		Next(310);
+		return;
+	case 310:
+		// 북쪽 벽을 따라 서쪽에서, 그리고 가까이에서 틈을 누른 몸과 판을 같이 본다(다리가 판을 뚫는지).
+		if (!bShots)
+		{
+			Next(311);
+			return;
+		}
+		StepSeconds += GetWorld()->GetDeltaSeconds();
+		if (Step == 0 && StepSeconds >= 0.2f)
+		{
+			Stand(FVector(-125.0f, 30.0f, 600.0f), FVector(40.0f, 60.0f, 690.0f));
+			Shoot(TEXT("n3_trapped_west"));
+			Step = 1;
+			StepSeconds = 0.0f;
+		}
+		else if (Step == 1 && StepSeconds >= 0.2f)
+		{
+			Stand(FVector(-10.0f, -70.0f, 600.0f), FVector(30.0f, 60.0f, 700.0f));
+			Shoot(TEXT("n3_trapped_close"));
+			Step = 2;
+			StepSeconds = 0.0f;
+		}
+		else if (Step == 2 && StepSeconds >= 0.2f)
+		{
+			Step = 0;
+			Next(311);
+		}
+		return;
+	case 311:
 		if (bDawnVariant)
 		{
 			Next(60);
+			return;
+		}
+		if (bInputVariant)
+		{
+			// 여기서부터는 순간 이동하지 않는다. 302호 문 밖 복도에서 시작한다.
+			Stand(FVector(-30.0f, -330.0f, 600.0f), FVector(-30.0f, -150.0f, 660.0f));
+			BuildStorageInputRoute();
+			Next(200);
 			return;
 		}
 		Next(38);
@@ -997,7 +1077,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		Next(35);
 		return;
 	case 35:
-		if (Director->GetStorageStage() != FName(TEXT("Bracing")) || (Director->GetJeongwoo() && Director->GetJeongwoo()->IsWalking()))
+		// 처음 받칠 때까지만 기다린다. 그 뒤에는 정우가 판을 놓고 문으로 가는 것까지 단계마다 따로 본다.
+		if (Step == 0 && (Director->GetStorageStage() != FName(TEXT("Bracing")) || (Director->GetJeongwoo() && Director->GetJeongwoo()->IsWalking())))
 		{
 			if (PhaseSeconds > 15.0f)
 			{
@@ -1035,6 +1116,61 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		{
 			return;
 		}
+		if (bDawnBraceVariant)
+		{
+			// 받치는 한가운데 새벽이 온다. 그녀가 꺼낸 정우는 같이 나간 것이고, 못 뺀 상자는 정우가 챙긴다.
+			if (NightPhase.IsValid())
+			{
+				NightPhase->CompleteNightGoal();
+				NightPhase->ConcludeNight();
+			}
+			Next(62);
+			return;
+		}
+		if (Step == 2)
+		{
+			// 당기지 않고 기다린다. 받치는 장면이 밤 내내 남지 않고 판을 놓아야 한다.
+			Stand(FVector(-20.0f, -115.0f, 600.0f), FVector(75.0f, -20.0f, 690.0f));
+			Step = 3;
+			StepSeconds = 0.0f;
+			return;
+		}
+		if (Step == 3)
+		{
+			if (Director->GetStorageStage() == FName(TEXT("Leaving")))
+			{
+				Check(StepSeconds > 30.0f, TEXT("n3_brace_waits_before_release"));
+				Check(true, TEXT("n3_brace_released_when_idle"));
+				Stand(FVector(25.6f, -40.8f, 600.0f), FVector(56.8f, -10.6f, 617.0f));
+				Check(Use(Target(TEXT("Storage.DohaPull"))), TEXT("n3_ask_again_from_door"));
+				Step = 4;
+				StepSeconds = 0.0f;
+				return;
+			}
+			if (StepSeconds > 60.0f)
+			{
+				Check(false, TEXT("n3_brace_released_when_idle"));
+				Step = 4;
+				StepSeconds = 0.0f;
+			}
+			return;
+		}
+		if (Step == 4)
+		{
+			if (Director->GetStorageStage() != FName(TEXT("Bracing")) || (Director->GetJeongwoo() && Director->GetJeongwoo()->IsWalking()))
+			{
+				if (StepSeconds > 20.0f)
+				{
+					Check(false, TEXT("n3_jeongwoo_returns_to_brace"));
+					Step = 5;
+				}
+				return;
+			}
+			Check(true, TEXT("n3_jeongwoo_returns_to_brace"));
+			Step = 5;
+			StepSeconds = 0.0f;
+			return;
+		}
 		Stand(FVector(25.6f, -40.8f, 600.0f), FVector(56.8f, -10.6f, 617.0f));
 		Use(Target(TEXT("Storage.DohaPull")));
 		Check(!Taken(IGLeftoverProbe::DohaBox), TEXT("n3_box_catches_once"));
@@ -1048,15 +1184,22 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			StepSeconds += GetWorld()->GetDeltaSeconds();
 			if (StepSeconds >= 0.2f)
 			{
-				Stand(FVector(-30.0f, -300.0f, 600.0f), FVector(-30.0f, -268.0f, 700.0f));
+				Stand(FVector(-30.0f, -300.0f, 600.0f), FVector(-100.0f, -262.0f, 700.0f));
 				Next(37);
 			}
 			return;
 		}
 		if (Director->GetStorageStage() == FName(TEXT("Leaving")) && Director->GetJeongwoo() && !Director->GetJeongwoo()->IsWalking())
 		{
-			// 방 안에서 문을 잡고 선 정우를 본다.
-			Stand(FVector(-40.0f, -140.0f, 600.0f), FVector(-30.0f, -268.0f, 690.0f));
+			// 방 안 동쪽에서 문간 너머로, 문설주를 잡고 선 정우를 본다. 문간은 비어 있어야 한다.
+			Stand(FVector(40.0f, -170.0f, 600.0f), FVector(-100.0f, -262.0f, 700.0f));
+			{
+				const AIGJeongwooFigure* Figure = Director->GetJeongwoo();
+				const FVector Feet = Figure ? Figure->GetActorLocation() : FVector::ZeroVector;
+				// 문간 가운데(X -30)를 지나는 플레이어 캡슐(30)과 정우 캡슐(26)이 닿지 않는다.
+				Check(Figure && FMath::Abs(Feet.X - (-30.0f)) > 26.0f + 30.0f + 4.0f && Feet.Y < -240.0f,
+					TEXT("n3_door_holder_leaves_doorway_clear"));
+			}
 			Shoot(TEXT("n3_jeongwoo_holds_door"));
 			Step = 1;
 			StepSeconds = 0.0f;
@@ -1685,6 +1828,15 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		return;
 	}
 
+	// -- 실제 입력 길(=input) ------------------------------------------------------------
+	case 200:
+		if (TickInputRoute(DeltaSeconds))
+		{
+			UE_LOG(LogIndieGame, Display, TEXT("INPUT_ROUTE done seconds=%.1f"), PhaseSeconds);
+			Finish();
+		}
+		return;
+
 	// -- 새벽에 혼자 빠져나가는 길(=dawn) ------------------------------------------------
 	case 60:
 		if (PhaseSeconds < 2.0f)
@@ -1705,6 +1857,41 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		Check(Narrative->GetLeftover().JeongwooState == FName(TEXT("SelfEscaped")), TEXT("dawn_jeongwoo_self_escaped"));
 		Check(!Director->GetJeongwoo() || !Director->GetJeongwoo()->IsShown(), TEXT("dawn_jeongwoo_gone"));
+		{
+			// 혼자 빠져나간 회차는 상자도 수거차와 같이 갔다. 403호 문 앞에 아무것도 없다.
+			AIGLeftoverTarget* Box = Target(TEXT("Home.DeliveredBoxTake"));
+			Check(!Box || !Box->IsInteractionEnabled(), TEXT("dawn_no_box_at_door"));
+		}
+		Next(70);
+		return;
+
+	case 62:
+		if (PhaseSeconds < 6.0f)
+		{
+			return;
+		}
+		if (Step == 0)
+		{
+			Check(Narrative->GetLeftover().JeongwooState == FName(TEXT("LeftTogether")), TEXT("dawnbrace_jeongwoo_rescued"));
+			Check(!Taken(IGLeftoverProbe::DohaBox), TEXT("dawnbrace_box_left_behind"));
+			Check(!Director->IsSceneActive(), TEXT("dawnbrace_scene_closed"));
+			// 403호 문 앞 복도에서 문 왼쪽 벽을 본다.
+			Stand(FVector(60.0f, -330.0f, 900.0f), FVector(2.0f, -255.0f, 920.0f));
+			Step = 1;
+			PhaseSeconds = 6.0f;
+			return;
+		}
+		if (PhaseSeconds < 6.6f)
+		{
+			return;
+		}
+		{
+			AIGLeftoverTarget* Box = Target(TEXT("Home.DeliveredBoxTake"));
+			Check(Box && Box->IsInteractionEnabled(), TEXT("day3_box_at_403_door"));
+			Shoot(TEXT("day3_box_at_door"));
+			Check(Box && Use(Box), TEXT("day3_box_taken"));
+			Check(Taken(IGLeftoverProbe::DohaBox) && Taken(IGLeftoverProbe::ToolPouch), TEXT("day3_box_and_pouch"));
+		}
 		Next(70);
 		return;
 
@@ -1743,7 +1930,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		Narrative->RestoreSnapshot(Saved);
 		const FIGLeftoverState& After = Narrative->GetLeftover();
 		Check(After.Version == 1, TEXT("save_keeps_version"));
-		if (!bDawnVariant)
+		if (!bDawnVariant && !bDawnBraceVariant)
 		{
 			Check(After.AssemblyStage == 2 && After.bSiteMatched && After.bWardrobeMoved, TEXT("save_keeps_assembly_and_room"));
 			Check(After.JeongwooState == FName(TEXT("LeftTogether")), TEXT("save_keeps_jeongwoo"));
@@ -1775,4 +1962,460 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 	default:
 		return;
 	}
+}
+
+// -- 실제 입력 길 -------------------------------------------------------------------------
+// 키와 마우스 축을 플레이어 컨트롤러의 입력으로 그대로 넣는다(사람이 누르는 것과 같은 길). 순간 이동과
+// 상호작용 직접 호출은 하지 않는다. 마우스 한 칸이 몇 도인지는 처음에 한 번 재서 쓴다.
+
+void AIGLeftoverProbe::SendKey(const FKey& Key, const bool bPressed)
+{
+	AIGPlayerCharacter* Character = Player.Get();
+	APlayerController* PC = Character ? Cast<APlayerController>(Character->GetController()) : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+	const FInputKeyEventArgs Event(nullptr, FInputDeviceId::CreateFromInternalId(0), Key,
+		bPressed ? IE_Pressed : IE_Released, bPressed ? 1.0f : 0.0f, false, FPlatformTime::Cycles64());
+	PC->InputKey(Event);
+}
+
+void AIGLeftoverProbe::SendMouse(const float X, const float Y)
+{
+	AIGPlayerCharacter* Character = Player.Get();
+	APlayerController* PC = Character ? Cast<APlayerController>(Character->GetController()) : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+	if (!FMath::IsNearlyZero(X))
+	{
+		PC->InputKey(FInputKeyEventArgs(nullptr, FInputDeviceId::CreateFromInternalId(0), EKeys::MouseX, X, 1.0f / 60.0f, 1, FPlatformTime::Cycles64()));
+	}
+	if (!FMath::IsNearlyZero(Y))
+	{
+		PC->InputKey(FInputKeyEventArgs(nullptr, FInputDeviceId::CreateFromInternalId(0), EKeys::MouseY, Y, 1.0f / 60.0f, 1, FPlatformTime::Cycles64()));
+	}
+}
+
+AActor* AIGLeftoverProbe::FocusedActor() const
+{
+	const AIGPlayerCharacter* Character = Player.Get();
+	const UIGInteractionComponent* Interaction = Character ? Character->FindComponentByClass<UIGInteractionComponent>() : nullptr;
+	return Interaction ? Interaction->GetFocusedActor() : nullptr;
+}
+
+FVector AIGLeftoverProbe::CameraLocation() const
+{
+	const AIGPlayerCharacter* Character = Player.Get();
+	const APlayerController* PC = Character ? Cast<APlayerController>(Character->GetController()) : nullptr;
+	return PC && PC->PlayerCameraManager ? PC->PlayerCameraManager->GetCameraLocation() : FVector::ZeroVector;
+}
+
+FRotator AIGLeftoverProbe::CameraRotation() const
+{
+	const AIGPlayerCharacter* Character = Player.Get();
+	const APlayerController* PC = Character ? Cast<APlayerController>(Character->GetController()) : nullptr;
+	return PC ? PC->GetControlRotation() : FRotator::ZeroRotator;
+}
+
+bool AIGLeftoverProbe::CalibrateMouse()
+{
+	// 마우스 X·Y를 한 번씩 4만큼 넣고 시점이 몇 도 도는지 잰다. 부호(반전 설정)까지 같이 잡힌다.
+	switch (CalibrateStage)
+	{
+	case 0:
+		CalibrateYaw = CameraRotation().Yaw;
+		CalibratePitch = CameraRotation().Pitch;
+		SendMouse(4.0f, 0.0f);
+		CalibrateStage = 1;
+		return false;
+	case 1:
+		MouseYawScale = FMath::FindDeltaAngleDegrees(CalibrateYaw, CameraRotation().Yaw) / 4.0f;
+		CalibratePitch = CameraRotation().Pitch;
+		SendMouse(0.0f, 4.0f);
+		CalibrateStage = 2;
+		return false;
+	case 2:
+		MousePitchScale = FMath::FindDeltaAngleDegrees(CalibratePitch, CameraRotation().Pitch) / 4.0f;
+		CalibrateStage = 3;
+		UE_LOG(LogIndieGame, Display, TEXT("INPUT_MOUSE yaw_per_unit=%.4f pitch_per_unit=%.4f"), MouseYawScale, MousePitchScale);
+		Check(FMath::Abs(MouseYawScale) > 0.001f && FMath::Abs(MousePitchScale) > 0.001f, TEXT("input_mouse_turns_view"));
+		return true;
+	default:
+		return true;
+	}
+}
+
+bool AIGLeftoverProbe::InputAim(const FVector& Point, const float DeltaSeconds)
+{
+	const FRotator Want = (Point - CameraLocation()).Rotation();
+	const FRotator Now = CameraRotation();
+	const float YawErr = FMath::FindDeltaAngleDegrees(Now.Yaw, Want.Yaw);
+	const float PitchErr = FMath::FindDeltaAngleDegrees(Now.Pitch, Want.Pitch);
+	if (FMath::Abs(YawErr) < 1.2f && FMath::Abs(PitchErr) < 1.2f)
+	{
+		return true;
+	}
+	// 한 틱에 오차의 절반만 돌린다(사람 손처럼 넘치지 않게). 마우스 단위로 바꿔 넣는다.
+	const float X = FMath::IsNearlyZero(MouseYawScale) ? 0.0f : FMath::Clamp(YawErr * 0.5f / MouseYawScale, -40.0f, 40.0f);
+	const float Y = FMath::IsNearlyZero(MousePitchScale) ? 0.0f : FMath::Clamp(PitchErr * 0.5f / MousePitchScale, -40.0f, 40.0f);
+	SendMouse(X, Y);
+	return false;
+}
+
+bool AIGLeftoverProbe::InputWalk(const FVector& Goal, const float Tolerance, const float DeltaSeconds)
+{
+	AIGPlayerCharacter* Character = Player.Get();
+	if (!Character)
+	{
+		return true;
+	}
+	FVector To = Goal - Character->GetActorLocation();
+	To.Z = 0.0f;
+	if (To.Size() < Tolerance)
+	{
+		if (bForwardDown)
+		{
+			SendKey(EKeys::W, false);
+			bForwardDown = false;
+		}
+		StallSeconds = 0.0f;
+		return true;
+	}
+	const FRotator Now = CameraRotation();
+	const float YawErr = FMath::FindDeltaAngleDegrees(Now.Yaw, To.Rotation().Yaw);
+	// 걸으면서 앞을 본다(약간 아래). 방향만 마우스로 맞춘다.
+	const float PitchErr = FMath::FindDeltaAngleDegrees(Now.Pitch, -8.0f);
+	SendMouse(FMath::IsNearlyZero(MouseYawScale) ? 0.0f : FMath::Clamp(YawErr * 0.5f / MouseYawScale, -40.0f, 40.0f),
+		FMath::IsNearlyZero(MousePitchScale) ? 0.0f : FMath::Clamp(PitchErr * 0.3f / MousePitchScale, -20.0f, 20.0f));
+	const bool bFacing = FMath::Abs(YawErr) < 25.0f;
+	if (bFacing != bForwardDown)
+	{
+		SendKey(EKeys::W, bFacing);
+		bForwardDown = bFacing;
+	}
+	// 앞으로 누르는데 몸이 안 나가면 막힌 것이다. 앞에 문이 잡혀 있으면 연다.
+	if (bForwardDown && Character->GetVelocity().Size2D() < 5.0f)
+	{
+		StallSeconds += DeltaSeconds;
+		if (StallSeconds > 1.0f && Cast<AIGSwingDoor>(FocusedActor()))
+		{
+			SendKey(EKeys::E, true);
+			SendKey(EKeys::E, false);
+			StallSeconds = 0.0f;
+		}
+		else if (StallSeconds > 1.0f && !bBlockLogged)
+		{
+			bBlockLogged = true;
+			const UCapsuleComponent* Capsule = Character->GetCapsuleComponent();
+			const FVector Start = Character->GetActorLocation();
+			FHitResult Hit;
+			FCollisionQueryParams Params(SCENE_QUERY_STAT(LeftoverInputBlock), false, Character);
+			if (Capsule && GetWorld()->SweepSingleByChannel(Hit, Start, Start + To.GetSafeNormal() * 30.0f, FQuat::Identity,
+					Capsule->GetCollisionObjectType(),
+					FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight()), Params))
+			{
+				UE_LOG(LogIndieGame, Display, TEXT("INPUT_BLOCK at=%s actor=%s comp=%s impact=%s normal=%s"),
+					*Start.ToCompactString(), Hit.GetActor() ? *Hit.GetActor()->GetName() : TEXT("none"),
+					Hit.GetComponent() ? *Hit.GetComponent()->GetName() : TEXT("none"),
+					*Hit.ImpactPoint.ToCompactString(), *Hit.ImpactNormal.ToCompactString());
+				// 덧댄 것의 다리에 막혔으면 다리 캡슐이 어디를 가로지르는지 다 적는다(바닥 높이에서 길을 고를 때 쓴다).
+				if (const AIGLiningEntity* Body = Cast<AIGLiningEntity>(Hit.GetActor()))
+				{
+					TInlineComponentArray<UCapsuleComponent*> Legs(Body);
+					for (const UCapsuleComponent* Leg : Legs)
+					{
+						const FVector Axis = Leg->GetUpVector() * Leg->GetScaledCapsuleHalfHeight();
+						UE_LOG(LogIndieGame, Display, TEXT("INPUT_LINING_LEG %s a=%s b=%s r=%.0f"), *Leg->GetName(),
+							*(Leg->GetComponentLocation() - Axis).ToCompactString(), *(Leg->GetComponentLocation() + Axis).ToCompactString(),
+							Leg->GetScaledCapsuleRadius());
+					}
+					UE_LOG(LogIndieGame, Display, TEXT("INPUT_LINING_BODY center=%s"), *Body->GetBodyCenter().ToCompactString());
+				}
+			}
+			else
+			{
+				UE_LOG(LogIndieGame, Display, TEXT("INPUT_BLOCK at=%s nothing_ahead"), *Start.ToCompactString());
+			}
+		}
+	}
+	else
+	{
+		StallSeconds = 0.0f;
+		bBlockLogged = false;
+	}
+	return false;
+}
+
+bool AIGLeftoverProbe::TickInputRoute(const float DeltaSeconds)
+{
+	if (!CalibrateMouse())
+	{
+		return false;
+	}
+	if (!InputSteps.IsValidIndex(InputIndex))
+	{
+		if (!InputSegment.IsEmpty())
+		{
+			UE_LOG(LogIndieGame, Display, TEXT("INPUT_SEGMENT %s seconds=%.1f"), *InputSegment, PhaseSeconds - InputSegmentStart);
+			InputSegment.Reset();
+		}
+		return true;
+	}
+	FInputStep& Step_ = InputSteps[InputIndex];
+	if (InputStepSeconds == 0.0f && Step_.Segment)
+	{
+		if (!InputSegment.IsEmpty())
+		{
+			UE_LOG(LogIndieGame, Display, TEXT("INPUT_SEGMENT %s seconds=%.1f"), *InputSegment, PhaseSeconds - InputSegmentStart);
+		}
+		InputSegment = Step_.Segment;
+		InputSegmentStart = PhaseSeconds;
+	}
+	InputStepSeconds += DeltaSeconds;
+	bool bDone = false;
+	switch (Step_.Kind)
+	{
+	case EInputStep::Walk:
+		bDone = InputWalk(Step_.Point, Step_.Value, DeltaSeconds);
+		if (!bDone && InputStepSeconds > 25.0f)
+		{
+			Check(false, Step_.Name);
+			UE_LOG(LogIndieGame, Display, TEXT("INPUT_STUCK %s at=%s goal=%s"), Step_.Name,
+				Player.IsValid() ? *Player->GetActorLocation().ToCompactString() : TEXT("none"), *Step_.Point.ToCompactString());
+			if (bForwardDown)
+			{
+				SendKey(EKeys::W, false);
+				bForwardDown = false;
+			}
+			return true;
+		}
+		break;
+	case EInputStep::Aim:
+		bDone = InputAim(Step_.Point, DeltaSeconds);
+		if (!bDone && InputStepSeconds > 6.0f)
+		{
+			Check(false, Step_.Name);
+			bDone = true;
+		}
+		break;
+	case EInputStep::Press:
+		if (!bInputKeyDown)
+		{
+			AActor* Focus = FocusedActor();
+			if (Step_.Expect.IsValid())
+			{
+				const bool bOnTarget = Focus == Step_.Expect.Get();
+				Check(bOnTarget, *FString::Printf(TEXT("%s_focus"), Step_.Name));
+				if (!bOnTarget)
+				{
+					UE_LOG(LogIndieGame, Display, TEXT("INPUT_FOCUS %s want=%s got=%s cam=%s"), Step_.Name,
+						*Step_.Expect->GetName(), Focus ? *Focus->GetName() : TEXT("none"), *CameraLocation().ToCompactString());
+				}
+			}
+			SendKey(EKeys::E, true);
+			bInputKeyDown = true;
+			InputStepSeconds = 0.0f;
+		}
+		else if (InputStepSeconds >= Step_.Value)
+		{
+			SendKey(EKeys::E, false);
+			bInputKeyDown = false;
+			bDone = true;
+		}
+		break;
+	case EInputStep::Wait:
+		bDone = InputStepSeconds >= Step_.Value;
+		break;
+	case EInputStep::Until:
+		bDone = Step_.Done && Step_.Done();
+		if (bDone)
+		{
+			Check(true, Step_.Name);
+		}
+		else if (InputStepSeconds > Step_.Value)
+		{
+			Check(false, Step_.Name);
+			bDone = true;
+		}
+		break;
+	}
+	if (bDone)
+	{
+		++InputIndex;
+		InputStepSeconds = 0.0f;
+	}
+	return false;
+}
+
+void AIGLeftoverProbe::BuildStorageInputRoute()
+{
+	AIGMissingFloorLeftoverDirector* Director = Leftover.Get();
+	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (!Director || !Narrative)
+	{
+		return;
+	}
+	InputSteps.Reset();
+	InputIndex = 0;
+	InputStepSeconds = 0.0f;
+	const auto Walk = [this](const FVector& Goal, const float Tolerance, const TCHAR* Name, const TCHAR* Segment = nullptr)
+	{
+		FInputStep S; S.Kind = EInputStep::Walk; S.Point = Goal; S.Value = Tolerance; S.Name = Name; S.Segment = Segment;
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto AimAt = [this](AActor* Actor, const FVector& Offset, const TCHAR* Name)
+	{
+		FInputStep S; S.Kind = EInputStep::Aim; S.Point = (Actor ? Actor->GetActorLocation() : FVector::ZeroVector) + Offset; S.Name = Name;
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto AimPoint = [this](const FVector& Point, const TCHAR* Name)
+	{
+		FInputStep S; S.Kind = EInputStep::Aim; S.Point = Point; S.Name = Name;
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto Press = [this](AActor* Expect, const float Seconds, const TCHAR* Name)
+	{
+		FInputStep S; S.Kind = EInputStep::Press; S.Value = Seconds; S.Name = Name; S.Expect = Expect;
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto Wait = [this](const float Seconds)
+	{
+		FInputStep S; S.Kind = EInputStep::Wait; S.Value = Seconds; S.Name = TEXT("wait");
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto Until = [this](TFunction<bool()> Done, const float Limit, const TCHAR* Name)
+	{
+		FInputStep S; S.Kind = EInputStep::Until; S.Value = Limit; S.Name = Name; S.Done = MoveTemp(Done);
+		InputSteps.Add(MoveTemp(S));
+	};
+	TWeakObjectPtr<AIGMissingFloorLeftoverDirector> WeakDirector(Director);
+	TWeakObjectPtr<UIGMissingFloorNarrativeSubsystem> WeakNarrative(Narrative);
+	const auto Live = [this](const TCHAR* Key)
+	{
+		return [this, Key]() { AIGLeftoverTarget* T = Target(Key); return T && T->IsInteractionEnabled(); };
+	};
+
+	// 복도에서 302호로 걸어 들어간다.
+	Walk(FVector(-30.0f, -236.0f, 690.0f), 22.0f, TEXT("input_walk_to_302_door"), TEXT("enter_302"));
+	Walk(FVector(-32.0f, -125.0f, 690.0f), 25.0f, TEXT("input_walk_into_302"));
+	// 문 옆 쐐기를 줍는다.
+	AimAt(Target(TEXT("Storage.WedgePick")), FVector::ZeroVector, TEXT("input_aim_wedge"));
+	Press(Target(TEXT("Storage.WedgePick")), 0.12f, TEXT("input_pick_wedge"));
+	Until(Live(TEXT("Storage.Socket0")), 3.0f, TEXT("input_wedge_in_hand"));
+	// 판 밑동이 바닥 틀에 걸리는 자리에 끼운다.
+	// 덧댄 것의 동쪽 위 다리가 판 밑동 앞으로 무릎을 내밀고 있어, 그 다리 서쪽에 서서 밑동을 겨눈다.
+	Walk(FVector(-20.0f, 5.0f, 690.0f), 18.0f, TEXT("input_walk_to_board_base"), TEXT("wedge"));
+	AimAt(Target(TEXT("Storage.Socket0")), FVector::ZeroVector, TEXT("input_aim_socket0"));
+	Press(Target(TEXT("Storage.Socket0")), 1.15f, TEXT("input_place_wedge"));
+	Until([WeakNarrative]() { return WeakNarrative.IsValid() && WeakNarrative->GetLeftover().WedgeSocket == FName(TEXT("Brace")); },
+		3.0f, TEXT("input_wedge_braces"));
+	// 장롱을 민다. 덧댄 것이 북쪽 작업 틈을 누르며 다리를 방 가운데로 뻗고 있어 남쪽으로 돌아간다.
+	Walk(FVector(-15.0f, -70.0f, 690.0f), 20.0f, TEXT("input_walk_around_legs"), TEXT("wardrobe"));
+	Walk(FVector(-80.0f, -45.0f, 690.0f), 18.0f, TEXT("input_walk_to_wardrobe"));
+	AimAt(Target(TEXT("Storage.Wardrobe")), FVector::ZeroVector, TEXT("input_aim_wardrobe"));
+	Press(Target(TEXT("Storage.Wardrobe")), 1.9f, TEXT("input_push_wardrobe"));
+	Until([WeakNarrative]() { return WeakNarrative.IsValid() && WeakNarrative->GetLeftover().bWardrobeMoved; }, 3.0f, TEXT("input_wardrobe_moved"));
+	Wait(2.5f);
+	// 장롱 뒤 큰 점검구를 연다.
+	AIGAccessHatch* Large = Director->GetHatch(FName(TEXT("Storage.Large")));
+	Walk(FVector(-80.0f, -55.0f, 690.0f), 18.0f, TEXT("input_walk_to_hatch"), TEXT("hatch"));
+	AimAt(Large, FVector::ZeroVector, TEXT("input_aim_hatch"));
+	Press(Large, 0.3f, TEXT("input_open_hatch"));
+	// 덧댄 것이 지나가는 길 밖으로 비켜서 기다린다.
+	Walk(FVector(40.0f, -110.0f, 690.0f), 20.0f, TEXT("input_step_aside"), TEXT("lining_moves"));
+	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Freed")); },
+		60.0f, TEXT("input_jeongwoo_freed"));
+	Wait(3.0f);
+	// 판 밑 상자를 정우와 같이 뺀다.
+	Walk(FVector(25.6f, -40.8f, 690.0f), 14.0f, TEXT("input_walk_to_box"), TEXT("box"));
+	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_aim_box"));
+	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_ask_brace"));
+	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Bracing"))
+		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking(); }, 25.0f, TEXT("input_jeongwoo_braces"));
+	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_aim_box_again"));
+	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_pull_box_1"));
+	Wait(0.6f);
+	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_pull_box_2"));
+	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->HasLeftover(EIGLeftoverList::Taken, FName(TEXT("DohaBox"))); },
+		3.0f, TEXT("input_box_out"));
+	// 마대에서 남은 조각과 틀을 꺼낸다.
+	Walk(FVector(52.0f, -100.0f, 690.0f), 16.0f, TEXT("input_walk_to_sack"), TEXT("sack"));
+	AimAt(Target(TEXT("Storage.Sack")), FVector::ZeroVector, TEXT("input_aim_sack"));
+	Press(Target(TEXT("Storage.Sack")), 1.0f, TEXT("input_open_sack"));
+	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->HasLeftover(EIGLeftoverList::Taken, FName(TEXT("Frame"))); },
+		3.0f, TEXT("input_sack_parts"));
+	// 덮개 맞추기(P6). 조립대 북쪽에 서서 바닥 조각과 틀을 본다.
+	Walk(FVector(-2.0f, -128.0f, 690.0f), 14.0f, TEXT("input_walk_to_table"), TEXT("p6"));
+	// B: 처음엔 90도 돌고 방수막이 위다. 세 번 돌려 바로 세우고, 막 쪽이 위인 채로 한 번 대 본다(실패 원인).
+	AimAt(Target(TEXT("Assembly.Pick1")), FVector::ZeroVector, TEXT("input_aim_pick_b"));
+	Press(Target(TEXT("Assembly.Pick1")), 0.12f, TEXT("input_pick_b"));
+	Wait(0.3f);
+	for (int32 Tap = 0; Tap < 3; ++Tap)
+	{
+		AimAt(Target(TEXT("Assembly.Held")), FVector::ZeroVector, TEXT("input_aim_held"));
+		Press(Target(TEXT("Assembly.Held")), 0.12f, TEXT("input_turn_b"));
+		Wait(0.25f);
+	}
+	AimAt(Target(TEXT("Assembly.Slot1")), FVector::ZeroVector, TEXT("input_aim_slot_b"));
+	Press(Target(TEXT("Assembly.Slot1")), 0.12f, TEXT("input_try_b_membrane_up"));
+	Until([this]() { return GetNarrative() != nullptr && !GetNarrative()->HasBeatPlayed(FName(TEXT("Leftover.Assembly.B"))); },
+		0.5f, TEXT("input_b_membrane_up_rejected"));
+	Wait(1.7f);
+	AimAt(Target(TEXT("Assembly.Held")), FVector::ZeroVector, TEXT("input_aim_held_flip"));
+	Press(Target(TEXT("Assembly.Held")), 0.8f, TEXT("input_flip_b"));
+	Wait(0.3f);
+	AimAt(Target(TEXT("Assembly.Slot1")), FVector::ZeroVector, TEXT("input_aim_slot_b_again"));
+	Press(Target(TEXT("Assembly.Slot1")), 0.12f, TEXT("input_seat_b"));
+	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->HasBeatPlayed(FName(TEXT("Leftover.Assembly.B"))); },
+		1.0f, TEXT("input_b_seated"));
+	// A: 180도. 두 번 돌리고 뒤집는다.
+	AimAt(Target(TEXT("Assembly.Pick0")), FVector::ZeroVector, TEXT("input_aim_pick_a"));
+	Press(Target(TEXT("Assembly.Pick0")), 0.12f, TEXT("input_pick_a"));
+	Wait(0.3f);
+	for (int32 Tap = 0; Tap < 2; ++Tap)
+	{
+		AimAt(Target(TEXT("Assembly.Held")), FVector::ZeroVector, TEXT("input_aim_held"));
+		Press(Target(TEXT("Assembly.Held")), 0.12f, TEXT("input_turn_a"));
+		Wait(0.25f);
+	}
+	AimAt(Target(TEXT("Assembly.Held")), FVector::ZeroVector, TEXT("input_aim_held_flip"));
+	Press(Target(TEXT("Assembly.Held")), 0.8f, TEXT("input_flip_a"));
+	Wait(0.3f);
+	AimAt(Target(TEXT("Assembly.Slot0")), FVector::ZeroVector, TEXT("input_aim_slot_a"));
+	Press(Target(TEXT("Assembly.Slot0")), 0.12f, TEXT("input_seat_a"));
+	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->HasBeatPlayed(FName(TEXT("Leftover.Assembly.A"))); },
+		1.0f, TEXT("input_a_seated"));
+	// C: 270도. 한 번 돌리고 뒤집는다.
+	AimAt(Target(TEXT("Assembly.Pick2")), FVector::ZeroVector, TEXT("input_aim_pick_c"));
+	Press(Target(TEXT("Assembly.Pick2")), 0.12f, TEXT("input_pick_c"));
+	Wait(0.3f);
+	AimAt(Target(TEXT("Assembly.Held")), FVector::ZeroVector, TEXT("input_aim_held"));
+	Press(Target(TEXT("Assembly.Held")), 0.12f, TEXT("input_turn_c"));
+	Wait(0.25f);
+	AimAt(Target(TEXT("Assembly.Held")), FVector::ZeroVector, TEXT("input_aim_held_flip"));
+	Press(Target(TEXT("Assembly.Held")), 0.8f, TEXT("input_flip_c"));
+	Wait(0.3f);
+	AimAt(Target(TEXT("Assembly.Slot2")), FVector::ZeroVector, TEXT("input_aim_slot_c"));
+	Press(Target(TEXT("Assembly.Slot2")), 0.12f, TEXT("input_seat_c"));
+	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->GetLeftover().AssemblyStage == 1; }, 1.5f, TEXT("input_assembled"));
+	// 뒤집어 앞면을 보고, 방수막을 들추고, 챙긴다.
+	AimAt(Target(TEXT("Assembly.Flip")), FVector::ZeroVector, TEXT("input_aim_flip"));
+	Press(Target(TEXT("Assembly.Flip")), 0.8f, TEXT("input_flip_cover"));
+	Wait(1.0f);
+	AimAt(Target(TEXT("Assembly.Membrane")), FVector::ZeroVector, TEXT("input_aim_membrane"));
+	Press(Target(TEXT("Assembly.Membrane")), 1.1f, TEXT("input_lift_membrane"));
+	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->GetLeftover().AssemblyStage == 2; }, 2.0f, TEXT("input_vent_seen"));
+	Wait(1.5f);
+	AimAt(Target(TEXT("Assembly.Take")), FVector::ZeroVector, TEXT("input_aim_take"));
+	Press(Target(TEXT("Assembly.Take")), 0.12f, TEXT("input_take_cover"));
+	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->HasLeftover(EIGLeftoverList::Taken, FName(TEXT("Cover"))); },
+		2.0f, TEXT("input_cover_taken"));
+	// 걸어 나간다. 정우가 문을 잡고 있었으면 같이 나간 것이고, 오래 남아 있었으면 먼저 내려갔다.
+	Walk(FVector(-30.0f, -205.0f, 690.0f), 22.0f, TEXT("input_walk_to_door_out"), TEXT("leave"));
+	Walk(FVector(-30.0f, -320.0f, 690.0f), 25.0f, TEXT("input_walk_out"));
+	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->GetLeftover().JeongwooState == FName(TEXT("LeftTogether")); },
+		12.0f, TEXT("input_jeongwoo_out"));
 }

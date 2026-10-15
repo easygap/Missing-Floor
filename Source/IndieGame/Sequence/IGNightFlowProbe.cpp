@@ -399,6 +399,22 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 			return;
 		}
 		Check(FMath::IsNearlyEqual(Hour->GetHourElapsedSeconds(), MarkedElapsed, 0.3f), TEXT("reading_pauses_clock"));
+		// 종이를 펼친 채 걸으면 시계가 간다. 4층 복도 가운데서 복도를 따라 걷는다.
+		Stand(FVector(190.0f, -305.0f, 998.0f), FVector(-200.0f, -305.0f, 1060.0f));
+		MarkedElapsed = Hour->GetHourElapsedSeconds();
+		Next(50);
+		return;
+	case 50:
+		if (AIGPlayerCharacter* Walker = Player.Get())
+		{
+			Walker->AddMovementInput(FVector(-1.0f, 0.0f, 0.0f), 1.0f);
+		}
+		if (PhaseSeconds < 2.5f)
+		{
+			return;
+		}
+		Check(AIGReadableNote::GetOpenNote() != nullptr && Hour->GetHourElapsedSeconds() > MarkedElapsed + 1.5f,
+			TEXT("walking_while_reading_runs_clock"));
 		if (AIGReadableNote* Note = OpenedNote.Get())
 		{
 			Note->Close();

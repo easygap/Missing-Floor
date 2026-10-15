@@ -5,6 +5,7 @@
 #include "IGDayScenesProbe.generated.h"
 
 class AIGListenerEntity;
+class AIGListenerGreyboxDirector;
 class AIGMissingFloorEvidence;
 class AIGNightPhaseDirector;
 class AIGPlayerCharacter;
@@ -19,6 +20,7 @@ class AIGReadableNote;
  * 연석의 오토바이에 정우가 앉아 있다가 말을 걸면 이름을 대야 한다. 둘째 밤을 거쳐 둘째 낮이
  * 되면 셋째 쪽지가 붙고, 동네 이야기가 세 장이 되고, 정우는 엄마 목소리 이야기를, 황순금은
  * 손 있는 날 이야기를 해야 한다. 마지막으로 현관문을 열어 쪽지가 문과 같이 도는지 본다.
+ * 그다음 편의점에서 택배 얘기 뒤에 수령 기록을 물어, 나린이 뽑아 준 영수증을 읽고 챙긴다.
  *
  * -IGDayScenesShots를 같이 주면 렌더가 있는 실행에서 몇 장면을 찍는다.
  *
@@ -54,6 +56,8 @@ private:
 	TWeakObjectPtr<AIGMissingFloorEvidence> Unit401Door;
 	TWeakObjectPtr<AIGReadableNote> Phone;
 	TWeakObjectPtr<AIGReadableNote> Notes[3];
+	TWeakObjectPtr<AIGListenerGreyboxDirector> Greybox;
+	TWeakObjectPtr<AIGReadableNote> Receipt;
 
 	int32 Phase = 0;
 	int32 Failures = 0;
@@ -62,5 +66,7 @@ private:
 	bool bShots = false;
 	bool bDoorStill = false;
 	bool bActed = false;
+	/** 영수증이 계산대에 나온 때(편의점 장면). */
+	float PrintedAt = -1.0f;
 	FVector NoteClosedAt = FVector::ZeroVector;
 };

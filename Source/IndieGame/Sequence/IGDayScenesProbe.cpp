@@ -10,6 +10,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "Entity/IGListenerEntity.h"
+#include "Entity/IGListenerGreyboxDirector.h"
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGNightPhaseDirector.h"
 #include "EngineUtils.h"
@@ -42,6 +43,9 @@ namespace IGDayScenesProbe
 	/** 공동현관 앞에서 연석의 오토바이(동쪽을 보고 선다)를 마주 보는 자리. 말을 걸 만한 거리다. */
 	const FVector CurbFeet(570.0f, -500.0f, 4.0f);
 	const FVector CurbRiderFace(395.0f, -472.0f, 115.0f);
+	// 편의점 계산대 앞 손님 자리에서 포스 앞 영수증을 본다.
+	const FVector StoreFeet(2652.0f, -296.0f, 6.0f);
+	const FVector StoreReceiptFace(2645.0f, -220.0f, 99.0f);
 	constexpr float DawnTimeoutSeconds = 40.0f;
 	/**
 	 * 에필로그 「403호 문」을 찍는 카메라(4층 바닥 기준)와 가로 화각. 플레이어 카메라는 매 틱 화각을
@@ -195,6 +199,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			{
 				Unit401Door = *It;
 			}
+
 		}
 		for (TActorIterator<AIGReadableNote> It(GetWorld()); It; ++It)
 		{
@@ -203,6 +208,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			{
 				Phone = *It;
 			}
+
 			for (int32 Index = 0; Index < 3; ++Index)
 			{
 				if (Name == FString::Printf(TEXT("MissingFloorDoor403Note%d"), Index + 1))
@@ -465,7 +471,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 		// 303호 셋째 쪽지 읽기 화면.
 		if (!bShots)
 		{
-			Finish();
+			Next(10);
 			break;
 		}
 		if (!bActed && PhaseSeconds >= 0.5f)
@@ -484,9 +490,148 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 		if (PhaseSeconds >= 2.0f)
 		{
 			Notes[2]->Close();
+			Next(10);
+		}
+		break;
+
+	case 10:
+	{
+		// 둘째 낮, 편의점. 택배 얘기를 들은 뒤 누가 찾아갔는지 물으면 나린이 포스에서 수령 기록을 찾아
+		// 영수증을 뽑아 준다. 화면 없는 실행에서는 대사 큐가 줄지 않으니 줄은 렌더 실행에서만 본다.
+		// 호출벨 액터는 본편 실행에만 있어서, 벨에 이어지는 말을 감독에게 바로 시킨다.
+		if (!Greybox.IsValid())
+		{
+			for (TActorIterator<AIGListenerGreyboxDirector> It(GetWorld()); It; ++It)
+			{
+				Greybox = *It;
+				Receipt = It->GetStoreParcelReceiptForTesting();
+			}
+		}
+		AIGListenerGreyboxDirector* Counter = Greybox.Get();
+		AIGReadableNote* Slip = Receipt.Get();
+		const auto Crossed = [this, DeltaSeconds](const float At)
+		{
+			return PhaseSeconds >= At && PhaseSeconds - DeltaSeconds < At;
+		};
+		if (!bActed)
+		{
+			bActed = true;
+			Check(Counter && Slip, TEXT("store_receipt_actors_resolved"));
+			if (!Counter || !Slip)
+			{
+				Finish();
+				break;
+			}
+			Check(!IsShown(Slip), TEXT("no_receipt_before_asking"));
+			if (bShots)
+			{
+				Stand(StoreFeet, StoreReceiptFace);
+			}
+			// 뒤편 택배 안내문은 읽고 왔다고 친다. 첫 벨에는 택배 얘기를 한다.
+			Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.Delivery")));
+			Counter->TalkAtStoreCounterForTesting();
+			Check(Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.DeliveryDiscussed")))
+				&& !Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.ParcelLedger"))) && !IsShown(Slip),
+				TEXT("delivery_talk_comes_first"));
+			break;
+		}
+		if (!Counter || !Slip)
+		{
+			break;
+		}
+		if (Crossed(7.5f))
+		{
+			// 벨 사이 7초가 지나야 다음 말을 한다.
+			Check(Counter->TalkAtStoreCounterForTesting(), TEXT("second_bell_after_seven_seconds"));
+			Check(Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.ParcelLedger"))) && !IsShown(Slip),
+				TEXT("receipt_question_then_search"));
+			if (bShots)
+			{
+				Check(SaidLine(NSLOCTEXT("IGMissingFloor", "NarinReceiptAnswer", "포스에 남아 있을 거예요. 잠깐만요, 찾아볼게요.")),
+					TEXT("narin_looks_up_the_pos"));
+			}
+		}
+		// 단말기는 「찾아볼게요」가 지나간 뒤(밀린 대사가 길어도 14초 안), 찾은 날짜를 말하고 나서 영수증이
+		// 나온다. 나올 때까지 기다리고, 그 뒤 순서는 나온 때부터 센다.
+		if (PhaseSeconds > 7.5f && PrintedAt < 0.0f)
+		{
+			if (IsShown(Slip))
+			{
+				PrintedAt = PhaseSeconds;
+				Check(PhaseSeconds > 7.5f + 4.8f + 2.6f, TEXT("receipt_waits_for_the_talk"));
+				if (bShots)
+				{
+					Check(SaidLine(NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 관리실 아저씨가 대신 받아 가셨어요. 뽑아 드릴게요.")),
+						TEXT("narin_reads_the_date"));
+				}
+			}
+			else if (PhaseSeconds > 7.5f + 14.0f + 2.6f + 8.0f + 1.0f)
+			{
+				Check(false, TEXT("receipt_printed_on_counter"));
+				Finish();
+			}
+			break;
+		}
+		if (PrintedAt < 0.0f)
+		{
+			break;
+		}
+		const float SincePrint = PhaseSeconds - PrintedAt;
+		const auto After = [SincePrint, DeltaSeconds](const float At)
+		{
+			return SincePrint >= At && SincePrint - DeltaSeconds < At;
+		};
+		if (After(0.0f))
+		{
+			Check(true, TEXT("receipt_printed_on_counter"));
+		}
+		if (After(0.9f))
+		{
+			Shoot(TEXT("dayscenes-store-receipt-counter"));
+		}
+		if (After(1.5f))
+		{
+			FIGInteractionContext Context;
+			Context.Interactor = Player.Get();
+			Context.TargetActor = Slip;
+			Context.HoldProgress = 1.0f;
+			IIGInteractable::Execute_CompleteInteraction(Slip, Context);
+			Check(Slip->IsOpen() && Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.ParcelReceipt"))),
+				TEXT("reading_receipt_keeps_it"));
+		}
+		if (After(2.5f))
+		{
+			Shoot(TEXT("dayscenes-store-receipt"));
+		}
+		if (After(3.1f))
+		{
+			Slip->Close();
+			Check(!IsShown(Slip), TEXT("receipt_leaves_counter_after_reading"));
+			if (bShots)
+			{
+				Check(SaidLine(NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "오빠가 부탁했다고?")),
+					TEXT("yudam_doubts_the_request"));
+			}
+		}
+		if (After(11.0f))
+		{
+			// 셋째 낮부터 나린은 그 영수증 얘기를 하며 본 대로 말해 주겠다고 한다.
+			Narrative->SetNightIndex(3);
+			Counter->TalkAtStoreCounterForTesting();
+			Check(!IsShown(Slip), TEXT("receipt_stays_taken"));
+			if (bShots)
+			{
+				Check(SaidLine(NSLOCTEXT("IGMissingFloor", "NarinLineLastDayReceipt",
+					"그 영수증 잘 챙겨 둬요. 필요하면 저도 본 대로 말할게요. 무슨 일 있으면 바로 이쪽으로 오세요.")),
+					TEXT("narin_offers_to_say_what_she_saw"));
+			}
+		}
+		if (SincePrint >= 12.0f)
+		{
 			Finish();
 		}
 		break;
+	}
 
 	case 9:
 	{

@@ -1,9 +1,10 @@
 [CmdletBinding()]
 param(
 	[ValidateSet(30, 60)][int]$FrameRate = 60,
-	# dawn: 밤3에 정우를 꺼내지 않고 새벽을 맞는 길. night2: 밤2 안쪽 방만.
-	# wall: 밤4 벽 단계마다 저장 상태로 되살린 모습(불러오기 길).
-	[ValidateSet('full', 'dawn', 'night2', 'wall')][string]$Variant = 'full',
+	# dawn: 밤3에 정우를 꺼내지 않고 새벽을 맞는 길. dawnbrace: 꺼낸 정우가 판을 받치는 한가운데 새벽(낮3 문 앞 상자).
+	# night2: 밤2 안쪽 방만. wall: 밤4 벽 단계마다 저장 상태로 되살린 모습(불러오기 길).
+	# input: 밤3 302호를 순간 이동 없이 실제 키·마우스 입력으로 지난다(구간별 시간을 남긴다).
+	[ValidateSet('full', 'dawn', 'dawnbrace', 'night2', 'wall', 'input')][string]$Variant = 'full',
 	[switch]$Shots,
 	# en·ja·zh-Hans·zh-Hant로 찍으면 이 줄기의 글(안내문·대장·힌트·자막)을 그 언어로 본다.
 	[string]$Culture,
@@ -42,7 +43,7 @@ $probeArg = if ($Variant -eq 'full') { '-IGLeftoverProbe' } else { "-IGLeftoverP
 & $editor $projectPath -game -unattended -nosplash -nosound -NoLoadingScreen -RenderOffscreen @render `
 	-IGListenerGreybox $probeArg -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
 	"-UserDir=$probeUser" "-abslog=$logPath" @extra | Out-Null
-Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_(CHECK|PROBE|N2|N3|DAY1|TAKEN|LINING)|MANAGER_(ERRAND|CHASE|CATCH|INVESTIGATE)|LINING_(TARGET|SEALED|GRIP|PLACED)' | ForEach-Object { Write-Host $_.Line }
+Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_(CHECK|PROBE|N2|N3|DAY1|TAKEN|LINING)|MANAGER_(ERRAND|CHASE|CATCH|INVESTIGATE)|LINING_(TARGET|SEALED|GRIP|PLACED)|INPUT_(SEGMENT|ROUTE|MOUSE|STUCK|FOCUS|BLOCK|LINING_LEG)|LEFTOVER_LEG' | ForEach-Object { Write-Host $_.Line }
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
 	throw "남은 짐 검사에 실패했습니다: $logPath"
 }
