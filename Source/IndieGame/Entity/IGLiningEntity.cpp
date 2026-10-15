@@ -950,7 +950,7 @@ void AIGLiningEntity::UpdateStepping(const float DeltaSeconds)
 		{
 			LastCreakAt = Now;
 			PlayCue(TEXT("Lining_Creak"), 3, BodyCenter, 0.7f, FMath::FRandRange(0.9f, 1.05f));
-			Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningCreak", "[얇은 철판이 휘는 소리]"), BodyCenter, 2.0f,
+			Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningCreak", "[철골 마디가 버티며 삐걱이는 소리]"), BodyCenter, 2.0f,
 				LastCreakCaptionAt, IGLining::CreakCaptionInterval);
 		}
 		if (Alpha >= 1.0f)

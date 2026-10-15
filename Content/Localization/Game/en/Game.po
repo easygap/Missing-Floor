@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-10-15 03:01\n"
-"PO-Revision-Date: 2026-10-15 03:01\n"
+"POT-Creation-Date: 2026-10-15 03:58\n"
+"PO-Revision-Date: 2026-10-15 03:58\n"
 "Language-Team: \n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -367,8 +367,8 @@ msgstr "[something sticky ripping away from the wall]"
 #. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(953)
 #: Source/IndieGame/Entity/IGLiningEntity.cpp(953)
 msgctxt "IGMissingFloor,CaptionLiningCreak"
-msgid "[얇은 철판이 휘는 소리]"
-msgstr "[thin sheet metal bending]"
+msgid "[철골 마디가 버티며 삐걱이는 소리]"
+msgstr "[steel joints creaking under the weight]"
 
 #. Key:	EntityAnswerReplyCaption
 #. SourceLocation:	Source/IndieGame/Entity/IGListenerEntity.cpp(1781)

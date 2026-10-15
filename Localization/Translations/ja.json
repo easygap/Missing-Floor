@@ -1249,7 +1249,7 @@
  "IGMissingFloor,YudamEoduksiniGrowthWarned": "おばあさんに見ちゃだめって言われたのに……見るほど大きくなる。",
  "IGMissingFloor,BoltedOpenPrompt": "かんぬきを外して開ける",
  "IGSwingDoor,LatchedOpenPrompt": "掛け金を外して開ける",
- "IGMissingFloor,CaptionLiningCreak": "［薄い鉄板がたわむ音］",
+ "IGMissingFloor,CaptionLiningCreak": "［鉄骨の継ぎ目が重みにきしむ音］",
  "IGMissingFloor,CaptionLiningPeel": "［ねばつくものが壁からべりっとはがれる音］",
  "IGMissingFloor,CaptionLiningPress": "[厚いビニールが壁にべたりと貼りつく音]",
  "IGMissingFloor,CaptionLiningSpread": "［何本もの鉄骨がいっせいに広がりながらこすれる音］",

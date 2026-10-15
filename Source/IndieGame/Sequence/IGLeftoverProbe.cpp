@@ -1963,6 +1963,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "오빠가 부탁했다고?"), TEXT("StoreReceiptThought")},
 			{TEXT('C'), FText::GetEmpty(),
+				NSLOCTEXT("IGMissingFloor", "CaptionLiningCreak", "[철골 마디가 버티며 삐걱이는 소리]"), TEXT("CaptionLiningCreak")},
+			{TEXT('C'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "CaptionLiningPress", "[두꺼운 비닐이 벽에 쩍 들러붙는 소리]"), TEXT("CaptionLiningPress")},
 			{TEXT('C'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverPushedCaption", "[휜 철골이 빠지고, 벽을 긁으며 물러나는 소리]"), TEXT("LeftoverPushedCaption")},
