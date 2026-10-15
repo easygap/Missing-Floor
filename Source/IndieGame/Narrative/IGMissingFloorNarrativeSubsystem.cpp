@@ -648,6 +648,31 @@ bool UIGMissingFloorNarrativeSubsystem::HasLeftover(const EIGLeftoverList List, 
 	return Names && Names->Contains(Name);
 }
 
+// -- 들은 말 ---------------------------------------------------------------
+
+void UIGMissingFloorNarrativeSubsystem::RecordHeardLine(const FText& Speaker, const FText& Line)
+{
+	if (Line.IsEmptyOrWhitespace())
+	{
+		return;
+	}
+	if (Snapshot.Heard.Num() > 0
+		&& Snapshot.Heard.Last().Line.EqualTo(Line)
+		&& Snapshot.Heard.Last().Speaker.EqualTo(Speaker))
+	{
+		return;
+	}
+	FIGHeardLine& Entry = Snapshot.Heard.AddDefaulted_GetRef();
+	Entry.Speaker = Speaker;
+	Entry.Line = Line;
+	Entry.NightIndex = Snapshot.Night.NightIndex;
+	Entry.bAtNight = Snapshot.Night.bTheHourSealed;
+	if (Snapshot.Heard.Num() > MaximumHeardLines)
+	{
+		Snapshot.Heard.RemoveAt(0, Snapshot.Heard.Num() - MaximumHeardLines);
+	}
+}
+
 // -- persistence -----------------------------------------------------------
 
 void UIGMissingFloorNarrativeSubsystem::RestoreSnapshot(

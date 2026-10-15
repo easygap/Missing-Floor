@@ -1139,10 +1139,16 @@ void AIGManagerPatrol::PlayEscortAftermath(const bool bKeyTaken)
 		AIGPrologueWorldScene::HomeDoorX + AIGPrologueWorldScene::WideDoorLeafWidth * 0.5f,
 		AIGPrologueWorldScene::HomeDoorY - 40.0f,
 		AIGPrologueWorldScene::FourthFloorZ + 110.0f);
+	// 데려다 놓고 가는 소리와 그 뒤의 생각은 깨어난 밤의 것이다. 그 사이 날이 밝았으면 접는다.
+	TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
 	GetWorldTimerManager().SetTimer(
 		EscortTimer,
-		FTimerDelegate::CreateWeakLambda(this, [this, Outside, bKeyTaken]()
+		FTimerDelegate::CreateWeakLambda(this, [this, Outside, bKeyTaken, SameScene]()
 		{
+			if (!SameScene())
+			{
+				return;
+			}
 			IGAudio::SpawnOneShotAt(
 				this, UIGToneSequenceSoundWave::CreateKeyRingJingle(this, true),
 				Outside, 0.5f, 1.0f, 120.0f, 1200.0f, EIGAudioBus::World);
@@ -1151,8 +1157,12 @@ void AIGManagerPatrol::PlayEscortAftermath(const bool bKeyTaken)
 				2.0f, Outside);
 			GetWorldTimerManager().SetTimer(
 				EscortTimer,
-				FTimerDelegate::CreateWeakLambda(this, [this, Outside, bKeyTaken]()
+				FTimerDelegate::CreateWeakLambda(this, [this, Outside, bKeyTaken, SameScene]()
 				{
+					if (!SameScene())
+					{
+						return;
+					}
 					IGAudio::SpawnOneShotAt(
 						this, UIGToneSequenceSoundWave::CreateSlipperScuff(this),
 						Outside - FVector(80.0f, 60.0f, 104.0f), 0.45f, 0.95f, 160.0f, 1400.0f,
@@ -1163,7 +1173,7 @@ void AIGManagerPatrol::PlayEscortAftermath(const bool bKeyTaken)
 					AIGHorrorHUD::PushThought(
 						this,
 						bKeyTaken
-							? NSLOCTEXT("IGMissingFloor", "YudamMokTookKeys", "열쇠 꾸러미를 가져갔네. 관리실에 도로 갖다 놨겠지.")
+							? NSLOCTEXT("IGMissingFloor", "YudamMokTookKeys", "열쇠 꾸러미를 가져갔네.")
 							: NSLOCTEXT("IGMissingFloor", "YudamMokBroughtHome", "집까지 데려다 놓고 갔네."),
 						3.2f);
 				}),

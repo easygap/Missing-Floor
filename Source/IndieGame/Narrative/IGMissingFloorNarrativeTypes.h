@@ -336,6 +336,26 @@ struct INDIEGAME_API FIGLeftoverState
 	bool bLegacyWallSequence = false;
 };
 
+/** 끝까지 들은 대사 한 줄. 기록장의 「들은 말」 쪽에 다시 보인다. */
+USTRUCT(BlueprintType)
+struct INDIEGAME_API FIGHeardLine
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	FText Speaker;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	FText Line;
+
+	/** 들은 때. 기록장이 밤과 낮이 바뀌는 자리에 줄을 긋는다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	int32 NightIndex = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	bool bAtNight = false;
+};
+
 /** 없는 층의 서사 상태 전부. FIGProgressSnapshot에 통째로 실린다. */
 USTRUCT(BlueprintType)
 struct INDIEGAME_API FIGMissingFloorNarrativeSnapshot
@@ -365,4 +385,8 @@ struct INDIEGAME_API FIGMissingFloorNarrativeSnapshot
 	/** 「302호에 남은 짐」. 스키마 4에서 생겼다. 그 전 저장은 Version 0으로 읽힌다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
 	FIGLeftoverState Leftover;
+
+	/** 들은 말. 오래된 줄부터 지운다. 이 칸이 생기기 전 저장은 빈 기록으로 읽힌다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	TArray<FIGHeardLine> Heard;
 };

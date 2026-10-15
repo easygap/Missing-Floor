@@ -1512,7 +1512,7 @@ void AIGMissingFloorNightThreeDirector::HandleValveOpened(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ValveThought",
-			"물 내려가는 소리가 난다. 이제 벽에 귀를 대 보자."),
+			"물 내려가는 소리가 벽 안에서 난다."),
 		3.8f);
 }
 
@@ -2604,7 +2604,7 @@ void AIGMissingFloorNightThreeDirector::ArmReturnPass()
 					NSLOCTEXT(
 						"IGMissingFloor",
 						"N3ReturnRepeatThought",
-						"복도에서 또 두드리네. 이번엔 옆으로 지나서 돌아가자."),
+						"복도에서 또 두드리네."),
 					4.2f);
 				return;
 			}
@@ -2732,11 +2732,11 @@ void AIGMissingFloorNightThreeDirector::AdvanceReturn()
 				? NSLOCTEXT(
 					"IGMissingFloor",
 					"N3ReturnHintAgain",
-					"벽에 했던 대로 해 보자.")
+					"또 저기 서 있어.")
 				: NSLOCTEXT(
 					"IGMissingFloor",
 					"N3ReturnHint",
-					"저기 있다. 대답을 기다리는 건가?"),
+					"저기 있다. 움직이지 않고 서 있어."),
 			3.4f);
 	}
 

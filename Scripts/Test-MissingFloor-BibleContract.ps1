@@ -1083,11 +1083,11 @@ if ($story -notmatch '\*\*일부러 깨서 잡히는 것까지 확인한 뒤\*\*
 $audioHeaderFor26 = Read-ProjectText 'Source/IndieGame/Audio/IGMissingFloorAudioSubsystem.h'
 $uprojectText = Read-ProjectText 'IndieGame.uproject'
 
-# 26.3-2 — 버스 이름은 §21.1의 여섯이다. 두 절이 같은 것을 다르게 부르면
+# 26.3-2 — 버스 이름은 §21.1의 일곱이다. 두 절이 같은 것을 다르게 부르면
 # 어느 쪽을 고쳐야 하는지 알 수 없다.
 $busNameRow = [regex]::Match(
 	$story,
-	'`BUS_ENTITY / PLAYER / PUZZLE / WORLD / UI / SCORE`')
+	'`BUS_ENTITY / PLAYER / PUZZLE / WORLD / UI / SCORE / SPEECH`')
 $assertionCount++
 if (-not $busNameRow.Success) {
 	throw 'The §26.3 bus names no longer match §21.1.'
@@ -1099,7 +1099,7 @@ $assertionCount++
 if (-not $busEnum.Success) {
 	throw 'The audio bus enum could not be read.'
 }
-foreach ($bus in @('Entity', 'Player', 'Puzzle', 'World', 'UI', 'Score')) {
+foreach ($bus in @('Entity', 'Player', 'Puzzle', 'World', 'UI', 'Score', 'Speech')) {
 	$assertionCount++
 	if ($busEnum.Groups['body'].Value -notmatch ('(?m)^\s*' + $bus + ',')) {
 		throw "The §26.3 bus name is not in the enum: $bus"

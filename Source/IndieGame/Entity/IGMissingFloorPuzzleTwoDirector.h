@@ -47,6 +47,9 @@ public:
 
 	/** Day locks the booth; the hour opens it. */
 	void SetHourActive(bool bHourActive);
+	/** 목한수가 안쪽 방에서 자고 있다 / 깨어 나서는 중이다. 짐 감독이 그 밤의 단계를 쥐고 있다. */
+	bool IsManagerAsleepInside() const;
+	bool IsManagerStirring() const;
 
 	/**
 	 * 밤2의 목표. 접수철 밑장과 부동산 문자 사본을 둘 다 읽어 날짜의 모순(T7)이 닫히면 한 번
@@ -157,6 +160,8 @@ private:
 	FTimerHandle CctvThoughtTimer;
 	/** 재생의 결론은 공백 뒤에 온다. */
 	FTimerHandle PhoneThoughtTimer;
+	/** 안쪽 방에서 누가 뒤척였다는 생각은 그 밤에 한 번이다. */
+	bool bInnerRoomThoughtSaid = false;
 	FTimerHandle PhoneReturnTimer;
 	FTimerHandle PhoneBuzzTimer;
 	FTimerHandle PhoneBuzzCutTimer;

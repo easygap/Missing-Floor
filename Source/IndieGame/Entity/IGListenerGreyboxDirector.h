@@ -395,6 +395,19 @@ private:
 	TObjectPtr<class AIGReadableNote> StoreParcelReceipt;
 	FTimerHandle StoreReceiptTimer;
 	void RefreshStoreReceipt();
+	/** 영수증 장면의 진행. 0 없음, 1 물어봄, 2 단말기 누름, 3 뽑음. 끝 알림과 대비 타이머가 겹쳐도 한 번만 넘어간다. */
+	uint8 StoreReceiptStep = 0;
+	/** 나린의 「찾아볼게요」가 끝났다(또는 거둬졌다). 단말기를 누르거나, 그녀가 가게를 떠났으면 조용히 뽑아 둔다. */
+	void ContinueStoreReceipt(bool bTalkCompleted);
+	/**
+	 * 나린의 말이 끝났다는 알림이 오지 않을 때를 위한 대비. 화면이 그려지는 판에서는 그 말이
+	 * 아직 줄에 있으면 더 기다리고(목소리가 길거나 앞줄이 밀렸다), 화면 없는 검사에서는 바로 잇는다.
+	 */
+	void HandleStoreReceiptFallback();
+	/** 「뽑아 드릴게요」가 끝났다. 출력 소리와 함께 영수증이 계산대에 놓인다. */
+	void PrintStoreReceipt();
+	/** 그녀가 계산대 둘레(가게 안)에 있는가. 나린의 말은 여기서만 이어진다. */
+	bool IsPlayerNearStoreCounter() const;
 	FTimerHandle NeighborhoodSoundTimer;
 	double LastCounterTalkAt = -100.0;
 	/** 입주 손 소리의 둘째 겹(내용물)과, 휴대전화 진동을 한 번에서 끊는 타이머. */

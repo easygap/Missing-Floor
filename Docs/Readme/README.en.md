@@ -30,7 +30,7 @@ A bulk waste notice is taped to the management office door, its pickup date cros
   <tr><td>The alley</td><td>Dawn24</td></tr>
 </table>
 
-The management office ledger, the CCTV and the meter readings on the ground floor don't quite agree. What you hear through the walls counts too. Press `Tab` to reread your notes. If you're stuck, press `H` to hear Yudam's thoughts on where to look next.
+The management office ledger, the CCTV and the meter readings on the ground floor don't quite agree. What you hear through the walls counts too. Press `Tab` to reread your notes and what people told you. If you're stuck, press `H` to hear Yudam's thoughts on where to look next.
 
 Signs and notices stay in Korean. Story documents can be read in English when you examine them.
 

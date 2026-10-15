@@ -4,6 +4,7 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Audio/IGVoice.h"
 #include "Components/AudioComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -26,6 +27,8 @@ namespace IGSeoRecorder
 	 * (-10, 585)의 바로 아래다.
 	 */
 	const FVector RestingLocation(-21.0f, 553.0f, 1200.02f);
+	/** 한 번 재생하며 낸 녹음 대사와 소리 자막의 사건 이름. 멈추면 이 이름으로 거둔다. */
+	const FName PlaybackContext(TEXT("SeoRecorder.Playback"));
 	/** 몸통 길이 방향(+X, 액정 쪽)이 판재 안쪽(+Y)을 본다. 조금 비스듬히 미끄러져 들어갔다. */
 	const FRotator RestingRotation(0.0f, 102.0f, 0.0f);
 	/** 줍기 판정은 판재 밖으로 나온 끝과 끈을 덮는다. 몸통만 정확히 겨눠야 집히는 일이 없게 한다. */
@@ -36,6 +39,10 @@ namespace IGSeoRecorder
 	constexpr float RunStepSeconds = 0.24f;
 	constexpr int32 RunSteps = 8;
 	constexpr float RecordedLineSlackSeconds = 2.0f;
+	/** 녹음된 말 하나가 끝나고 다음 말이 오기까지의 틈. 버튼을 누른 사람이 숨을 고르는 사이. */
+	constexpr float VoiceLineGapSeconds = 0.35f;
+	/** 작은 스피커 소리가 들리는 거리. 그 밖으로 나가면 녹음 속 소리 설명도 내린다. */
+	constexpr float SpeakerAudibleRadius = 1200.0f;
 	/** 서일영 목소리 피치. 남자 목소리 높이로 조금 내린다. */
 	constexpr float SeoVoicePitch = 0.9f;
 	/** 다른 남자 목소리 피치. 녹음기에서 떨어져 있어서 더 낮고 작게 녹음됐다. */
@@ -211,6 +218,8 @@ void AIGSeoRecorder::AbortPlayback()
 {
 	GetWorldTimerManager().ClearTimer(CueTimer);
 	GetWorldTimerManager().ClearTimer(CaptureWatchTimer);
+	// 이 재생에서 낸 녹음 대사와 소리 자막(떠 있는 것과 밀린 것)을 같이 거둔다. 다음 줄은 타이머째 멈췄다.
+	AIGHorrorHUD::CancelDialogue(this, IGSeoRecorder::PlaybackContext);
 	// 끝까지 듣고 목격까지 남긴 뒤 생각이 뜨기 전에 멈췄다. 들은 것은 들은 것이니 생각은 띄운다.
 	if (CueIndex == 14)
 	{
@@ -301,13 +310,21 @@ void AIGSeoRecorder::PlayFromSpeaker(USoundBase* Sound, const float Volume, cons
 
 float AIGSeoRecorder::PushRecordedLine(const FText& Line)
 {
-	AIGHorrorHUD::PushDialogue(
+	FIGDialogueScope Scope;
+	Scope.Context = IGSeoRecorder::PlaybackContext;
+	Scope.Owner = this;
+	TWeakObjectPtr<AIGSeoRecorder> WeakThis(this);
+	// 재생이 멈췄으면(붙잡힘·밤 전환·자리 이탈) 밀린 줄을 띄우지 않는다.
+	Scope.StillValid = [WeakThis]() { return WeakThis.IsValid() && WeakThis->bPlaying; };
+	// 녹음이 있으면 서일영의 목소리가 녹음기 스피커에서 난다. 없으면 글로만 뜬다.
+	IGVoice::Say(
 		this,
 		NSLOCTEXT("IGMissingFloor", "SeoRecorderSpeaker", "녹음기"),
 		Line,
-		EIGDialogueChannel::Device,
-		0.0f,
-		EIGDialoguePriority::Story);
+		MoveTemp(Scope),
+		[WeakThis]() { return WeakThis.IsValid() ? WeakThis->GetSpeakerLocation() : FVector::ZeroVector; },
+		IGVoice::ESource::Device,
+		EIGDialogueChannel::Device);
 	float CaptionScale = 1.0f;
 	if (const UGameInstance* GameInstance = GetGameInstance())
 	{
@@ -316,14 +333,18 @@ float AIGSeoRecorder::PushRecordedLine(const FText& Line)
 			CaptionScale = Accessibility->GetCaptionDurationScale();
 		}
 	}
-	const float Seconds = AIGHorrorHUD::EstimateDialogueSeconds(Line) * CaptionScale;
+	// 다음 줄은 읽는 시간과 녹음 길이 가운데 긴 쪽이 지난 뒤에 온다.
+	const float Seconds = FMath::Max(
+		AIGHorrorHUD::EstimateDialogueSeconds(Line) * CaptionScale,
+		IGVoice::GetSeconds(Line) + IGSeoRecorder::VoiceLineGapSeconds);
 	LineDeadlineAt = GetWorld()->GetTimeSeconds() + Seconds + IGSeoRecorder::RecordedLineSlackSeconds;
 	return Seconds;
 }
 
 void AIGSeoRecorder::PushCaption(const FText& Caption, const float Seconds)
 {
-	AIGHorrorHUD::PushAudioCaption(this, Caption, Seconds);
+	AIGHorrorHUD::PushAudioCaptionScoped(this, Caption, Seconds, GetSpeakerLocation(), IGSeoRecorder::PlaybackContext,
+		IGSeoRecorder::SpeakerAudibleRadius);
 }
 
 void AIGSeoRecorder::RunCue()

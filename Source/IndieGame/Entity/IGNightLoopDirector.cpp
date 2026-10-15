@@ -235,6 +235,8 @@ void AIGNightLoopDirector::BeginCaptureReset(
 	const FTransform* WakeAt)
 {
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	// 붙잡혔다. 그 전의 대사와 자막(대화 중이던 말, 쫓기던 소리)은 깨어난 뒤로 넘기지 않는다.
+	AIGHorrorHUD::ResetDialogueForSceneChange(this);
 	bResetInFlight = true;
 	CaptureKindInFlight = Kind;
 	LastCaptureSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
@@ -599,11 +601,16 @@ void AIGNightLoopDirector::FinishReset()
 		}
 		if (!Thought.IsEmpty())
 		{
+			// 깨어난 밤의 생각이다. 그 사이 05:30이 와서 아침이 되었으면 말하지 않는다.
+			TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
 			GetWorldTimerManager().SetTimer(
 				WakeThoughtTimer,
-				FTimerDelegate::CreateWeakLambda(this, [this, Thought]()
+				FTimerDelegate::CreateWeakLambda(this, [this, Thought, SameScene]()
 				{
-					AIGHorrorHUD::PushThought(this, Thought, 2.8f);
+					if (SameScene())
+					{
+						AIGHorrorHUD::PushThought(this, Thought, 2.8f);
+					}
 				}),
 				IGNightLoop::WakeThoughtDelaySeconds,
 				false);

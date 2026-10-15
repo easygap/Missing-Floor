@@ -55,6 +55,14 @@ namespace IGHorrorHUD
 	constexpr int32 MaximumAudioCaptionQueueDepth = 4;
 	constexpr double StoryDialogueMaximumQueueAge = 14.0;
 	constexpr double AmbientDialogueMaximumQueueAge = 6.0;
+	/** 지금 행동에 대한 짧은 반응은 이보다 오래 밀리면 상황이 이미 지나간 것이다. */
+	constexpr double ReactionDialogueMaximumQueueAge = 4.0;
+	/** 녹음 소리가 제 길이보다 이만큼 먼저 멎으면 끊긴 것으로 본다(프레임 오차와 꼬리 무음). */
+	constexpr double VoiceCutToleranceSeconds = 0.25;
+	/** 짧은 반응이 메뉴·기록에 이만큼 넘게 가려졌다 돌아오면 다시 보이지 않는다. */
+	constexpr double ReactionDialogueMaximumOcclusion = 2.0;
+	/** 녹음된 말이 끝난 뒤 자막을 조금 더 둔다. */
+	constexpr double VoicedDialogueTailSeconds = 0.35;
 	constexpr float DialogueGlyphsPerSecond = 11.5f;
 
 	/**
@@ -994,6 +1002,391 @@ void AIGHorrorHUD::PushThought(
 	}
 }
 
+AIGHorrorHUD* AIGHorrorHUD::FindHorrorHud(const UObject* WorldContext)
+{
+	const UWorld* World = GEngine && WorldContext
+		? GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull)
+		: nullptr;
+	const APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	return PlayerController ? Cast<AIGHorrorHUD>(PlayerController->GetHUD()) : nullptr;
+}
+
+void AIGHorrorHUD::PushDialogueScoped(
+	const UObject* WorldContext,
+	const FText& Speaker,
+	const FText& Line,
+	const EIGDialogueChannel Channel,
+	const float MinimumDurationSeconds,
+	const EIGDialoguePriority Priority,
+	FIGDialogueScope Scope)
+{
+	if (AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext))
+	{
+		HorrorHUD->ShowDialogueScoped(Speaker, Line, Channel, MinimumDurationSeconds, Priority, MoveTemp(Scope));
+	}
+}
+
+void AIGHorrorHUD::PushThoughtScoped(
+	const UObject* WorldContext,
+	const FText& Thought,
+	const float DurationSeconds,
+	FIGDialogueScope Scope)
+{
+	if (AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext))
+	{
+		HorrorHUD->ShowDialogueScoped(FText::GetEmpty(), Thought, EIGDialogueChannel::InnerVoice, DurationSeconds,
+			EIGDialoguePriority::Story, MoveTemp(Scope));
+	}
+}
+
+void AIGHorrorHUD::CancelDialogue(const UObject* WorldContext, const FName Context, const EIGDialogueEndReason Reason)
+{
+	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	if (!HorrorHUD || Context.IsNone())
+	{
+		return;
+	}
+	HorrorHUD->CancelDialogueWhere([Context](const FIGDialogueMessage& Message)
+	{
+		return Message.Scope.Context == Context;
+	}, Reason);
+	if (TArray<FIGDialogueMessage>* Held = HorrorHUD->InterruptedTalks.Find(Context))
+	{
+		for (FIGDialogueMessage& Message : *Held)
+		{
+			HorrorHUD->EndDialogueMessage(Message, Reason);
+		}
+		HorrorHUD->InterruptedTalks.Remove(Context);
+	}
+	HorrorHUD->CancelAudioCaptionsIn(Context);
+	HorrorHUD->FlushDialogueEndCallbacks();
+}
+
+void AIGHorrorHUD::CancelDialogueFrom(const UObject* WorldContext, const UObject* Owner)
+{
+	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	if (!HorrorHUD || !Owner)
+	{
+		return;
+	}
+	HorrorHUD->CancelDialogueWhere([Owner](const FIGDialogueMessage& Message)
+	{
+		return Message.bHasOwner && Message.Scope.Owner.Get() == Owner;
+	}, EIGDialogueEndReason::Cancelled);
+	for (auto It = HorrorHUD->InterruptedTalks.CreateIterator(); It; ++It)
+	{
+		It.Value().RemoveAll([HorrorHUD, Owner](FIGDialogueMessage& Message)
+		{
+			if (Message.bHasOwner && Message.Scope.Owner.Get() == Owner)
+			{
+				HorrorHUD->EndDialogueMessage(Message, EIGDialogueEndReason::Cancelled);
+				return true;
+			}
+			return false;
+		});
+		if (It.Value().IsEmpty())
+		{
+			It.RemoveCurrent();
+		}
+	}
+	HorrorHUD->FlushDialogueEndCallbacks();
+}
+
+bool AIGHorrorHUD::ResumeInterruptedTalk(const UObject* WorldContext, const FName Context)
+{
+	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	TArray<FIGDialogueMessage>* Found = HorrorHUD && !Context.IsNone()
+		? HorrorHUD->InterruptedTalks.Find(Context)
+		: nullptr;
+	if (!Found)
+	{
+		return false;
+	}
+	TArray<FIGDialogueMessage> Held = MoveTemp(*Found);
+	HorrorHUD->InterruptedTalks.Remove(Context);
+	const UWorld* World = HorrorHUD->GetWorld();
+	const double CurrentTime = World ? World->GetTimeSeconds() : 0.0;
+	int32 Resumed = 0;
+	for (FIGDialogueMessage& Message : Held)
+	{
+		if (!IsDialogueStillValid(Message))
+		{
+			HorrorHUD->EndDialogueMessage(Message, EIGDialogueEndReason::Cancelled);
+			continue;
+		}
+		// 돌아와 다시 말을 걸었다. 끊긴 줄부터 처음 읽는 것처럼 다시 센다.
+		Message.QueuedAt = CurrentTime;
+		HorrorHUD->EnqueueDialogue(MoveTemp(Message), CurrentTime);
+		++Resumed;
+	}
+	HorrorHUD->FlushDialogueEndCallbacks();
+	return Resumed > 0;
+}
+
+void AIGHorrorHUD::ResetDialogueForSceneChange(const UObject* WorldContext)
+{
+	if (AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext))
+	{
+		HorrorHUD->ClearAllDialogueAndCaptions();
+		++HorrorHUD->DialogueSceneSerial;
+	}
+}
+
+bool AIGHorrorHUD::IsPresentingDialogue(const UObject* WorldContext)
+{
+	const AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	return HorrorHUD && HorrorHUD->LastFrameDrawnRealSeconds >= 0.0
+		&& FPlatformTime::Seconds() - HorrorHUD->LastFrameDrawnRealSeconds < 1.0;
+}
+
+bool AIGHorrorHUD::HasDialogueInContext(const UObject* WorldContext, const FName Context)
+{
+	const AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	return HorrorHUD && !Context.IsNone() && HorrorHUD->HasDialogueInContextForTesting(Context);
+}
+
+TFunction<bool()> AIGHorrorHUD::MakeSceneGuard(const UObject* WorldContext)
+{
+	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	if (!HorrorHUD)
+	{
+		// 화면이 없는 실행이다. 막을 장면 경계도 없다.
+		return []() { return true; };
+	}
+	const TWeakObjectPtr<AIGHorrorHUD> WeakHud(HorrorHUD);
+	const int32 Serial = HorrorHUD->DialogueSceneSerial;
+	return [WeakHud, Serial]() { return WeakHud.IsValid() && WeakHud->DialogueSceneSerial == Serial; };
+}
+
+bool AIGHorrorHUD::IsDialogueStillValid(const FIGDialogueMessage& Message)
+{
+	if (Message.bHasOwner && !Message.Scope.Owner.IsValid())
+	{
+		return false;
+	}
+	return !Message.Scope.StillValid || Message.Scope.StillValid();
+}
+
+void AIGHorrorHUD::StopDialogueVoice(FIGDialogueMessage& Message)
+{
+	if (UAudioComponent* Voice = Message.Scope.Voice.Get())
+	{
+		Voice->Stop();
+	}
+	Message.Scope.Voice = nullptr;
+	Message.bVoiceStarted = false;
+	Message.VoiceExpectedEnd = -1.0;
+	Message.bVoiced = static_cast<bool>(Message.Scope.StartVoice);
+}
+
+bool AIGHorrorHUD::IsCurrentVoiceCutShort(const double CurrentTime) const
+{
+	if (!bHasCurrentDialogue || !CurrentDialogue.bVoiceStarted || CurrentDialogue.VoiceExpectedEnd < 0.0)
+	{
+		return false;
+	}
+	const UAudioComponent* Voice = CurrentDialogue.Scope.Voice.Get();
+	return !(Voice && Voice->IsPlaying())
+		&& CurrentTime + IGHorrorHUD::VoiceCutToleranceSeconds < CurrentDialogue.VoiceExpectedEnd;
+}
+
+void AIGHorrorHUD::EndDialogueMessage(FIGDialogueMessage& Message, const EIGDialogueEndReason Reason)
+{
+	// 끝까지 간 소리는 그대로 두고, 거두거나 밀어낸 줄의 소리는 같이 멈춘다.
+	if (Reason != EIGDialogueEndReason::Completed)
+	{
+		StopDialogueVoice(Message);
+	}
+	if (Message.Scope.OnEnded)
+	{
+		PendingDialogueEndCallbacks.Emplace(MoveTemp(Message.Scope.OnEnded), Reason);
+		Message.Scope.OnEnded = nullptr;
+	}
+}
+
+void AIGHorrorHUD::FlushDialogueEndCallbacks()
+{
+	// 알림이 새 줄을 낼 수 있으니 목록을 먼저 떼어 낸 뒤 부른다.
+	while (!PendingDialogueEndCallbacks.IsEmpty())
+	{
+		TArray<TPair<TFunction<void(EIGDialogueEndReason)>, EIGDialogueEndReason>> Callbacks = MoveTemp(PendingDialogueEndCallbacks);
+		PendingDialogueEndCallbacks.Reset();
+		for (TPair<TFunction<void(EIGDialogueEndReason)>, EIGDialogueEndReason>& Callback : Callbacks)
+		{
+			if (Callback.Key)
+			{
+				Callback.Key(Callback.Value);
+			}
+		}
+	}
+}
+
+void AIGHorrorHUD::CancelDialogueWhere(
+	const TFunctionRef<bool(const FIGDialogueMessage&)> Match,
+	const EIGDialogueEndReason Reason)
+{
+	for (int32 Index = DialogueQueue.Num() - 1; Index >= 0; --Index)
+	{
+		if (Match(DialogueQueue[Index]))
+		{
+			EndDialogueMessage(DialogueQueue[Index], Reason);
+			DialogueQueue.RemoveAt(Index);
+		}
+	}
+	if (bHasCurrentDialogue && Match(CurrentDialogue))
+	{
+		EndDialogueMessage(CurrentDialogue, Reason);
+		bHasCurrentDialogue = false;
+		CurrentDialogueLines.Reset();
+		DialogueEndTime = -1.0;
+		DialogueOccludedAt = -1.0;
+	}
+}
+
+void AIGHorrorHUD::CancelAudioCaptionsIn(const FName Context)
+{
+	if (Context.IsNone())
+	{
+		return;
+	}
+	AudioCaptionQueue.RemoveAll([Context](const FIGAudioCaptionMessage& Message)
+	{
+		return Message.Context == Context;
+	});
+	if (!CurrentAudioCaption.IsEmpty() && CurrentAudioCaptionContext == Context)
+	{
+		CurrentAudioCaption = FText::GetEmpty();
+		CurrentAudioCaptionContext = NAME_None;
+		AudioCaptionEndTime = -1.0;
+	}
+}
+
+bool AIGHorrorHUD::IsOutOfEarshot(const FIGDialogueMessage& Message) const
+{
+	if (Message.Scope.EarshotRadius <= 0.0f)
+	{
+		return false;
+	}
+	// 말하는 사람을 잃었으면 주인 규칙이 맡는다.
+	const AActor* Speaker = Message.Scope.SpeakerActor.Get();
+	const APlayerController* Controller = GetOwningPlayerController();
+	const APawn* Listener = Controller ? Controller->GetPawn() : nullptr;
+	if ((!Speaker && !Message.Scope.SpeakerLocation.IsSet()) || !Listener)
+	{
+		return false;
+	}
+	const FVector SpeakerAt = Speaker ? Speaker->GetActorLocation() : Message.Scope.SpeakerLocation.GetValue();
+	return FVector::DistSquared(Listener->GetActorLocation(), SpeakerAt)
+		> FMath::Square(Message.Scope.EarshotRadius);
+}
+
+void AIGHorrorHUD::HoldOrCancelInterrupted(FIGDialogueMessage&& Message)
+{
+	if (Message.Scope.bReplayIfInterrupted && !Message.Scope.Context.IsNone())
+	{
+		// 멀어진 사이 소리는 멎는다. 다시 말을 걸면 그 줄을 처음부터 다시 낸다.
+		StopDialogueVoice(Message);
+		InterruptedTalks.FindOrAdd(Message.Scope.Context).Add(MoveTemp(Message));
+		return;
+	}
+	EndDialogueMessage(Message, EIGDialogueEndReason::Cancelled);
+}
+
+void AIGHorrorHUD::InterruptTalk(const FName Context)
+{
+	TArray<FIGDialogueMessage> Taken;
+	if (bHasCurrentDialogue && CurrentDialogue.Scope.Context == Context)
+	{
+		Taken.Add(MoveTemp(CurrentDialogue));
+		bHasCurrentDialogue = false;
+		CurrentDialogueLines.Reset();
+		DialogueEndTime = -1.0;
+		DialogueOccludedAt = -1.0;
+	}
+	for (int32 Index = 0; Index < DialogueQueue.Num();)
+	{
+		if (DialogueQueue[Index].Scope.Context == Context)
+		{
+			Taken.Add(MoveTemp(DialogueQueue[Index]));
+			DialogueQueue.RemoveAt(Index);
+			continue;
+		}
+		++Index;
+	}
+	// 화면 폭에 맞춰 나눈 줄은 원문 하나로 되돌린다. 다시 들려줄 때 다시 나눈다.
+	TArray<FIGDialogueMessage> Merged;
+	for (FIGDialogueMessage& Message : Taken)
+	{
+		if (Message.bContinuation && Merged.Num() > 0 && Merged.Last().FullLine.EqualTo(Message.FullLine))
+		{
+			if (Message.Scope.OnEnded)
+			{
+				Merged.Last().Scope.OnEnded = MoveTemp(Message.Scope.OnEnded);
+			}
+			continue;
+		}
+		if (!Message.FullLine.IsEmpty())
+		{
+			Message.Line = Message.FullLine;
+		}
+		Message.bContinuation = false;
+		Merged.Add(MoveTemp(Message));
+	}
+	for (FIGDialogueMessage& Message : Merged)
+	{
+		HoldOrCancelInterrupted(MoveTemp(Message));
+	}
+}
+
+bool AIGHorrorHUD::IsActiveDialogueDrawnForTesting() const
+{
+	if (!bHasCurrentDialogue)
+	{
+		return false;
+	}
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UIGAccessibilitySubsystem* Accessibility = GameInstance
+		? GameInstance->GetSubsystem<UIGAccessibilitySubsystem>()
+		: nullptr;
+	return !(CurrentDialogue.bVoiced || CurrentDialogue.Channel == EIGDialogueChannel::VoiceSubtitle)
+		|| (Accessibility && Accessibility->AreSubtitlesEnabled());
+}
+
+void AIGHorrorHUD::RecordHeardLine(const FIGDialogueMessage& Message) const
+{
+	if (Message.Channel == EIGDialogueChannel::InnerVoice
+		|| Message.Scope.Lifetime != EIGDialogueLifetime::Story
+		|| Message.Priority == EIGDialoguePriority::Ambient)
+	{
+		return;
+	}
+	const UGameInstance* GameInstance = GetGameInstance();
+	if (UIGMissingFloorNarrativeSubsystem* Narrative = GameInstance
+		? GameInstance->GetSubsystem<UIGMissingFloorNarrativeSubsystem>()
+		: nullptr)
+	{
+		Narrative->RecordHeardLine(Message.Speaker, Message.FullLine.IsEmpty() ? Message.Line : Message.FullLine);
+	}
+}
+
+void AIGHorrorHUD::ClearAllDialogueAndCaptions()
+{
+	CancelDialogueWhere([](const FIGDialogueMessage&) { return true; }, EIGDialogueEndReason::Cancelled);
+	for (TPair<FName, TArray<FIGDialogueMessage>>& Held : InterruptedTalks)
+	{
+		for (FIGDialogueMessage& Message : Held.Value)
+		{
+			EndDialogueMessage(Message, EIGDialogueEndReason::Cancelled);
+		}
+	}
+	InterruptedTalks.Reset();
+	AudioCaptionQueue.Reset();
+	CurrentAudioCaption = FText::GetEmpty();
+	CurrentAudioCaptionContext = NAME_None;
+	AudioCaptionEndTime = -1.0;
+	FlushDialogueEndCallbacks();
+}
+
 void AIGHorrorHUD::ShowThought(const FText& Thought, const float DurationSeconds)
 {
 	ShowDialogue(
@@ -1057,15 +1450,64 @@ void AIGHorrorHUD::ShowDialogue(
 		}
 	}
 
+	ShowDialogueScoped(Speaker, Line, Channel, MinimumDurationSeconds, Priority, FIGDialogueScope());
+}
+
+void AIGHorrorHUD::ShowDialogueScoped(
+	const FText& Speaker,
+	const FText& Line,
+	const EIGDialogueChannel Channel,
+	const float MinimumDurationSeconds,
+	const EIGDialoguePriority Priority,
+	FIGDialogueScope&& Scope)
+{
+	const UWorld* World = GetWorld();
+	if (!World || Line.IsEmpty())
+	{
+		return;
+	}
+	// 녹음된 말은 자막을 꺼도 줄을 선다. 소리가 나고, 끝을 알려야 다음 일이 이어진다.
+	// 소리 없이 음성 자막 칸으로 온 줄만 자막 설정을 따라 버린다.
+	if (Channel == EIGDialogueChannel::VoiceSubtitle && !Scope.StartVoice && !Scope.Voice.IsValid())
+	{
+		const UGameInstance* GameInstance = World->GetGameInstance();
+		const UIGAccessibilitySubsystem* Accessibility = GameInstance
+			? GameInstance->GetSubsystem<UIGAccessibilitySubsystem>()
+			: nullptr;
+		if (!Accessibility || !Accessibility->AreSubtitlesEnabled())
+		{
+			return;
+		}
+	}
+
 	FIGDialogueMessage Message;
 	Message.Speaker = Speaker;
 	Message.Line = Line;
 	Message.Channel = Channel;
 	Message.Priority = Priority;
 	Message.MinimumDurationSeconds = FMath::Max(0.0f, MinimumDurationSeconds);
+	Message.bHasOwner = Scope.Owner.IsValid();
+	Message.bVoiced = Scope.Voice.IsValid() || static_cast<bool>(Scope.StartVoice);
+	Message.FullLine = Line;
+	Message.Scope = MoveTemp(Scope);
+	// 늦게 끝난 타이머가 이미 끝난 장면에 말을 넣으려 하면 여기서 막는다.
+	if (!IsDialogueStillValid(Message))
+	{
+		EndDialogueMessage(Message, EIGDialogueEndReason::Cancelled);
+		FlushDialogueEndCallbacks();
+		return;
+	}
+	if (IsOutOfEarshot(Message))
+	{
+		// 말을 건 자리를 이미 떠났다. 다시 들려줄 대화면 들고 있고, 아니면 버린다.
+		HoldOrCancelInterrupted(MoveTemp(Message));
+		FlushDialogueEndCallbacks();
+		return;
+	}
 	const double CurrentTime = World->GetTimeSeconds();
 	Message.QueuedAt = CurrentTime;
 	EnqueueDialogue(MoveTemp(Message), CurrentTime);
+	FlushDialogueEndCallbacks();
 }
 
 float AIGHorrorHUD::GetCaptionDurationScale() const
@@ -1157,6 +1599,23 @@ void AIGHorrorHUD::ActivateDialogue(
 	DialogueEndTime = CurrentTime + CalculateDialogueDuration(
 		CurrentDialogue.Line.ToString(),
 		CurrentDialogue.MinimumDurationSeconds);
+	// 녹음된 말은 화면에 오르는 이때 소리를 낸다. 나눈 줄의 다음 쪽은 같은 소리를 이어 쓴다.
+	if (CurrentDialogue.Scope.StartVoice && !CurrentDialogue.bVoiceStarted)
+	{
+		CurrentDialogue.bVoiceStarted = true;
+		UAudioComponent* Voice = CurrentDialogue.Scope.StartVoice();
+		CurrentDialogue.Scope.Voice = Voice;
+		const USoundBase* Sound = Voice ? Voice->Sound.Get() : nullptr;
+		if (Sound && Sound->GetDuration() > 0.0f && Sound->GetDuration() < INDEFINITELY_LOOPING_DURATION)
+		{
+			CurrentDialogue.VoiceExpectedEnd = CurrentTime + Sound->GetDuration();
+		}
+		else if (!Voice)
+		{
+			// 소리를 못 냈다(장치가 없거나 자산을 잃었다). 글로 읽는 시간대로 둔다.
+			CurrentDialogue.bVoiced = false;
+		}
+	}
 }
 
 void AIGHorrorHUD::EnqueueDialogue(
@@ -1177,15 +1636,35 @@ void AIGHorrorHUD::EnqueueDialogue(
 			&& Candidate.Speaker.ToString().Equals(IncomingSpeaker);
 	};
 
+	const auto MergeEnded = [](FIGDialogueMessage& Target, FIGDialogueMessage& Incoming)
+	{
+		if (!Incoming.Scope.OnEnded)
+		{
+			return;
+		}
+		if (!Target.Scope.OnEnded)
+		{
+			Target.Scope.OnEnded = MoveTemp(Incoming.Scope.OnEnded);
+			return;
+		}
+		Target.Scope.OnEnded = [First = MoveTemp(Target.Scope.OnEnded), Second = MoveTemp(Incoming.Scope.OnEnded)](
+			const EIGDialogueEndReason Reason)
+		{
+			First(Reason);
+			Second(Reason);
+		};
+	};
 	if (bHasCurrentDialogue
 		&& CurrentDialogue.Channel == Message.Channel
 		&& IsSameMessage(CurrentDialogue))
 	{
+		// 같은 말을 거듭 내도 처음 뜬 때부터 한 번 읽을 시간까지만 둔다.
 		DialogueEndTime = FMath::Max(
 			DialogueEndTime,
-			CurrentTime + CalculateDialogueDuration(
-				IncomingLine,
-				Message.MinimumDurationSeconds));
+			DialogueStartTime + CalculateDialogueDuration(
+				CurrentDialogue.Line.ToString(),
+				FMath::Max(CurrentDialogue.MinimumDurationSeconds, Message.MinimumDurationSeconds)));
+		MergeEnded(CurrentDialogue, Message);
 		return;
 	}
 	for (FIGDialogueMessage& Queued : DialogueQueue)
@@ -1195,7 +1674,7 @@ void AIGHorrorHUD::EnqueueDialogue(
 			Queued.MinimumDurationSeconds = FMath::Max(
 				Queued.MinimumDurationSeconds,
 				Message.MinimumDurationSeconds);
-			Queued.QueuedAt = CurrentTime;
+			MergeEnded(Queued, Message);
 			return;
 		}
 	}
@@ -1209,14 +1688,24 @@ void AIGHorrorHUD::EnqueueDialogue(
 	if (static_cast<uint8>(Message.Priority)
 		> static_cast<uint8>(CurrentDialogue.Priority))
 	{
-		CurrentDialogue.MinimumDurationSeconds = FMath::Max(
-			0.8f,
-			static_cast<float>(DialogueEndTime - CurrentTime));
-		CurrentDialogue.QueuedAt = CurrentTime;
-		DialogueQueue.Insert(MoveTemp(CurrentDialogue), 0);
-		if (DialogueQueue.Num() > IGHorrorHUD::MaximumDialogueQueueDepth)
+		// 녹음된 말은 소리가 계속 나가므로 자막만 뒤로 미루지 않는다. 버리는 줄도 다시 세우지 않는다.
+		if (CurrentDialogue.bVoiced || CurrentDialogue.Scope.Interruption == EIGDialogueInterruption::Drop)
 		{
-			DialogueQueue.RemoveAt(DialogueQueue.Num() - 1);
+			EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Cancelled);
+		}
+		else
+		{
+			CurrentDialogue.MinimumDurationSeconds =
+				CurrentDialogue.Scope.Interruption == EIGDialogueInterruption::Restart
+				? CurrentDialogue.MinimumDurationSeconds
+				: FMath::Max(0.8f, static_cast<float>(DialogueEndTime - CurrentTime));
+			CurrentDialogue.QueuedAt = CurrentTime;
+			DialogueQueue.Insert(MoveTemp(CurrentDialogue), 0);
+			if (DialogueQueue.Num() > IGHorrorHUD::MaximumDialogueQueueDepth)
+			{
+				EndDialogueMessage(DialogueQueue.Last(), EIGDialogueEndReason::Expired);
+				DialogueQueue.RemoveAt(DialogueQueue.Num() - 1);
+			}
 		}
 		ActivateDialogue(MoveTemp(Message), CurrentTime);
 		return;
@@ -1236,18 +1725,97 @@ void AIGHorrorHUD::EnqueueDialogue(
 		}
 		if (RemovalIndex == INDEX_NONE)
 		{
+			EndDialogueMessage(Message, EIGDialogueEndReason::Expired);
 			return;
 		}
+		EndDialogueMessage(DialogueQueue[RemovalIndex], EIGDialogueEndReason::Expired);
 		DialogueQueue.RemoveAt(RemovalIndex);
 	}
 	DialogueQueue.Add(MoveTemp(Message));
 }
 
-void AIGHorrorHUD::AdvanceDialogueQueue(const double CurrentTime)
+void AIGHorrorHUD::ValidateCurrentDialogue(const double CurrentTime)
 {
-	if (bHasCurrentDialogue && CurrentTime < DialogueEndTime)
+	if (!bHasCurrentDialogue)
 	{
 		return;
+	}
+	if (!IsDialogueStillValid(CurrentDialogue))
+	{
+		EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Cancelled);
+		bHasCurrentDialogue = false;
+		CurrentDialogueLines.Reset();
+		DialogueEndTime = -1.0;
+		return;
+	}
+	if (IsOutOfEarshot(CurrentDialogue))
+	{
+		// 말하는 사람에게서 멀어졌다. 그 대화의 남은 줄은 따라오지 않는다.
+		if (CurrentDialogue.Scope.Context.IsNone())
+		{
+			EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Cancelled);
+			bHasCurrentDialogue = false;
+			CurrentDialogueLines.Reset();
+			DialogueEndTime = -1.0;
+		}
+		else
+		{
+			InterruptTalk(CurrentDialogue.Scope.Context);
+		}
+		return;
+	}
+	if (!CurrentDialogue.bVoiced)
+	{
+		return;
+	}
+	if (IsCurrentVoiceCutShort(CurrentTime))
+	{
+		// 소리가 제 길이보다 먼저 멎었다(밖에서 멈췄다). 끝까지 들은 것으로 치지 않고,
+		// 그 끝 알림으로 다음 말이 이어지지도 않는다. 나눈 줄의 남은 쪽도 같이 거둔다.
+		const FText Interrupted = CurrentDialogue.FullLine;
+		EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Cancelled);
+		bHasCurrentDialogue = false;
+		CurrentDialogueLines.Reset();
+		DialogueEndTime = -1.0;
+		CancelDialogueWhere([&Interrupted](const FIGDialogueMessage& Message)
+		{
+			return Message.bContinuation && Message.FullLine.EqualTo(Interrupted);
+		}, EIGDialogueEndReason::Cancelled);
+		return;
+	}
+	if (bCurrentDialogueHasContinuation)
+	{
+		// 앞쪽은 읽는 시간대로 넘긴다. 소리 길이는 마지막 쪽이 따라간다.
+		return;
+	}
+	// 녹음된 말은 소리 길이가 기준이다. 소리가 아직 나오면 자막도 남기고, 끝났으면 곧 내린다.
+	const UAudioComponent* Voice = CurrentDialogue.Scope.Voice.Get();
+	if (Voice && Voice->IsPlaying())
+	{
+		DialogueEndTime = FMath::Max(DialogueEndTime, CurrentTime + 0.1);
+	}
+	else
+	{
+		DialogueEndTime = FMath::Min(DialogueEndTime, CurrentTime + IGHorrorHUD::VoicedDialogueTailSeconds);
+	}
+}
+
+void AIGHorrorHUD::AdvanceDialogueQueue(const double CurrentTime)
+{
+	ValidateCurrentDialogue(CurrentTime);
+	if (bHasCurrentDialogue && CurrentTime < DialogueEndTime)
+	{
+		FlushDialogueEndCallbacks();
+		return;
+	}
+	if (bHasCurrentDialogue)
+	{
+		// 나눈 줄은 마지막 쪽까지 읽었을 때 원문 하나로 남긴다.
+		if (!bCurrentDialogueHasContinuation)
+		{
+			RecordHeardLine(CurrentDialogue);
+		}
+		EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Completed);
 	}
 	bHasCurrentDialogue = false;
 	CurrentDialogueLines.Reset();
@@ -1256,19 +1824,34 @@ void AIGHorrorHUD::AdvanceDialogueQueue(const double CurrentTime)
 	{
 		FIGDialogueMessage Next = MoveTemp(DialogueQueue[0]);
 		DialogueQueue.RemoveAt(0);
+		if (!IsDialogueStillValid(Next))
+		{
+			EndDialogueMessage(Next, EIGDialogueEndReason::Cancelled);
+			continue;
+		}
+		if (IsOutOfEarshot(Next))
+		{
+			HoldOrCancelInterrupted(MoveTemp(Next));
+			continue;
+		}
 		// 자막을 오래 두는 설정이면 앞줄이 그만큼 길게 머문다. 기다릴 수 있는
 		// 시간도 같이 늘려야 한꺼번에 쌓인 대화의 끝줄이 조용히 버려지지 않는다.
-		const double MaximumAge = (Next.Priority == EIGDialoguePriority::Ambient
+		// 지금 행동에 대한 짧은 반응은 짧게만 기다린다. 늦게 뜨면 이미 지난 상황의 말이다.
+		const double MaximumAge = (Next.Scope.Lifetime == EIGDialogueLifetime::Reaction
+			? IGHorrorHUD::ReactionDialogueMaximumQueueAge
+			: Next.Priority == EIGDialoguePriority::Ambient
 			? IGHorrorHUD::AmbientDialogueMaximumQueueAge
 			: IGHorrorHUD::StoryDialogueMaximumQueueAge)
 			* FMath::Max(1.0f, GetCaptionDurationScale());
 		if (!Next.bContinuation && CurrentTime - Next.QueuedAt > MaximumAge)
 		{
+			EndDialogueMessage(Next, EIGDialogueEndReason::Expired);
 			continue;
 		}
 		ActivateDialogue(MoveTemp(Next), CurrentTime);
-		return;
+		break;
 	}
+	FlushDialogueEndCallbacks();
 }
 
 void AIGHorrorHUD::SuspendDialoguePresentation(const double CurrentTime)
@@ -1286,13 +1869,51 @@ void AIGHorrorHUD::ResumeDialoguePresentation(const double CurrentTime)
 		return;
 	}
 	const double OccludedDuration = FMath::Max(0.0, CurrentTime - DialogueOccludedAt);
-	DialogueStartTime += OccludedDuration;
-	DialogueEndTime += OccludedDuration;
+	DialogueOccludedAt = -1.0;
+	if (bHasCurrentDialogue)
+	{
+		const bool bStale = !IsDialogueStillValid(CurrentDialogue)
+			|| CurrentDialogue.Scope.Interruption == EIGDialogueInterruption::Drop
+			|| (CurrentDialogue.Scope.Lifetime == EIGDialogueLifetime::Reaction
+				&& OccludedDuration > IGHorrorHUD::ReactionDialogueMaximumOcclusion);
+		if (bStale)
+		{
+			// 화면을 닫았을 때 이미 지난 상황의 말을 다시 보이지 않는다.
+			EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Cancelled);
+			bHasCurrentDialogue = false;
+			CurrentDialogueLines.Reset();
+			DialogueEndTime = -1.0;
+		}
+		else if (CurrentDialogue.bVoiced)
+		{
+			// 녹음된 말은 가려진 동안에도 흘렀다. 자막만 미루면 소리와 어긋난다. 가려진
+			// 사이 소리가 끝났으면 화면을 닫자마자 지난 말을 다시 띄우지 않는다.
+			const UAudioComponent* Voice = CurrentDialogue.Scope.Voice.Get();
+			if (!(Voice && Voice->IsPlaying()) && !bCurrentDialogueHasContinuation)
+			{
+				DialogueEndTime = FMath::Min(DialogueEndTime, CurrentTime);
+			}
+		}
+		else if (CurrentDialogue.Scope.Interruption == EIGDialogueInterruption::Restart)
+		{
+			const double Duration = DialogueEndTime - DialogueStartTime;
+			DialogueStartTime = CurrentTime;
+			DialogueEndTime = CurrentTime + Duration;
+		}
+		else
+		{
+			DialogueStartTime += OccludedDuration;
+			DialogueEndTime += OccludedDuration;
+		}
+	}
 	for (FIGDialogueMessage& Queued : DialogueQueue)
 	{
-		Queued.QueuedAt += OccludedDuration;
+		if (!Queued.bVoiced)
+		{
+			Queued.QueuedAt += OccludedDuration;
+		}
 	}
-	DialogueOccludedAt = -1.0;
+	FlushDialogueEndCallbacks();
 }
 
 namespace
@@ -1389,6 +2010,37 @@ void AIGHorrorHUD::PushAudioCaptionAt(
 		DurationSeconds);
 }
 
+void AIGHorrorHUD::PushAudioCaptionScoped(
+	const UObject* WorldContext,
+	const FText& Caption,
+	const float DurationSeconds,
+	const FVector& SourceLocation,
+	const FName Context,
+	const float AudibleRadius)
+{
+	const UWorld* World = GEngine && WorldContext
+		? GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull)
+		: nullptr;
+	const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+	const UIGAccessibilitySubsystem* Accessibility = GameInstance
+		? GameInstance->GetSubsystem<UIGAccessibilitySubsystem>()
+		: nullptr;
+	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	if (!Accessibility || !Accessibility->AreSoundCaptionsEnabled() || !HorrorHUD)
+	{
+		return;
+	}
+	const FText Bearing = MakeSoundBearingTag(WorldContext, SourceLocation);
+	HorrorHUD->ShowAudioCaptionInContext(
+		Bearing.IsEmpty()
+			? Caption
+			: FText::Format(NSLOCTEXT("IGHUD", "SoundCaptionWithBearing", "[{0}] {1}"), Bearing, Caption),
+		DurationSeconds,
+		Context,
+		SourceLocation,
+		AudibleRadius);
+}
+
 void AIGHorrorHUD::PushAudioCaption(
 	const UObject* WorldContext,
 	const FText& Caption,
@@ -1444,8 +2096,35 @@ void AIGHorrorHUD::ShowAudioCaption(
 	const FText& Caption,
 	const float DurationSeconds)
 {
+	ShowAudioCaptionInContext(Caption, DurationSeconds, NAME_None);
+}
+
+bool AIGHorrorHUD::IsAudioCaptionInRange(const TOptional<FVector>& SourceLocation, const float AudibleRadius) const
+{
+	if (!SourceLocation.IsSet() || AudibleRadius <= 0.0f)
+	{
+		return true;
+	}
+	const APlayerController* Controller = GetOwningPlayerController();
+	const APawn* Listener = Controller ? Controller->GetPawn() : nullptr;
+	return !Listener
+		|| FVector::DistSquared(Listener->GetActorLocation(), SourceLocation.GetValue()) <= FMath::Square(AudibleRadius);
+}
+
+void AIGHorrorHUD::ShowAudioCaptionInContext(
+	const FText& Caption,
+	const float DurationSeconds,
+	const FName Context,
+	const TOptional<FVector>& SourceLocation,
+	const float AudibleRadius)
+{
 	const UWorld* World = GetWorld();
 	if (!World || Caption.IsEmpty())
+	{
+		return;
+	}
+	// 들리지 않는 거리에서 난 소리는 글로도 알리지 않는다.
+	if (!IsAudioCaptionInRange(SourceLocation, AudibleRadius))
 	{
 		return;
 	}
@@ -1472,6 +2151,9 @@ void AIGHorrorHUD::ShowAudioCaption(
 	Message.Caption = Caption;
 	Message.DurationSeconds = ClampedDuration;
 	Message.QueuedAt = CurrentTime;
+	Message.Context = Context;
+	Message.SourceLocation = SourceLocation;
+	Message.AudibleRadius = AudibleRadius;
 	if (CurrentAudioCaption.IsEmpty() || CurrentTime >= AudioCaptionEndTime)
 	{
 		ActivateAudioCaption(MoveTemp(Message), CurrentTime);
@@ -1500,12 +2182,20 @@ void AIGHorrorHUD::ActivateAudioCaption(
 	const double CurrentTime)
 {
 	CurrentAudioCaption = MoveTemp(Message.Caption);
+	CurrentAudioCaptionContext = Message.Context;
+	CurrentAudioCaptionSource = Message.SourceLocation;
+	CurrentAudioCaptionRadius = Message.AudibleRadius;
 	AudioCaptionStartTime = CurrentTime;
 	AudioCaptionEndTime = CurrentTime + FMath::Max(0.8f, Message.DurationSeconds);
 }
 
 void AIGHorrorHUD::AdvanceAudioCaptionQueue(const double CurrentTime)
 {
+	// 떠 있는 동안 그 소리가 들리는 곳을 벗어났으면 바로 내린다. 다른 장면에 지난 소리 설명이 남지 않게.
+	if (!CurrentAudioCaption.IsEmpty() && !IsAudioCaptionInRange(CurrentAudioCaptionSource, CurrentAudioCaptionRadius))
+	{
+		AudioCaptionEndTime = CurrentTime;
+	}
 	if (!CurrentAudioCaption.IsEmpty() && CurrentTime < AudioCaptionEndTime)
 	{
 		return;
@@ -1515,6 +2205,11 @@ void AIGHorrorHUD::AdvanceAudioCaptionQueue(const double CurrentTime)
 	{
 		FIGAudioCaptionMessage Next = MoveTemp(AudioCaptionQueue[0]);
 		AudioCaptionQueue.RemoveAt(0);
+		// 줄 서 있는 사이 그 자리를 떠났으면 그 소리는 이제 들리지 않는다.
+		if (!IsAudioCaptionInRange(Next.SourceLocation, Next.AudibleRadius))
+		{
+			continue;
+		}
 		// A caption that would be badly detached from its sound is safer to drop
 		// than to present as a false current event. 자막을 오래 두는 설정이면 앞
 		// 자막도 그만큼 오래 머무니, 기다릴 수 있는 시간도 같이 늘린다. 그대로 두면
@@ -1778,6 +2473,17 @@ void AIGHorrorHUD::SetMissingFloorJournalState(
 }
 
 int32 AIGHorrorHUD::GetMissingFloorJournalPageCount() const
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GameInstance
+		? GameInstance->GetSubsystem<UIGMissingFloorNarrativeSubsystem>()
+		: nullptr;
+	const bool bHasHeard = Narrative && Narrative->GetHeardLines().Num() > 0;
+	return GetMissingFloorJournalTruthPageCount()
+		+ (bHasHeard ? FMath::Max(1, JournalHeardPageCount) : 0);
+}
+
+int32 AIGHorrorHUD::GetMissingFloorJournalTruthPageCount() const
 {
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GameInstance
@@ -2476,6 +3182,7 @@ void AIGHorrorHUD::ToggleGameplayGuide()
 void AIGHorrorHUD::DrawHUD()
 {
 	Super::DrawHUD();
+	LastFrameDrawnRealSeconds = FPlatformTime::Seconds();
 	bAudioCaptionDrawnInLastHudFrame = false;
 	if (bTextAuditEnabled)
 	{
@@ -3103,9 +3810,13 @@ void AIGHorrorHUD::PrepareDialoguePage(
 		Continuation.MinimumDurationSeconds = 0.0f;
 		Continuation.QueuedAt = CurrentTime;
 		Continuation.bContinuation = true;
+		// 사건 이름·주인·조건은 그대로 따라가고, 끝 알림은 마지막 쪽이 끝날 때 한 번만 부른다.
+		Continuation.Scope.OnEnded = MoveTemp(CurrentDialogue.Scope.OnEnded);
+		CurrentDialogue.Scope.OnEnded = nullptr;
 		DialogueQueue.Insert(MoveTemp(Continuation), 0);
 		if (DialogueQueue.Num() > IGHorrorHUD::MaximumDialogueQueueDepth)
 		{
+			EndDialogueMessage(DialogueQueue.Last(), EIGDialogueEndReason::Expired);
 			DialogueQueue.RemoveAt(DialogueQueue.Num() - 1);
 		}
 
@@ -3901,14 +4612,10 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 	const UIGAccessibilitySubsystem* Accessibility = GameInstance
 		? GameInstance->GetSubsystem<UIGAccessibilitySubsystem>()
 		: nullptr;
-	while (bHasCurrentDialogue
-		&& CurrentDialogue.Channel == EIGDialogueChannel::VoiceSubtitle
+	// 음성 대사 자막을 껐으면 소리만 난다. 줄은 그대로 떠 있어서 차례와 끝 알림은 소리를 따른다.
+	// 녹음이 없는 대화와 혼잣말은 이 설정과 관계없이 늘 보인다.
+	if ((CurrentDialogue.bVoiced || CurrentDialogue.Channel == EIGDialogueChannel::VoiceSubtitle)
 		&& (!Accessibility || !Accessibility->AreSubtitlesEnabled()))
-	{
-		DialogueEndTime = CurrentTime;
-		AdvanceDialogueQueue(CurrentTime);
-	}
-	if (!bHasCurrentDialogue)
 	{
 		return false;
 	}
@@ -6131,6 +6838,160 @@ void AIGHorrorHUD::DrawMissingFloorJournalPanel()
 	const float FooterLineHeight = LineHeightFor(EIGHudTextRole::Hint, FooterScale);
 	const float FooterHeight = FooterLineHeight + 20.0f * ResolutionScale;
 	const float ContentBottom = PaperOrigin.Y + PaperSize.Y - FooterHeight;
+	const auto DrawJournalFooter = [&]()
+	{
+		DrawCenteredPaperText(
+			bUsingGamepad
+					? NSLOCTEXT(
+						"IGHUD",
+						"MissingFloorJournalControlsGamepad",
+						"D-pad  기록 넘기기  ·  Y 닫기")
+					: NSLOCTEXT(
+						"IGHUD",
+						"MissingFloorJournalControlsKeyboard",
+						"← / →  기록 넘기기  ·  Tab 닫기"),
+			PaperOrigin.Y + PaperSize.Y - FooterLineHeight - 9.0f * ResolutionScale,
+			FaintInk,
+			EIGHudTextRole::Hint,
+			FooterScale);
+	};
+
+	// 「들은 말」 쪽. 조사 기록 쪽 뒤에 붙고, 마지막 쪽이 가장 최근이다(첫 쪽에서 ←로 바로 온다).
+	// 쪽 나누기는 글자 크기와 화면 폭을 따라야 해서 그릴 때 센다.
+	const TArray<FIGHeardLine> NoHeardLines;
+	const TArray<FIGHeardLine>& Heard = Narrative ? Narrative->GetHeardLines() : NoHeardLines;
+	UFont* HeardFont = GetFontForRole(EIGHudTextRole::Dialogue);
+	const float HeardTitleScale = 0.90f * ResolutionScale;
+	const float HeardTitleHeight = LineHeightFor(EIGHudTextRole::Speaker, HeardTitleScale);
+	const float HeardListTop = ContentTop + HeardTitleHeight + 14.0f * ResolutionScale;
+	const float HeardTextScale = FMath::Clamp(ResolutionScale * 0.84f * UserTextScale, 0.62f, 1.40f);
+	const float HeardStep = LineHeightFor(EIGHudTextRole::Dialogue, HeardTextScale) * 1.06f;
+	const float HeardEntryGap = 9.0f * ResolutionScale;
+	const float HeardPhaseGap = 16.0f * ResolutionScale;
+	const float HeardSpeakerWidth = FMath::Clamp(
+		(ContentRight - ContentLeft) * 0.17f,
+		110.0f * ResolutionScale,
+		260.0f * ResolutionScale);
+	const float HeardTextLeft = ContentLeft + HeardSpeakerWidth + 16.0f * ResolutionScale;
+	const float HeardTextWidth = ContentRight - HeardTextLeft;
+	struct FHeardRow
+	{
+		int32 Index = INDEX_NONE;
+		TArray<FString> Lines;
+	};
+	const auto IsSamePhase = [&Heard](const int32 A, const int32 B)
+	{
+		return Heard[A].NightIndex == Heard[B].NightIndex && Heard[A].bAtNight == Heard[B].bAtNight;
+	};
+	TArray<TArray<FHeardRow>> HeardPages;
+	{
+		TArray<FHeardRow> Page;
+		float Used = 0.0f;
+		const float Available = ContentBottom - HeardListTop;
+		for (int32 Index = Heard.Num() - 1; Index >= 0; --Index)
+		{
+			FHeardRow Row;
+			Row.Index = Index;
+			FString Remainder;
+			WrapHudText(Heard[Index].Line.ToString(), HeardFont, HeardTextScale, HeardTextWidth, 4, Row.Lines, Remainder);
+			if (Row.Lines.IsEmpty())
+			{
+				Row.Lines.Add(Heard[Index].Line.ToString());
+			}
+			if (!Remainder.IsEmpty())
+			{
+				Row.Lines.Last() += TEXT("…");
+			}
+			const float Height = Row.Lines.Num() * HeardStep + HeardEntryGap;
+			float Gap = Page.Num() > 0 && !IsSamePhase(Index, Page[0].Index) ? HeardPhaseGap : 0.0f;
+			if (Page.Num() > 0 && Used + Height + Gap > Available)
+			{
+				HeardPages.Insert(MoveTemp(Page), 0);
+				Page.Reset();
+				Used = 0.0f;
+				Gap = 0.0f;
+			}
+			Used += Height + Gap;
+			Page.Insert(MoveTemp(Row), 0);
+		}
+		if (Page.Num() > 0)
+		{
+			HeardPages.Insert(MoveTemp(Page), 0);
+		}
+	}
+	JournalHeardPageCount = HeardPages.Num();
+	const int32 TruthPageCount = GetMissingFloorJournalTruthPageCount();
+	if (SafePage >= TruthPageCount && HeardPages.Num() > 0)
+	{
+		const TArray<FHeardRow>& Rows = HeardPages[FMath::Clamp(SafePage - TruthPageCount, 0, HeardPages.Num() - 1)];
+		const FText HeardTitle = NSLOCTEXT("IGHUD", "JournalHeardTitle", "들은 말");
+		const FText HeardHint = NSLOCTEXT("IGHUD", "JournalHeardHint", "아래로 갈수록 최근에 들은 말");
+		const float HeardHintScale = 0.70f * ResolutionScale;
+		const float HeardHintWidth = MeasureTextWidth(HeardHint.ToString(), GetFontForRole(EIGHudTextRole::Hint), HeardHintScale);
+		DrawPaperText(
+			HeardTitle,
+			FVector2D(ContentLeft + 3.0f * ResolutionScale, ContentTop),
+			OxideRed,
+			EIGHudTextRole::Speaker,
+			GetFittedTextScale(
+				HeardTitle,
+				EIGHudTextRole::Speaker,
+				HeardTitleScale,
+				(ContentRight - ContentLeft) - HeardHintWidth - 24.0f * ResolutionScale,
+				HeardTitleScale * 0.7f));
+		DrawPaperText(
+			HeardHint,
+			FVector2D(ContentRight - HeardHintWidth, ContentTop + 4.0f * ResolutionScale),
+			FaintInk,
+			EIGHudTextRole::Hint,
+			HeardHintScale);
+		DrawRect(
+			OxideRed,
+			ContentLeft,
+			ContentTop + HeardTitleHeight + 3.0f * ResolutionScale,
+			ContentRight - ContentLeft,
+			1.4f);
+		float RowY = HeardListTop;
+		for (int32 RowIndex = 0; RowIndex < Rows.Num(); ++RowIndex)
+		{
+			const FIGHeardLine& Entry = Heard[Rows[RowIndex].Index];
+			if (RowIndex > 0 && !IsSamePhase(Rows[RowIndex - 1].Index, Rows[RowIndex].Index))
+			{
+				// 밤이 오거나 날이 밝은 자리.
+				DrawRect(
+					BlueRule,
+					ContentLeft,
+					RowY + (HeardPhaseGap - HeardEntryGap) * 0.5f - 1.0f,
+					ContentRight - ContentLeft,
+					1.0f);
+				RowY += HeardPhaseGap;
+			}
+			if (!Entry.Speaker.IsEmpty())
+			{
+				DrawPaperText(
+					Entry.Speaker,
+					FVector2D(ContentLeft + 3.0f * ResolutionScale, RowY),
+					Ink,
+					EIGHudTextRole::Speaker,
+					GetFittedTextScale(
+						Entry.Speaker,
+						EIGHudTextRole::Speaker,
+						HeardTextScale * 0.92f,
+						HeardSpeakerWidth - 6.0f * ResolutionScale,
+						HeardTextScale * 0.92f * 0.7f));
+			}
+			for (const FString& Line : Rows[RowIndex].Lines)
+			{
+				DrawPaperText(FText::FromString(Line), FVector2D(HeardTextLeft, RowY), Ink, EIGHudTextRole::Dialogue, HeardTextScale);
+				RowY += HeardStep;
+			}
+			RowY += HeardEntryGap;
+		}
+		DrawJournalFooter();
+		PopTextAuditContainer();
+		RecordLayoutValidationRect(PaperOrigin, PaperOrigin + PaperSize);
+		return;
+	}
 	const float LaneGap = 13.0f * ResolutionScale;
 	const float LaneWidth =
 		(ContentRight - ContentLeft - LaneGap * 2.0f) / 3.0f;
@@ -6381,20 +7242,7 @@ void AIGHorrorHUD::DrawMissingFloorJournalPanel()
 			0.90f * ResolutionScale);
 	}
 
-	DrawCenteredPaperText(
-		bUsingGamepad
-				? NSLOCTEXT(
-					"IGHUD",
-					"MissingFloorJournalControlsGamepad",
-					"D-pad  기록 넘기기  ·  Y 닫기")
-				: NSLOCTEXT(
-					"IGHUD",
-					"MissingFloorJournalControlsKeyboard",
-					"← / →  기록 넘기기  ·  Tab 닫기"),
-		PaperOrigin.Y + PaperSize.Y - FooterLineHeight - 9.0f * ResolutionScale,
-		FaintInk,
-		EIGHudTextRole::Hint,
-		FooterScale);
+	DrawJournalFooter();
 	PopTextAuditContainer();
 	RecordLayoutValidationRect(PaperOrigin, PaperOrigin + PaperSize);
 }

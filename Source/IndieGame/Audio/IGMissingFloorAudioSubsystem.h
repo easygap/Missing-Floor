@@ -23,6 +23,8 @@ enum class EIGAudioBus : uint8
 	World,
 	UI,
 	Score,
+	/** 사람의 목소리(나린·정우·녹음 속 사람). 문밖 손님의 목소리는 존재의 소리라 ENTITY다. */
+	Speech,
 	Count UMETA(Hidden)
 };
 
@@ -268,6 +270,8 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Audio|Missing Floor")
 	bool IsEntityNearPlayer() const { return bEntityNearPlayer; }
+	/** 사람의 목소리가 나오는 중이다. 그동안 내 숨과 음악을 한 칸 내린다(§21.1). */
+	bool IsSpeechPlaying() const { return bSpeechPlaying; }
 
 	UFUNCTION(BlueprintPure, Category = "Audio|Missing Floor")
 	bool IsTitleModeActive() const { return bTitleMode; }
@@ -398,6 +402,7 @@ private:
 	bool bEntityListening = false;
 	bool bAuthoredSilence = false;
 	bool bEntityNearPlayer = false;
+	bool bSpeechPlaying = false;
 	bool bTitleMode = false;
 	bool bMixPushed = false;
 	float UserMasterVolume = 1.0f;

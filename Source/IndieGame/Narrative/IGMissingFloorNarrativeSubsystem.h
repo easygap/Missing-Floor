@@ -234,6 +234,13 @@ public:
 	/** 확장 전 판을 이어 온 저장이다. */
 	bool IsLegacyRun() const { return Snapshot.Leftover.Version <= 0; }
 
+	// -- 들은 말 -----------------------------------------------------------
+
+	/** 끝까지 들은 대사를 남긴다. 바로 앞 줄과 같으면 다시 적지 않는다. */
+	void RecordHeardLine(const FText& Speaker, const FText& Line);
+	const TArray<FIGHeardLine>& GetHeardLines() const { return Snapshot.Heard; }
+	static constexpr int32 MaximumHeardLines = 80;
+
 	// -- persistence -------------------------------------------------------
 
 	const FIGMissingFloorNarrativeSnapshot& GetSnapshot() const { return Snapshot; }

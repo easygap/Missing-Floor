@@ -77,6 +77,11 @@ private:
 	void PlayPose(EPose Pose, float Rate);
 	UAnimSequence* AnimFor(EPose Pose) const;
 	void PlayStep();
+	/**
+	 * 몸막이를 지금 상태에 맞춘다. 걷는 동안은 끈다(밀고 지나가면 그녀가 떠밀려 판 옆에 끼었다).
+	 * 멈춘 자리에 그녀가 겹쳐 서 있으면 켜는 순간 그 안에 갇히므로 비킬 때까지 미룬다.
+	 */
+	void RefreshBlocker();
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> FeetRoot;
@@ -104,6 +109,8 @@ private:
 	bool bShown = false;
 	bool bBodyLoaded = false;
 	bool bBlocksPlayer = true;
+	/** 그녀가 비키기를 기다리며 몸막이를 미뤄 둔 상태. 틱이 다시 본다. */
+	bool bBlockerDeferred = false;
 	EPose CurrentPose = EPose::Idle;
 	EPose ArrivePose = EPose::Idle;
 	int32 CarriedBoxes = 0;

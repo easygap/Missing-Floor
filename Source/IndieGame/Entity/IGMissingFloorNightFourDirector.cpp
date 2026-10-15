@@ -2383,7 +2383,7 @@ void AIGMissingFloorNightFourDirector::HandleControlMisorder(
 			? NSLOCTEXT(
 				"IGMissingFloor",
 				"P5OverflowAlarm",
-				"물이 넘친다. 배수 밸브를 안 열었어.")
+				"물이 넘친다. 어디로도 안 빠지고 있어.")
 			: NSLOCTEXT(
 				"IGMissingFloor",
 				"P5PressureAlarm",

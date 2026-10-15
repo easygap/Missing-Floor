@@ -106,7 +106,8 @@ namespace IGMissingFloorMix
 		-1.0f,  // PUZZLE
 		-8.0f,  // WORLD
 		-10.0f, // UI
-		-6.0f   // SCORE
+		-6.0f,  // SCORE
+		-2.0f   // SPEECH
 	};
 
 	// 상한은 한 번 울고 마는 소리만 센다. 늘 우는 베드(험·물소리·끌림·숨·음악)는
@@ -120,7 +121,9 @@ namespace IGMissingFloorMix
 		8,  // UI: navigation remains responsive under caption churn
 		// SCORE: 거리 압박, 현재 음악, 빠지는 꼬리는 베드라 세지 않는다. 남은 자리는
 		// 확인음처럼 한 번 울고 마는 음악 몫이다.
-		4
+		4,
+		// SPEECH: 목소리는 상시 소리로 걸어 밀리지 않는다. 대사는 한 번에 한 줄이다.
+		2
 	};
 
 	/**
@@ -135,7 +138,8 @@ namespace IGMissingFloorMix
 		true,  // PUZZLE
 		true,  // WORLD
 		false, // UI
-		false  // SCORE
+		false, // SCORE
+		true   // SPEECH: 방 안에서 나는 말이다
 	};
 
 	const TCHAR* BusNames[] =
@@ -145,7 +149,8 @@ namespace IGMissingFloorMix
 		TEXT("BUS_PUZZLE"),
 		TEXT("BUS_WORLD"),
 		TEXT("BUS_UI"),
-		TEXT("BUS_SCORE")
+		TEXT("BUS_SCORE"),
+		TEXT("BUS_SPEECH")
 	};
 
 	float DecibelsToLinear(const float Decibels)
@@ -289,6 +294,13 @@ void UIGMissingFloorAudioSubsystem::Tick(const float DeltaTime)
 	{
 		VoicePruneAccumulator = 0.0f;
 		PruneVoices();
+		const bool bSpeech = ActiveVoices[IGMissingFloorMix::ToIndex(EIGAudioBus::Speech)].ContainsByPredicate(
+			[](const FTrackedVoice& Voice) { return Voice.Component.IsValid() && Voice.Component->IsPlaying(); });
+		if (bSpeech != bSpeechPlaying)
+		{
+			bSpeechPlaying = bSpeech;
+			RefreshMix(0.25f);
+		}
 	}
 
 	AcousticPollAccumulator += DeltaTime;
@@ -1141,11 +1153,16 @@ float UIGMissingFloorAudioSubsystem::GetBusDuckingDecibels(
 		// -24 dB silence floor while player breath remains untouched.
 		return -16.0f;
 	}
-	if (Bus == EIGAudioBus::Player && bEntityNearPlayer)
+	// 사람의 목소리가 나오는 동안에도 내 숨을 같은 만큼 내린다. 문밖의 말이 숨에 묻히지 않게.
+	if (Bus == EIGAudioBus::Player && (bEntityNearPlayer || bSpeechPlaying))
 	{
 		return -4.0f;
 	}
 	if (Bus == EIGAudioBus::World && (bPlayerListening || bEntityListening))
+	{
+		return -6.0f;
+	}
+	if (Bus == EIGAudioBus::Score && bSpeechPlaying)
 	{
 		return -6.0f;
 	}
@@ -1183,7 +1200,7 @@ bool UIGMissingFloorAudioSubsystem::ValidateContract(
 {
 	if (BusSoundClasses.Num() != BusCount || !RuntimeMix)
 	{
-		OutFailure = TEXT("six-bus graph was not constructed");
+		OutFailure = TEXT("bus graph was not constructed");
 		return false;
 	}
 	for (int32 Index = 0; Index < BusCount; ++Index)

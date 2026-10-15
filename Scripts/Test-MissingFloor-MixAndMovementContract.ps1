@@ -401,8 +401,8 @@ $busSection = Get-Section $story '### 21\.1 버스와 우선순위' '### 21\.2' 
 $busRows = Get-TableRows $busSection
 
 $assertionCount++
-if ($busRows.Count -ne 6) {
-	throw "§21.1 must list six buses, found $($busRows.Count)."
+if ($busRows.Count -ne 7) {
+	throw "§21.1 must list seven buses, found $($busRows.Count)."
 }
 
 # 표의 순서가 EIGAudioBus의 순서이자 BaseDecibels의 인덱스다.
@@ -412,11 +412,11 @@ $busBaseDecibels = @([regex]::Matches(
 	'(?<value>-?[0-9]+(?:\.[0-9]+)?)f') |
 	ForEach-Object { [double]$_.Groups['value'].Value })
 $assertionCount++
-if ($busBaseDecibels.Count -ne 6) {
-	throw "BaseDecibels must hold six levels, found $($busBaseDecibels.Count)."
+if ($busBaseDecibels.Count -ne 7) {
+	throw "BaseDecibels must hold seven levels, found $($busBaseDecibels.Count)."
 }
 
-for ($busIndex = 0; $busIndex -lt 6; $busIndex++) {
+for ($busIndex = 0; $busIndex -lt 7; $busIndex++) {
 	$row = $busRows[$busIndex]
 	if ($row.Count -lt 4) {
 		throw "§21.1 row '$($row[0])' is missing columns."
@@ -523,15 +523,15 @@ if (-not $busRows[5][3].Contains('−∞')) {
 Assert-Number -96.0 (Get-Constant $audioSource 'constexpr float SilentDecibels') `
 	'§21.1 SCORE 침묵'
 
-# PUZZLE과 UI는 더킹이 없다. 표의 「—」가 코드에도 분기 없음으로 남아야 한다.
-foreach ($quietIndex in @(2, 4)) {
+# PUZZLE·UI·SPEECH는 더킹이 없다. 표의 「—」가 코드에도 분기 없음으로 남아야 한다.
+foreach ($quietIndex in @(2, 4, 6)) {
 	$assertionCount++
 	if ($busRows[$quietIndex][3].Trim() -ne '—') {
 		throw ("§21.1 '" + $busRows[$quietIndex][0] +
 			"' gained a ducking rule this contract does not model.")
 	}
 }
-foreach ($undockedBus in @('EIGAudioBus::Puzzle', 'EIGAudioBus::UI')) {
+foreach ($undockedBus in @('EIGAudioBus::Puzzle', 'EIGAudioBus::UI', 'EIGAudioBus::Speech')) {
 	$assertionCount++
 	if ($refreshMixBody -match [regex]::Escape("Bus == $undockedBus")) {
 		throw "A ducking branch appeared for an undocked bus: $undockedBus"

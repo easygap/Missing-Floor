@@ -940,8 +940,14 @@ void AIGElevator::Press(const EIGElevatorButtonKind Kind, const int32 Floor, AAc
 		{
 			// 낮에는 관리실이 받는다. 한 번만, 짧게. 목소리는 합성하지 않는다.
 			bAlarmAnswered = true;
-			GetWorldTimerManager().SetTimer(AlarmReplyTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+			TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
+			GetWorldTimerManager().SetTimer(AlarmReplyTimer, FTimerDelegate::CreateWeakLambda(this, [this, SameScene]()
 			{
+				// 그 사이 층 단추를 눌러 만원 장면이 시작됐거나 시간이 죽었으면 관리실은 받지 않는다.
+				if (bScripted || bHourDead || !SameScene())
+				{
+					return;
+				}
 				AIGHorrorHUD::PushDialogue(this,
 					NSLOCTEXT("IGElevator", "IntercomSpeaker", "인터폰"),
 					NSLOCTEXT("IGElevator", "IntercomReply", "관리실이에요. …무슨 일이에요? 고장 아니면 누르지 마세요."),

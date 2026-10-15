@@ -127,6 +127,8 @@ void AIGNightPhaseDirector::BeginTheHour(const int32 NightIndex)
 		FlipWorldUnderBlack();
 	}
 	GetWorldTimerManager().ClearTimer(DawnLatchTimer);
+	// 밤이 시작한다. 낮(또는 다시 하는 밤의 앞판)에 밀려 있던 대사와 자막은 이 장면의 것이 아니다.
+	AIGHorrorHUD::ResetDialogueForSceneChange(this);
 	bHourActive = true;
 	bGoalComplete = false;
 	bFailureEndingSuspended = false;
@@ -524,6 +526,8 @@ void AIGNightPhaseDirector::ApplyDawnWorld()
 	{
 		Narrative->SetHourSealed(false);
 	}
+	// 화면이 검은 사이 낮이 된다. 밤에 밀려 있던 대사와 자막은 낮으로 넘기지 않는다.
+	AIGHorrorHUD::ResetDialogueForSceneChange(this);
 	// 그가 잠드는 것(SetDormant)도, 밤의 베드가 가라앉는 것도 이 한 줄이다.
 	OnHourActiveChanged.Broadcast(false);
 	ReleaseHeldListeners();
@@ -725,12 +729,19 @@ void AIGNightPhaseDirector::PlayMorningLine()
 		&& NightIndex >= 1
 		&& NightIndex <= 4
 		&& !Narrative->HasBeatPlayed(GoalBeatId(NightIndex));
-	AIGHorrorHUD::PushThought(
+	// 아침에 하는 생각이다. 밀려 있는 사이 다음 밤이 먼저 오면 꺼내지 않는다.
+	FIGDialogueScope MorningScope;
+	MorningScope.Context = FName(TEXT("Dawn.Morning"));
+	MorningScope.Owner = this;
+	TWeakObjectPtr<AIGNightPhaseDirector> WeakThis(this);
+	MorningScope.StillValid = [WeakThis]() { return WeakThis.IsValid() && !WeakThis->bHourActive; };
+	AIGHorrorHUD::PushThoughtScoped(
 		this,
 		bMissedNight
 			? NSLOCTEXT("IGMissingFloor", "MorningCameMissed", "벌써 다섯 시 반이야. 아직 못 끝냈는데.")
 			: NSLOCTEXT("IGMissingFloor", "MorningCame", "아침이다. 현관도 열렸겠지."),
-		3.4f);
+		3.4f,
+		MoveTemp(MorningScope));
 	if (bMissedNight)
 	{
 		// 딸깍과 자막은 같다. 내쉴 숨이 없을 뿐이다.

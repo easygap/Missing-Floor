@@ -331,6 +331,66 @@ void AIGMissingFloorLeftoverDirector::Caption(const FText& Line, const FVector& 
 	AIGHorrorHUD::PushAudioCaptionAt(this, Line, Seconds, Where);
 }
 
+void AIGMissingFloorLeftoverDirector::SayIn(const FName Context, const FText& Speaker, const FText& Line, const bool bStory)
+{
+	FIGDialogueScope Scope;
+	Scope.Context = Context;
+	Scope.Owner = this;
+	Scope.Lifetime = bStory ? EIGDialogueLifetime::Story : EIGDialogueLifetime::Reaction;
+	AIGHorrorHUD::PushDialogueScoped(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f,
+		EIGDialoguePriority::Story, MoveTemp(Scope));
+}
+
+void AIGMissingFloorLeftoverDirector::ThinkIn(const FName Context, const FText& Line, const float Seconds, const bool bStory)
+{
+	FIGDialogueScope Scope;
+	Scope.Context = Context;
+	Scope.Owner = this;
+	Scope.Lifetime = bStory ? EIGDialogueLifetime::Story : EIGDialogueLifetime::Reaction;
+	AIGHorrorHUD::PushThoughtScoped(this, Line, Seconds, MoveTemp(Scope));
+}
+
+void AIGMissingFloorLeftoverDirector::CaptionIn(const FName Context, const FText& Line, const FVector& Where, const float Seconds)
+{
+	AIGHorrorHUD::PushAudioCaptionScoped(this, Line, Seconds, Where, Context);
+}
+
+void AIGMissingFloorLeftoverDirector::SayThen(
+	const FName Context, const FText& Speaker, const FText& Line, const float FallbackSeconds, TFunction<void()> Then)
+{
+	// 말이 끝나는 쪽과 대비 타이머 가운데 먼저 오는 쪽이 한 번만 부른다.
+	TSharedRef<bool> bDone = MakeShared<bool>(false);
+	TSharedRef<TFunction<void()>> Next = MakeShared<TFunction<void()>>(MoveTemp(Then));
+	TWeakObjectPtr<AIGMissingFloorLeftoverDirector> WeakThis(this);
+	const auto Fire = [WeakThis, bDone, Next]()
+	{
+		if (*bDone || !WeakThis.IsValid())
+		{
+			return;
+		}
+		*bDone = true;
+		if (*Next)
+		{
+			(*Next)();
+		}
+	};
+	FIGDialogueScope Scope;
+	Scope.Context = Context;
+	Scope.Owner = this;
+	Scope.Lifetime = EIGDialogueLifetime::Story;
+	Scope.OnEnded = [Fire](EIGDialogueEndReason) { Fire(); };
+	AIGHorrorHUD::PushDialogueScoped(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f,
+		EIGDialoguePriority::Story, MoveTemp(Scope));
+	FTimerHandle Fallback;
+	GetWorldTimerManager().SetTimer(Fallback, FTimerDelegate::CreateWeakLambda(this, [Fire]() { Fire(); }),
+		FMath::Max(0.1f, FallbackSeconds), false);
+}
+
+void AIGMissingFloorLeftoverDirector::Hush(const FName Context)
+{
+	AIGHorrorHUD::CancelDialogue(this, Context);
+}
+
 void AIGMissingFloorLeftoverDirector::PlaySound(
 	USoundBase* Sound, const FVector& Where, const float Volume, const float Pitch, const float Inner, const float Outer)
 {
@@ -417,6 +477,9 @@ UStaticMeshComponent* AIGMissingFloorLeftoverDirector::SpawnProp(
 		// 조각 같은 대상이 소품 안이나 겉면에 걸쳐 있어서 시선을 막으면 겨눌 수 없다.
 		Component->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 		Component->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+		// 상자·탁자·마대는 밟고 올라서는 물건이 아니다. 문간 옆 낮은 탁자 모서리를 밟고 올라서면
+		// 머리가 문틀에 걸려 302호를 나갈 수 없었다.
+		Component->CanCharacterStepUpOn = ECB_No;
 		BlockingProps.Add(Key);
 	}
 	else
@@ -1323,6 +1386,11 @@ void AIGMissingFloorLeftoverDirector::PlayInnerRoomWake()
 	}), 2.0f, false);
 }
 
+bool AIGMissingFloorLeftoverDirector::IsManagerAsleepInInnerRoom() const
+{
+	return bHourActive && GetNightIndex() == 2 && NightTwoStage == ENightTwo::Idle;
+}
+
 void AIGMissingFloorLeftoverDirector::StartManagerErrand()
 {
 	if (NightTwoStage != ENightTwo::Waking || !Manager || !InnerDoor)
@@ -1556,13 +1624,19 @@ void AIGMissingFloorLeftoverDirector::RefreshDay()
 			// 번호를 아는 사이(이름을 들었거나 낮에 302호 얘기를 나눈 회차)일 때만 온다.
 			const FName State = Narrative->GetLeftover().JeongwooState;
 			const bool bHasNumber = HasBeat(IGLeftover::JeongwooIntroBeat) || HasBeat(IGLeftover::BeatDayTwoTalk);
-			// 같이 나왔는데 오빠 상자는 그 밤에 못 뺐다. 정우가 아침에 짐을 빼면서 그 상자를 403호 문 앞에 두었다.
-			const bool bBoxAtDoor = State == IGLeftover::JeongwooLeftTogether && !HasTaken(IGLeftover::DohaBox);
 			if ((State == IGLeftover::JeongwooSelfEscaped || State == IGLeftover::JeongwooLeftTogether)
 				&& bHasNumber && Narrative->MarkBeatPlayed(IGLeftover::BeatDayThreeText))
 			{
-				GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this, State, bBoxAtDoor]()
+				TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
+				GetWorldTimerManager().SetTimer(MorningTextTimer, FTimerDelegate::CreateWeakLambda(this, [this, State, SameScene]()
 				{
+					if (!SameScene())
+					{
+						return;
+					}
+					// 같이 나왔는데 오빠 상자는 그 밤에 못 뺐다. 정우가 아침에 짐을 빼면서 그 상자를 403호
+					// 문 앞에 두었다. 문자가 오기 전에 그녀가 벌써 들고 들어왔으면 상자 얘기는 하지 않는다.
+					const bool bBoxAtDoor = State == IGLeftover::JeongwooLeftTogether && !HasTaken(IGLeftover::DohaBox);
 					PhoneBuzz();
 					const bool bKnown = HasBeat(IGLeftover::JeongwooIntroBeat);
 					AIGHorrorHUD::PushDialogue(this,
@@ -1710,7 +1784,7 @@ void AIGMissingFloorLeftoverDirector::HandleJeongwooArrived()
 		// 밀려난 판(25도 돈 셋째 자세)의 방 쪽 면을 본다. 두 손이 그 면에 닿는다.
 		Jeongwoo->SetPose(AIGJeongwooFigure::EPose::Brace);
 		Jeongwoo->FaceYaw(70.0f);
-		Say(IGLeftover::JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceLine", "제가 받칠게요. 상자부터 당겨요."));
+		SayIn(IGLeftoverDialogue::Brace, IGLeftover::JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceLine", "제가 받칠게요. 상자부터 당겨요."));
 		RefreshStorage();
 		return;
 	case EStorage::Leaving:
@@ -1785,8 +1859,20 @@ void AIGMissingFloorLeftoverDirector::FinishDayOneBoxes()
 	RefreshStorage();
 }
 
-bool AIGMissingFloorLeftoverDirector::TryJeongwooTalk(const bool bKnown, const bool bGuestTalkDone)
+bool AIGMissingFloorLeftoverDirector::TryJeongwooTalk(const bool bKnown, const bool bGuestTalkDone,
+	const TFunction<void(const FText&, const FText&)>& SayLine)
 {
+	const auto Talk = [this, &SayLine](const FText& Speaker, const FText& Line)
+	{
+		if (SayLine)
+		{
+			SayLine(Speaker, Line);
+		}
+		else
+		{
+			Say(Speaker, Line);
+		}
+	};
 	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 	if (!Narrative || IsLegacyRun() || Narrative->GetNightIndex() != 2 || !bGuestTalkDone
 		|| Narrative->HasBeatPlayed(IGLeftover::BeatDayTwoTalk))
@@ -1799,15 +1885,15 @@ bool AIGMissingFloorLeftoverDirector::TryJeongwooTalk(const bool bKnown, const b
 	{
 		// 밤에 안쪽 방에서 챙긴 장갑 주머니를 건넨다.
 		Narrative->AddLeftover(EIGLeftoverList::Taken, IGLeftover::GlovesGiven);
-		Say(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverGloves1", "이거 제 건데요. 버리라고 한 적 없어요."));
-		Say(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverGloves2", "302호에 더 있다면서요. 그것도 한번 봐요."));
-		Say(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverGloves3", "배달 끝나면 네 시쯤 돼요. 들어오는 길에 빼놓을게요."));
+		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverGloves1", "이거 제 건데요. 버리라고 한 적 없어요."));
+		Talk(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverGloves2", "302호에 더 있다면서요. 그것도 한번 봐요."));
+		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverGloves3", "배달 끝나면 네 시쯤 돼요. 들어오는 길에 빼놓을게요."));
 	}
 	else
 	{
-		Say(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves1", "302호로 옮긴 짐에 제 겨울 장비도 섞여 있더라고요."));
-		Say(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves2", "302호에 더 있으면 같이 봐요."));
-		Say(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves3", "배달 끝나면 네 시쯤이에요. 들어오는 길에 빼 놓을게요."));
+		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves1", "302호로 옮긴 짐에 제 겨울 장비도 섞여 있더라고요."));
+		Talk(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves2", "302호에 더 있으면 같이 봐요."));
+		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves3", "배달 끝나면 네 시쯤이에요. 들어오는 길에 빼 놓을게요."));
 	}
 	return true;
 }

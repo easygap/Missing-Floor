@@ -77,6 +77,9 @@ public:
 	 * the key does and then reading the screen.
 	 */
 	void OpenMissingFloorJournalForTesting() { OpenMissingFloorJournal(); }
+	/** 검사용. 기록장 쪽을 넘기고(←가 -1) 닫는다. 키를 누른 것과 같은 길로 간다. */
+	void MoveMissingFloorJournalPageForTesting(const int32 Direction) { MoveMissingFloorJournalPage(Direction); }
+	void CloseMissingFloorJournalForTesting() { CloseMissingFloorJournal(); }
 
 	/**
 	 * 이름표를 단 조작 잠금.

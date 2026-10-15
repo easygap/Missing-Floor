@@ -620,8 +620,9 @@ Assert-True (
 	'대사 자막이 표시 시간 배율을 읽는다'
 $audioCaption = [regex]::Match(
 	$hudSource,
-	'void AIGHorrorHUD::ShowAudioCaption\((?<body>[\s\S]*?)\r?\n\}')
-Assert-True $audioCaption.Success 'ShowAudioCaption을 떼어낼 수 있다'
+	'void AIGHorrorHUD::ShowAudioCaptionInContext\((?<body>[\s\S]*?)\r?\n\}')
+# 소리 자막은 사건 이름을 받는 쪽이 시간을 정한다. 이름 없는 ShowAudioCaption은 그리로 넘긴다.
+Assert-True $audioCaption.Success 'ShowAudioCaptionInContext를 떼어낼 수 있다'
 Assert-True (
 	$audioCaption.Groups['body'].Value.Contains('GetCaptionDurationScale()')) `
 	'소리 캡션이 표시 시간 배율을 읽는다'

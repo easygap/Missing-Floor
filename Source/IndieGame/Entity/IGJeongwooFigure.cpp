@@ -10,6 +10,8 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "Entity/IGWalkerKit.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 
 namespace IGJeongwoo
 {
@@ -126,10 +128,10 @@ void AIGJeongwooFigure::Appear(const FVector& Feet, const float Yaw, const EPose
 	SetActorHiddenInGame(false);
 	Body->SetVisibility(true);
 	bShown = true;
-	Blocker->SetCollisionEnabled(bBlocksPlayer ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
 	SetCarriedBoxes(CarriedBoxes);
 	SetPose(Pose);
 	SetActorTickEnabled(false);
+	RefreshBlocker();
 }
 
 void AIGJeongwooFigure::Vanish()
@@ -143,6 +145,7 @@ void AIGJeongwooFigure::Vanish()
 		Box->SetVisibility(false);
 	}
 	Blocker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	bBlockerDeferred = false;
 	SetActorHiddenInGame(true);
 }
 
@@ -151,8 +154,34 @@ void AIGJeongwooFigure::SetBlocksPlayer(const bool bBlocks)
 	bBlocksPlayer = bBlocks;
 	if (bShown)
 	{
-		Blocker->SetCollisionEnabled(bBlocks ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+		RefreshBlocker();
 	}
+}
+
+void AIGJeongwooFigure::RefreshBlocker()
+{
+	bBlockerDeferred = false;
+	if (!bShown || !bBlocksPlayer || bWalking)
+	{
+		Blocker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		return;
+	}
+	const ACharacter* Player = Cast<ACharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
+	const UCapsuleComponent* PlayerCapsule = Player ? Player->GetCapsuleComponent() : nullptr;
+	if (PlayerCapsule)
+	{
+		const FVector Delta = PlayerCapsule->GetComponentLocation() - Blocker->GetComponentLocation();
+		const float Reach = Blocker->GetScaledCapsuleRadius() + PlayerCapsule->GetScaledCapsuleRadius();
+		const float Height = Blocker->GetScaledCapsuleHalfHeight() + PlayerCapsule->GetScaledCapsuleHalfHeight();
+		if (Delta.SizeSquared2D() < FMath::Square(Reach) && FMath::Abs(Delta.Z) < Height)
+		{
+			Blocker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			bBlockerDeferred = true;
+			SetActorTickEnabled(true);
+			return;
+		}
+	}
+	Blocker->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
 
 void AIGJeongwooFigure::SetCarriedBoxes(const int32 Count)
@@ -184,6 +213,7 @@ void AIGJeongwooFigure::WalkRoute(const TArray<FVector>& Points, const bool bCar
 	ArrivePose = EndPose;
 	bWalking = true;
 	StepPhase = 0.0f;
+	RefreshBlocker();
 	SetActorTickEnabled(true);
 }
 
@@ -239,6 +269,14 @@ void AIGJeongwooFigure::Tick(const float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	if (!bWalking)
 	{
+		if (bBlockerDeferred)
+		{
+			RefreshBlocker();
+			if (bBlockerDeferred)
+			{
+				return;
+			}
+		}
 		SetActorTickEnabled(false);
 		return;
 	}
@@ -267,6 +305,7 @@ void AIGJeongwooFigure::Tick(const float DeltaSeconds)
 		bWalking = false;
 		SetActorTickEnabled(false);
 		SetPose(ArrivePose);
+		RefreshBlocker();
 		OnArrived.Broadcast();
 	}
 }

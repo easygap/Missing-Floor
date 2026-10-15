@@ -73,6 +73,75 @@ enum class EIGDialoguePriority : uint8
 	Critical
 };
 
+/** 대사가 끝난 까닭. 음성과 다음 행동, 들은 기록이 이것을 보고 갈린다. */
+enum class EIGDialogueEndReason : uint8
+{
+	/** 정한 시간(녹음된 말이면 그 소리)을 다 채웠다. */
+	Completed,
+	/** 플레이어가 넘겼다. */
+	Skipped,
+	/** 사건이 넘어가거나 장면이 바뀌어 거뒀다. */
+	Cancelled,
+	/** 화면에 오르기 전에 너무 오래 밀려 버렸다. */
+	Expired
+};
+
+/** 상황이 바뀌었을 때 대사를 어떻게 다룰지. */
+enum class EIGDialogueLifetime : uint8
+{
+	/** 이야기 대사. 사건 이름으로 거두거나 장면이 바뀔 때만 버린다. */
+	Story,
+	/** 지금 행동에 대한 짧은 반응. 오래 밀리거나 한참 가려졌다 돌아오면 버린다. */
+	Reaction
+};
+
+/** 메뉴·기록·연출에 가려졌다가 다시 보일 때. */
+enum class EIGDialogueInterruption : uint8
+{
+	/** 남은 시간부터 잇는다. */
+	Resume,
+	/** 처음부터 다시 보인다. */
+	Restart,
+	/** 버린다. */
+	Drop
+};
+
+/**
+ * 대사가 어느 장면·사건에서 나왔고 언제까지 유효한지. 비워 두면 예전처럼 시간만으로 다룬다.
+ * 긴 대사를 나눈 다음 쪽도 같은 범위를 가진다.
+ */
+struct FIGDialogueScope
+{
+	/** 장면·사건 이름(예: Leftover.Box.Stuck). CancelDialogue로 한꺼번에 거둔다. */
+	FName Context;
+	/** 대사를 낸 쪽. 사라지면 대사도 거둔다(늦게 끝난 타이머가 지난 장면에 말을 넣지 않게). */
+	TWeakObjectPtr<const UObject> Owner;
+	/** 화면에 올리기 직전과 떠 있는 동안 본다. false면 거둔다. */
+	TFunction<bool()> StillValid;
+	EIGDialogueLifetime Lifetime = EIGDialogueLifetime::Story;
+	EIGDialogueInterruption Interruption = EIGDialogueInterruption::Resume;
+	/** 마지막 쪽이 끝나거나 거둬질 때 한 번 부른다. 자막을 끈 녹음 대사처럼 화면에 오르지 않으면 부르지 않는다. */
+	TFunction<void(EIGDialogueEndReason)> OnEnded;
+	/** 녹음된 말이면 그 소리. 소리가 끝나면 자막도 끝나고, 가려져도 시간을 미루지 않는다. */
+	TWeakObjectPtr<class UAudioComponent> Voice;
+	/**
+	 * 녹음된 말이면 그 줄이 화면에 오를 때 소리를 내는 함수(IGVoice가 만든다). 밀린 줄은
+	 * 차례가 와야 소리가 나고, 거두거나 끊긴 줄은 소리도 멈춘다. 끊겼다가 다시 들려줄 때는
+	 * 처음부터 다시 낸다.
+	 */
+	TFunction<class UAudioComponent*()> StartVoice;
+	/**
+	 * 마주 보고 하는 말이면 말하는 사람과 들리는 거리. 플레이어가 그 밖으로 나가면 그 사건의
+	 * 떠 있는 줄과 밀린 줄을 함께 거둔다. bReplayIfInterrupted면 거둔 줄을 들고 있다가, 다시
+	 * 말을 걸 때(ResumeInterruptedTalk) 남은 데부터 낸다. 끝 알림은 그때까지 미룬다.
+	 */
+	TWeakObjectPtr<const AActor> SpeakerActor;
+	/** 말하는 사람이 액터가 아니면(계산대 너머의 나린) 그 자리. */
+	TOptional<FVector> SpeakerLocation;
+	float EarshotRadius = 0.0f;
+	bool bReplayIfInterrupted = false;
+};
+
 /** Small value object kept outside UObject reflection to avoid per-line allocation churn. */
 struct FIGDialogueMessage
 {
@@ -83,6 +152,17 @@ struct FIGDialogueMessage
 	float MinimumDurationSeconds = 0.0f;
 	double QueuedAt = 0.0;
 	bool bContinuation = false;
+	/** 화면 폭에 맞춰 나누기 전 원문. 들은 말 기록과 다시 들려주기가 쓴다. */
+	FText FullLine;
+	FIGDialogueScope Scope;
+	/** 낼 때 주인이 있었는가. 처음부터 비어 있던 약한 포인터와 사라진 주인을 가린다. */
+	bool bHasOwner = false;
+	/** 녹음된 말이었는가. 소리가 사라져도(끝나도) 이 줄은 녹음 대사로 다룬다. */
+	bool bVoiced = false;
+	/** 이 줄(나눈 줄이면 앞쪽)에서 소리를 이미 냈다. 다음 쪽이 같은 소리를 다시 내지 않게. */
+	bool bVoiceStarted = false;
+	/** 소리가 제 길이대로 끝날 시각. 그 전에 멎으면 끝까지 들은 것으로 치지 않는다. */
+	double VoiceExpectedEnd = -1.0;
 };
 
 /** Queued non-dialogue audio description; authored timings remain the source of truth. */
@@ -91,6 +171,11 @@ struct FIGAudioCaptionMessage
 	FText Caption;
 	float DurationSeconds = 0.0f;
 	double QueuedAt = 0.0;
+	/** 대사와 같은 사건 이름. CancelDialogue가 함께 거둔다. */
+	FName Context;
+	/** 소리가 난 자리와 들리는 거리. 0보다 크면 그 밖으로 벗어난 플레이어에게는 띄우지 않고, 떠 있던 것도 내린다. */
+	TOptional<FVector> SourceLocation;
+	float AudibleRadius = 0.0f;
 };
 
 /** Snapshot of controller-owned front-end state consumed by the native HUD. */
@@ -203,6 +288,57 @@ public:
 		EIGDialogueChannel Channel = EIGDialogueChannel::Conversation,
 		float MinimumDurationSeconds = 0.0f,
 		EIGDialoguePriority Priority = EIGDialoguePriority::Story);
+
+	/** 장면·사건 범위를 붙인 대사. 범위가 끝나거나 조건이 깨지면 밀린 줄과 떠 있는 줄을 거둔다. */
+	static void PushDialogueScoped(
+		const UObject* WorldContext,
+		const FText& Speaker,
+		const FText& Line,
+		EIGDialogueChannel Channel,
+		float MinimumDurationSeconds,
+		EIGDialoguePriority Priority,
+		FIGDialogueScope Scope);
+	/** 범위를 붙인 혼잣말. */
+	static void PushThoughtScoped(
+		const UObject* WorldContext,
+		const FText& Thought,
+		float DurationSeconds,
+		FIGDialogueScope Scope);
+	/** 범위를 붙인 소리 자막. CancelDialogue가 같은 이름의 대사와 함께 거둔다. */
+	static void PushAudioCaptionScoped(
+		const UObject* WorldContext,
+		const FText& Caption,
+		float DurationSeconds,
+		const FVector& SourceLocation,
+		FName Context,
+		float AudibleRadius = 0.0f);
+	/** 그 사건의 대사와 소리 자막(떠 있는 것과 밀린 것)을 거둔다. */
+	static void CancelDialogue(
+		const UObject* WorldContext,
+		FName Context,
+		EIGDialogueEndReason Reason = EIGDialogueEndReason::Cancelled);
+	/** 그 쪽이 낸 대사를 모두 거둔다(녹음기 중단 같은). */
+	static void CancelDialogueFrom(const UObject* WorldContext, const UObject* Owner);
+	/**
+	 * 장면이 바뀌었다(밤이 시작하거나 날이 밝음, 붙잡힘, 그 밤 다시 하기). 떠 있는 대사와 밀린 대사,
+	 * 소리 자막을 모두 거둔다. 새 장면의 대사는 이 뒤에 낸다.
+	 */
+	static void ResetDialogueForSceneChange(const UObject* WorldContext);
+	/**
+	 * 말하는 사람에게서 멀어져 끊긴 대화가 그 사건 이름으로 남아 있으면 남은 줄을 다시 낸다.
+	 * 다시 낸 줄이 있으면 true. 대화를 여는 쪽이 새 대사를 고르기 전에 부른다.
+	 */
+	static bool ResumeInterruptedTalk(const UObject* WorldContext, FName Context);
+	/**
+	 * 지금 장면 표. 장면이 바뀌면(ResetDialogueForSceneChange) 거짓이 된다. 나중에 말을 낼 타이머를
+	 * 걸 때 받아 두었다가 낼 때 본다. 장면이 바뀌며 화면의 줄은 지웠어도, 그 전에 걸린 타이머가
+	 * 늦게 울려 지난 장면의 말을 새 장면에 넣는 것까지는 막지 못했다.
+	 */
+	static TFunction<bool()> MakeSceneGuard(const UObject* WorldContext);
+	/** 화면이 실제로 그려지고 있다(그리는 프레임이 대사 줄을 넘긴다). 화면 없는 검사에서는 거짓이다. */
+	static bool IsPresentingDialogue(const UObject* WorldContext);
+	/** 그 사건의 줄이 떠 있거나 밀려 있다. */
+	static bool HasDialogueInContext(const UObject* WorldContext, FName Context);
 
 	/**
 	 * 소리가 난 자리를 아는 자막. §10.5는 자막 레인에 방위를 병기하라고
@@ -329,7 +465,22 @@ public:
 		EIGDialogueChannel Channel,
 		float MinimumDurationSeconds,
 		EIGDialoguePriority Priority);
+	void ShowDialogueScoped(
+		const FText& Speaker,
+		const FText& Line,
+		EIGDialogueChannel Channel,
+		float MinimumDurationSeconds,
+		EIGDialoguePriority Priority,
+		FIGDialogueScope&& Scope);
 	void ShowAudioCaption(const FText& Caption, float DurationSeconds);
+	void ShowAudioCaptionInContext(
+		const FText& Caption,
+		float DurationSeconds,
+		FName Context,
+		const TOptional<FVector>& SourceLocation = TOptional<FVector>(),
+		float AudibleRadius = 0.0f);
+	/** 그 소리를 지금 플레이어가 들을 수 있는 거리인가. 자리나 거리를 모르면 들린다고 본다. */
+	bool IsAudioCaptionInRange(const TOptional<FVector>& SourceLocation, float AudibleRadius) const;
 	void ShowFearDirection(const FVector& WorldLocation, float DurationSeconds);
 	/** §19.7. 저장됐다는 흔적 하나. 0.8초 뒤에 사라진다. */
 	void ShowSaveIndicator();
@@ -445,16 +596,47 @@ public:
 	 * 즉시 차단 19 is about the sealed hour turning F9 and the journal down, and
 	 * "nothing happened" is also what a broken binding looks like.
 	 */
-	/** 검사용. 떠 있는 대사·소리 자막과 밀린 줄을 모두 걷는다(화면 검사가 새 줄 하나만 띄워 찍을 때). */
+	/** 검사용. 떠 있는 대사·소리 자막과 밀린 줄을 모두 걷는다(새 문장 진열 검사가 한 줄만 띄워 찍을 때). */
 	void ClearDialogueForTesting()
 	{
-		DialogueQueue.Reset();
-		bHasCurrentDialogue = false;
-		CurrentDialogueLines.Reset();
-		DialogueEndTime = -1.0;
-		AudioCaptionQueue.Reset();
-		CurrentAudioCaption = FText::GetEmpty();
-		AudioCaptionEndTime = -1.0;
+		ClearAllDialogueAndCaptions();
+	}
+	/** 검사용. 화면 없이 대사 큐를 그 시각으로 넘긴다(그리는 프레임이 하는 일과 같다). */
+	void AdvanceDialogueForTesting(const double Time) { AdvanceDialogueQueue(Time); }
+	/** 검사용. 메뉴·기록에 가려졌다가 다시 보이는 것을 흉내 낸다. */
+	void SuspendDialogueForTesting(const double Time) { SuspendDialoguePresentation(Time); }
+	void ResumeDialogueForTesting(const double Time) { ResumeDialoguePresentation(Time); }
+	double GetDialogueEndTimeForTesting() const { return bHasCurrentDialogue ? DialogueEndTime : -1.0; }
+	double GetDialogueStartTimeForTesting() const { return DialogueStartTime; }
+	int32 GetQueuedDialogueCountForTesting() const { return DialogueQueue.Num() + (bHasCurrentDialogue ? 1 : 0); }
+	/** 검사용. 떠 있는 줄의 녹음 소리. */
+	class UAudioComponent* GetActiveDialogueVoiceForTesting() const
+	{
+		return bHasCurrentDialogue ? CurrentDialogue.Scope.Voice.Get() : nullptr;
+	}
+	/** 검사용. 떠 있는 줄이 화면에 그려지는가(음성 대사 자막을 끄면 소리만 난다). */
+	bool IsActiveDialogueDrawnForTesting() const;
+	/** 검사용. 소리 자막 줄을 그리는 프레임처럼 넘긴다. */
+	void AdvanceAudioCaptionsForTesting() { AdvanceAudioCaptionQueue(AdvanceAudioCaptionClock()); }
+	/** 검사용. 장면이 몇 번 바뀌었는가. */
+	int32 GetDialogueSceneSerialForTesting() const { return DialogueSceneSerial; }
+	/** 검사용. 화자에게서 멀어져 끊긴 채 들고 있는 대화가 있는가. */
+	bool HasInterruptedTalkForTesting(FName Context) const { return InterruptedTalks.Contains(Context); }
+	/** 검사용. 지금 떠 있거나 밀려 있는 줄 가운데 그 사건 이름의 것이 있는가. */
+	bool HasDialogueInContextForTesting(FName Context) const
+	{
+		if (bHasCurrentDialogue && CurrentDialogue.Scope.Context == Context)
+		{
+			return true;
+		}
+		for (const FIGDialogueMessage& Queued : DialogueQueue)
+		{
+			if (Queued.Scope.Context == Context)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 	/** 검사용. 밤 제목 카드를 바로 걷는다(화면을 찍는 검사가 카드가 끝나기를 기다리지 않게). */
 	void ClearChapterCardForTesting()
@@ -496,6 +678,8 @@ public:
 		return !bHasCurrentDialogue && DialogueQueue.IsEmpty();
 	}
 	int32 GetMissingFloorJournalPageCount() const;
+	/** 기록장의 「조사 기록」 쪽수. 그 뒤에 「들은 말」 쪽이 붙는다. */
+	int32 GetMissingFloorJournalTruthPageCount() const;
 	void SetInputDevicePresentation(bool bInUsingGamepad)
 	{
 		bUsingGamepad = bInUsingGamepad;
@@ -629,6 +813,28 @@ private:
 	void AdvanceDialogueQueue(double CurrentTime);
 	void SuspendDialoguePresentation(double CurrentTime);
 	void ResumeDialoguePresentation(double CurrentTime);
+	/** 낸 쪽이 살아 있고 조건이 맞는가. */
+	static bool IsDialogueStillValid(const FIGDialogueMessage& Message);
+	/** 끝난 줄의 알림을 모아 둔다. 큐를 다 고친 뒤 FlushDialogueEndCallbacks로 부른다(알림이 새 줄을 낼 수 있다). */
+	void EndDialogueMessage(FIGDialogueMessage& Message, EIGDialogueEndReason Reason);
+	void FlushDialogueEndCallbacks();
+	/** 떠 있는 줄이 아직 맞는지 보고, 녹음된 말이면 소리 길이에 자막을 맞춘다. */
+	void ValidateCurrentDialogue(double CurrentTime);
+	void CancelDialogueWhere(TFunctionRef<bool(const FIGDialogueMessage&)> Match, EIGDialogueEndReason Reason);
+	void CancelAudioCaptionsIn(FName Context);
+	void ClearAllDialogueAndCaptions();
+	/** 마주 보고 하는 말인데 플레이어가 들리는 거리 밖에 있다. */
+	bool IsOutOfEarshot(const FIGDialogueMessage& Message) const;
+	/** 그 사건의 떠 있는 줄과 밀린 줄을 거둔다. 다시 들려줄 대화는 들고 있고, 아니면 끝낸다. */
+	void InterruptTalk(FName Context);
+	void HoldOrCancelInterrupted(FIGDialogueMessage&& Message);
+	/** 끝까지 보인 대사를 기록장의 「들은 말」에 남긴다. 혼잣말과 짧은 반응은 남기지 않는다. */
+	void RecordHeardLine(const FIGDialogueMessage& Message) const;
+	/** 그 줄이 낸 소리를 멈추고 놓는다. 다시 들려줄 줄은 처음부터 다시 낸다. */
+	static void StopDialogueVoice(FIGDialogueMessage& Message);
+	/** 떠 있는 녹음 대사의 소리가 제 길이보다 먼저 멎었다(밖에서 멈췄다). */
+	bool IsCurrentVoiceCutShort(double CurrentTime) const;
+	static AIGHorrorHUD* FindHorrorHud(const UObject* WorldContext);
 	/** 접근성 설정의 자막 표시 시간 배율. 없으면 1이다. */
 	float GetCaptionDurationScale() const;
 	float CalculateDialogueDuration(
@@ -832,6 +1038,16 @@ private:
 
 	FIGDialogueMessage CurrentDialogue;
 	TArray<FIGDialogueMessage> DialogueQueue;
+	/** 끝난 줄의 알림. 큐를 고치는 중에 부르지 않으려고 모아 둔다. */
+	TArray<TPair<TFunction<void(EIGDialogueEndReason)>, EIGDialogueEndReason>> PendingDialogueEndCallbacks;
+	/** 떠 있는 소리 자막의 사건 이름. */
+	FName CurrentAudioCaptionContext;
+	/** 화자에게서 멀어져 끊긴 대화. 사건 이름마다 남은 줄(끝 알림은 아직 부르지 않았다). */
+	TMap<FName, TArray<FIGDialogueMessage>> InterruptedTalks;
+	/** 장면이 바뀔 때마다 하나씩 오른다. MakeSceneGuard가 이것을 들고 간다. */
+	int32 DialogueSceneSerial = 0;
+	/** 마지막으로 그린 「들은 말」 쪽 수. 글자 크기와 화면 폭에 따라 달라서 그릴 때 센다. */
+	mutable int32 JournalHeardPageCount = 0;
 	TArray<FString> CurrentDialogueLines;
 	bool bHasCurrentDialogue = false;
 	bool bCurrentDialogueHasContinuation = false;
@@ -857,6 +1073,9 @@ private:
 	TArray<FIGAudioCaptionMessage> AudioCaptionQueue;
 	double AudioCaptionStartTime = 0.0;
 	double AudioCaptionEndTime = -1.0;
+	/** 떠 있는 소리 자막의 자리와 들리는 거리. 그 밖으로 나가면 내린다. */
+	TOptional<FVector> CurrentAudioCaptionSource;
+	float CurrentAudioCaptionRadius = 0.0f;
 	/** 자막 시계. 시작·끝·대기열이 모두 이 값으로 재진다. */
 	double AudioCaptionClockSeconds = 0.0;
 	/** 자막 시계를 마지막으로 흘린 월드의 멈춤 무관 시각. */
@@ -950,6 +1169,8 @@ private:
 	float FocusBracketAlpha = 0.0f;
 	float FocusBracketAcquireElapsed = 0.0f;
 	double LastHudDrawTime = 0.0;
+	/** 마지막으로 프레임을 그린 실제 시각. 멈춘 화면(메뉴·기록장)에서도 흐른다. */
+	double LastFrameDrawnRealSeconds = -1.0;
 	FVector2D LayoutValidationCanvasSize = FVector2D::ZeroVector;
 	FVector2D LayoutValidationBoundsMin = FVector2D::ZeroVector;
 	FVector2D LayoutValidationBoundsMax = FVector2D::ZeroVector;

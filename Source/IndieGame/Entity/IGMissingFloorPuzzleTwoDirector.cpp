@@ -11,6 +11,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
 #include "Entity/IGMissingFloorEvidence.h"
+#include "Entity/IGMissingFloorLeftoverDirector.h"
 #include "Entity/IGMissingFloorNightFourDirector.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "Environment/IGCctvChannelFive.h"
@@ -651,9 +652,36 @@ void AIGMissingFloorPuzzleTwoDirector::EndPlay(
 	Super::EndPlay(EndPlayReason);
 }
 
+bool AIGMissingFloorPuzzleTwoDirector::IsManagerAsleepInside() const
+{
+	if (const UWorld* World = GetWorld())
+	{
+		for (TActorIterator<AIGMissingFloorLeftoverDirector> It(World); It; ++It)
+		{
+			return It->IsManagerAsleepInInnerRoom();
+		}
+	}
+	// 짐 감독이 없는 판(확장 전 구성)은 둘째 밤 내내 그가 그 방에 있다.
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	return bHourActiveCached && Narrative && Narrative->GetNightIndex() == 2;
+}
+
+bool AIGMissingFloorPuzzleTwoDirector::IsManagerStirring() const
+{
+	if (const UWorld* World = GetWorld())
+	{
+		for (TActorIterator<AIGMissingFloorLeftoverDirector> It(World); It; ++It)
+		{
+			return It->IsManagerStirring();
+		}
+	}
+	return false;
+}
+
 void AIGMissingFloorPuzzleTwoDirector::SetHourActive(const bool bHourActive)
 {
 	bHourActiveCached = bHourActive;
+	bInnerRoomThoughtSaid = false;
 	RefreshAgentNoteAvailability();
 	RefreshBoothNotice();
 	if (bHourActive)
@@ -1111,10 +1139,16 @@ void AIGMissingFloorPuzzleTwoDirector::HandlePhoneRecorder(
 		const float FocusEnd = Recording->GetLastExcerptFocusEndSeconds();
 		if ((bAnythingRefused || bRuleLifted) && FocusEnd >= 0.0f)
 		{
+			// 들어 보던 아침의 결론이다. 그 사이 잠들어 다음 밤이 왔으면 말도 놀람도 없다.
+			TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
 			GetWorldTimerManager().SetTimer(
 				PhoneThoughtTimer,
-				FTimerDelegate::CreateWeakLambda(this, [this, Thought, bAnythingRefused]()
+				FTimerDelegate::CreateWeakLambda(this, [this, Thought, bAnythingRefused, SameScene]()
 				{
+					if (!SameScene())
+					{
+						return;
+					}
 					AIGHorrorHUD::PushThought(this, Thought, 5.0f);
 					if (!bAnythingRefused)
 					{
@@ -1211,10 +1245,16 @@ void AIGMissingFloorPuzzleTwoDirector::HandleCctvExamined(
 	// 화면이 살아 있는 동안은 글이 없다. 보는 동안 읽게 하면 둘 다 놓친다.
 	// 스노우 0.32초, 화면 5.60초, 찢어짐 0.86초가 지나고 숨 한 번 뒤에
 	// 남은 것만 말한다 — 낮게 지나간 것은 본 사람의 몫으로 남긴다.
+	// 화면을 보던 그 자리의 생각이다. 그 사이 붙잡혔거나 날이 밝았거나 관리인이 깨기 시작했으면 접는다.
+	TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
 	GetWorldTimerManager().SetTimer(
 		CctvThoughtTimer,
-		FTimerDelegate::CreateWeakLambda(this, [this]()
+		FTimerDelegate::CreateWeakLambda(this, [this, SameScene]()
 		{
+			if (!SameScene() || IsManagerStirring())
+			{
+				return;
+			}
 			AIGHorrorHUD::PushThought(
 				this,
 				NSLOCTEXT(
@@ -1307,11 +1347,20 @@ void AIGMissingFloorPuzzleTwoDirector::HandleInnerRoomListenExamined(
 		IGPuzzleTwo::InnerRoomCreakSeconds);
 	// 기계만 도는 방이 아니다. 간이침대의 나무가 한 번 삐걱이고, 몸을 뒤척이는
 	// 천 소리가 난다. 목소리도 기침도 숨도 넣지 않는다 — 산 사람의 목소리는
-	// 글로만 온다(§4.6).
+	// 글로만 온다(§4.6). 그가 그 방에서 자는 둘째 밤에만이다. 깨어 나섰거나 다른
+	// 밤이면 문 너머에는 기계만 돈다.
+	if (!IsManagerAsleepInside())
+	{
+		return;
+	}
 	GetWorldTimerManager().SetTimer(
 		InnerRoomCreakTimer,
 		FTimerDelegate::CreateWeakLambda(this, [this, Where]()
 		{
+			if (!IsManagerAsleepInside())
+			{
+				return;
+			}
 			IGAudio::SpawnOneShotAt(
 				this,
 				UIGToneSequenceSoundWave::CreateSettleTimberCreak(this),
@@ -1332,6 +1381,10 @@ void AIGMissingFloorPuzzleTwoDirector::HandleInnerRoomListenExamined(
 		InnerRoomClothTimer,
 		FTimerDelegate::CreateWeakLambda(this, [this, Where]()
 		{
+			if (!IsManagerAsleepInside())
+			{
+				return;
+			}
 			IGAudio::SpawnOneShotAt(
 				this,
 				UIGToneSequenceSoundWave::CreateClothSettle(this),
@@ -1348,11 +1401,22 @@ void AIGMissingFloorPuzzleTwoDirector::HandleInnerRoomListenExamined(
 		}),
 		IGPuzzleTwo::InnerRoomClothSeconds,
 		false);
-	// 들은 뒤에 말한다. 소리와 같은 프레임에 결론이 뜨면 증거보다 말이 먼저다.
+	// 들은 뒤에 말한다. 소리와 같은 프레임에 결론이 뜨면 증거보다 말이 먼저다. 그 밤에 한 번만
+	// 말하고, 그 사이 그가 깨기 시작했거나 붙잡혔으면 접는다.
+	if (bInnerRoomThoughtSaid)
+	{
+		return;
+	}
+	TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
 	GetWorldTimerManager().SetTimer(
 		InnerRoomThoughtTimer,
-		FTimerDelegate::CreateWeakLambda(this, [this]()
+		FTimerDelegate::CreateWeakLambda(this, [this, SameScene]()
 		{
+			if (bInnerRoomThoughtSaid || !SameScene() || !IsManagerAsleepInside())
+			{
+				return;
+			}
+			bInnerRoomThoughtSaid = true;
 			AIGHorrorHUD::PushThought(
 				this,
 				NSLOCTEXT(

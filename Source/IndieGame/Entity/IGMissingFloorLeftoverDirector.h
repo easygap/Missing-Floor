@@ -4,6 +4,25 @@
 #include "GameFramework/Actor.h"
 #include "IGMissingFloorLeftoverDirector.generated.h"
 
+/** 남은 짐 줄기의 대사 사건 이름. 사건이 넘어가면 그 이름의 떠 있는 줄과 밀린 줄을 거둔다. */
+namespace IGLeftoverDialogue
+{
+	/** 판 뒤에 갇힌 정우의 부름과 그에 대한 반응. 꺼내면 거둔다. */
+	inline const FName Trapped(TEXT("Leftover.Rescue.Trapped"));
+	/** 꺼낸 직후 정우의 인사. */
+	inline const FName Freed(TEXT("Leftover.Rescue.Freed"));
+	/** 첫 당기기에 상자가 걸렸다는 말. 상자가 빠지면 거둔다. */
+	inline const FName BoxStuck(TEXT("Leftover.Box.Stuck"));
+	/** 정우가 판을 받치는 동안의 말. 받치기를 그만두면 거둔다. */
+	inline const FName Brace(TEXT("Leftover.Brace"));
+	/** 문을 잡고 기다린다는 말. 정우가 내려가면 거둔다. */
+	inline const FName DoorWait(TEXT("Leftover.DoorWait"));
+	/** 쐐기가 미끄러졌다는 말. 제자리에 물리면 거둔다. */
+	inline const FName Wedge(TEXT("Leftover.Wedge"));
+	/** 덮개가 안 맞는 까닭. 조각이 자리에 물리면 거둔다. */
+	inline const FName Fit(TEXT("Leftover.Assembly.Fit"));
+}
+
 class AIGAccessHatch;
 class AIGJeongwooFigure;
 class AIGLeftoverTarget;
@@ -69,12 +88,18 @@ public:
 	 * 귀환 추격을 건다(관리인이 없거나, 이미 한 밤이거나, 옛 저장의 이어 하기).
 	 */
 	bool BeginNightTwoInnerRoom();
+	/** 둘째 밤, 목한수가 관리실 안쪽 방에서 자고 있다(깨기 전). 문 너머 뒤척이는 소리의 근거다. */
+	bool IsManagerAsleepInInnerRoom() const;
+	/** 둘째 밤, 목한수가 깨어 안쪽 방을 나서는 중이다(깨는 소리부터 심부름이 끝날 때까지). */
+	bool IsManagerStirring() const { return NightTwoStage == ENightTwo::Waking || NightTwoStage == ENightTwo::Errand; }
 
 	/**
 	 * 낮의 정우(오토바이)에게 말을 걸었다. 이 감독이 맡는 줄이면 띄우고 true. 예전 줄
 	 * (소개·손님 이야기·걸쇠)은 부르는 쪽이 띄운다. bKnown은 이름을 들은 회차인가.
 	 */
-	bool TryJeongwooTalk(bool bKnown, bool bGuestTalkDone);
+	/** SayLine을 주면 그 줄로 말한다(말 건 자리를 떠나면 끊기는 낮 대화의 범위를 부르는 쪽이 정한다). */
+	bool TryJeongwooTalk(bool bKnown, bool bGuestTalkDone,
+		const TFunction<void(const FText&, const FText&)>& SayLine = nullptr);
 
 	/** 신고 문자와 경찰 현장 확인에 덧붙일 것. */
 	bool HasCoverEvidence() const;
@@ -168,6 +193,17 @@ private:
 	void Say(const FText& Speaker, const FText& Line, float MinSeconds = 0.0f);
 	void Think(const FText& Line, float Seconds = 3.6f);
 	void Caption(const FText& Line, const FVector& Where, float Seconds = 2.4f);
+	/** 사건 이름을 붙인 대사. bStory면 상황이 바뀌어도 남는 이야기 대사, 아니면 지금 행동에 대한 짧은 반응이다. */
+	void SayIn(FName Context, const FText& Speaker, const FText& Line, bool bStory = false);
+	void ThinkIn(FName Context, const FText& Line, float Seconds = 3.6f, bool bStory = false);
+	void CaptionIn(FName Context, const FText& Line, const FVector& Where, float Seconds = 2.4f);
+	/**
+	 * 말이 화면에서 끝나면(또는 거둬지면) Then을 부른다. 화면이 없는 실행이나 큐가 막힌 때를 위해 FallbackSeconds 뒤에도
+	 * 한 번 부른다. Then은 한 번만 불린다.
+	 */
+	void SayThen(FName Context, const FText& Speaker, const FText& Line, float FallbackSeconds, TFunction<void()> Then);
+	/** 그 사건의 떠 있는 줄과 밀린 줄, 소리 자막을 거둔다. */
+	void Hush(FName Context);
 	void PlaySound(USoundBase* Sound, const FVector& Where, float Volume, float Pitch = 1.0f, float Inner = 120.0f, float Outer = 1400.0f);
 	void PhoneBuzz();
 	FVector GetPlayerFeet() const;
@@ -311,6 +347,10 @@ private:
 	FTimerHandle PollTimer;
 	FTimerHandle SceneTimer;
 	FTimerHandle WakeTimer;
+	/** 셋째 날 아침 정우의 문자. 장면 타이머와 따로 둔다(다른 장면이 그 타이머를 다시 걸면 문자가 사라졌다). */
+	FTimerHandle MorningTextTimer;
+	/** 쐐기가 장판에서 미끄러진 횟수. 두 번째부터 「또 빠졌어」라고 한다. */
+	int32 WedgeSlips = 0;
 	FTimerHandle BoardTimer;
 	FTimerHandle JeongwooWalkTimer;
 	FTimerHandle WardrobeTimer;

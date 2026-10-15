@@ -210,6 +210,9 @@ public:
 		return EffectiveSettings.bDirectionalFearCues;
 	}
 
+	/** 검사용. 저장하지 않고 지금 판의 음성 대사 자막만 켜고 끈다. */
+	void OverrideSubtitlesForTesting(const bool bEnabled) { EffectiveSettings.bSubtitlesEnabled = bEnabled; }
+
 	UFUNCTION(BlueprintPure, Category = "Accessibility|Subtitles")
 	bool AreSubtitlesEnabled() const
 	{

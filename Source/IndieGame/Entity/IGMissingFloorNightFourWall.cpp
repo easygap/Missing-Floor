@@ -409,7 +409,7 @@ void AIGMissingFloorNightFourDirector::HandleWallTarget(AIGMissingFloorEvidence*
 				3.6f);
 			GetWorldTimerManager().SetTimer(WallThoughtTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
-				Think(this, NSLOCTEXT("IGMissingFloor", "WallSurveyFixings", "각재를 대고 나사로 박았어. 박은 데를 쳐야 떨어지겠어."), 3.4f);
+				Think(this, NSLOCTEXT("IGMissingFloor", "WallSurveyFixings", "덧판을 각재에 대고 박아 놨어."), 3.4f);
 			}), 3.8f, false);
 		}
 		break;
@@ -436,7 +436,7 @@ void AIGMissingFloorNightFourDirector::HandleWallTarget(AIGMissingFloorEvidence*
 		}
 		if (!IsImmediateWallRun() && Leftover && !Leftover->IsAnnexSpread())
 		{
-			Think(this, NSLOCTEXT("IGMissingFloor", "WallBraceNotYet", "아직 움직여. 멈추면 대자."));
+			Think(this, NSLOCTEXT("IGMissingFloor", "WallBraceNotYet", "아직 움직여."));
 			break;
 		}
 		PlaceBraceFrame(BraceUpright, IsImmediateWallRun() ? 0.0f : 0.7f);

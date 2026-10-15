@@ -3,6 +3,7 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Audio/IGVoice.h"
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -44,6 +45,8 @@
 namespace IGNightThreat
 {
 	constexpr float UpdateSeconds = 0.1f;
+	/** 문밖 손님이 그 자리에서 낸 말. 문 앞을 떠나거나 단계가 바뀌면 밀린 말은 꺼내지 않는다. */
+	const FName GuestSpeechContext(TEXT("Guest.Speech"));
 	/** 계단의 뒤따르는 발이 끝나고 다른 괴이가 오기까지 쉬는 시간. */
 	constexpr double StairwellAfterglowSeconds = 60.0;
 	// §7. 잡혔다 깬 뒤 이만큼은 아무것도 오지 않는다.
@@ -1828,10 +1831,52 @@ void AIGNightThreatDirector::GuestSpeak(const int32 LineIndex)
 					: NSLOCTEXT("IGMissingFloor", "GuestN4Line4", "유담아, 어디 있어.");
 		break;
 	}
-	AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, 3.2f, EIGDialoguePriority::Story);
-	// 말은 자막이 맡고, 귀에는 철문 너머의 웅얼거림만 온다. 들어온 뒤나 문간에 선 뒤에는 몸에서.
+	// 들어온 뒤나 문간에 선 뒤에는 몸에서 난다.
 	const bool bInside = (GuestStage == EIGGuestStage::Inside || GuestStage == EIGGuestStage::AtOpenDoor)
 		&& Guest && Guest->IsManifested();
+	// 그 자리에서 낸 말이다. 손님이 문 앞을 떠나거나 다음 단계로 넘어가면 밀린 말은 꺼내지 않는다.
+	FIGDialogueScope Scope;
+	Scope.Context = IGNightThreat::GuestSpeechContext;
+	Scope.Owner = this;
+	TWeakObjectPtr<AIGNightThreatDirector> WeakThis(this);
+	const EIGGuestStage SpokenAt = GuestStage;
+	Scope.StillValid = [WeakThis, SpokenAt]() { return WeakThis.IsValid() && WeakThis->GuestStage == SpokenAt; };
+	// 녹음이 있으면 아는 사람의 목소리가 철문 너머(들어왔으면 그 몸)에서 난다. 없으면 말은 자막이
+	// 맡고 귀에는 웅얼거림만 온다. 넷째 밤의 오빠 목소리에는 목소리를 입히지 않는다. 죽은 사람의
+	// 말은 노크로만 온다(설정집 §3).
+	const bool bMayVoice = GuestNight < 4;
+	const bool bVoiced = bMayVoice && IGVoice::Find(IGVoice::LineIdOf(Line)) != nullptr;
+	if (!bMayVoice)
+	{
+		AIGHorrorHUD::PushDialogueScoped(this, Speaker, Line, EIGDialogueChannel::Conversation, 3.2f,
+			EIGDialoguePriority::Story, MoveTemp(Scope));
+	}
+	else
+	{
+		IGVoice::Say(
+			this,
+			Speaker,
+			Line,
+			MoveTemp(Scope),
+			[WeakThis, bInside]() -> FVector
+			{
+				const AIGNightThreatDirector* Self = WeakThis.Get();
+				if (!Self)
+				{
+					return FVector::ZeroVector;
+				}
+				return bInside && Self->Guest
+					? Self->Guest->GetChestLocation() + FVector(0.0f, 0.0f, 40.0f)
+					: Self->GetDoorOutside() + FVector(0.0f, 0.0f, 60.0f);
+			},
+			bInside ? IGVoice::ESource::Person : IGVoice::ESource::ThroughDoor,
+			EIGDialogueChannel::Conversation,
+			3.2f);
+	}
+	if (bVoiced)
+	{
+		return;
+	}
 	IGAudio::SpawnOneShotAt(
 		this,
 		UIGToneSequenceSoundWave::CreateDoorMurmur(this),
@@ -2413,11 +2458,16 @@ void AIGNightThreatDirector::HandleCaptureSettled(const EIGCaptureKind Kind, con
 	const FText Thought = bAnnex
 		? NSLOCTEXT("IGMissingFloor", "YudamGuestBoltBent", "빗장이 휘었네. 이제 안 걸려.")
 		: NSLOCTEXT("IGMissingFloor", "YudamGuestLatchTorn", "걸쇠가 뜯겨 나갔네. 또 오면 욕실 문이라도 잠그자.");
+	// 새벽이 먼저 와서 걸쇠를 고쳐 놓았으면 뜯겼다는 말은 틀린다. 그 밤 안에서만 말한다.
+	TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
 	GetWorldTimerManager().SetTimer(
 		GuestWakeThoughtTimer,
-		FTimerDelegate::CreateWeakLambda(this, [this, Thought]()
+		FTimerDelegate::CreateWeakLambda(this, [this, Thought, SameScene]()
 		{
-			AIGHorrorHUD::PushThought(this, Thought, 3.0f);
+			if (SameScene())
+			{
+				AIGHorrorHUD::PushThought(this, Thought, 3.0f);
+			}
 		}),
 		4.2f,
 		false);

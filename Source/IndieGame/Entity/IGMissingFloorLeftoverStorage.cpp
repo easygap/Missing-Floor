@@ -539,8 +539,8 @@ void AIGMissingFloorLeftoverDirector::PollStorage()
 	{
 		const FVector Voice = JeongwooCorner + FVector(0.0f, 0.0f, 110.0f);
 		PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, true), Voice, 0.5f, 0.9f, 120.0f, 1400.0f);
-		Caption(NSLOCTEXT("IGMissingFloor", "LeftoverBoardKnockCaption", "[302호 안에서 판을 두드리는 소리]"), Voice, 2.6f);
-		Say(StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverTrappedCall", "거기 누구 있어요? 판이 넘어와서 못 나가겠어요."));
+		CaptionIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverBoardKnockCaption", "[302호 안에서 판을 두드리는 소리]"), Voice, 2.6f);
+		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverTrappedCall", "거기 누구 있어요? 판에 끼었어요."));
 	}
 }
 
@@ -583,9 +583,9 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 	}
 	if (Key == FName(TEXT("Storage.Jeongwoo")))
 	{
-		Say(StorageVoice(), StorageStage == EStorage::Fallen
-			? NSLOCTEXT("IGMissingFloor", "LeftoverTrappedFallen", "판이 더 내려왔어요. 밑에 받칠 거 없어요?")
-			: NSLOCTEXT("IGMissingFloor", "LeftoverTrappedTalk", "상자 빼다가 판이 넘어왔어요. 벽에 붙은 저게 판을 밀고 있어요."));
+		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), StorageStage == EStorage::Fallen
+			? NSLOCTEXT("IGMissingFloor", "LeftoverTrappedFallen", "판이 더 내려왔어요. 밑동이 자꾸 밀려요.")
+			: NSLOCTEXT("IGMissingFloor", "LeftoverTrappedTalk", "상자 빼다가 판이 넘어왔어요. 벽에 붙은 게 밀어요."));
 		return;
 	}
 	if (Key == FName(TEXT("Storage.WedgePick")))
@@ -593,7 +593,8 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 		bWedgeInHand = true;
 		State.WedgeSocket = NAME_None;
 		Take(Wedge);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 고이는 나무 쐐기야."), 2.4f);
+		// 줍는 그 순간의 반응이다. 바로 끼워 넣었으면 밀려서 늦게 뜨지 않는다.
+		ThinkIn(IGLeftoverDialogue::Wedge, NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 고이는 나무 쐐기야."), 2.4f);
 		RefreshStorage();
 		return;
 	}
@@ -673,7 +674,8 @@ void AIGMissingFloorLeftoverDirector::TryPlaceWedge(const int32 Socket)
 			WedgeMesh->SetWorldTransform(FTransform(FRotator(0.0f, 45.0f, 0.0f), WedgeSockets[0] - FVector(0.0f, 0.0f, 2.0f)));
 		}
 		PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, false), WedgeSockets[0], 0.45f, 1.2f);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverWedgeHeld", "물렸어. 이제 판이 안 밀려."), 2.6f);
+		Hush(IGLeftoverDialogue::Wedge);
+		ThinkIn(IGLeftoverDialogue::Wedge, NSLOCTEXT("IGMissingFloor", "LeftoverWedgeHeld", "물렸어. 이제 판이 안 밀려."), 2.6f);
 	}
 	else
 	{
@@ -686,7 +688,7 @@ void AIGMissingFloorLeftoverDirector::TryPlaceWedge(const int32 Socket)
 			WedgeMesh->SetWorldTransform(FTransform(FRotator(0.0f, 45.0f + 35.0f * Socket, 0.0f), Out));
 		}
 		PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, true), WedgeSockets[Socket], 0.35f, 1.4f);
-		Think(Socket == 1
+		ThinkIn(IGLeftoverDialogue::Wedge, WedgeSlips++ == 0
 			? NSLOCTEXT("IGMissingFloor", "LeftoverWedgeSlip1", "장판에서 미끄러져 빠졌어.")
 			: NSLOCTEXT("IGMissingFloor", "LeftoverWedgeSlip2", "또 빠졌어. 장판 위라 걸릴 데가 없어."), 3.0f);
 		// 빠진 쐐기는 그 자리에서 다시 줍는다.
@@ -742,7 +744,8 @@ void AIGMissingFloorLeftoverDirector::TickWardrobeMove()
 	{
 		GetWorldTimerManager().ClearTimer(WardrobeTimer);
 		WardrobeMoveStart = -1.0;
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverWardrobeHatch", "장롱 뒤에 점검구가 있었어. 저쪽 틈보다 훨씬 커."), 3.4f);
+		// 정우가 아직 판 뒤에 있을 때의 발견이다. 그를 꺼낸 뒤에는 이 말이 뒤늦게 뜨지 않는다.
+		ThinkIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverWardrobeHatch", "장롱 뒤에 점검구가 있었어. 저쪽 틈보다 훨씬 커."), 3.4f);
 		RefreshStorage();
 	}
 }
@@ -760,7 +763,7 @@ void AIGMissingFloorLeftoverDirector::ReleaseBoard()
 	{
 		// 쐐기가 밑동을 잡고 있다. 판은 그대로 서 있고 정우가 밀고 나온다.
 		StorageStage = EStorage::Released;
-		Say(StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverReleasedBraced", "어, 판이 풀렸어요. 밀어 볼게요."));
+		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverReleasedBraced", "어, 판이 풀렸어요. 밀어 볼게요."));
 		GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::FreeJeongwoo, 2.2f, false);
 	}
 	else
@@ -777,10 +780,10 @@ void AIGMissingFloorLeftoverDirector::ReleaseBoard()
 				Noise->ReportNoiseUnmasked(BoardBase, 0.85f, this);
 			}
 		}
-		Say(StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverFallenLine", "괜찮아요! 근데 판이 더 내려와서 못 나가겠어요."));
+		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverFallenLine", "괜찮아요! 근데 판이 더 내려왔어요."));
 		GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverFallenThought", "밑동이 쭉 미끄러졌어. 판이 더 누웠어."), 3.4f);
+			ThinkIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverFallenThought", "밑동이 쭉 미끄러졌어. 판이 더 누웠어."), 3.4f);
 		}), 2.6f, false);
 	}
 	RefreshStorage();
@@ -796,6 +799,7 @@ void AIGMissingFloorLeftoverDirector::FreeJeongwoo()
 	StorageStage = EStorage::Freed;
 	StorageStageAt = GetWorld()->GetTimeSeconds();
 	Narrative->MutableLeftover().JeongwooState = Freed;
+	Hush(IGLeftoverDialogue::Trapped);
 	SetBoardPose(3, true);
 	PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), DohaBoxUnderBoard.GetLocation() + FVector(0.0f, 0.0f, 20.0f), 0.6f, 0.8f);
 	Jeongwoo->SetBlocksPlayer(false);
@@ -803,26 +807,44 @@ void AIGMissingFloorLeftoverDirector::FreeJeongwoo()
 	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::WalkJeongwooOut, 1.25f, false);
 	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
+		if (StorageStage != EStorage::Freed)
+		{
+			// 그 사이 상자를 당겨 받치러 갔다. 인사는 걸어가며 짧게만 한다.
+			SayIn(IGLeftoverDialogue::Freed, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverFreedLine", "살았다… 고마워요."), true);
+			return;
+		}
 		const bool bBoxLeft = !HasTaken(DohaBox);
 		if (PlayBeat(JeongwooIntroBeat))
 		{
 			// 낮에 한 번도 못 만났다. 판에서 나와서야 이름을 댄다.
-			Say(JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverFreedIntro", "살았다… 고마워요. 저 202호 정우예요."));
+			SayIn(IGLeftoverDialogue::Freed, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverFreedIntro", "살았다… 고마워요. 저 202호 정우예요."), true);
 		}
 		else
 		{
-			Say(JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverFreedLine", "살았다… 고마워요."));
-		}
-		if (bBoxLeft)
-		{
-			Say(JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverFreedBoxLine", "그 상자, 표시해 둔 거요. 아직 판 밑에 걸려 있어요."));
+			SayIn(IGLeftoverDialogue::Freed, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverFreedLine", "살았다… 고마워요."), true);
 		}
 		if (Jeongwoo)
 		{
 			Jeongwoo->SetBlocksPlayer(true);
 		}
-		// 말을 다 하고 문으로 간다. 그 사이 상자를 당기면 판부터 같이 받친다.
-		GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooLeave, 5.5f, false);
+		// 말이 다 끝나면 문으로 간다. 그 사이 상자를 당기면 판부터 같이 받친다(JeongwooLeave가 받치는 중이면 하지 않는다).
+		const auto GoToDoor = [this]()
+		{
+			if (StorageStage == EStorage::Freed)
+			{
+				GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooLeave, 0.6f, false);
+			}
+		};
+		if (bBoxLeft)
+		{
+			SayThen(IGLeftoverDialogue::Freed, JeongwooName(),
+				NSLOCTEXT("IGMissingFloor", "LeftoverFreedBoxLine", "그 상자… 아직 판 밑에 걸려 있어요."), 8.0f, GoToDoor);
+		}
+		else
+		{
+			FTimerHandle Wait;
+			GetWorldTimerManager().SetTimer(Wait, FTimerDelegate::CreateWeakLambda(this, GoToDoor), 3.2f, false);
+		}
 	}), 2.4f, false);
 	RefreshStorage();
 	UE_LOG(LogTemp, Display, TEXT("LEFTOVER_N3 freed"));
@@ -851,9 +873,11 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 		// 판을 받쳐 줄 사람이 있다. 정우가 판 앞으로 간다(문을 잡고 있었으면 돌아온다).
 		GetWorldTimerManager().ClearTimer(SceneTimer);
 		TArray<FVector> Route{Jeongwoo->GetFeet()};
+		// 문을 잡고 기다린다던 말은 이제 맞지 않는다.
+		Hush(IGLeftoverDialogue::DoorWait);
 		if (StorageStage == EStorage::Leaving)
 		{
-			Say(JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceAgain", "상자요? 잠깐만요, 판 잡을게요."));
+			SayIn(IGLeftoverDialogue::Brace, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceAgain", "상자요? 잠깐만요, 판 잡을게요."));
 			// 복도의 문설주 옆에서 돌아온다. 문간 가운데로 들어와야 벽 모서리를 안 뚫는다.
 			Route.Append({FVector(-30.0f, -252.0f, Z), FVector(-30.0f, -200.0f, Z)});
 		}
@@ -875,11 +899,13 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 	if (DohaBoxPulls == 1)
 	{
 		PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), PushedAside(DohaBoxUnderBoard).GetLocation() + FVector(0.0f, 0.0f, 15.0f), 0.55f, 0.9f);
-		Say(YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuck", "잠깐만요. 상자가 걸렸어요."));
-		Say(JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuckReply", "모서리가 판에 걸렸어요. 조금만 더요."));
+		SayIn(IGLeftoverDialogue::BoxStuck, YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuck", "잠깐만요. 상자가 걸렸어요."));
+		SayIn(IGLeftoverDialogue::BoxStuck, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuckReply", "모서리가 판에 걸렸어요. 조금만 더요."));
 		return;
 	}
-	// 빠졌다. 안에 오빠의 공구 주머니가 있다.
+	// 빠졌다. 걸렸다는 말과 받치는 동안의 말은 이제 지난 일이다. 안에 오빠의 공구 주머니가 있다.
+	Hush(IGLeftoverDialogue::BoxStuck);
+	Hush(IGLeftoverDialogue::Brace);
 	Take(DohaBox);
 	Take(ToolPouch);
 	AIGNightThreatDirector::HoldQuietAfterDiscovery(this, 60.0f);
@@ -902,10 +928,11 @@ void AIGMissingFloorLeftoverDirector::JeongwooLeave()
 	// 남아서 더 보면 기다리다가 먼저 내려간다. 상자를 당기면 돌아와 판을 받친다.
 	StorageStage = EStorage::Leaving;
 	StorageStageAt = GetWorld()->GetTimeSeconds();
+	Hush(IGLeftoverDialogue::Brace);
 	const bool bBoxLeft = !HasTaken(DohaBox);
-	Say(JeongwooName(), bBoxLeft
+	SayIn(IGLeftoverDialogue::DoorWait, JeongwooName(), bBoxLeft
 		? NSLOCTEXT("IGMissingFloor", "LeftoverLeaveBoxLine", "문 잡고 있을게요. 상자 뺄 거면 말해요, 판 잡아 줄게요.")
-		: NSLOCTEXT("IGMissingFloor", "LeftoverLeaveLine", "문 잡고 있을게요. 더 볼 거 있으면 보고 나와요."));
+		: NSLOCTEXT("IGMissingFloor", "LeftoverLeaveLine", "문 잡고 있을게요. 더 볼 거 있으면 보고 나와요."), true);
 	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), FVector(-30.0f, -120.0f, Z), FVector(-30.0f, -222.0f, Z),
 		FVector(-30.0f, -252.0f, Z), JeongwooDoorSpot}, false, AIGJeongwooFigure::EPose::HoldDoor, 100.0f);
 	RefreshStorage();
@@ -917,7 +944,8 @@ void AIGMissingFloorLeftoverDirector::JeongwooStopBracing()
 	{
 		return;
 	}
-	Say(JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceRelease", "판 놓을게요. 상자는 이따 다시 해요."));
+	Hush(IGLeftoverDialogue::Brace);
+	SayIn(IGLeftoverDialogue::DoorWait, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceRelease", "판 놓을게요. 상자는 이따 다시 해요."));
 	JeongwooLeave();
 }
 
@@ -938,6 +966,9 @@ void AIGMissingFloorLeftoverDirector::JeongwooGoDownstairs(const bool bTogether)
 		}
 	}
 	StorageStage = EStorage::Gone;
+	// 문을 잡고 있겠다는 말과 받치는 말은 이제 지난 일이다.
+	Hush(IGLeftoverDialogue::DoorWait);
+	Hush(IGLeftoverDialogue::Brace);
 	Say(JeongwooName(), bTogether
 		? NSLOCTEXT("IGMissingFloor", "LeftoverByeLine", "짐은 낮에 마저 뺄게요. 들어가세요.")
 		: NSLOCTEXT("IGMissingFloor", "LeftoverGoAheadLine", "저 먼저 내려갈게요. 문은 열어 둘게요. 오래 있지 마요."));
@@ -1372,7 +1403,7 @@ void AIGMissingFloorLeftoverDirector::TryFit(const int32 Slot)
 	if (!bSizeFits)
 	{
 		PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, false), AssemblyCenter, 0.3f, 1.3f);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverFitNoRoom", "이 자리엔 안 들어가."), 2.2f);
+		ThinkIn(IGLeftoverDialogue::Fit, NSLOCTEXT("IGMissingFloor", "LeftoverFitNoRoom", "이 자리엔 안 들어가."), 2.2f);
 		return;
 	}
 	const bool bCorrect = Piece == Slot && HeldRotation == 0 && !bHeldFlipped;
@@ -1413,7 +1444,7 @@ void AIGMissingFloorLeftoverDirector::TryFit(const int32 Slot)
 		: bHeldFlipped
 			? NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막에 미끄러져.")
 			: NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "자리는 맞는데 구멍 위치가 어긋나.");
-	Think(Hint, 3.0f);
+	ThinkIn(IGLeftoverDialogue::Fit, Hint, 3.0f);
 	if (WrongFits >= 3)
 	{
 		if (APlayerController* Controller = GetWorld()->GetFirstPlayerController())
@@ -1444,6 +1475,7 @@ void AIGMissingFloorLeftoverDirector::SeatPiece(const int32 Piece)
 	Narrative->MarkBeatPlayed(FName(Beats[Piece]));
 	HeldPiece = INDEX_NONE;
 	PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, false), AssemblyCenter + FVector(0.0f, 0.0f, 4.0f), 0.45f, 1.9f);
+	Hush(IGLeftoverDialogue::Fit);
 	Caption(NSLOCTEXT("IGMissingFloor", "LeftoverClampSeatCaption", "[고정쇠가 딸깍 물리는 소리]"), AssemblyCenter, 1.6f);
 	const bool bAll = Narrative->HasBeatPlayed(FName(Beats[0])) && Narrative->HasBeatPlayed(FName(Beats[1]))
 		&& Narrative->HasBeatPlayed(FName(Beats[2]));
