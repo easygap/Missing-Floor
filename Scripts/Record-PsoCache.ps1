@@ -11,7 +11,8 @@
 
 	기록 장면은 타이틀·설정, 입주 낮, README 장면 경로, 밤 경로(High·Low),
 	결말, 다섯째 밤, 계단 센서등, 밤4 망치질과 정전, 낮 장면, 403호 욕실, 에필로그,
-	셋째 아침 경찰 현장 확인, 5층 철문간의 종이 손님이다.
+	셋째 아침 경찰 현장 확인, 5층 철문간의 종이 손님, 302호에 남은 짐 줄기(관리실 안쪽 방·
+	302호·5층 벽과 덧댄 것, High·Low)와 5층 벽 단계마다 되살린 모습이다.
 	장면을 새로 만들면 여기에 더하고 이 스크립트를 다시 돌린다.
 
 .NOTES
@@ -33,10 +34,15 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+$igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Record-PsoCache.ps1' -Parameters $PSBoundParameters
+$igArtifactSucceeded = $false
+try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $workRoot = Join-Path $projectRoot "Saved/PsoRecord/$stamp"
 New-Item -ItemType Directory -Force -Path $workRoot | Out-Null
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $workRoot
 
 # 한글 경로에서는 Build-ArtAssets.ps1이 만든 ASCII 사본에서 쿠크한다(Package-Windows.ps1과 같은 계산).
 & (Join-Path $PSScriptRoot 'Build-ArtAssets.ps1') -CodeOnly
@@ -54,6 +60,7 @@ $engineRoot = Split-Path (Split-Path (Split-Path $editor -Parent) -Parent) -Pare
 
 if (-not $RecordArchive) {
 	$RecordArchive = Join-Path $projectRoot "Saved/Packages/PsoRecord-$stamp"
+	Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $RecordArchive
 	$uat = Join-Path $engineRoot 'Build/BatchFiles/RunUAT.bat'
 	& $uat BuildCookRun "-project=$buildProject" -target=IndieGame -noP4 -unattended -utf8output `
 		-platform=Win64 -clientconfig=Development -build -cook -allmaps -stage -pak -iostore -package `
@@ -93,7 +100,10 @@ $sessions = @(
 	@{ Name = 'Bathroom'; Quality = 2; Args = @('-IGListenerGreybox', '-IGBathroomProbe', '-IGBathroomShots', '-IGSkipFrontend') },
 	@{ Name = 'Epilogue'; Quality = 2; Args = @('-IGListenerGreybox', '-IGEpiloguePreview=A', '-IGSkipFrontend') },
 	@{ Name = 'SiteCheck'; Quality = 2; Args = @('-IGListenerGreybox', '-IGSiteCheckProbe', '-IGSiteCheckShots', '-IGSkipFrontend') },
-	@{ Name = 'GuestDoors'; Quality = 2; Args = @('-IGListenerGreybox', '-IGGuestDoorsProbe', '-IGGuestDoorsShots', '-IGGuestLure', '-IGSkipFrontend') }
+	@{ Name = 'GuestDoors'; Quality = 2; Args = @('-IGListenerGreybox', '-IGGuestDoorsProbe', '-IGGuestDoorsShots', '-IGGuestLure', '-IGSkipFrontend') },
+	@{ Name = 'Leftover'; Quality = 2; Args = @('-IGListenerGreybox', '-IGLeftoverProbe', '-IGLeftoverShots', '-IGSkipFrontend') },
+	@{ Name = 'LeftoverLow'; Quality = 1; Args = @('-IGListenerGreybox', '-IGLeftoverProbe', '-IGLeftoverShots', '-IGSkipFrontend') },
+	@{ Name = 'LeftoverWall'; Quality = 2; Args = @('-IGListenerGreybox', '-IGLeftoverProbe=wall', '-IGLeftoverShots', '-IGSkipFrontend') }
 )
 $records = [Collections.Generic.List[string]]::new()
 foreach ($session in $sessions) {
@@ -159,3 +169,9 @@ $destinationRoot = Join-Path $projectRoot 'Build/Windows/PipelineCaches'
 New-Item -ItemType Directory -Force -Path $destinationRoot | Out-Null
 Copy-Item -LiteralPath $output -Destination (Join-Path $destinationRoot 'PSO_IndieGame_PCD3D_SM6.spc') -Force
 Write-Host "PSO_CACHE PASS records=$($records.Count) stableKeys=$($stableKeys.Count) bytes=$((Get-Item -LiteralPath $output).Length)"
+
+$igArtifactSucceeded = $true
+}
+finally {
+    Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
+}
