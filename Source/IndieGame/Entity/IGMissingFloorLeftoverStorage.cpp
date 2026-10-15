@@ -30,18 +30,18 @@
 
 namespace IGLeftoverStorage
 {
-	constexpr float Z = 600.0f;
+	constexpr float StorageZ = 600.0f;
 	const FName GapNarrow(TEXT("Storage.Narrow"));
 	const FName GapLarge(TEXT("Storage.Large"));
 	const FName GapAlt(TEXT("Storage.Alt"));
 	const FName PieceA(TEXT("PieceA"));
 	const FName PieceB(TEXT("PieceB"));
 	const FName PieceC(TEXT("PieceC"));
-	const FName Frame(TEXT("Frame"));
+	const FName StorageFrame(TEXT("Frame"));
 	const FName ToolPouch(TEXT("ToolPouch"));
 	const FName DohaBox(TEXT("DohaBox"));
 	const FName Cover(TEXT("Cover"));
-	const FName Wedge(TEXT("Wedge"));
+	const FName StorageWedge(TEXT("Wedge"));
 	const FName Trapped(TEXT("Trapped"));
 	const FName Freed(TEXT("Freed"));
 	const FName LeftTogether(TEXT("LeftTogether"));
@@ -59,19 +59,19 @@ namespace IGLeftoverStorage
 	const FName BeatLabel303Peeled(TEXT("Leftover.Label303Peeled"));
 
 	/** 판 뒤 구석(벽에서 20 cm). 판에서 풀려나면 판 끝이 다 돈 뒤 서쪽 끝을 돌아 나온다. */
-	const FVector JeongwooCorner(100.0f, 66.0f, Z);
-	const FVector JeongwooOutSpot(-5.0f, 0.0f, Z);
+	const FVector JeongwooCorner(100.0f, 66.0f, StorageZ);
+	const FVector JeongwooOutSpot(-5.0f, 0.0f, StorageZ);
 	/**
 	 * 셋째 자세의 판을 상자 바로 위에서 받치는 자리. A_Jeongwoo_Brace는 두 손을 발보다 60.5 cm 앞,
 	 * 136.7 cm 높이에 둔다. 판이 방 쪽으로 10도 기울어 그 높이의 면은 밑동보다 25 cm 방 쪽이고,
 	 * 손바닥이 면에 닿게 손 뼈를 면에서 3.5 cm 뗐다. 두 손은 판 길이 58..92 cm에 온다.
 	 */
-	const FVector JeongwooBraceSpot(64.5f, -80.3f, Z);
+	const FVector JeongwooBraceSpot(64.5f, -80.3f, StorageZ);
 	/**
 	 * 문을 잡고 기다리는 자리. 302호 문간(X -75..15) 바로 앞에 서면 그녀가 방을 못 나와서, 복도의 서쪽
 	 * 문설주 옆에 서서 문틀을 잡는다. 문간 가운데와 74 cm 떨어져 둘의 캡슐(26 + 30)이 닿지 않는다.
 	 */
-	const FVector JeongwooDoorSpot(-104.0f, -262.0f, Z);
+	const FVector JeongwooDoorSpot(-104.0f, -262.0f, StorageZ);
 	/** 판을 받친 채 기다리는 시간. 그사이 상자를 당기지 않으면 판을 놓고 문으로 간다. */
 	constexpr double BraceWaitSeconds = 40.0;
 	/** 문을 잡고 기다리는 시간. 그 뒤로는 먼저 내려간다(그녀는 302호를 더 볼 수 있다). */
@@ -79,28 +79,28 @@ namespace IGLeftoverStorage
 	/** 같이 못 뺀 오빠 상자를 정우가 아침에 두고 간 자리. 403호 문 왼쪽 벽 앞, 문 열리는 길 밖이다. */
 	const FTransform DeliveredBoxSpot(FRotator(0.0f, 8.0f, 0.0f), FVector(2.0f, -255.0f, 900.0f));
 	/** 판: 북동 구석을 대각선으로 막는 마감판. 밑동은 x+y=113 줄이고 동쪽 끝이 동벽(X 120)에 닿는다. */
-	const FVector BoardBase(83.0f, 30.0f, Z);
+	const FVector BoardBase(83.0f, 30.0f, StorageZ);
 	constexpr float BoardYaw = -45.0f;
 	/** 판 동쪽 끝(밑동). 정우가 서쪽 끝을 밀어 낼 때 이 점을 축으로 돈다. */
-	const FVector BoardEastEnd(118.36f, -5.36f, Z);
+	const FVector BoardEastEnd(118.36f, -5.36f, StorageZ);
 	constexpr float BoardPushYaw = 25.0f;
 	/** 쐐기 자리. 0은 판 밑동이 바닥 틀에 걸리는 곳이고 1·2는 바닥 틀이 없는 장판이다. */
 	const FVector WedgeSockets[3] = {
-		FVector(51.0f, 60.0f, Z + 2.0f),
-		FVector(61.2f, 47.9f, Z + 2.0f),
-		FVector(71.1f, 38.0f, Z + 2.0f),
+		FVector(51.0f, 60.0f, StorageZ + 2.0f),
+		FVector(61.2f, 47.9f, StorageZ + 2.0f),
+		FVector(71.1f, 38.0f, StorageZ + 2.0f),
 	};
-	const FVector WedgePickup(-40.0f, -165.0f, Z);
+	const FVector WedgePickup(-40.0f, -165.0f, StorageZ);
 	/** 덮개 조각과 금속 틀을 넣은 마대. 동벽 앞, 덧댄 것이 지나가는 북서쪽 길과 판·상자를 비켰다. */
-	const FVector PartsSack(105.0f, -100.0f, Z);
+	const FVector PartsSack(105.0f, -100.0f, StorageZ);
 	/**
 	 * 오빠 상자: 방 쪽으로 기운 판 밑, 판 동쪽 절반. 판 방 쪽 면이 상자 위 모서리에 얹혔다(틈 2.5 mm).
 	 * 이름표 면이 방을 본다.
 	 */
-	const FTransform DohaBoxUnderBoard(FRotator(0.0f, BoardYaw, 0.0f), FVector(82.3f, -6.0f, Z));
+	const FTransform DohaBoxUnderBoard(FRotator(0.0f, BoardYaw, 0.0f), FVector(82.3f, -6.0f, StorageZ));
 	/** 조립대. 상자 둘(X -4..72, Y -210..-160)이 남벽 앞에 붙었고 그 위에 금속 틀이 뒷면을 위로 누웠다. */
-	const FVector AssemblyCenter(34.0f, -185.0f, Z + 34.6f);
-	const FVector AssemblyHover(-24.0f, -185.0f, Z + 72.0f);
+	const FVector AssemblyCenter(34.0f, -185.0f, StorageZ + 34.6f);
+	const FVector AssemblyHover(-24.0f, -185.0f, StorageZ + 72.0f);
 
 	/** 판 동쪽 끝을 축으로 수평으로 돌린 자리. 셋째 자세의 판과 상자가 같이 쓴다. */
 	FTransform PushedAside(const FTransform& Resting)
@@ -110,9 +110,9 @@ namespace IGLeftoverStorage
 	}
 	/** 조각 셋이 처음 놓인 바닥(조립대 서쪽). */
 	const FVector PieceFloor[3] = {
-		FVector(-30.0f, -110.0f, Z + 0.8f),
-		FVector(-28.0f, -60.0f, Z + 0.8f),
-		FVector(-62.0f, -82.0f, Z + 0.8f),
+		FVector(-30.0f, -110.0f, StorageZ + 0.8f),
+		FVector(-28.0f, -60.0f, StorageZ + 0.8f),
+		FVector(-62.0f, -82.0f, StorageZ + 0.8f),
 	};
 	/** 덮개 좌표(cm)에서 조각마다의 무게 중심. 앞면 방수막이 X 0, 판이 -1.2. */
 	const FVector PieceCentroid[3] = {
@@ -183,7 +183,7 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 		FTransform(FRotator(0.0f, BoardYaw, -10.0f), BoardBase), true);
 	// 판 밑동이 걸리는 바닥 틀(떼어 내다 둔 경량 철골 한 토막). 쐐기가 여기에 물린다.
 	SpawnProp(FName(TEXT("Storage.Track")), LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")),
-		FTransform(FRotator(0.0f, -45.0f, 0.0f), FVector(45.0f, 68.0f, Z + 2.0f), FVector(0.46f, 0.06f, 0.04f)), true);
+		FTransform(FRotator(0.0f, -45.0f, 0.0f), FVector(45.0f, 68.0f, StorageZ + 2.0f), FVector(0.46f, 0.06f, 0.04f)), true);
 	if (UStaticMeshComponent* Track = Props.FindRef(FName(TEXT("Storage.Track"))))
 	{
 		Track->SetMaterial(0, LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_HandCart.MI_HandCart"), nullptr, LOAD_NoWarn));
@@ -196,17 +196,17 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 	SpawnProp(FName(TEXT("Storage.PartsSack")), Mesh(TEXT("SM_WasteSack")),
 		FTransform(FRotator(0.0f, 30.0f, 0.0f), PartsSack), true);
 	// 낮1에 옮겨 온 「주인 없는 짐」. 남쪽 벽 서쪽에 쌓였다.
-	SpawnProp(FName(TEXT("Storage.Pile1")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 8.0f, 0.0f), FVector(-138.0f, -192.0f, Z)), true);
+	SpawnProp(FName(TEXT("Storage.Pile1")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 8.0f, 0.0f), FVector(-138.0f, -192.0f, StorageZ)), true);
 	// 맨 위 상자는 303호 김치통이다. 이름표가 방 쪽을 보도록 돌려 얹었고, 관리인이 이름 위에 「주인 없음」을 붙였다.
-	const FTransform Pile2(FRotator(0.0f, 175.0f, 0.0f), FVector(-136.0f, -191.0f, Z + 34.2f));
+	const FTransform Pile2(FRotator(0.0f, 175.0f, 0.0f), FVector(-136.0f, -191.0f, StorageZ + 34.2f));
 	SpawnProp(FName(TEXT("Storage.Pile2")), Mesh(TEXT("SM_StorageBox")), Pile2, true);
 	SpawnProp(FName(TEXT("Storage.Pile2Label")), Mesh(TEXT("SM_LeftoverLabel303")), Pile2, false);
 	SpawnProp(FName(TEXT("Storage.Pile2Sticker")), Mesh(TEXT("SM_LeftoverStickerUnclaimed")), Pile2, false);
-	SpawnProp(FName(TEXT("Storage.Pile3")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 92.0f, 0.0f), FVector(-108.0f, -192.0f, Z)), true);
-	SpawnProp(FName(TEXT("Storage.Pile4")), Mesh(TEXT("SM_WasteSack")), FTransform(FRotator(0.0f, 40.0f, 0.0f), FVector(-118.0f, -163.0f, Z)), true);
+	SpawnProp(FName(TEXT("Storage.Pile3")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 92.0f, 0.0f), FVector(-108.0f, -192.0f, StorageZ)), true);
+	SpawnProp(FName(TEXT("Storage.Pile4")), Mesh(TEXT("SM_WasteSack")), FTransform(FRotator(0.0f, 40.0f, 0.0f), FVector(-118.0f, -163.0f, StorageZ)), true);
 	// 조립대 상자 둘. 문 길(X -30)과 동벽 점검구 앞을 비켰다.
-	SpawnProp(FName(TEXT("Storage.Table1")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 90.0f, 0.0f), FVector(15.0f, -185.0f, Z)), true);
-	SpawnProp(FName(TEXT("Storage.Table2")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 90.0f, 0.0f), FVector(53.0f, -185.0f, Z)), true);
+	SpawnProp(FName(TEXT("Storage.Table1")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 90.0f, 0.0f), FVector(15.0f, -185.0f, StorageZ)), true);
+	SpawnProp(FName(TEXT("Storage.Table2")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 90.0f, 0.0f), FVector(53.0f, -185.0f, StorageZ)), true);
 	// 쐐기. 처음에는 문 옆 공사 찌꺼기 사이에 있다.
 	SpawnProp(FName(TEXT("Storage.Wedge")), Mesh(TEXT("SM_TimberWedge")), FTransform(FRotator(0.0f, 70.0f, 0.0f), WedgePickup), false);
 
@@ -235,7 +235,7 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 			Bind(Target);
 		}
 	}
-	Bind(SpawnTarget(FName(TEXT("Storage.Wardrobe")), FVector(-112.0f, 0.0f, Z + 100.0f), FRotator::ZeroRotator,
+	Bind(SpawnTarget(FName(TEXT("Storage.Wardrobe")), FVector(-112.0f, 0.0f, StorageZ + 100.0f), FRotator::ZeroRotator,
 		FVector(4.0f, 40.0f, 60.0f), NSLOCTEXT("IGMissingFloor", "LeftoverWardrobePrompt", "장롱 밀기"), 1.6f, 0.45f));
 	Bind(SpawnTarget(FName(TEXT("Storage.Lift")), BoardBase + FVector(-18.0f, -18.0f, 95.0f), FRotator(0.0f, -45.0f, 0.0f),
 		FVector(6.0f, 46.0f, 40.0f), NSLOCTEXT("IGMissingFloor", "LeftoverBoardLiftPrompt", "판 세워 받치기"), 1.2f, 0.3f));
@@ -250,10 +250,10 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 	Bind(SpawnTarget(FName(TEXT("Storage.Jeongwoo")), JeongwooCorner + FVector(0.0f, 0.0f, 80.0f), FRotator::ZeroRotator,
 		FVector(30.0f, 30.0f, 50.0f), NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPrompt", "정우에게 말 걸기"), 0.0f, 0.04f));
 	// 303호 상자의 딱지. 이름표 앞면(상자 원점에서 X 12, Y -19.3, Z 18.7 cm를 상자 방향으로 돌린 자리).
-	Bind(SpawnTarget(FName(TEXT("Storage.Label303")), FVector(-146.3f, -170.7f, Z + 52.9f), FRotator(0.0f, 175.0f, 0.0f),
+	Bind(SpawnTarget(FName(TEXT("Storage.Label303")), FVector(-146.3f, -170.7f, StorageZ + 52.9f), FRotator(0.0f, 175.0f, 0.0f),
 		FVector(10.0f, 4.0f, 7.0f), NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Prompt", "딱지 들춰 보기"), 0.0f, 0.03f));
 	// 낮1 302호의 오빠 상자(이름을 보는 자리).
-	Bind(SpawnTarget(FName(TEXT("Storage.DohaName")), FVector(-108.0f, -192.0f, Z + 20.0f), FRotator::ZeroRotator,
+	Bind(SpawnTarget(FName(TEXT("Storage.DohaName")), FVector(-108.0f, -192.0f, StorageZ + 20.0f), FRotator::ZeroRotator,
 		FVector(28.0f, 22.0f, 20.0f), NSLOCTEXT("IGMissingFloor", "LeftoverDohaNamePrompt", "상자 이름표 보기"), 0.0f, 0.03f));
 }
 
@@ -377,7 +377,7 @@ void AIGMissingFloorLeftoverDirector::RefreshStorage()
 		|| State->JeongwooState.IsNone());
 	ShowProp(FName(TEXT("Storage.Board")), !bLegacy && Night == 3);
 	ShowProp(FName(TEXT("Storage.Track")), !bLegacy && Night >= 2);
-	const bool bPartsTaken = HasTaken(PieceC) && HasTaken(Frame);
+	const bool bPartsTaken = HasTaken(PieceC) && HasTaken(StorageFrame);
 	ShowProp(FName(TEXT("Storage.PartsSack")), !bLegacy && Night == 3 && !bPartsTaken);
 	ShowProp(FName(TEXT("Storage.Table1")), !bLegacy && Night >= 3);
 	ShowProp(FName(TEXT("Storage.Table2")), !bLegacy && Night >= 3);
@@ -420,11 +420,11 @@ void AIGMissingFloorLeftoverDirector::RefreshStorage()
 			const bool bMoved = State && State->bWardrobeMoved;
 			if (WardrobeMoveStart < 0.0)
 			{
-				Wardrobe->SetWorldLocation(FVector(-138.0f, bMoved ? -85.0f : 0.0f, Z));
+				Wardrobe->SetWorldLocation(FVector(-138.0f, bMoved ? -85.0f : 0.0f, StorageZ));
 			}
 			if (AIGHidingSpot* Hide = Scene->GetWardrobe302HidingSpot())
 			{
-				Hide->SetActorLocation(FVector(-114.4f, bMoved ? -85.0f : 0.0f, Z));
+				Hide->SetActorLocation(FVector(-114.4f, bMoved ? -85.0f : 0.0f, StorageZ));
 			}
 		}
 	}
@@ -535,7 +535,7 @@ void AIGMissingFloorLeftoverDirector::PollStorage()
 	}
 	// 3층에 내려서면 판 너머에서 정우가 부른다.
 	if (State.JeongwooState == Trapped && StorageStage == EStorage::Trapped
-		&& IsPlayerNear(FVector(-30.0f, -250.0f, Z), 520.0f, 160.0f) && Narrative->MarkBeatPlayed(BeatVoice))
+		&& IsPlayerNear(FVector(-30.0f, -250.0f, StorageZ), 520.0f, 160.0f) && Narrative->MarkBeatPlayed(BeatVoice))
 	{
 		const FVector Voice = JeongwooCorner + FVector(0.0f, 0.0f, 110.0f);
 		PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, true), Voice, 0.5f, 0.9f, 120.0f, 1400.0f);
@@ -572,7 +572,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 			Say(YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverKeepBox", "잠깐만요. 이 상자는 두세요. 오빠 이름이 있어요."));
 			Say(JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverMarkBox", "그럼 이건 따로 빼 둘게요. 버리지 말라고 표시해 놓을게요."));
 			PlayBeat(BeatDayOneMarked);
-			PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), FVector(-108.0f, -192.0f, Z + 10.0f), 0.5f);
+			PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), FVector(-108.0f, -192.0f, StorageZ + 10.0f), 0.5f);
 			GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
 				FinishDayOneBoxes();
@@ -592,7 +592,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 	{
 		bWedgeInHand = true;
 		State.WedgeSocket = NAME_None;
-		Take(Wedge);
+		Take(StorageWedge);
 		// 줍는 그 순간의 반응이다. 바로 끼워 넣었으면 밀려서 늦게 뜨지 않는다.
 		ThinkIn(IGLeftoverDialogue::Wedge, NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 고이는 나무 쐐기야."), 2.4f);
 		RefreshStorage();
@@ -623,7 +623,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 		// 지금 사는 집의 짐이다. 같은 말을 해설로 덧붙이지 않는다.
 		if (PlayBeat(BeatLabel303Peeled))
 		{
-			PlaySound(UIGToneSequenceSoundWave::CreatePackingTapeRip(this), FVector(-146.3f, -170.7f, Z + 52.9f), 0.3f, 1.3f);
+			PlaySound(UIGToneSequenceSoundWave::CreatePackingTapeRip(this), FVector(-146.3f, -170.7f, StorageZ + 52.9f), 0.3f, 1.3f);
 			Think(NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Thought", "딱지 밑에 303호가 써 붙인 게 있어. 겨울까지만 맡긴다고."), 3.6f);
 		}
 		RefreshStorage();
@@ -637,7 +637,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 		Take(PieceA);
 		Take(PieceB);
 		Take(PieceC);
-		Take(Frame);
+		Take(StorageFrame);
 		PlaySound(UIGToneSequenceSoundWave::CreatePlasticBagSetDown(this), PartsSack + FVector(0.0f, 0.0f, 30.0f), 0.5f);
 		Think(bHadOfficePieces
 			? NSLOCTEXT("IGMissingFloor", "LeftoverSackThought", "남은 조각 하나랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어.")
@@ -739,7 +739,7 @@ void AIGMissingFloorLeftoverDirector::TickWardrobeMove()
 		return;
 	}
 	const float Alpha = FMath::Clamp(static_cast<float>((GetWorld()->GetTimeSeconds() - WardrobeMoveStart) / 1.8), 0.0f, 1.0f);
-	Moving->SetWorldLocation(FMath::Lerp(WardrobeFrom, FVector(-138.0f, -85.0f, Z), Alpha * Alpha * (3.0f - 2.0f * Alpha)));
+	Moving->SetWorldLocation(FMath::Lerp(WardrobeFrom, FVector(-138.0f, -85.0f, StorageZ), Alpha * Alpha * (3.0f - 2.0f * Alpha)));
 	if (Alpha >= 1.0f)
 	{
 		GetWorldTimerManager().ClearTimer(WardrobeTimer);
@@ -857,7 +857,7 @@ void AIGMissingFloorLeftoverDirector::WalkJeongwooOut()
 		return;
 	}
 	// 바닥 틀 끝(61, 52)과 밀려난 판 서쪽 끝(24, 29) 사이를 지난다. 둘 다 20 cm 넘게 비킨다.
-	Jeongwoo->WalkRoute({JeongwooCorner, FVector(70.0f, 46.0f, Z), FVector(35.0f, 47.0f, Z), FVector(5.0f, 50.0f, Z), JeongwooOutSpot},
+	Jeongwoo->WalkRoute({JeongwooCorner, FVector(70.0f, 46.0f, StorageZ), FVector(35.0f, 47.0f, StorageZ), FVector(5.0f, 50.0f, StorageZ), JeongwooOutSpot},
 		false, AIGJeongwooFigure::EPose::Idle, 80.0f);
 }
 
@@ -879,7 +879,7 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 		{
 			SayIn(IGLeftoverDialogue::Brace, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceAgain", "상자요? 잠깐만요, 판 잡을게요."));
 			// 복도의 문설주 옆에서 돌아온다. 문간 가운데로 들어와야 벽 모서리를 안 뚫는다.
-			Route.Append({FVector(-30.0f, -252.0f, Z), FVector(-30.0f, -200.0f, Z)});
+			Route.Append({FVector(-30.0f, -252.0f, StorageZ), FVector(-30.0f, -200.0f, StorageZ)});
 		}
 		StorageStage = EStorage::Bracing;
 		StorageStageAt = GetWorld()->GetTimeSeconds();
@@ -933,8 +933,8 @@ void AIGMissingFloorLeftoverDirector::JeongwooLeave()
 	SayIn(IGLeftoverDialogue::DoorWait, JeongwooName(), bBoxLeft
 		? NSLOCTEXT("IGMissingFloor", "LeftoverLeaveBoxLine", "문 잡고 있을게요. 상자 뺄 거면 말해요, 판 잡아 줄게요.")
 		: NSLOCTEXT("IGMissingFloor", "LeftoverLeaveLine", "문 잡고 있을게요. 더 볼 거 있으면 보고 나와요."), true);
-	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), FVector(-30.0f, -120.0f, Z), FVector(-30.0f, -222.0f, Z),
-		FVector(-30.0f, -252.0f, Z), JeongwooDoorSpot}, false, AIGJeongwooFigure::EPose::HoldDoor, 100.0f);
+	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), FVector(-30.0f, -120.0f, StorageZ), FVector(-30.0f, -222.0f, StorageZ),
+		FVector(-30.0f, -252.0f, StorageZ), JeongwooDoorSpot}, false, AIGJeongwooFigure::EPose::HoldDoor, 100.0f);
 	RefreshStorage();
 }
 
@@ -972,7 +972,7 @@ void AIGMissingFloorLeftoverDirector::JeongwooGoDownstairs(const bool bTogether)
 	Say(JeongwooName(), bTogether
 		? NSLOCTEXT("IGMissingFloor", "LeftoverByeLine", "짐은 낮에 마저 뺄게요. 들어가세요.")
 		: NSLOCTEXT("IGMissingFloor", "LeftoverGoAheadLine", "저 먼저 내려갈게요. 문은 열어 둘게요. 오래 있지 마요."));
-	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), FVector(-120.0f, -300.0f, Z), AIGPrologueWorldScene::GetStairDoorwayFeet(2)},
+	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), FVector(-120.0f, -300.0f, StorageZ), AIGPrologueWorldScene::GetStairDoorwayFeet(2)},
 		false, AIGJeongwooFigure::EPose::Idle, 110.0f);
 	if (Manager)
 	{
@@ -1023,7 +1023,7 @@ bool AIGMissingFloorLeftoverDirector::StorageRoomBoxContainsPlayer() const
 {
 	const FVector Feet = GetPlayerFeet();
 	return Feet.X > -165.0f && Feet.X < 125.0f && Feet.Y > -218.0f && Feet.Y < 90.0f
-		&& Feet.Z > Z - 30.0f && Feet.Z < Z + 120.0f;
+		&& Feet.Z > StorageZ - 30.0f && Feet.Z < StorageZ + 120.0f;
 }
 
 void AIGMissingFloorLeftoverDirector::SelfEscapeAtDawn()
@@ -1201,7 +1201,7 @@ void AIGMissingFloorLeftoverDirector::RefreshAssembly()
 	const bool bLegacy = IsLegacyRun();
 	const FIGLeftoverState* State = Narrative ? &Narrative->GetLeftover() : nullptr;
 	const bool bTable = !bLegacy && Night >= 3 && State;
-	const bool bHaveFrame = HasTaken(Frame);
+	const bool bHaveFrame = HasTaken(StorageFrame);
 	const int32 Stage = State ? State->AssemblyStage : 0;
 	const bool bTaken = HasTaken(Cover);
 	const bool bPlaced[3] = {
@@ -1640,13 +1640,13 @@ bool AIGMissingFloorLeftoverDirector::IsPlayerAtAssemblyTable() const
 bool AIGMissingFloorLeftoverDirector::IsPlayerNearStorage() const
 {
 	// 302호 안이거나 문 앞 복도(문 길 X -30, 문 Y -230 둘레).
-	return StorageRoomBoxContainsPlayer() || IsPlayerNear(FVector(-30.0f, -300.0f, Z), 450.0f, 160.0f);
+	return StorageRoomBoxContainsPlayer() || IsPlayerNear(FVector(-30.0f, -300.0f, StorageZ), 450.0f, 160.0f);
 }
 
 int32 AIGMissingFloorLeftoverDirector::GetAssemblyHintStage() const
 {
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-	if (!Narrative || IsLegacyRun() || GetNightIndex() < 3 || !HasTaken(Frame) || HasTaken(Cover))
+	if (!Narrative || IsLegacyRun() || GetNightIndex() < 3 || !HasTaken(StorageFrame) || HasTaken(Cover))
 	{
 		return -1;
 	}

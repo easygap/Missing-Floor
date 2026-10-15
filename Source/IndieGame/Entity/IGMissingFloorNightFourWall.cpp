@@ -50,7 +50,7 @@ namespace IGNightFourWall
 	constexpr float OverlayMinY = 647.0f;
 	constexpr float OverlayMaxY = 753.0f;
 	constexpr float JointZ = 1383.0f;
-	const FRotator Facing(0.0f, 180.0f, 0.0f);
+	const FRotator BayFacing(0.0f, 180.0f, 0.0f);
 	const FVector BayCenter(250.0f, 700.0f, 1320.0f);
 	const FVector OverlaySpot(250.0f, 700.0f, JointZ);
 	const FVector BattenSpots[2] = {FVector(250.0f, 644.5f, 1320.0f), FVector(250.0f, 755.5f, 1320.0f)};
@@ -119,7 +119,7 @@ namespace IGNightFourWall
 
 	FTransform OverlayOnWall()
 	{
-		return FTransform(Facing, OverlaySpot);
+		return FTransform(BayFacing, OverlaySpot);
 	}
 
 	FTransform OverlayFallen()
@@ -130,7 +130,7 @@ namespace IGNightFourWall
 
 	FTransform BattenOnWall(const int32 Index)
 	{
-		return FTransform(Facing, BattenSpots[Index]);
+		return FTransform(BayFacing, BattenSpots[Index]);
 	}
 
 	FTransform BattenOnFloor(const int32 Index)
@@ -356,23 +356,23 @@ void AIGMissingFloorNightFourDirector::BuildWallStage(UStaticMesh* CubeMesh)
 		return Component;
 	};
 	WallOverlayTop = AddProp(TEXT("SM_AnnexOverlayTop"), TEXT("NightFourWallOverlayTop"), OverlayOnWall());
-	WallJointTape = AddProp(TEXT("SM_AnnexJointTape"), TEXT("NightFourWallJointTape"), FTransform(Facing, OverlaySpot));
-	WallJointTorn = AddProp(TEXT("SM_AnnexJointTorn"), TEXT("NightFourWallJointTorn"), FTransform(Facing, OverlaySpot));
+	WallJointTape = AddProp(TEXT("SM_AnnexJointTape"), TEXT("NightFourWallJointTape"), FTransform(BayFacing, OverlaySpot));
+	WallJointTorn = AddProp(TEXT("SM_AnnexJointTorn"), TEXT("NightFourWallJointTorn"), FTransform(BayFacing, OverlaySpot));
 	WallBattens.Reset();
 	for (int32 Index = 0; Index < 2; ++Index)
 	{
 		WallBattens.Add(AddProp(TEXT("SM_AnnexBatten"), FName(*FString::Printf(TEXT("NightFourWallBatten%d"), Index)),
 			BattenOnWall(Index)));
 	}
-	WallInnerFixings = AddProp(TEXT("SM_AnnexInnerFixings"), TEXT("NightFourWallInnerFixings"), FTransform(Facing, BayCenter));
-	WallAngleClip = AddProp(TEXT("SM_AnnexAngleClip"), TEXT("NightFourWallAngleClip"), FTransform(Facing, ClipSpot));
+	WallInnerFixings = AddProp(TEXT("SM_AnnexInnerFixings"), TEXT("NightFourWallInnerFixings"), FTransform(BayFacing, BayCenter));
+	WallAngleClip = AddProp(TEXT("SM_AnnexAngleClip"), TEXT("NightFourWallAngleClip"), FTransform(BayFacing, ClipSpot));
 	BraceFrame = AddProp(TEXT("SM_AnnexBraceFrame"), TEXT("NightFourBraceFrame"), BraceTransform(BraceLean));
 	BracePose = BraceLean;
 	HammerDents.Reset();
 	for (int32 Index = 0; Index < DentCount; ++Index)
 	{
 		if (UStaticMeshComponent* Dent = AddProp(TEXT("SM_HammerDent"), FName(*FString::Printf(TEXT("NightFourHammerDent%d"), Index)),
-			FTransform(Facing, BayCenter)))
+			FTransform(BayFacing, BayCenter)))
 		{
 			Dent->SetCastShadow(false);
 			ShowProp(Dent, false);

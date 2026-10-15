@@ -27,7 +27,7 @@ namespace IGLeftoverAnnex
 	const FVector Inspection(250.0f, 492.0f, 1265.0f);
 	const FVector2D InspectionSize(60.0f, 70.0f);
 	/** 처음 접혀 붙어 있는 자리. 남쪽 칸과 시신 칸 사이 기둥 위쪽, 덧댄 층의 일부처럼 보인다. */
-	const FVector Rest(250.0f, 640.0f, 1360.0f);
+	const FVector AnnexRest(250.0f, 640.0f, 1360.0f);
 	/**
 	 * 다 편 몸. 몸판은 점검구 북쪽 위 벽(Y 485..605, Z 1290..1370)에 납작하게 붙고, 다리는 몸 바깥으로
 	 * 뻗는다. 위 두 다리(0 남, 1 북)는 천장을, 아래 두 다리(2 남, 3 북)는 벽 아랫부분을 짚는다. 다리마다
@@ -131,7 +131,7 @@ void AIGMissingFloorLeftoverDirector::PrepareAnnexLining(const int32 WallStage, 
 	Lining->ReleasePin();
 	if (WallStage <= 0)
 	{
-		Lining->RestOnSurface(Rest, FVector(-1.0f, 0.0f, 0.0f), FVector::UpVector);
+		Lining->RestOnSurface(AnnexRest, FVector(-1.0f, 0.0f, 0.0f), FVector::UpVector);
 		return;
 	}
 	if (WallStage == 1)
