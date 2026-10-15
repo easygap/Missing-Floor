@@ -6,6 +6,7 @@
 
 class AIGAccessHatch;
 class AIGLiningEntity;
+class UAudioComponent;
 class UBoxComponent;
 class UCapsuleComponent;
 class UPoseableMeshComponent;
@@ -26,6 +27,18 @@ struct FIGLiningGap
 	FVector Up = FVector::UpVector;
 	/** 가로·세로(cm). 넓이로 고른다. */
 	FVector2D Size = FVector2D(45.0f, 45.0f);
+	/**
+	 * 몸 가운데를 틈 가운데에서 벽 면을 따라 비키는 거리. 틈 바로 옆에 판 같은 소품이 서 있으면 몸과 다리가
+	 * 소품을 뚫지 않게 반대쪽으로 비켜 누른다. 몸이 틈을 다 덮는 만큼만 비킨다.
+	 */
+	FVector BodyOffset = FVector::ZeroVector;
+	/**
+	 * 틈이 바닥에 붙어 있어 아래 다리 둘이 짚을 벽이 없다. 아래 다리는 몸 밑에 접고 위 다리 둘로만 짚는다
+	 * (펴면 바닥 밑이나 옆 소품을 짚고, 다리가 길어 무릎이 방 가운데로 나온다).
+	 */
+	bool bTuckLowerLegs = false;
+	/** 몸과 다리가 자리를 잡는 기준점(틈 가운데 + 비키는 거리). */
+	FVector BodyAnchor() const { return Center + BodyOffset; }
 	TWeakObjectPtr<AIGAccessHatch> Hatch;
 	bool bAlwaysOpen = false;
 	bool bSealed = false;
@@ -128,6 +141,8 @@ public:
 	/** 다리 패드 자리(검사·연출용). */
 	FVector GetPadLocation(int32 Leg) const;
 	FVector GetKneeLocation(int32 Leg) const;
+	/** 검사용. 다리가 엉덩이→무릎→패드 사이에서 벽이나 소품을 뚫으면 뚫은 것과 자리를, 아니면 빈 문자열. */
+	FString FindLegObstruction(int32 Leg) const;
 	/** 이 점이 몸이나 다리 둘레 Radius 안에 든다. */
 	bool IsPointNearBody(const FVector& Point, float Radius) const;
 
@@ -157,7 +172,7 @@ public:
 	/** 검사·장면용: 걸음 빠르기 배율. */
 	void SetPaceScale(float Scale) { PaceScale = FMath::Clamp(Scale, 0.25f, 4.0f); }
 	/** 소리를 낸다(검사에서 끌 수 있다). */
-	void SetAudible(bool bInAudible) { bAudible = bInAudible; }
+	void SetAudible(bool bInAudible) { bAudible = bInAudible; RefreshGapDrafts(); }
 	/** 검사용: 뼈 자리를 로그로 남긴다. */
 	void LogPose(const TCHAR* Tag) const;
 
@@ -194,6 +209,10 @@ private:
 		float Fold = 1.0f;
 		float FoldFrom = 1.0f;
 		float FoldTo = 1.0f;
+		/** 짚은 직후 패드가 면을 한 번 더 눌렀다 자리 잡는 정도(1에서 0으로 준다). */
+		float PlantKick = 0.0f;
+		/** 옮길 때 패드를 드는 높이 배율. 틈 둘레를 더듬을 때는 낮게 든다. */
+		float LiftScale = 1.0f;
 		/** 마지막으로 푼 관절 자리(검사·충돌용). */
 		FVector Hip = FVector::ZeroVector;
 		FVector Knee = FVector::ZeroVector;
@@ -216,6 +235,10 @@ private:
 	void UpdateSpread(float DeltaSeconds);
 	void UpdateRetreating(float DeltaSeconds);
 	void UpdateSwings(float DeltaSeconds);
+	/** 막고 있는 동안 다리 하나로 틈 둘레를 낮게 더듬는다(몇 초에 한 번). */
+	void UpdateProbing(float DeltaSeconds);
+	/** 지금 상태에서 몸이 눌리고 늘어나는 정도(몸 기준 X 앞, Y 옆, Z 면 법선). */
+	FVector ComputeBodySquash() const;
 	void StartSwing(int32 Leg, const FVector& Pad, const FVector& Normal, float FoldTarget);
 	bool FindContact(int32 Leg, const FVector& FutureBody, const FQuat& FutureRotation, const FVector& Travel, FVector& OutPad, FVector& OutNormal) const;
 	FVector HipWorld(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
@@ -226,6 +249,11 @@ private:
 	void SetObstructions(FName GapId, bool bObstructed);
 	void SealGap(FName GapId);
 	void PlayCue(const TCHAR* Sample, int32 Variants, const FVector& Where, float Volume, float Pitch);
+	/**
+	 * 열린 틈마다 벽 속으로 빨려 드는 바람 소리를 건다. 틈이 막히거나 닫히면 그 소리가 먹히듯
+	 * 줄며 끊긴다. 플레이어는 어디가 아직 열려 있는지를 귀로도 안다.
+	 */
+	void RefreshGapDrafts();
 	void Caption(const FText& Text, const FVector& Where, float Seconds, double& LastAt, float MinInterval);
 
 	UPROPERTY(VisibleAnywhere)
@@ -239,6 +267,10 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UCapsuleComponent>> LegBlockers;
+
+	/** 열린 틈의 바람 소리(틈 Id별). */
+	UPROPERTY(Transient)
+	TMap<FName, TObjectPtr<UAudioComponent>> GapDrafts;
 
 	// 뼈 이름과 쉬는 자세(컴포넌트 공간).
 	FName BodyBone;
@@ -295,6 +327,10 @@ private:
 	int32 PinnedLeg = INDEX_NONE;
 	FVector PinnedKnee = FVector::ZeroVector;
 
+	/** 몸 뼈에 거는 눌림·늘어남. 상태가 바뀌면 부드럽게 따라간다. */
+	FVector BodySquash = FVector::OneVector;
+	float ProbeSeconds = 0.0f;
+	int32 ProbeCount = 0;
 	double LastCreakCaptionAt = -100.0;
 	double LastPressCaptionAt = -100.0;
 	double LastCreakAt = -100.0;
