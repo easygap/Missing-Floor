@@ -2972,7 +2972,7 @@ msgstr "明け方、板が急に緩んだので、なんとか押しのけて出
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1573)
 msgctxt "IGMissingFloor,LeftoverJeongwooBoxAtDoor"
 msgid "새벽엔 진짜 고마웠어요. 표시해 둔 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요."
-msgstr "明け方は本当にありがとうございました。印をつけておいた箱、朝のうちに出して403号の前に置いておきました。あの部屋には、もうひとりで入らないでください。"
+msgstr "明け方は本当に助かりました。印をつけた箱は403号の前に置いておきました。もうあの部屋にひとりで行かないでください。"
 
 #. Key:	LeftoverJeongwooThanks
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1574)

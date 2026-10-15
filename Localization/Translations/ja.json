@@ -1477,7 +1477,7 @@
  "IGMissingFloor,LeftoverBraceAgain": "箱ですか？ちょっと待ってください、板を押さえます。",
  "IGMissingFloor,LeftoverBraceRelease": "板、下ろしますね。箱はあとでもう一回やりましょう。",
  "IGMissingFloor,LeftoverGoAheadLine": "僕、先に下りてますね。ドアは開けておきます。長居しないでください。",
- "IGMissingFloor,LeftoverJeongwooBoxAtDoor": "明け方は本当にありがとうございました。印をつけておいた箱、朝のうちに出して403号の前に置いておきました。あの部屋には、もうひとりで入らないでください。",
+ "IGMissingFloor,LeftoverJeongwooBoxAtDoor": "明け方は本当に助かりました。印をつけた箱は403号の前に置いておきました。もうあの部屋にひとりで行かないでください。",
  "IGMissingFloor,LeftoverDeliveredBoxPrompt": "箱を部屋に入れる",
  "IGMissingFloor,LeftoverDeliveredBoxThought": "ジョンウさんが印をつけてくれた箱だ。中にお兄ちゃんの工具袋が入ってる。",
  "IGHint,AssemblyFit1": "枠は裏を上にして置いてある。まず四隅の留め金を見よう。",
