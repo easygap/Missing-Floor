@@ -85,6 +85,14 @@ struct INDIEGAME_API FIGAccessibilitySettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Accessibility")
 	bool bSoundCaptionsEnabled = true;
 
+	/**
+	 * 소리 자막을 켰을 때 건물과 동네의 평범한 소리까지 글로 띄운다. 꺼 두면(기본)
+	 * 위협·대답·사건처럼 진행에 쓰이는 소리만 띄운다. 설정의 「소리 자막」 칸에서
+	 * 끔 → 중요한 소리 → 모든 소리 순으로 고른다.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Accessibility")
+	bool bBackgroundSoundCaptions = false;
+
 	/** Shared dialogue/caption scale; 2.0 preserves the 200% accessibility path. */
 	UPROPERTY(
 		EditAnywhere,
@@ -223,6 +231,13 @@ public:
 	bool AreSoundCaptionsEnabled() const
 	{
 		return EffectiveSettings.bSoundCaptionsEnabled;
+	}
+
+	/** 소리 자막이 켜져 있고 「모든 소리」까지 고른 경우. */
+	UFUNCTION(BlueprintPure, Category = "Accessibility|Subtitles")
+	bool AreBackgroundSoundCaptionsEnabled() const
+	{
+		return EffectiveSettings.bSoundCaptionsEnabled && EffectiveSettings.bBackgroundSoundCaptions;
 	}
 
 	UFUNCTION(BlueprintPure, Category = "Accessibility|Subtitles")

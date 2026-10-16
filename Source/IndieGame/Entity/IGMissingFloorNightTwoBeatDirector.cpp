@@ -831,7 +831,7 @@ void AIGMissingFloorNightTwoBeatDirector::PlayReturnChill()
 		160.0f,
 		1400.0f,
 		EIGAudioBus::World);
-	AIGHorrorHUD::PushAudioCaptionAt(
+	AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 		this,
 		NSLOCTEXT("IGMissingFloor", "N2ReturnCeilingCreak", "천장에서 한 번 삐걱거리는 소리"),
 		2.2f,

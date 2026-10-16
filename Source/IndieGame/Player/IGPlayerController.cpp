@@ -2775,8 +2775,14 @@ void AIGPlayerController::ChangeAccessibilitySetting(
 		Settings.bCognitiveAssist = !Settings.bCognitiveAssist;
 		break;
 	case IGSettingsMenuLayout::SoundCaptions:
-		Settings.bSoundCaptionsEnabled = !Settings.bSoundCaptionsEnabled;
+	{
+		// 끔 → 중요한 소리 → 모든 소리. 왼쪽 키는 거꾸로 돈다.
+		const int32 Level = !Settings.bSoundCaptionsEnabled ? 0 : (Settings.bBackgroundSoundCaptions ? 2 : 1);
+		const int32 Next = (Level + (Direction < 0 ? 2 : 1)) % 3;
+		Settings.bSoundCaptionsEnabled = Next > 0;
+		Settings.bBackgroundSoundCaptions = Next == 2;
 		break;
+	}
 	case IGSettingsMenuLayout::CaptionSize:
 		Settings.CaptionSizeScale = FMath::Clamp(
 			Settings.CaptionSizeScale + (Direction < 0 ? -0.10f : 0.10f),

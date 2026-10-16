@@ -128,7 +128,7 @@ Assert-ContainsAll $hudSource @(
 	'520.0f * ResolutionScale',
 	'840.0f * ResolutionScale',
 	'const bool bUseTextOutline = Settings.CaptionBackgroundOpacity < 0.42f',
-	'const float WaveHeights[] = {5.0f, 11.0f, 16.0f, 8.0f}',
+	'DrawAudioCaptionBearingGlyph(',
 	'const FString Inner = DisplayCaption.Mid(1, DisplayCaption.Len() - 2);',
 	'DisplayCaption = Inner.TrimStartAndEnd();',
 	'DrawDialogueFilm(',
@@ -136,6 +136,20 @@ Assert-ContainsAll $hudSource @(
 ) '2026 하단 글래스 표면·화자 칩·효과음 캡슐'
 Assert-True (-not $hudSource.Contains('FVector2D(3.0f * ResolutionScale, PanelHeight)')) (
 	'구형 디버그형 왼쪽 강조 막대가 남아 있다')
+# 소리 자막 칸에 대사 색 파형을 그리면 아무도 말하지 않는데 목소리가 나는 것처럼 보인다.
+Assert-True (-not $hudSource.Contains('const float WaveHeights[] = {5.0f, 11.0f, 16.0f, 8.0f}')) (
+	'소리 자막에 목소리처럼 보이는 파형 막대가 남아 있다')
+Assert-ContainsAll $hudSource @(
+	'Continuation.Context = CurrentAudioCaptionContext;',
+	'Continuation.SourceLocation = CurrentAudioCaptionSource;',
+	'Continuation.AudibleRadius = CurrentAudioCaptionRadius;',
+	'Continuation.bContinuation = true;',
+	'&& CurrentTime - Next.QueuedAt > 3.0 * FMath::Max(1.0f, GetCaptionDurationScale()))',
+	'IsSameAudioCaptionSource(CurrentAudioCaptionContext, CurrentAudioCaptionSource, Context, SourceLocation)',
+	'IsSameAudioCaptionSource(Queued.Context, Queued.SourceLocation, Context, SourceLocation)',
+	'BearingTag = MakeSoundBearingTag(this, CurrentAudioCaptionSource.GetValue());',
+	'if (!Voice || !Voice->IsPlaying() || (World && World->IsPaused()))'
+) '소리 자막의 다음 쪽 범위·같은 소리 판정·그릴 때 다시 재는 방향·실제 목소리에만 붙는 소리 크기'
 
 Assert-ContainsAll $accessibilityHeader @(
 	'bSubtitlesEnabled',
@@ -144,7 +158,9 @@ Assert-ContainsAll $accessibilityHeader @(
 	'CaptionBackgroundOpacity',
 	'CaptionSafeAreaScale',
 	'AreSubtitlesEnabled',
-	'AreSoundCaptionsEnabled'
+	'AreSoundCaptionsEnabled',
+	'bBackgroundSoundCaptions',
+	'AreBackgroundSoundCaptionsEnabled'
 ) '대사와 비언어음의 독립 접근성 설정'
 Assert-ContainsAll $accessibilitySource @(
 	'MaximumCaptionScale = 2.0f',
@@ -152,11 +168,14 @@ Assert-ContainsAll $accessibilitySource @(
 	'TEXT("CaptionBackgroundOpacity")',
 	'IGNoSubtitles',
 	'IGNoSoundCaptions',
+	'IGAllSoundCaptions',
+	'TEXT("BackgroundSoundCaptions")',
 	'IGCaptionBackground='
 ) '200% 확대·배경·명령행 검증 경로'
 Assert-ContainsAll $controller @(
 	'RowCount = IGSettingsMenuLayout::AccessibilityRowCount',
-	'Settings.bSoundCaptionsEnabled = !Settings.bSoundCaptionsEnabled',
+	'Settings.bSoundCaptionsEnabled = Next > 0;',
+	'Settings.bBackgroundSoundCaptions = Next == 2;',
 	'Settings.CaptionBackgroundOpacity = FMath::Clamp(',
 	'FrontendProbeNextActionTime = Now + 0.30',
 	'2.0f'

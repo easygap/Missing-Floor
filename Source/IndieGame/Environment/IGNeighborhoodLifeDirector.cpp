@@ -1891,7 +1891,7 @@ void AIGNeighborhoodLifeDirector::PlayScooterScreech(const int32 SlotIndex)
 	Wave->ConfigureNotes(MoveTemp(Notes), false);
 	const FVector At = ScooterRuntime[SlotIndex].Location + FVector(0.0f, 0.0f, 20.0f);
 	SpawnTransientOneShot(Wave, At, 0.9f, 220.0f, 2800.0f);
-	AIGHorrorHUD::PushAudioCaptionAt(
+	AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 		this,
 		NSLOCTEXT("IGMissingFloor", "CaptionScooterScreech", "[타이어 끌리는 소리]"),
 		1.6f,
@@ -1907,7 +1907,7 @@ void AIGNeighborhoodLifeDirector::PlayScooterWhoosh(const int32 SlotIndex, const
 	Notes.Add({0.05f, 0.40f, 1500.0f, 0.045f, 0.35f, 1.8f, EIGToneWaveform::BandNoise, 0.20f});
 	Wave->ConfigureNotes(MoveTemp(Notes), false);
 	SpawnTransientOneShot(Wave, At + FVector(0.0f, 0.0f, 120.0f), 0.9f, 140.0f, 900.0f);
-	AIGHorrorHUD::PushAudioCaptionAt(
+	AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 		this,
 		NSLOCTEXT("IGMissingFloor", "CaptionScooterWhoosh", "[오토바이가 스쳐 지나간다]"),
 		1.8f,

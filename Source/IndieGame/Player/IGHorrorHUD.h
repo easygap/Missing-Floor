@@ -139,6 +139,11 @@ struct FIGDialogueScope
 	/** 말하는 사람이 액터가 아니면(계산대 너머의 나린) 그 자리. */
 	TOptional<FVector> SpeakerLocation;
 	float EarshotRadius = 0.0f;
+	/**
+	 * 말이 들리는 곳에 있는가. 주면 거리 대신 이것으로 판단한다. 가게처럼 벽과 유리로 나뉜 곳은 반지름이
+	 * 문밖 골목까지 넘어가서, 가게를 나간 뒤에도 나린의 말이 이어졌다.
+	 */
+	TFunction<bool()> InEarshot;
 	bool bReplayIfInterrupted = false;
 };
 
@@ -168,6 +173,7 @@ struct FIGDialogueMessage
 /** Queued non-dialogue audio description; authored timings remain the source of truth. */
 struct FIGAudioCaptionMessage
 {
+	/** 방향 딱지를 붙이기 전의 문구. 딱지는 그릴 때마다 지금 시점으로 다시 잰다. */
 	FText Caption;
 	float DurationSeconds = 0.0f;
 	double QueuedAt = 0.0;
@@ -176,6 +182,21 @@ struct FIGAudioCaptionMessage
 	/** 소리가 난 자리와 들리는 거리. 0보다 크면 그 밖으로 벗어난 플레이어에게는 띄우지 않고, 떠 있던 것도 내린다. */
 	TOptional<FVector> SourceLocation;
 	float AudibleRadius = 0.0f;
+	/** 소리 난 자리로 방향 딱지([위]·[뒤])와 방향 표시를 붙인다. */
+	bool bShowBearing = false;
+	/** 지금 그 소리가 들리는 곳인가(가게 안처럼 방으로 가르는 경우). 주면 거리보다 먼저 본다. */
+	TFunction<bool()> Audible;
+	/** 긴 자막을 나눈 다음 쪽. 앞쪽이 떠 있던 동안 밀렸다고 버리지 않는다. */
+	bool bContinuation = false;
+};
+
+/** 소리 자막의 무게. 설정이 「중요한 소리」면 배경 소리는 글로 띄우지 않는다. */
+enum class EIGSoundCaptionWeight : uint8
+{
+	/** 위협이 다가오거나, 대답이 오거나, 사건이 일어난 소리. 진행에 필요하다. */
+	Important,
+	/** 건물과 동네의 평범한 소리, 같은 몸이 되풀이하는 소리. 「모든 소리」에서만 보인다. */
+	Background
 };
 
 /** Snapshot of controller-owned front-end state consumed by the native HUD. */
@@ -312,6 +333,14 @@ public:
 		const FVector& SourceLocation,
 		FName Context,
 		float AudibleRadius = 0.0f);
+	/** 범위를 붙인 소리 자막인데 들리는 곳을 거리 대신 조건으로 판단한다(벽으로 나뉜 방). */
+	static void PushAudioCaptionWhileAudible(
+		const UObject* WorldContext,
+		const FText& Caption,
+		float DurationSeconds,
+		const FVector& SourceLocation,
+		FName Context,
+		TFunction<bool()> Audible);
 	/** 그 사건의 대사와 소리 자막(떠 있는 것과 밀린 것)을 거둔다. */
 	static void CancelDialogue(
 		const UObject* WorldContext,
@@ -349,6 +378,15 @@ public:
 	 * 적으면 읽을 것만 늘어난다.
 	 */
 	static void PushAudioCaptionAt(
+		const UObject* WorldContext,
+		const FText& Caption,
+		float DurationSeconds,
+		const FVector& SourceLocation);
+	/**
+	 * 건물과 동네의 평범한 소리처럼 진행에 쓰이지 않는 소리의 자막. 소리 자막을
+	 * 「모든 소리」로 고른 사람에게만 보인다.
+	 */
+	static void PushBackgroundAudioCaptionAt(
 		const UObject* WorldContext,
 		const FText& Caption,
 		float DurationSeconds,
@@ -478,9 +516,12 @@ public:
 		float DurationSeconds,
 		FName Context,
 		const TOptional<FVector>& SourceLocation = TOptional<FVector>(),
-		float AudibleRadius = 0.0f);
-	/** 그 소리를 지금 플레이어가 들을 수 있는 거리인가. 자리나 거리를 모르면 들린다고 본다. */
-	bool IsAudioCaptionInRange(const TOptional<FVector>& SourceLocation, float AudibleRadius) const;
+		float AudibleRadius = 0.0f,
+		bool bShowBearing = false,
+		TFunction<bool()> Audible = nullptr);
+	/** 그 소리를 지금 플레이어가 들을 수 있는가. 조건이 있으면 조건, 없으면 거리. 자리나 거리를 모르면 들린다고 본다. */
+	bool IsAudioCaptionInRange(const TOptional<FVector>& SourceLocation, float AudibleRadius,
+		const TFunction<bool()>& Audible = nullptr) const;
 	void ShowFearDirection(const FVector& WorldLocation, float DurationSeconds);
 	/** §19.7. 저장됐다는 흔적 하나. 0.8초 뒤에 사라진다. */
 	void ShowSaveIndicator();
@@ -649,6 +690,12 @@ public:
 	{
 		return bHasCurrentDialogue ? CurrentDialogue.Line : FText::GetEmpty();
 	}
+	FText GetActiveDialogueSpeakerForTesting() const
+	{
+		return bHasCurrentDialogue ? CurrentDialogue.Speaker : FText::GetEmpty();
+	}
+	/** 검사용. 지금 떠 있는 소리 자막(방향 딱지 없이, 나눈 줄이면 지금 쪽). */
+	FText GetActiveAudioCaptionForTesting() const { return CurrentAudioCaption; }
 	/**
 	 * PushThought queues; it does not preempt. Reading only the line on screen
 	 * returns whatever was already speaking, so a probe that wants to know
@@ -848,6 +895,16 @@ private:
 		double CurrentTime);
 	void ActivateAudioCaption(FIGAudioCaptionMessage&& Message, double CurrentTime);
 	void AdvanceAudioCaptionQueue(double CurrentTime);
+	/** 같은 소리로 볼 것인가. 문구가 같아도 사건이나 자리가 다르면 다른 소리다. */
+	static bool IsSameAudioCaptionSource(
+		FName ContextA,
+		const TOptional<FVector>& SourceA,
+		FName ContextB,
+		const TOptional<FVector>& SourceB);
+	/** 소리 자막 칸 왼쪽의 방향 표시. 자리를 알면 소리 난 쪽을 가리키고, 모르면 한가운데 점만 찍는다. */
+	void DrawAudioCaptionBearingGlyph(const FVector2D& Center, float Radius, float Alpha);
+	/** 떠 있는 대사의 녹음 소리가 실제로 나고 있는 동안 화자 이름 옆에 소리 크기를 그린다. */
+	void DrawDialogueVoiceLevel(const FVector2D& Origin, float Height, float Alpha);
 	float MeasureTextWidth(const FString& Text, UFont* Font, float TextScale) const;
 	float MeasureTextHeight(const FString& Text, UFont* Font, float TextScale) const;
 	float GetFittedTextScale(
@@ -1076,6 +1133,12 @@ private:
 	/** 떠 있는 소리 자막의 자리와 들리는 거리. 그 밖으로 나가면 내린다. */
 	TOptional<FVector> CurrentAudioCaptionSource;
 	float CurrentAudioCaptionRadius = 0.0f;
+	/** 떠 있는 소리 자막에 소리 난 쪽을 붙인다. 고개를 돌리면 딱지도 따라 바뀐다. */
+	bool bCurrentAudioCaptionShowsBearing = false;
+	/** 떠 있는 소리 자막이 들리는 곳인지 보는 조건(없으면 거리로 본다). */
+	TFunction<bool()> CurrentAudioCaptionAudible;
+	/** 떠 있는 자막을 이미 화면 폭에 맞춰 나눴다. 나눈 앞쪽을 다시 나누지 않는다. */
+	bool bCurrentAudioCaptionPaged = false;
 	/** 자막 시계. 시작·끝·대기열이 모두 이 값으로 재진다. */
 	double AudioCaptionClockSeconds = 0.0;
 	/** 자막 시계를 마지막으로 흘린 월드의 멈춤 무관 시각. */

@@ -60,6 +60,8 @@ def main():
         set_property(wave, "sound_group", unreal.SoundGroup.SOUNDGROUP_VOICE)
         set_property(wave, "compression_quality", COMPRESSION_QUALITY)
         set_property(wave, "loading_behavior", unreal.SoundWaveLoadingBehavior.LOAD_ON_DEMAND)
+        # 대사 자막 옆의 소리 크기 표시는 쿡된 진폭 곡선을 읽는다. 없으면 나오는 동안 낮게만 선다.
+        set_property(wave, "enable_amplitude_envelope_analysis", True)
         unreal.EditorAssetLibrary.save_asset(f"{VOICE_ROOT}/{name}", False)
         imported += 1
         log(f"  {name} {entry.get('duration_seconds', 0)}s")

@@ -146,6 +146,13 @@ void UIGAccessibilitySubsystem::LoadPersistedSettings()
 		TEXT("SoundCaptionsEnabled"),
 		PersistedSettings.bSoundCaptionsEnabled,
 		GGameUserSettingsIni);
+	// 0.10.0까지는 켜고 끄는 것뿐이었다. 그때 저장한 「켬」은 설명대로 진행에 필요한 소리를
+	// 뜻했으므로 이 값이 없으면 「중요한 소리」로 읽는다. 끈 사람은 그대로 꺼져 있다.
+	GConfig->GetBool(
+		IGAccessibility::ConfigSection,
+		TEXT("BackgroundSoundCaptions"),
+		PersistedSettings.bBackgroundSoundCaptions,
+		GGameUserSettingsIni);
 	GConfig->GetFloat(
 		IGAccessibility::ConfigSection,
 		TEXT("CaptionSizeScale"),
@@ -275,6 +282,11 @@ void UIGAccessibilitySubsystem::SavePersistedSettings() const
 		IGAccessibility::ConfigSection,
 		TEXT("SoundCaptionsEnabled"),
 		PersistedSettings.bSoundCaptionsEnabled,
+		GGameUserSettingsIni);
+	GConfig->SetBool(
+		IGAccessibility::ConfigSection,
+		TEXT("BackgroundSoundCaptions"),
+		PersistedSettings.bBackgroundSoundCaptions,
 		GGameUserSettingsIni);
 	GConfig->SetFloat(
 		IGAccessibility::ConfigSection,
@@ -410,6 +422,11 @@ void UIGAccessibilitySubsystem::ApplyCommandLineOverrides(
 	if (FParse::Param(CommandLine, TEXT("IGNoSoundCaptions")))
 	{
 		Settings.bSoundCaptionsEnabled = false;
+	}
+	if (FParse::Param(CommandLine, TEXT("IGAllSoundCaptions")))
+	{
+		Settings.bSoundCaptionsEnabled = true;
+		Settings.bBackgroundSoundCaptions = true;
 	}
 
 	float HoldScale = Settings.HoldDurationScale;

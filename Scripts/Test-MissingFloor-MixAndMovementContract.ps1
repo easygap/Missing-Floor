@@ -710,7 +710,7 @@ $sourceRoot = Join-Path $projectRoot 'Source/IndieGame'
 foreach ($file in Get-ChildItem -Path $sourceRoot -Filter '*.cpp' -Recurse) {
 	$text = Get-Content -Raw -Encoding UTF8 -LiteralPath $file.FullName
 	foreach ($call in [regex]::Matches(
-		$text, '(?<!void )AIGHorrorHUD::PushAudioCaptionAt\((?<args>[\s\S]{0,400}?)\);')) {
+		$text, '(?<!void )AIGHorrorHUD::Push(?:Background)?AudioCaptionAt\((?<args>[\s\S]{0,400}?)\);')) {
 		$spatialCallCount++
 		foreach ($literal in [regex]::Matches(
 			$call.Groups['args'].Value, '"(?<text>[^"]*)"')) {
