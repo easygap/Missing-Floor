@@ -1,6 +1,6 @@
 {
   "sample_rate": 48000,
-  "license": "CC0 1.0 (OpenGameArt rubberduck, Kenney, Owlish Media)",
+  "license": "CC0 1.0 (OpenGameArt rubberduck, Kenney, Owlish Media); Store_* 직접 합성",
   "sounds": [
     {
       "name": "Foot_Concrete_0",
@@ -761,6 +761,30 @@
         "oga_owlish/Impacts/scrape2.wav"
       ],
       "note": "몸을 당길 때 막이 바닥과 벽을 쓸고 방음재가 끌린다"
+    },
+    {
+      "name": "Store_PosBeep",
+      "file": "Store_PosBeep.wav",
+      "loop": false,
+      "seconds": 0.105,
+      "sources": [],
+      "note": "직접 합성. 포스 화면 누르는 삑(압전 부저 2.73 kHz)과 손끝 톡"
+    },
+    {
+      "name": "Store_ReceiptPrint",
+      "file": "Store_ReceiptPrint.wav",
+      "loop": false,
+      "seconds": 1.64,
+      "sources": [],
+      "note": "직접 합성. 감열 프린터가 글줄을 끊어 찍고 빈 종이를 밀어 1.40초에 커터로 자른다"
+    },
+    {
+      "name": "Store_ReceiptPull",
+      "file": "Store_ReceiptPull.wav",
+      "loop": false,
+      "seconds": 0.14,
+      "sources": [],
+      "note": "직접 합성. 반쯤 잘린 감열지를 손으로 뜯는다"
     }
   ]
 }

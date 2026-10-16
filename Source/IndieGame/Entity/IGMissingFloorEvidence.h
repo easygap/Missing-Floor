@@ -108,6 +108,12 @@ private:
 	void RefreshReveal();
 	void ReportRubNoise(const FIGInteractionContext& Context);
 
+	/**
+	 * 단순 충돌이 없는 메시(계산대 벨처럼 UCX 없이 만든 작은 소품)에 붙이는 조준 상자. 상호작용은
+	 * 가시성 트레이스로 잡는데, 단순 충돌이 없으면 시선이 메시를 그냥 지나가 손을 댈 수 없었다.
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<class UBoxComponent> AimVolume;
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> RevealSurface;
 	UPROPERTY(Transient)

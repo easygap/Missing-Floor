@@ -1942,7 +1942,9 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
 				NSLOCTEXT("IGMissingFloor", "NarinReceiptAnswer", "포스에 남아 있을 거예요. 잠깐만요, 찾아볼게요."), TEXT("NarinReceiptAnswer")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
-				NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 관리실 아저씨가 대신 받아 가셨어요. 뽑아 드릴게요."), TEXT("NarinReceiptFound")},
+				NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 건물주 아저씨가 대신 받아 가셨어요. 한 장 뽑아 드릴게요."), TEXT("NarinReceiptFound")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+				NSLOCTEXT("IGMissingFloor", "NarinReceiptHere", "여기 있어요."), TEXT("NarinReceiptHere")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
 				NSLOCTEXT("IGMissingFloor", "NarinLineLastDayReceipt", "그 영수증 잘 챙겨 둬요. 필요하면 저도 본 대로 말할게요. 무슨 일 있으면 바로 이쪽으로 오세요."), TEXT("NarinLineLastDayReceipt")},
 			{TEXT('T'), FText::GetEmpty(),
@@ -1982,9 +1984,9 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('C'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverPushedCaption", "[휜 철골이 빠지고, 벽을 긁으며 물러나는 소리]"), TEXT("LeftoverPushedCaption")},
 			{TEXT('C'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기 누르는 소리]"), TEXT("StoreTerminalCaption")},
+				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기를 삑삑 누르는 소리]"), TEXT("StoreTerminalCaption")},
 			{TEXT('C'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "StorePrinterCaption", "[영수증이 뽑혀 나오는 소리]"), TEXT("StorePrinterCaption")},
+				NSLOCTEXT("IGMissingFloor", "StorePrinterCaption", "[영수증이 뽑혀 나오다 딸깍 잘리는 소리]"), TEXT("StorePrinterCaption")},
 		};
 		APlayerController* PC = GetWorld()->GetFirstPlayerController();
 		AIGHorrorHUD* Hud = PC ? Cast<AIGHorrorHUD>(PC->GetHUD()) : nullptr;

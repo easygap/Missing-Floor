@@ -4,6 +4,7 @@
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
 #include "Components/AudioComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/GameInstance.h"
@@ -13,6 +14,7 @@
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "Player/IGHorrorHUD.h"
 
 namespace IGMissingFloorEvidenceAudio
@@ -90,6 +92,27 @@ void AIGMissingFloorEvidence::Configure(
 			SetActorLocation(AuthoredCenter - WorldOriginOffset, false, nullptr,
 				ETeleportType::TeleportPhysics);
 		}
+		// 단순 충돌이 없는 메시는 상호작용 시선에 걸리지 않는다(복잡 충돌은 쓰지 않는다). 계산대 벨이
+		// 그래서 한 달 동안 눌리지 않았다. 메시 경계만 한 상자를 대신 세워 시선만 받게 한다.
+		const UBodySetup* Body = Mesh->GetBodySetup();
+		if (!Body || Body->AggGeom.GetElementCount() == 0)
+		{
+			if (!AimVolume)
+			{
+				AimVolume = NewObject<UBoxComponent>(this, TEXT("AimVolume"));
+				AimVolume->SetupAttachment(PresentationMesh);
+				AimVolume->SetMobility(EComponentMobility::Movable);
+				AimVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+				AimVolume->SetCollisionObjectType(ECC_WorldDynamic);
+				AimVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
+				AimVolume->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+				AimVolume->SetCanEverAffectNavigation(false);
+				AimVolume->SetGenerateOverlapEvents(false);
+				AimVolume->RegisterComponent();
+			}
+			AimVolume->SetRelativeLocation(Bounds.Origin);
+			AimVolume->SetBoxExtent(Bounds.BoxExtent);
+		}
 	}
 	if (Material)
 	{
@@ -100,6 +123,10 @@ void AIGMissingFloorEvidence::Configure(
 		}
 	}
 	PresentationMesh->SetMobility(EComponentMobility::Static);
+	if (AimVolume)
+	{
+		AimVolume->SetMobility(EComponentMobility::Static);
+	}
 
 	InteractionPrompt = Prompt;
 	ExamineThought = Thought;

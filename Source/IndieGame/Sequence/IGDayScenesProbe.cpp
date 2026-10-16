@@ -47,9 +47,9 @@ namespace IGDayScenesProbe
 	/** 공동현관 앞에서 연석의 오토바이(동쪽을 보고 선다)를 마주 보는 자리. 말을 걸 만한 거리다. */
 	const FVector CurbFeet(570.0f, -500.0f, 4.0f);
 	const FVector CurbRiderFace(395.0f, -472.0f, 115.0f);
-	// 편의점 계산대 앞 손님 자리에서 포스 앞 영수증을 본다.
-	const FVector StoreFeet(2652.0f, -296.0f, 6.0f);
-	const FVector StoreReceiptFace(2645.0f, -220.0f, 99.0f);
+	// 편의점 계산대 앞 손님 자리에서 프린터 앞에 놓인 영수증을 본다(AIGStoreClerk::GetReceiptRestTransform).
+	const FVector StoreFeet(2640.0f, -296.0f, 6.0f);
+	const FVector StoreReceiptFace(2580.0f, -221.0f, 99.0f);
 	constexpr float DawnTimeoutSeconds = 40.0f;
 	/**
 	 * 에필로그 「403호 문」을 찍는 카메라(4층 바닥 기준)와 가로 화각. 플레이어 카메라는 매 틱 화각을
@@ -604,7 +604,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 				if (bShots)
 				{
 					// 영수증은 「뽑아 드릴게요」까지 다 들은 뒤에 나온다. 그 말이 들은 말 기록에 이미 있어야 한다.
-					const FText Found = NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 관리실 아저씨가 대신 받아 가셨어요. 뽑아 드릴게요.");
+					const FText Found = NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 건물주 아저씨가 대신 받아 가셨어요. 한 장 뽑아 드릴게요.");
 					Check(Narrative->GetHeardLines().ContainsByPredicate([&Found](const FIGHeardLine& Entry) { return Entry.Line.EqualTo(Found); }),
 						TEXT("narin_reads_the_date"));
 				}

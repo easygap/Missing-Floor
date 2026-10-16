@@ -9,6 +9,10 @@ CC0(OpenGameart rubberduck·Kenney·Owlish Media)라 출처 표기 의무가 없
 
 산출물은 48 kHz 16비트 WAV. 루프는 끝과 시작을 겹쳐 이어 붙여 이음매가 없다.
 디코딩은 ffmpeg(winget Gyan.FFmpeg), 가공은 numpy·scipy.
+
+편의점 계산대 소리(Store_*)는 원본 녹음 없이 직접 합성한다. 포스 터치음은 원래 압전 부저가 내는
+합성음이고, 사용 조건이 분명한 감열 프린터 녹음은 구하지 못했다. 소리가 나는 원리(스테퍼 모터가
+한 걸음마다 케이스 공진을 치는 소리, 커터 날, 감열지 뜯기)대로 만들고 시드를 고정해 매번 같다.
 """
 
 from __future__ import annotations
@@ -165,6 +169,110 @@ def rumble(seconds: float, hz: float = 38.0, gain: float = 0.5, seed: int = 1) -
 # --------------------------------------------------------------------------
 # 목록
 # --------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+# 직접 합성한 계산대 소리
+# --------------------------------------------------------------------------
+
+def _store_rng() -> np.random.Generator:
+    return np.random.default_rng(20261016)
+
+
+def _resonator(x: np.ndarray, freq: float, q: float) -> np.ndarray:
+    w0 = 2 * np.pi * freq / SR
+    alpha = np.sin(w0) / (2 * q)
+    b = np.array([alpha, 0.0, -alpha]) / (1 + alpha)
+    a = np.array([1.0, -2 * np.cos(w0) / (1 + alpha), (1 - alpha) / (1 + alpha)])
+    return signal.lfilter(b, a, x)
+
+
+def _bandnoise(rng: np.random.Generator, n: int, lo: float, hi: float) -> np.ndarray:
+    sos = signal.butter(4, [lo / (SR / 2), hi / (SR / 2)], btype="band", output="sos")
+    return signal.sosfilt(sos, rng.standard_normal(n))
+
+
+def _ad(n: int, attack: float, release: float) -> np.ndarray:
+    e = np.ones(n)
+    a = max(1, int(attack * SR))
+    r = max(1, int(release * SR))
+    e[:a] = np.linspace(0, 1, a)
+    e[-r:] *= np.linspace(1, 0, r)
+    return e
+
+
+def synth_pos_beep() -> np.ndarray:
+    """포스 화면을 누를 때의 삑. 2.73 kHz 압전 부저와 손끝이 유리에 닿는 작은 톡."""
+    rng = _store_rng()
+    n = int(0.075 * SR)
+    t = np.arange(n) / SR
+    tone = np.sign(np.sin(2 * np.pi * 2730.0 * t)) * 0.6 + np.sin(2 * np.pi * 2730.0 * t) * 0.4
+    beep = _resonator(tone, 2730.0, 6.0) * _ad(n, 0.003, 0.012)
+    tap_n = int(0.012 * SR)
+    tap = _bandnoise(rng, tap_n, 900, 4500) * np.exp(-np.arange(tap_n) / (0.0025 * SR)) * 0.25
+    lead = int(0.010 * SR)
+    out = np.zeros(n + lead + int(0.02 * SR))
+    out[:tap_n] += tap
+    out[lead:lead + n] += beep / (np.max(np.abs(beep)) + 1e-9) * 0.55
+    return out
+
+
+def _stepper(rng: np.random.Generator, seconds: float, step_hz: float, level: float, line_hz: float) -> np.ndarray:
+    """스테퍼 모터 한 구간. 걸음마다 충격이 케이스와 롤러의 공진을 친다. 글줄마다 아주 잠깐 쉰다."""
+    n = int(seconds * SR)
+    x = np.zeros(n)
+    period = SR / step_hz
+    pos = 0.0
+    while pos < n:
+        x[int(pos)] += 1.0 + rng.normal(0, 0.12)
+        pos += period * (1.0 + rng.normal(0, 0.022))
+    body = (_resonator(x, 1150.0, 6.0) * 0.7 + _resonator(x, 2300.0, 9.0) * 1.0
+            + _resonator(x, 3500.0, 10.0) * 0.55 + _resonator(x, 5200.0, 12.0) * 0.25)
+    body = lowpass(body, 7500.0)
+    t = np.arange(n) / SR
+    paper = lowpass(_bandnoise(rng, n, 900, 5000), 6000.0) * 0.05
+    out = body / (np.max(np.abs(body)) + 1e-9) * 0.85 + paper
+    if line_hz > 0.0:
+        out *= 1.0 - 0.16 * (0.5 + 0.5 * np.sin(2 * np.pi * line_hz * t))
+    return out * _ad(n, 0.010, 0.025) * level
+
+
+def synth_receipt_print() -> np.ndarray:
+    """영수증 한 장(1.64초). 머리글은 촘촘해 천천히, 글줄은 짧게 끊어, 끝의 빈 종이는 빨리 밀고 1.40초에 자른다."""
+    rng = _store_rng()
+    segments = [(0.00, 0.30, 950.0, 1.0, 24.0), (0.36, 0.52, 1050.0, 0.9, 28.0), (0.57, 0.71, 1050.0, 0.9, 28.0),
+                (0.76, 0.92, 1080.0, 0.9, 28.0), (0.97, 1.10, 1050.0, 0.9, 28.0), (1.14, 1.36, 1500.0, 0.55, 0.0)]
+    out = np.zeros(int(1.64 * SR))
+    for start, end, hz, level, line_hz in segments:
+        burst = _stepper(rng, end - start, hz, level, line_hz)
+        s0 = int(start * SR)
+        out[s0:s0 + len(burst)] += burst
+    whir = _stepper(rng, 0.07, 1900.0, 0.6, 0.0)
+    clack_n = int(0.05 * SR)
+    k = np.arange(clack_n)
+    impulse = np.zeros(clack_n)
+    impulse[0] = 1.0
+    clack = (_bandnoise(rng, clack_n, 2500, 9000) * np.exp(-k / (0.004 * SR)) * 0.9
+             + _resonator(impulse, 420.0, 5.0) * 6.0 * np.exp(-k / (0.012 * SR)))
+    cut = np.zeros(int(0.22 * SR))
+    cut[:len(whir)] += whir
+    cut[int(0.055 * SR):int(0.055 * SR) + clack_n] += clack
+    cut[int(0.115 * SR):int(0.115 * SR) + clack_n] += clack * 0.45
+    s0 = int(1.40 * SR)
+    out[s0:s0 + len(cut)] += cut[:len(out) - s0]
+    return out
+
+
+def synth_receipt_pull() -> np.ndarray:
+    """반쯤 잘린 감열지를 손으로 뜯는 0.14초. 섬유가 끊기는 잔 딸깍이 촘촘하다."""
+    rng = _store_rng()
+    n = int(0.14 * SR)
+    x = np.zeros(n)
+    for _ in range(36):
+        x[int(rng.uniform(0.0, 0.11) * SR)] += rng.uniform(0.3, 1.0)
+    crackle = _resonator(x, 4200.0, 3.0) + _resonator(x, 7000.0, 4.0) * 0.6
+    swish = _bandnoise(rng, n, 2000, 8000) * 0.25
+    return (crackle / (np.max(np.abs(crackle)) + 1e-9) + swish) * _ad(n, 0.004, 0.04)
+
 
 def spec(packs: str):
     K = os.path.join(packs, "kenney_impact")
@@ -347,6 +455,13 @@ def spec(packs: str):
     add("Player_Gasp", [one(OW, "breath-female2.wav")],
         lambda x: normalize(fade(highpass(x[int(0.08 * SR):int(0.56 * SR)], 90.0), 0.015, 0.10), 0.60),
         note="유담이 짧게 숨을 들이킨다. 여성 호흡의 첫 숨만 사용, 피치 변경 없음")
+    # --- 편의점 계산대. 원본 녹음 없이 직접 합성한다(맨 위 설명). -----------------
+    add("Store_PosBeep", [], lambda: normalize(synth_pos_beep(), 0.55),
+        note="직접 합성. 포스 화면 누르는 삑(압전 부저 2.73 kHz)과 손끝 톡")
+    add("Store_ReceiptPrint", [], lambda: normalize(synth_receipt_print(), 0.7),
+        note="직접 합성. 감열 프린터가 글줄을 끊어 찍고 빈 종이를 밀어 1.40초에 커터로 자른다")
+    add("Store_ReceiptPull", [], lambda: normalize(synth_receipt_pull(), 0.5),
+        note="직접 합성. 반쯤 잘린 감열지를 손으로 뜯는다")
     return items
 
 
@@ -360,7 +475,7 @@ def main():
     FFMPEG = find_ffmpeg()
     out_dir = os.path.abspath(args.out)
     os.makedirs(out_dir, exist_ok=True)
-    manifest = {"sample_rate": SR, "license": "CC0 1.0 (OpenGameArt rubberduck, Kenney, Owlish Media)", "sounds": []}
+    manifest = {"sample_rate": SR, "license": "CC0 1.0 (OpenGameArt rubberduck, Kenney, Owlish Media); Store_* 직접 합성", "sounds": []}
     items = spec(os.path.abspath(args.packs))
     only = set(args.only or [])
     unknown = only - {item["name"] for item in items}
@@ -374,10 +489,14 @@ def main():
         if only and item["name"] not in only:
             continue
         decoded = [decode(src) for src in item["sources"]]
-        try:
-            result = item["build"](*decoded)
-        except TypeError:
-            result = item["build"](decoded[0])
+        if decoded:
+            try:
+                result = item["build"](*decoded)
+            except TypeError:
+                result = item["build"](decoded[0])
+        else:
+            # 원본 녹음 없이 합성한 소리.
+            result = item["build"]()
         result = np.asarray(result, dtype=np.float32)
         if not item["loop"]:
             result = fade(result, 0.002, 0.02)

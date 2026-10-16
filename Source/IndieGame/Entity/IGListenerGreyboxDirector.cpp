@@ -2,6 +2,7 @@
 #include "Sequence/IGListenerPursuitProbe.h"
 #include "Sequence/IGBathroomProbe.h"
 #include "Sequence/IGDayScenesProbe.h"
+#include "Sequence/IGStoreCounterProbe.h"
 #include "Sequence/IGEpiloguePreviewProbe.h"
 #include "Sequence/IGNeighbor303Probe.h"
 #include "Sequence/IGManagerKeyHuntProbe.h"
@@ -79,6 +80,7 @@
 #include "Environment/IGDustSubsystem.h"
 #include "Environment/IGNeighborhoodLifeDirector.h"
 #include "Environment/IGSettledDustComponent.h"
+#include "Environment/IGStoreClerk.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "Player/IGBeamDustComponent.h"
 #include "Player/IGFlashlightComponent.h"
@@ -432,6 +434,16 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 				Preview->Configure(
 					Player.Get(),
 					EpiloguePreview == TEXT("B") ? FName(TEXT("Ending.B")) : FName(TEXT("Ending.A")));
+			}
+			return;
+		}
+		// 편의점 계산대 장면을 실제 입력으로 겪는 검사(나린의 단말기·영수증, 나갔다 다시 들어오기).
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGStoreCounterProbe")) || FCString::Strifind(FCommandLine::Get(), TEXT("-IGStoreCounterProbe=")))
+		{
+			if (ManagerPatrol) { ManagerPatrol->SetActorTickEnabled(false); }
+			if (AIGStoreCounterProbe* StoreProbe = GetWorld()->SpawnActor<AIGStoreCounterProbe>())
+			{
+				StoreProbe->Configure(Player.Get(), this);
 			}
 			return;
 		}
@@ -1746,11 +1758,11 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 		NeighborhoodDeliveryNote->OnReadStateChanged.AddDynamic(this, &AIGListenerGreyboxDirector::HandleNeighborhoodDeliveryRead);
 	}
 
-	// 계산대 위, 포스와 카드 단말기 사이에서 손님 쪽으로 밀어 둔 자리. 나린이 포스에서 뽑아 준
-	// 감열지 한 장이다(뽑기 전에는 없다).
+	// 계산대 위 감열 프린터 바로 앞, 손님 쪽 상판. 나린이 포스에서 뽑아 뜯어 놓은 감열지 한 장이다
+	// (뽑기 전에는 없다). 자리는 나린이 종이를 내려놓는 몸짓과 같은 값을 쓴다.
 	Parameters.Name = TEXT("StoreParcelReceipt");
 	StoreParcelReceipt = World->SpawnActor<AIGReadableNote>(AIGReadableNote::StaticClass(),
-		FTransform(FRotator(0.0f, 100.0f, 0.0f), FVector(2645.0f, -220.0f, 99.1f)), Parameters);
+		AIGStoreClerk::GetReceiptRestTransform(), Parameters);
 	if (StoreParcelReceipt)
 	{
 		StoreParcelReceipt->ConfigurePrototypeVisuals(CubeMesh,
@@ -2831,10 +2843,13 @@ namespace IGListenerGreybox
 	const FName StoreReceiptContext(TEXT("Store.Receipt"));
 	/** 영수증 장면 밖에서 계산대를 사이에 두고 나누는 말. */
 	const FName StoreCounterTalkContext(TEXT("Store.CounterTalk"));
-	constexpr float StoreCounterEarshotRadius = 650.0f;
-	/** 계산대 가운데(손님이 서는 앞쪽 가장자리 근처)와 포스. */
+	/** 계산대 가운데(손님이 서는 앞쪽 가장자리 근처). 포스와 프린터 자리는 AIGStoreClerk가 갖는다. */
 	const FVector StoreCounterCenter(2600.0f, -230.0f, 100.0f);
-	const FVector StorePosLocation(2608.0f, -190.0f, 110.0f);
+	/**
+	 * 가게 안 바닥. 서쪽 유리와 자동문(X 2405..2413), 동쪽 벽 X 3120, 남북 벽 Y -830·-40
+	 * (IGPrologueWorldScene::BuildStore). 자동문 문턱을 넘어서야 안이다.
+	 */
+	const FBox StoreInterior(FVector(2420.0f, -820.0f, -100.0f), FVector(3110.0f, -50.0f, 400.0f));
 	/** 계산대 안에 선 나린의 입 높이. 녹음된 말은 여기서 난다. */
 	const FVector NarinVoiceLocation(2590.0f, -128.0f, 158.0f);
 	/** 나린의 말이 끝났다는 알림이 오지 않는 실행(화면 없는 검사)에서 다음 단계로 넘어가기까지. */
@@ -2842,8 +2857,6 @@ namespace IGListenerGreybox
 	constexpr float StoreReceiptFoundFallbackSeconds = 12.0f;
 	/** 화면이 그려지는 판에서 나린의 말이 아직 줄에 있으면 이만큼 더 기다린다. */
 	constexpr float StoreReceiptFallbackRetrySeconds = 4.0f;
-	/** 단말기·출력기 소리가 들리는 거리(소리의 감쇠 끝 700 cm보다 조금 넉넉히). 가게를 나가면 그 설명도 내린다. */
-	constexpr float StoreSoundAudibleRadius = 900.0f;
 	static bool IsNarinReceiptTalkDue(const UIGMissingFloorNarrativeSubsystem& Narrative)
 	{
 		return Narrative.HasBeatPlayed(FName(TEXT("Neighborhood.DeliveryDiscussed")))
@@ -2877,6 +2890,12 @@ bool AIGListenerGreyboxDirector::TalkAtStoreCounter()
 	{
 		return false;
 	}
+	// 나린이 단말기를 누르거나 영수증을 뽑는 중이다. 벨만 울리고 다음 질문은 하지 않는다. 묻고 답하는 줄이
+	// 일하는 몸짓과 겹치면 날짜를 말하는 줄이 뒤로 밀렸다.
+	if (StoreReceiptStep >= 1 && StoreReceiptStep <= 3)
+	{
+		return false;
+	}
 	LastCounterTalkAt = Now;
 	// 말하던 중에 가게를 나갔다가 다시 벨을 누르면 끊긴 데부터 잇는다.
 	if (AIGHorrorHUD::ResumeInterruptedTalk(this, IGListenerGreybox::StoreCounterTalkContext))
@@ -2904,7 +2923,8 @@ bool AIGListenerGreyboxDirector::TalkAtStoreCounter()
 		}
 		Scope.Context = IGListenerGreybox::StoreCounterTalkContext;
 		Scope.SpeakerLocation = IGListenerGreybox::StoreCounterCenter;
-		Scope.EarshotRadius = IGListenerGreybox::StoreCounterEarshotRadius;
+		// 가게 안에서만 들린다. 나가면 끊기고, 다시 들어와 벨을 누르면 끊긴 데부터 잇는다.
+		Scope.InEarshot = [WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); };
 		Scope.bReplayIfInterrupted = true;
 		return Scope;
 	};
@@ -3376,9 +3396,24 @@ bool AIGListenerGreyboxDirector::IsPlayerNearStoreCounter() const
 	{
 		return false;
 	}
-	// 계산대 앞 손님 자리에서 가게 안쪽까지. 문밖 골목에서는 나린의 말이 들리지 않는다.
-	const FVector Delta = Pawn->GetActorLocation() - IGListenerGreybox::StoreCounterCenter;
-	return Delta.Size2D() < 650.0f && FMath::Abs(Delta.Z) < 300.0f;
+	// 가게 안(벽과 유리 안쪽)이다. 예전에는 계산대에서 650 cm 원이라 자동문 밖 골목까지 들어가서,
+	// 가게를 나간 뒤에도 나린이 말을 잇고 단말기 소리 자막이 떴다(실제 입력 검사로 잡음).
+	const FVector At = Pawn->GetActorLocation();
+	return IGListenerGreybox::StoreInterior.IsInsideXY(At)
+		&& FMath::Abs(At.Z - IGListenerGreybox::StoreCounterCenter.Z) < 300.0f;
+}
+
+AIGStoreClerk* AIGListenerGreyboxDirector::FindStoreClerk()
+{
+	if (!StoreClerk.IsValid())
+	{
+		for (TActorIterator<AIGStoreClerk> It(GetWorld()); It; ++It)
+		{
+			StoreClerk = *It;
+			break;
+		}
+	}
+	return StoreClerk.Get();
 }
 
 void AIGListenerGreyboxDirector::ContinueStoreReceipt(const bool bTalkCompleted)
@@ -3389,46 +3424,68 @@ void AIGListenerGreyboxDirector::ContinueStoreReceipt(const bool bTalkCompleted)
 	}
 	StoreReceiptStep = 2;
 	GetWorldTimerManager().ClearTimer(StoreReceiptTimer);
-	if (!bTalkCompleted || !IsPlayerNearStoreCounter())
+	AIGStoreClerk* Clerk = FindStoreClerk();
+	if (!bTalkCompleted || !IsPlayerNearStoreCounter() || !Clerk)
 	{
 		// 그녀가 가게를 나갔다. 나린은 혼자 찾아 뽑아 두고, 돌아오면 계산대에 영수증이 있다.
-		StoreReceiptStep = 3;
-		RefreshStoreReceipt();
+		PlaceStoreReceiptQuietly();
 		return;
 	}
-	const FVector Counter = IGListenerGreybox::StorePosLocation;
-	IGAudio::SpawnOneShotAt(this, UIGToneSequenceSoundWave::CreateMenuTick(this, true), Counter,
-		0.5f, 0.85f, 60.0f, 700.0f, EIGAudioBus::World);
-	AIGHorrorHUD::PushAudioCaptionScoped(this,
-		NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기 누르는 소리]"), 2.2f, Counter,
-		IGListenerGreybox::StoreReceiptContext, IGListenerGreybox::StoreSoundAudibleRadius);
-	GetWorldTimerManager().SetTimer(StoreReceiptTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+	// 나린이 포스 화면을 들여다보며 메뉴를 고르고 날짜를 넣는다. 누를 때마다 몸이 숙여지고 그때 삑 소리가 난다.
+	TWeakObjectPtr<AIGListenerGreyboxDirector> WeakThis(this);
+	const float Seconds = Clerk->StartTask(EIGClerkTask::SearchRecord, [WeakThis](const EIGClerkCue Cue)
 	{
-		TWeakObjectPtr<AIGListenerGreyboxDirector> WeakThis(this);
-		FIGDialogueScope Scope;
-		Scope.Context = IGListenerGreybox::StoreReceiptContext;
-		Scope.Owner = this;
-		Scope.StillValid = [WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); };
-		Scope.OnEnded = [WeakThis](EIGDialogueEndReason)
+		AIGListenerGreyboxDirector* Self = WeakThis.Get();
+		if (!Self)
 		{
-			if (AIGListenerGreyboxDirector* Self = WeakThis.Get())
-			{
-				Self->PrintStoreReceipt();
-			}
-		};
-		IGVoice::Say(this, NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
-			NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 관리실 아저씨가 대신 받아 가셨어요. 뽑아 드릴게요."),
-			MoveTemp(Scope), []() { return IGListenerGreybox::NarinVoiceLocation; });
-		// 끝 알림이 오지 않는 실행을 위한 대비.
-		GetWorldTimerManager().SetTimer(StoreReceiptTimer, this, &AIGListenerGreyboxDirector::HandleStoreReceiptFallback,
-			IGListenerGreybox::StoreReceiptFoundFallbackSeconds, false);
-	}), 2.6f, false);
+			return;
+		}
+		if (Cue == EIGClerkCue::FirstTap)
+		{
+			AIGHorrorHUD::PushAudioCaptionWhileAudible(Self,
+				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기를 삑삑 누르는 소리]"), 2.4f,
+				AIGStoreClerk::GetPosScreen(), IGListenerGreybox::StoreReceiptContext,
+				[WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); });
+		}
+		else if (Cue == EIGClerkCue::Finished)
+		{
+			Self->SayStoreReceiptFound();
+		}
+	});
+	// 끝 알림이 오지 않는 실행을 위한 대비.
+	GetWorldTimerManager().SetTimer(StoreReceiptTimer, this, &AIGListenerGreyboxDirector::HandleStoreReceiptFallback,
+		Seconds + IGListenerGreybox::StoreReceiptFoundFallbackSeconds, false);
+}
+
+void AIGListenerGreyboxDirector::SayStoreReceiptFound()
+{
+	if (StoreReceiptStep != 2)
+	{
+		return;
+	}
+	TWeakObjectPtr<AIGListenerGreyboxDirector> WeakThis(this);
+	FIGDialogueScope Scope;
+	Scope.Context = IGListenerGreybox::StoreReceiptContext;
+	Scope.Owner = this;
+	Scope.StillValid = [WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); };
+	Scope.OnEnded = [WeakThis](EIGDialogueEndReason)
+	{
+		if (AIGListenerGreyboxDirector* Self = WeakThis.Get())
+		{
+			Self->PrintStoreReceipt();
+		}
+	};
+	IGVoice::Say(this, NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+		NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 건물주 아저씨가 대신 받아 가셨어요. 한 장 뽑아 드릴게요."),
+		MoveTemp(Scope), []() { return IGListenerGreybox::NarinVoiceLocation; });
 }
 
 void AIGListenerGreyboxDirector::HandleStoreReceiptFallback()
 {
-	if (AIGHorrorHUD::IsPresentingDialogue(this)
-		&& AIGHorrorHUD::HasDialogueInContext(this, IGListenerGreybox::StoreReceiptContext))
+	AIGStoreClerk* Clerk = FindStoreClerk();
+	if ((AIGHorrorHUD::IsPresentingDialogue(this)
+			&& AIGHorrorHUD::HasDialogueInContext(this, IGListenerGreybox::StoreReceiptContext))
+		|| (Clerk && Clerk->IsBusy()))
 	{
 		GetWorldTimerManager().SetTimer(StoreReceiptTimer, this, &AIGListenerGreyboxDirector::HandleStoreReceiptFallback,
 			IGListenerGreybox::StoreReceiptFallbackRetrySeconds, false);
@@ -3442,6 +3499,22 @@ void AIGListenerGreyboxDirector::HandleStoreReceiptFallback()
 	{
 		PrintStoreReceipt();
 	}
+	else if (StoreReceiptStep == 3)
+	{
+		// 뽑던 중에 신호가 끊겼다(나린이 사라졌다). 영수증은 놓여 있어야 한다.
+		PlaceStoreReceiptQuietly();
+	}
+}
+
+void AIGListenerGreyboxDirector::PlaceStoreReceiptQuietly()
+{
+	if (StoreReceiptStep >= 4)
+	{
+		return;
+	}
+	StoreReceiptStep = 4;
+	GetWorldTimerManager().ClearTimer(StoreReceiptTimer);
+	RefreshStoreReceipt();
 }
 
 void AIGListenerGreyboxDirector::PrintStoreReceipt()
@@ -3450,18 +3523,49 @@ void AIGListenerGreyboxDirector::PrintStoreReceipt()
 	{
 		return;
 	}
-	StoreReceiptStep = 3;
 	GetWorldTimerManager().ClearTimer(StoreReceiptTimer);
-	if (IsPlayerNearStoreCounter())
+	AIGStoreClerk* Clerk = FindStoreClerk();
+	if (!IsPlayerNearStoreCounter() || !Clerk)
 	{
-		const FVector Counter = IGListenerGreybox::StorePosLocation;
-		IGAudio::SpawnOneShotAt(this, UIGToneSequenceSoundWave::CreateJournalPageTurn(this), Counter,
-			0.45f, 1.35f, 60.0f, 700.0f, EIGAudioBus::World);
-		AIGHorrorHUD::PushAudioCaptionScoped(this,
-			NSLOCTEXT("IGMissingFloor", "StorePrinterCaption", "[영수증이 뽑혀 나오는 소리]"), 2.2f, Counter,
-			IGListenerGreybox::StoreReceiptContext, IGListenerGreybox::StoreSoundAudibleRadius);
+		PlaceStoreReceiptQuietly();
+		return;
 	}
-	RefreshStoreReceipt();
+	StoreReceiptStep = 3;
+	// 출력을 누르고 프린터 쪽으로 돌아선다. 종이가 밀려 나오는 동안 소리가 나고, 커터가 자른 종이를
+	// 뜯어 손님 앞 상판에 놓는다. 영수증은 놓는 순간 계산대에 선다.
+	TWeakObjectPtr<AIGListenerGreyboxDirector> WeakThis(this);
+	const float Seconds = Clerk->StartTask(EIGClerkTask::PrintReceipt, [WeakThis](const EIGClerkCue Cue)
+	{
+		AIGListenerGreyboxDirector* Self = WeakThis.Get();
+		if (!Self)
+		{
+			return;
+		}
+		if (Cue == EIGClerkCue::PrintStarted)
+		{
+			AIGHorrorHUD::PushAudioCaptionWhileAudible(Self,
+				NSLOCTEXT("IGMissingFloor", "StorePrinterCaption", "[영수증이 뽑혀 나오다 딸깍 잘리는 소리]"), 2.4f,
+				AIGStoreClerk::GetPrinterExit(), IGListenerGreybox::StoreReceiptContext,
+				[WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); });
+		}
+		else if (Cue == EIGClerkCue::ReceiptPlaced)
+		{
+			Self->PlaceStoreReceiptQuietly();
+		}
+		else if (Cue == EIGClerkCue::Finished && Self->IsPlayerNearStoreCounter())
+		{
+			FIGDialogueScope Scope;
+			Scope.Context = IGListenerGreybox::StoreReceiptContext;
+			Scope.Owner = Self;
+			Scope.Lifetime = EIGDialogueLifetime::Reaction;
+			Scope.StillValid = [WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); };
+			IGVoice::Say(Self, NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+				NSLOCTEXT("IGMissingFloor", "NarinReceiptHere", "여기 있어요."),
+				MoveTemp(Scope), []() { return IGListenerGreybox::NarinVoiceLocation; });
+		}
+	});
+	GetWorldTimerManager().SetTimer(StoreReceiptTimer, this, &AIGListenerGreyboxDirector::HandleStoreReceiptFallback,
+		Seconds + IGListenerGreybox::StoreReceiptFallbackRetrySeconds, false);
 }
 
 void AIGListenerGreyboxDirector::RefreshStoreReceipt()
@@ -3471,7 +3575,9 @@ void AIGListenerGreyboxDirector::RefreshStoreReceipt()
 		return;
 	}
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	// 나린이 찾고 뽑는 동안(1~3)에는 아직 없다. 불러온 판(0)은 이미 놓인 것으로 본다.
 	const bool bOnCounter = Narrative
+		&& (StoreReceiptStep == 0 || StoreReceiptStep >= 4)
 		&& Narrative->HasBeatPlayed(IGListenerGreybox::NarinReceiptBeat)
 		&& (!Narrative->HasBeatPlayed(IGListenerGreybox::NarinReceiptTakenBeat) || StoreParcelReceipt->IsOpen())
 		&& !Narrative->IsHourSealed();
@@ -3808,7 +3914,7 @@ void AIGListenerGreyboxDirector::PlayArrivalBaselineEvent()
 				EIGAudioBus::World);
 		};
 		AdvanceStairs();
-		AIGHorrorHUD::PushAudioCaptionAt(
+		AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 			this,
 			NSLOCTEXT("IGMissingFloor", "BaselineStairsCaption", "계단을 내려가는 발소리"),
 			2.4f,
@@ -3836,7 +3942,7 @@ void AIGListenerGreyboxDirector::PlayArrivalBaselineEvent()
 			120.0f,
 			1100.0f,
 			EIGAudioBus::World);
-		AIGHorrorHUD::PushAudioCaptionAt(
+		AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 			this,
 			NSLOCTEXT("IGMissingFloor", "BaselinePipeCaption", "벽 속 배관으로 물 내려가는 소리"),
 			2.2f,
@@ -3890,7 +3996,7 @@ void AIGListenerGreyboxDirector::PlayArrivalBaselineEvent()
 			150.0f,
 			1400.0f,
 			EIGAudioBus::World);
-		AIGHorrorHUD::PushAudioCaptionAt(
+		AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 			this,
 			NSLOCTEXT("IGMissingFloor", "BaselineDoorCaption", "현관문 닫히는 소리"),
 			2.0f,
@@ -5596,7 +5702,7 @@ void AIGListenerGreyboxDirector::PlayNightOpeningSettle()
 		160.0f,
 		1400.0f,
 		EIGAudioBus::World);
-	AIGHorrorHUD::PushAudioCaptionAt(
+	AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 		this,
 		NSLOCTEXT("IGMissingFloor", "NightOpeningCreak", "나무 삐걱거리는 소리"),
 		2.2f,

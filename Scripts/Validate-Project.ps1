@@ -754,7 +754,12 @@ $reviewedTickingFiles = @(
 	# -IGLeftoverProbe에서만 생성한다. 「302호에 남은 짐」을 낮1부터 밤4 벽까지 겪고 종료한다.
 	'IGLeftoverProbe.cpp',
 	# -IGNightFlowProbe에서만 생성한다. 밤의 목표·쉬기·05:30·불러오기를 한 번씩 겪고 종료한다.
-	'IGNightFlowProbe.cpp'
+	'IGNightFlowProbe.cpp',
+	# 계산대의 나린. 손님이 가게 근처에 있거나 단말기·프린터 일을 하는 동안에만 켠다. 몸짓과 그 몸짓의
+	# 소리(삑, 출력, 뜯기)를 같은 프레임에 맞춘다. 켜고 끄는 판단은 0.1초 타이머가 맡는다.
+	'IGStoreClerk.cpp',
+	# -IGStoreCounterProbe에서만 생성한다. 편의점 계산대 장면을 실제 입력으로 겪고 종료한다.
+	'IGStoreCounterProbe.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)
