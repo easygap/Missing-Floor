@@ -76,7 +76,6 @@ $prepareArt = Read-ProjectText 'Scripts/Prepare-AIArt.ps1'
 $surfaceTextures = Read-ProjectText 'Scripts/generate_surface_textures.py'
 $artBuild = Read-ProjectText 'Scripts/Build-ArtAssets.ps1'
 $assetPolicy = Read-ProjectText 'Docs/ASSET_POLICY.md'
-$imageGenRecord = Read-ProjectText 'Docs/IMAGEGEN_PROMPTS_2026-08-11.md'
 
 Assert-ContainsAll $inputConfig @(
 	'DefaultPlayerInputClass=/Script/EnhancedInput.EnhancedPlayerInput',
@@ -284,14 +283,9 @@ Assert-ContainsAll $assetPolicy @(
 	'36C3E5BA1829C36D0B8CE967DFEF5719768E3AC02ABD444F088437F448DD58E1',
 	'SheetFirstPersonKnockPhases_v2.png',
 	'412D9173E7EE8AFD2270CF45008E3904AC0530DF2D0CDFCFEBCBC3A6DD9241E7',
+	'균일 초록 배경',
 	'UI-space 전용'
 ) 'first-person sprite provenance'
-Assert-ContainsAll $imageGenRecord @(
-	'Asset type: production game animation sprite sheet',
-	'perfectly flat solid #00ff00 chroma-key background',
-	'36C3E5BA1829C36D0B8CE967DFEF5719768E3AC02ABD444F088437F448DD58E1',
-	'412D9173E7EE8AFD2270CF45008E3904AC0530DF2D0CDFCFEBCBC3A6DD9241E7'
-) 'first-person ImageGen prompt record'
 
 foreach ($relativeAsset in @(
 	'Content/SourceArt/AI/SheetFirstPersonKnockPhases_v1.png',

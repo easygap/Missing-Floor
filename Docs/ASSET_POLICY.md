@@ -325,6 +325,18 @@ OpenAI 이미지 생성으로 생성하고 각 항목의 생성 방식과 날짜
   블렌딩한다. 기존 3D/PBR 세계, 충돌, 조명과 접촉 그림자는 교체하지 않는다.
   흔들림 감소는 접촉 정지 프레임을 사용한다.
 
+### M6.5 401호 메모 종이 생성 기록
+
+- 서비스/모드: OpenAI 이미지 생성, `stylized-concept`, 입력 이미지 없음
+- 생성일: 2026-08-12
+- 보존 원본: `Content/SourceArt/AI/TextureCaptureMercyNotePaper_D.png`
+- 원본 SHA-256:
+  `FEC6D7DDF6611A8E355FDABDE6B1B4AD607ADCB66EF66FAB35238E4AED7FFB99`
+- 파생: `Content/SourceArt/T_CaptureMercyNote_D.png`
+- 적용 경계: 생성물은 종이 섬유·접힘·손때만 담당한다. 「소리를 줄여라. 걔는
+  눈이 없어.」 문구는 `Create-SignTextures.ps1`이 시스템 한글 글꼴로 합성해
+  철자와 명암 대비를 고정한다.
+
 ### 사용을 중단한 포획 이미지
 
 2026-08-11에 만든 `SheetListenerCaptureEmbracePhases_v1`과 파생 텍스처

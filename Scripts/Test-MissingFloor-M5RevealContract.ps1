@@ -30,7 +30,7 @@ function Assert-ContainsAll {
 
 $story = Read-ProjectText 'Docs/STORY_BIBLE_MISSING_FLOOR.md'
 $matrix = Read-ProjectText 'Docs/MISSING_FLOOR_ART_MATRIX.md'
-$promptRecord = Read-ProjectText 'Docs/IMAGEGEN_PROMPTS_2026-08-11.md'
+$assetPolicy = Read-ProjectText 'Docs/ASSET_POLICY.md'
 $meshScript = Read-ProjectText 'Scripts/generate_meshes.py'
 $buildScript = Read-ProjectText 'Scripts/Build-ArtAssets.ps1'
 $auditScript = Read-ProjectText 'Scripts/validate_baked_art_assets.py'
@@ -75,16 +75,11 @@ foreach ($entry in $referenceFiles.GetEnumerator()) {
 		throw "M5 ImageGen reference hash changed: $($entry.Key)"
 	}
 }
-Assert-ContainsAll $promptRecord @(
-	'SheetFinalCavityRemainsReference_v1.png',
-	'SheetMokHansooConfrontationReference_v1.png',
-	'FinalCavityFrontBlend_v1.png',
-	'MokHansooFinalFrontBlend_v1.png',
-	'Primary request: a non-graphic, dry, partially skeletonized adult male remains',
-	'Primary request: Mok Han-su, a weary Korean apartment maintenance manager',
-	'front-facing PBR detail cutout for a first-person Korean apartment horror game',
-	'front-facing PBR character detail cutout for a first-person Korean apartment horror game'
-) 'M5 ImageGen prompt record'
+# 생성 원본의 출처와 해시는 에셋 대장에 둔다. 프롬프트 문서는 로컬 작업 자료라 저장소에 없다.
+Assert-ContainsAll $assetPolicy (@($referenceFiles.Keys) + @($referenceFiles.Values) + @(
+	'건조한 부분 골격',
+	'목한수의 평균 체형'
+)) 'M5 ImageGen provenance'
 
 $detailLayers = @{
 	'T_SpriteFinalCavity' = 'M_SpriteFinalCavity'

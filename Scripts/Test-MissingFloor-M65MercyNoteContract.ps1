@@ -91,7 +91,7 @@ $auditScript = Read-ProjectText 'Scripts\validate_baked_art_assets.py'
 $buildScript = Read-ProjectText 'Scripts\Build-ArtAssets.ps1'
 $greyboxBatch = Read-ProjectText 'Scripts\Run-MissingFloor-Greybox.bat'
 $story = Read-ProjectText 'Docs\STORY_BIBLE_MISSING_FLOOR.md'
-$promptRecord = Read-ProjectText 'Docs\IMAGEGEN_PROMPTS_2026-08-12.md'
+$assetPolicy = Read-ProjectText 'Docs\ASSET_POLICY.md'
 
 Assert-ContainsAll $loopHeader @(
 	'virtual void Tick(float DeltaSeconds) override;',
@@ -226,11 +226,12 @@ Assert-ContainsAll $story @(
 	'그것도 UI가',
 	'세계 안의 종이다.'
 ) 'M6.5 story and UX boundary'
-Assert-ContainsAll $promptRecord @(
-	'내장 ImageGen',
-	'TextureCaptureMercyNotePaper_D.png',
+Assert-ContainsAll $assetPolicy @(
+	'OpenAI 이미지 생성',
+	'Content/SourceArt/AI/TextureCaptureMercyNotePaper_D.png',
 	'FEC6D7DDF6611A8E355FDABDE6B1B4AD607ADCB66EF66FAB35238E4AED7FFB99',
-	'no words, no Hangul, no letters'
+	'종이 섬유·접힘·손때만',
+	'Create-SignTextures.ps1'
 ) 'M6.5 ImageGen provenance'
 
 Write-Host ((
