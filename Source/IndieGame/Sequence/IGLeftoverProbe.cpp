@@ -1096,6 +1096,18 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		{
 			return;
 		}
+		// 덧댄 것이 큰 점검구에 자리 잡을 때까지 그 길 밖에서 기다린다. 정우는 「판이 풀렸어요」를 다
+		// 한 뒤에 나오므로, 덧댄 것이 아직 지나가는 중일 수 있다. 그 길에 서면 붙들린다.
+		if (Step == 0 && Narrative->GetLeftover().LiningHeldGap != FName(TEXT("Storage.Large")))
+		{
+			if (PhaseSeconds > 20.0f)
+			{
+				Check(false, TEXT("n3_lining_settles_before_freed_shot"));
+				PhaseSeconds = 3.0f;
+				Step = 1;
+			}
+			return;
+		}
 		if (Step == 0)
 		{
 			// 판에서 빠져나온 정우를 방 가운데에서 본다.
@@ -1133,6 +1145,13 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		if (Step == 0)
 		{
 			// 판을 받친 정우와 그 밑의 오빠 상자를 조금 떨어져서 본다. 손이 면에 닿는지는 옆에서 본다.
+			// 붙들려 화면이 어두워진 사이에 찍으면 팔을 볼 수 없다.
+			bool bCaptureRunning = false;
+			for (TActorIterator<AIGNightLoopDirector> It(GetWorld()); It; ++It)
+			{
+				bCaptureRunning |= It->IsCaptureResetInFlight();
+			}
+			Check(!bCaptureRunning, TEXT("n3_brace_seen_without_capture"));
 			LogBraceGeometry();
 			CheckStorageContact(true, TEXT("n3_brace"));
 			Stand(FVector(-20.0f, -115.0f, 600.0f), FVector(75.0f, -20.0f, 690.0f));

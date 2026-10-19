@@ -37,8 +37,10 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $tag = $Variant + $(if ($Culture) { "-$Culture" } else { '' }) + $(if ($TextScale -gt 1) { "-x$TextScale" } else { '' }) + $(if ($Clean) { '-clean' } else { '' }) + $(if ($Collision) { '-collision' } else { '' })
-$logPath = Join-Path $projectRoot "Saved/Logs/Leftover-$tag-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ('Saved/Validation/Leftover-' + $tag + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+# 로그는 실행 폴더 안에 둔다. 예전에는 Saved/Logs의 같은 이름을 썼는데, 두 작업이 같은 변형을 동시에
+# 돌리면 엔진이 한쪽 이름을 _2로 바꿔서 이 스크립트가 남의 실행 로그를 읽고 판정했다(10-19).
+$logPath = Join-Path (Split-Path -Parent $probeUser) "Leftover-$tag-$FrameRate.log"
 Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 $extra = @()
 if ($Culture) { $extra += ('-IGCulture=' + $Culture) }
@@ -61,6 +63,7 @@ Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_(CHECK|PROBE|N2|N3|DAY1|T
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
 	throw "남은 짐 검사에 실패했습니다: $logPath"
 }
+Write-Host "LEFTOVER_LOG $logPath"
 if ($Shots) {
 	Write-Host ("LEFTOVER_SHOTS " + (Join-Path $probeUser 'Saved/LeftoverReview'))
 }

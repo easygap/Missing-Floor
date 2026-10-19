@@ -767,8 +767,33 @@ void AIGMissingFloorLeftoverDirector::ReleaseBoard()
 	{
 		// 쐐기가 밑동을 잡고 있다. 판은 그대로 서 있고 정우가 밀고 나온다.
 		StorageStage = EStorage::Released;
-		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverReleasedBraced", "어, 판이 풀렸어요. 밀어 볼게요."));
-		GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::FreeJeongwoo, 2.2f, false);
+		// 갇혀서 부르던 말과 판 두드리는 소리는 끝난 상황이라 지금 거둔다. 정우는 「풀렸어요. 밀어
+		// 볼게요.」를 다 한 뒤에 판을 민다. 예전에는 이 말도 갇힘 사건으로 내고 2.2초 타이머로 꺼내며
+		// 그 사건을 거둬서, 앞줄에 밀려 늦게 뜬 이 말이 0.4초 만에 사라졌다(10-19 night3av).
+		Hush(IGLeftoverDialogue::Trapped);
+		const FText ReleasedLine = NSLOCTEXT("IGMissingFloor", "LeftoverReleasedBraced", "어, 판이 풀렸어요. 밀어 볼게요.");
+		// 말이 다 읽히면(끊기거나 밀려서 버려져도) 판을 민다. 그 전에는 WatchReleaseLine이 기다린다.
+		// 끝 알림이 먼저 오면 같은 타이머를 덮으니 둘이 겹쳐 두 번 밀지 않는다.
+		GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::WatchReleaseLine,
+			AIGHorrorHUD::EstimateDialogueSeconds(ReleasedLine) + 0.3f, false);
+		const TWeakObjectPtr<AIGMissingFloorLeftoverDirector> WeakThis(this);
+		FIGDialogueScope Scope;
+		Scope.Context = IGLeftoverDialogue::Released;
+		Scope.Owner = this;
+		Scope.Lifetime = EIGDialogueLifetime::Story;
+		Scope.OnEnded = [WeakThis](EIGDialogueEndReason)
+		{
+			AIGMissingFloorLeftoverDirector* Self = WeakThis.Get();
+			// 이미 다른 길(다시 들어온 방, 거둔 말)로 꺼냈으면 그 뒤 인사 타이머를 덮지 않는다.
+			if (Self && Self->StorageStage == EStorage::Released)
+			{
+				// 말끝과 판 미는 소리 사이에 숨 한 번.
+				Self->GetWorldTimerManager().SetTimer(
+					Self->SceneTimer, Self, &AIGMissingFloorLeftoverDirector::FreeJeongwoo, 0.3f, false);
+			}
+		};
+		AIGHorrorHUD::PushDialogueScoped(this, StorageVoice(), ReleasedLine,
+			EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story, MoveTemp(Scope));
 	}
 	else
 	{
@@ -791,6 +816,25 @@ void AIGMissingFloorLeftoverDirector::ReleaseBoard()
 		}), 2.6f, false);
 	}
 	RefreshStorage();
+}
+
+void AIGMissingFloorLeftoverDirector::WatchReleaseLine()
+{
+	if (StorageStage != EStorage::Released)
+	{
+		return;
+	}
+	// 화면이 그려지는 동안 줄이 아직 떠 있거나 앞줄에 밀려 있으면 끝 알림을 기다린다.
+	// 그려지지 않는 실행(자막을 숨긴 촬영, 화면 없는 검사)은 HUD가 줄을 넘기지 않아 끝 알림이
+	// 오지 않는다. 그때는 읽었을 만큼 기다린 지금 말을 거두고 민다.
+	if (AIGHorrorHUD::IsPresentingDialogue(this)
+		&& AIGHorrorHUD::HasDialogueInContext(this, IGLeftoverDialogue::Released))
+	{
+		GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::WatchReleaseLine, 0.5f, false);
+		return;
+	}
+	Hush(IGLeftoverDialogue::Released);
+	FreeJeongwoo();
 }
 
 void AIGMissingFloorLeftoverDirector::FreeJeongwoo()

@@ -7,8 +7,10 @@
 /** 남은 짐 줄기의 대사 사건 이름. 사건이 넘어가면 그 이름의 떠 있는 줄과 밀린 줄을 거둔다. */
 namespace IGLeftoverDialogue
 {
-	/** 판 뒤에 갇힌 정우의 부름과 그에 대한 반응. 꺼내면 거둔다. */
+	/** 판 뒤에 갇힌 정우의 부름과 그에 대한 반응. 판이 풀리면 거둔다. */
 	inline const FName Trapped(TEXT("Leftover.Rescue.Trapped"));
+	/** 판이 풀려 밀고 나오겠다는 말. 이 말이 끝난 뒤에 정우가 판을 민다. */
+	inline const FName Released(TEXT("Leftover.Rescue.Released"));
 	/** 꺼낸 직후 정우의 인사. */
 	inline const FName Freed(TEXT("Leftover.Rescue.Freed"));
 	/** 첫 당기기에 상자가 걸렸다는 말. 상자가 빠지면 거둔다. */
@@ -274,6 +276,8 @@ private:
 	void PushWardrobe();
 	void TickWardrobeMove();
 	void ReleaseBoard();
+	/** 「판이 풀렸어요」가 끝나기를 기다린다. 화면이 그려지지 않으면 읽었을 시간 뒤에 꺼낸다. */
+	void WatchReleaseLine();
 	void FreeJeongwoo();
 	void JeongwooBraceForBox();
 	void PullDohaBox();
