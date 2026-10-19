@@ -2846,12 +2846,15 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	{
 		// 장롱 앞면 가운데는 숨는 자리, 북쪽 모서리는 미는 손잡이다.
 		AimPoint(FVector(-114.0f, -10.0f, 700.0f), TEXT("av_look_wardrobe_center"));
+		// 조사 안내는 겨누고 0.18초 뒤에 맺힌다(§18.4). 다 맺힌 뒤에 찍는다.
+		Wait(0.3f);
 		Until([this]() { Shoot(TEXT("n3av_wardrobe_hide_prompt")); return true; }, 0.1f, TEXT("av_shot_wardrobe"));
 		Wait(0.4f);
 	}
 	AimAt(Target(TEXT("Storage.Wardrobe")), FVector::ZeroVector, TEXT("input_aim_wardrobe"));
 	if (bRecordAV)
 	{
+		Wait(0.3f);
 		Until([this]() { Shoot(TEXT("n3av_wardrobe_push_prompt")); return true; }, 0.1f, TEXT("av_shot_wardrobe_push"));
 		Wait(0.4f);
 	}

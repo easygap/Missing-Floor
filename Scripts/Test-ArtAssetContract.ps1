@@ -1193,8 +1193,8 @@ foreach ($token in @(
 	}
 }
 foreach ($token in @(
-	'KnockPromptFormatKeyboard',
-	'ListenPromptFormatGamepad'
+	'? EIGBindableAction::Knock',
+	'? EIGBindableAction::Listen'
 )) {
 	if (-not $horrorHudSource.Contains($token)) {
 		throw "Missing-floor contextual prompt contract is missing: $token"

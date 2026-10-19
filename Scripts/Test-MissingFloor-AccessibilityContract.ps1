@@ -665,8 +665,8 @@ Assert-ContainsAll $inputConfig @(
 	'Key=Gamepad_RightThumbstick'
 ) '게임패드 이동·조사·설정 매핑'
 Assert-ContainsAll $hudSource @(
-	'PromptFormatGamepad',
-	'PromptFormatKeyboard',
+	'GetBoundKeyLabel(PromptAction, bUsingGamepad)',
+	'bShowKey ? KeyLabel : FText::GetEmpty()',
 	'GetBoundKeyLabel(EIGBindableAction::GameplayGuide, bUsingGamepad)',
 	'GetBoundKeyLabel(EIGBindableAction::Interact, bUsingGamepad)',
 	'AccessibilityControlsGamepad',

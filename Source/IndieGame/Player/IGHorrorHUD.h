@@ -773,13 +773,15 @@ private:
 		const FLinearColor& Color,
 		EIGHudTextRole TextRole,
 		float TextScale = 1.0f);
+	/** EffectStrength는 외곽선·그림자의 진하기다. 조사 안내는 얇은 외곽선을 반쯤만 써서 밝은 바닥에서도 읽힌다. */
 	void DrawLeftAlignedText(
 		const FText& Text,
 		const FVector2D& Position,
 		const FLinearColor& Color,
 		EIGHudTextRole TextRole,
 		float TextScale = 1.0f,
-		bool bUseOutline = false);
+		bool bUseOutline = false,
+		float EffectStrength = 1.0f);
 	void DrawRightAlignedText(
 		const FText& Text,
 		const FVector2D& Position,
@@ -961,11 +963,24 @@ private:
 		const FText& Text);
 	void DrawMissingFloorJournalPanel();
 	UTexture2D* GetMissingFloorJournalThumbnail(int32 ThumbnailType) const;
-	/** Screen-space bracket that snaps around whatever is currently focused. */
 	/** 지금 묶인 키의 짧은 이름. 프롬프트와 힌트 줄이 읽는다. */
 	FText GetBoundKeyLabel(EIGBindableAction Action, bool bGamepad) const;
-	void UpdateFocusBracket(AActor* FocusedActor, float DeltaSeconds);
-	void DrawFocusBracket(const FLinearColor& Color, float Progress);
+	/** 겨눈 대상이 바뀌면 조사 안내를 잠깐 늦게, 짧게 맺히게 한다(스치는 시선마다 깜빡이지 않게). */
+	void UpdateFocusReveal(AActor* FocusedActor, float DeltaSeconds);
+	/**
+	 * 조준점 아래의 조사 안내. 키 표시(얇은 테두리 안의 키 이름)와 동사 한 줄, 그 아래 작은 보조 줄.
+	 * 길게 누르는 동안 키 표시의 테두리가 네 모서리부터 이어져 닫힌다. KeyLabel이 비면 동사만 둔다.
+	 */
+	void DrawInteractionPrompt(
+		const FText& Action,
+		const FText& Hint,
+		const FText& KeyLabel,
+		float HoldProgress,
+		float Top,
+		float TextScale,
+		float Alpha);
+	/** 글자 둘레에 흐린 그림자를 여러 번 겹쳐 그린다. 굵은 외곽선 없이 밝은 바닥 위에서도 읽힌다. */
+	void DrawPromptHalo(const FText& Text, const FVector2D& Position, EIGHudTextRole TextRole, float TextScale, float Alpha);
 	/** 카메라 페이드가 화면을 거의 덮었다. 검은 화면 위에는 조준점도 안내도 두지 않는다. */
 	bool IsCameraFadedOut() const;
 	/** 마친 조사 수를 보고 첫 조작 안내를 끝내고, 익힌 동작을 프로필에 센다. */
@@ -1225,11 +1240,9 @@ private:
 	double ChapterCardStartTime = 0.0;
 	double ChapterCardEndTime = -1.0;
 
-	FVector2D FocusBracketMin = FVector2D::ZeroVector;
-	FVector2D FocusBracketMax = FVector2D::ZeroVector;
-	TWeakObjectPtr<AActor> FocusBracketTarget;
-	float FocusBracketAlpha = 0.0f;
-	float FocusBracketAcquireElapsed = 0.0f;
+	TWeakObjectPtr<AActor> FocusRevealTarget;
+	float FocusRevealAlpha = 0.0f;
+	float FocusRevealElapsed = 0.0f;
 	double LastHudDrawTime = 0.0;
 	/** 마지막으로 프레임을 그린 실제 시각. 멈춘 화면(메뉴·기록장)에서도 흐른다. */
 	double LastFrameDrawnRealSeconds = -1.0;

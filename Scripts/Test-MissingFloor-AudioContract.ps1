@@ -457,11 +457,11 @@ Require-All $greybox @('night_presented=%d') '§24 즉시 차단 17 runtime prob
 
 # §24 즉시 차단 22의 나머지 절반: UI가 색으로만 정보를 전달하지 않는다.
 # 기본 설정에서 가운데 점은 조사 대상을 물었을 때만 뜬다. 점이 있고 없고가
-# 형태 신호다. 항상 표시를 켜면 두 상태의 기하가 같고 색만 다르다. 포커스
-# 브래킷이 뒤따르지만 0.18초 늦으므로, 그 사이를 색만으로 버티지 않으려면
-# 두 색이 회색조에서도 갈려야 한다. 상대 휘도로 확인한다.
+# 형태 신호다. 항상 표시를 켜면 겨눌 때 점이 커지고 밝아진다. 조사 안내는
+# 0.18초 늦게 맺히므로, 그 사이를 크기만으로 버티지 않으려면 두 색이
+# 회색조에서도 갈려야 한다. 상대 휘도로 확인한다. 빨강은 쓰지 않는다.
 $hudColors = @{}
-foreach ($colorName in @('PaleGray', 'RedAccent')) {
+foreach ($colorName in @('CenterDotIdle', 'PromptInk')) {
 	$colorMatch = [regex]::Match(
 		$hudBody,
 		('const FLinearColor {0}\(\s*(?<r>[\d.]+)f,\s*(?<g>[\d.]+)f,' +
@@ -475,19 +475,21 @@ foreach ($colorName in @('PaleGray', 'RedAccent')) {
 		0.7152 * [double]$colorMatch.Groups['g'].Value +
 		0.0722 * [double]$colorMatch.Groups['b'].Value
 }
-$brighter = [Math]::Max($hudColors['PaleGray'], $hudColors['RedAccent'])
-$darker = [Math]::Min($hudColors['PaleGray'], $hudColors['RedAccent'])
+$brighter = [Math]::Max($hudColors['CenterDotIdle'], $hudColors['PromptInk'])
+$darker = [Math]::Min($hudColors['CenterDotIdle'], $hudColors['PromptInk'])
 $stateContrast = ($brighter + 0.05) / ($darker + 0.05)
 if ($stateContrast -lt 3.0) {
 	throw ('조준 표시의 두 상태가 회색조에서 갈리지 않는다: 명암비 {0:N2}' -f
 		$stateContrast)
 }
 $assertions++
-# 형태 신호가 아예 사라지면 색만 남는다. 브래킷 자체도 지켜야 한다.
+# 형태 신호가 아예 사라지면 색만 남는다. 겨눌 때 커지는 점과 조사 안내도 지켜야 한다.
 Require-All $hudBody @(
-	'void AIGHorrorHUD::DrawFocusBracket(',
-	'UpdateFocusBracket(bHasFocus && !bFadedOut ? Interaction->GetFocusedActor() : nullptr',
-	'DrawCenterDot(bHasFocus)'
+	'void AIGHorrorHUD::DrawInteractionPrompt(',
+	'UpdateFocusReveal(bHasFocus && !bFadedOut ? Interaction->GetFocusedActor() : nullptr',
+	'DrawCenterDot(bHasFocus)',
+	'(bFocused ? 1.5f : 1.0f)',
+	'bFocused ? IGHorrorHUD::PromptInk : IGHorrorHUD::CenterDotIdle'
 ) '§24 즉시 차단 22 형태 신호'
 
 # §11 V5 밤 구간 8지점 히스토그램. 임계는 설계서가 고정한 5%/98%이며, 지점별

@@ -138,6 +138,14 @@ namespace IGHorrorHUD
 	const FLinearColor ThoughtBlue(0.74f, 0.78f, 0.86f, 1.0f);
 	const FLinearColor DialogueIvory(0.88f, 0.87f, 0.81f, 1.0f);
 	const FLinearColor DialogueTeal(0.42f, 0.64f, 0.59f, 1.0f);
+	// 조사 안내. 값은 선형이다(화면에서는 sRGB로 나간다). 글자 #E7E3D9, 보조 줄 #C6C7BC,
+	// 키 표시 테두리 #DAD7C9, 키 표시 바탕 #171D18. 빨강은 위험을 알릴 때만 쓴다.
+	const FLinearColor PromptInk(0.799f, 0.768f, 0.694f, 1.0f);
+	const FLinearColor PromptHintInk(0.565f, 0.571f, 0.503f, 0.92f);
+	const FLinearColor KeyCapEdge(0.701f, 0.680f, 0.584f, 0.95f);
+	const FLinearColor KeyCapFill(0.0086f, 0.0123f, 0.0091f, 0.70f);
+	// 「조준점 항상 표시」에서 겨눈 것이 없을 때. 겨누면 PromptInk로 밝아지고 커진다.
+	const FLinearColor CenterDotIdle(0.20f, 0.21f, 0.20f, 0.90f);
 
 	// 타이틀은 빌라의 새벽빛과 글자만 남긴다. 경고 색은 실제 확인·오류에만 쓴다.
 	const FLinearColor FrontendInk(0.018f, 0.024f, 0.025f, 1.0f);
@@ -3216,47 +3224,75 @@ void AIGHorrorHUD::UpdatePrintedTextReading()
 	}
 }
 
+namespace IGHorrorHUDPrompt
+{
+	/** 「동사」 한 줄이거나, 줄을 바꿔 보조 설명을 붙인 두 줄이다. 괄호를 문구에 굽지 않는다. */
+	void SplitLines(const FText& Text, FString& OutAction, FString& OutHint)
+	{
+		OutAction = Text.ToString();
+		OutHint.Reset();
+		int32 LineBreak = INDEX_NONE;
+		if (OutAction.FindChar(TEXT('\n'), LineBreak))
+		{
+			OutHint = OutAction.Mid(LineBreak + 1).TrimStartAndEnd();
+			OutAction = OutAction.Left(LineBreak).TrimStartAndEnd();
+		}
+	}
+}
+
 void AIGHorrorHUD::DrawContextTip(const float Alpha)
 {
 	FText Line;
+	EIGBindableAction Action = EIGBindableAction::Crouch;
 	switch (ContextTips.GetCurrent())
 	{
 	case EIGContextTip::Crouch:
-		Line = FText::Format(
-			NSLOCTEXT("IGHUD", "TipCrouch", "[ {0} ]  앉아서 걷기  ·  발소리가 작아진다"),
-			GetBoundKeyLabel(EIGBindableAction::Crouch, bUsingGamepad));
+		Line = NSLOCTEXT("IGHUD", "TipCrouch", "앉아서 걷기\n발소리가 작아진다");
+		Action = EIGBindableAction::Crouch;
 		break;
 	case EIGContextTip::HoldBreath:
-		Line = FText::Format(
-			NSLOCTEXT("IGHUD", "TipHoldBreath", "[ {0} ]  숨 참기  ·  오래 참으면 숨이 거칠어진다"),
-			GetBoundKeyLabel(EIGBindableAction::HoldBreath, bUsingGamepad));
+		Line = NSLOCTEXT("IGHUD", "TipHoldBreath", "숨 참기\n오래 참으면 숨이 거칠어진다");
+		Action = EIGBindableAction::HoldBreath;
 		break;
 	case EIGContextTip::Sprint:
-		Line = FText::Format(
-			NSLOCTEXT("IGHUD", "TipSprint", "[ {0} ]  달리기  ·  발소리도 커진다"),
-			GetBoundKeyLabel(EIGBindableAction::Sprint, bUsingGamepad));
+		Line = NSLOCTEXT("IGHUD", "TipSprint", "달리기\n발소리도 커진다");
+		Action = EIGBindableAction::Sprint;
 		break;
 	case EIGContextTip::Journal:
-		Line = FText::Format(
-			NSLOCTEXT("IGHUD", "TipJournal", "[ {0} ]  조사 기록  ·  낮에 확인할 수 있다"),
-			GetBoundKeyLabel(EIGBindableAction::Journal, bUsingGamepad));
+		Line = NSLOCTEXT("IGHUD", "TipJournal", "조사 기록\n낮에 확인할 수 있다");
+		Action = EIGBindableAction::Journal;
 		break;
 	case EIGContextTip::Hint:
-		Line = FText::Format(
-			NSLOCTEXT("IGHUD", "TipHint", "[ {0} ]  힌트  ·  막혔을 때 누르기"),
-			GetBoundKeyLabel(EIGBindableAction::RequestHint, bUsingGamepad));
+		Line = NSLOCTEXT("IGHUD", "TipHint", "힌트\n막혔을 때 누르기");
+		Action = EIGBindableAction::RequestHint;
 		break;
 	case EIGContextTip::HintAnswer:
-		Line = FText::Format(
-			NSLOCTEXT("IGHUD", "TipHintAnswer", "[ {0} ]  풀이 보기  ·  한 번 더 누르면 풀이가 나온다"),
-			GetBoundKeyLabel(EIGBindableAction::RequestHint, bUsingGamepad));
+		Line = NSLOCTEXT("IGHUD", "TipHintAnswer", "풀이 보기\n한 번 더 누르면 풀이가 나온다");
+		Action = EIGBindableAction::RequestHint;
 		break;
 	default:
 		return;
 	}
-	FLinearColor Color = IGHorrorHUD::PaleGray;
-	Color.A *= Alpha;
-	DrawCenteredText(Line, Canvas->ClipY - 76.0f, Color, EIGHudTextRole::Hint);
+	// 조사 안내와 같은 모양으로 화면 아래에 둔다. 키 표시와 동사 한 줄, 그 아래 작은 보조 줄.
+	FString ActionLine;
+	FString HintLine;
+	IGHorrorHUDPrompt::SplitLines(Line, ActionLine, HintLine);
+	const UIGAccessibilitySubsystem* Accessibility = GetGameInstance()
+		? GetGameInstance()->GetSubsystem<UIGAccessibilitySubsystem>()
+		: nullptr;
+	const float Scale = GetResolutionTextScale(Accessibility ? Accessibility->GetCaptionSizeScale() : 1.0f) * 0.92f;
+	const float Height = MeasureTextHeight(ActionLine, GetFontForRole(EIGHudTextRole::Prompt), Scale)
+		+ (HintLine.IsEmpty() ? 0.0f
+			: MeasureTextHeight(HintLine, GetFontForRole(EIGHudTextRole::Hint), Scale * 0.9f) + 3.0f * Scale);
+	const float Bottom = Canvas->ClipY - 46.0f * FMath::Clamp(Canvas->ClipY / 1080.0f, 0.85f, 2.0f);
+	DrawInteractionPrompt(
+		FText::FromString(ActionLine),
+		FText::FromString(HintLine),
+		GetBoundKeyLabel(Action, bUsingGamepad),
+		0.0f,
+		Bottom - Height,
+		Scale,
+		Alpha * 0.92f);
 }
 
 void AIGHorrorHUD::DrawControlsGuide(const float Alpha, const bool bFull)
@@ -3564,19 +3600,13 @@ void AIGHorrorHUD::DrawHUD()
 	// 페이드로 화면이 검게 덮인 동안에는 조준점도 초점 틀도 안내 문구도 없다.
 	// 잠든 사이, 층을 옮기는 사이의 검은 화면에 「조사」가 떠 있으면 연출이 깨진다.
 	const bool bFadedOut = IsCameraFadedOut();
-	UpdateFocusBracket(bHasFocus && !bFadedOut ? Interaction->GetFocusedActor() : nullptr, DeltaSeconds);
+	UpdateFocusReveal(bHasFocus && !bFadedOut ? Interaction->GetFocusedActor() : nullptr, DeltaSeconds);
 	DrawFirstPersonKnock(CurrentTime);
 	if (!bFadedOut)
 	{
 		DrawCenterDot(bHasFocus);
 	}
 	const float HoldProgress = Interaction ? Interaction->GetHoldProgress() : 0.0f;
-	if (FocusBracketAlpha > 0.01f)
-	{
-		DrawFocusBracket(
-			IGHorrorHUD::RedAccent,
-			HoldProgress);
-	}
 	DrawFearDirection(CurrentTime);
 	DrawNoiseRipple(CurrentTime);
 	DrawSaveIndicator(CurrentTime);
@@ -3653,24 +3683,19 @@ void AIGHorrorHUD::DrawHUD()
 			const bool bShowKey = !IGOnboardingMemory::HasLearnedPrompt(PromptKind)
 				|| (PromptAccessibility && PromptAccessibility->GetSettings().bAlwaysShowPromptKeys);
 			const FText KeyLabel = GetBoundKeyLabel(PromptAction, bUsingGamepad);
-			const FText PromptFormat = bKnockVerb
-				? bUsingGamepad
-					? NSLOCTEXT("IGHUD", "KnockPromptFormatGamepad", "[ {1} ]  {0}")
-					: NSLOCTEXT("IGHUD", "KnockPromptFormatKeyboard", "[ {1} ]  {0}")
-				: bListenVerb
-					? bUsingGamepad
-						? NSLOCTEXT("IGHUD", "ListenPromptFormatGamepad", "[ {1} ]  {0}")
-						: NSLOCTEXT("IGHUD", "ListenPromptFormatKeyboard", "[ {1} ]  {0}")
-					: bUsingGamepad
-						? NSLOCTEXT("IGHUD", "PromptFormatGamepad", "[ {1} ]  {0}")
-						: NSLOCTEXT("IGHUD", "PromptFormatKeyboard", "[ {1} ]  {0}");
-			const FText Prompt = bShowKey
-				? FText::Format(PromptFormat, FocusedPrompt, KeyLabel)
-				: FocusedPrompt;
-			// 문 바로 앞에서는 브래킷 하단이 화면 밖으로 나간다. 안내 문구는
-			// 글자 높이와 하단 조작 안내 여백을 빼고 화면 안에 남긴다.
-			const float PromptHeight = MeasureTextHeight(
-				Prompt.ToString(), GetFontForRole(EIGHudTextRole::Prompt), 1.f);
+			// 대상이 주는 안내는 동사 한 줄이거나 보조 설명을 붙인 두 줄이다. 보조 줄은 한 단계 작고
+			// 흐리게 쓴다.
+			FString ActionLine;
+			FString HintLine;
+			IGHorrorHUDPrompt::SplitLines(FocusedPrompt, ActionLine, HintLine);
+			// 큰 글자 설정을 따른다. 1080p 기본 크기에서 배율은 1이다.
+			const float PromptScale = GetResolutionTextScale(
+				PromptAccessibility ? PromptAccessibility->GetCaptionSizeScale() : 1.0f);
+			UFont* PromptFont = GetFontForRole(EIGHudTextRole::Prompt);
+			UFont* PromptHintFont = GetFontForRole(EIGHudTextRole::Hint);
+			const float PromptHeight = MeasureTextHeight(ActionLine, PromptFont, PromptScale)
+				+ (HintLine.IsEmpty() ? 0.0f : MeasureTextHeight(HintLine, PromptHintFont, PromptScale * 0.9f)
+					+ 3.0f * PromptScale);
 			// 상황 안내는 위에서 이번 프레임 것으로 먼저 정해진다. 투명도만 보고 자리를 비우면
 			// 안내가 떠오르는 동안 둘이 겹쳤다가 안내 문구가 위로 튄다. 띄울 안내가 정해지면
 			// 바로 자리를 비워 둔다.
@@ -3687,17 +3712,21 @@ void AIGHorrorHUD::DrawHUD()
 				PromptBottomEdge = FMath::Min(PromptBottomEdge, AudioCaptionPanelTop - DialogueLaneGap);
 			}
 			const float PromptBottomLimit = FMath::Max(0.f, PromptBottomEdge - PromptHeight);
-			const float PromptTop = FMath::Clamp(FMath::Max(
-				(Canvas->ClipY * 0.5f) + 54.0f,
-				FocusBracketAlpha > 0.01f ? FocusBracketMax.Y + 14.0f : 0.0f), 0.f, PromptBottomLimit);
-			FLinearColor PromptColor = IGHorrorHUD::RedAccent;
+			// 조준점 바로 아래 한 자리에 선다. 대상 둘레에 큰 괄호를 두르지 않는다. 문 앞에서는 괄호가
+			// 화면 절반을 덮고 빨간 글씨가 가운데를 차지했다(2026-10-19).
+			const float PromptTop = FMath::Clamp(
+				Canvas->ClipY * 0.5f + 34.0f * FMath::Clamp(Canvas->ClipY / 1080.0f, 0.85f, 2.0f),
+				0.f,
+				PromptBottomLimit);
 			// 익힌 뒤의 안내는 한 단계 낮춘다. 대상 이름은 여전히 읽혀야 한다.
-			PromptColor.A *= bShowKey ? 1.0f : 0.82f;
-			DrawCenteredText(
-				Prompt,
+			DrawInteractionPrompt(
+				FText::FromString(ActionLine),
+				FText::FromString(HintLine),
+				bShowKey ? KeyLabel : FText::GetEmpty(),
+				HoldProgress,
 				PromptTop,
-				PromptColor,
-				EIGHudTextRole::Prompt);
+				PromptScale,
+				FocusRevealAlpha * (bShowKey ? 1.0f : 0.82f));
 		}
 	}
 
@@ -5467,7 +5496,7 @@ void AIGHorrorHUD::DrawFirstPersonKnock(const double CurrentTime)
 			: 0.07f + 0.05f * (
 				0.5f + 0.5f * FMath::Sin(static_cast<float>(CurrentTime) * 2.1f));
 		const float ReadyAlpha = 0.72f * FMath::Clamp(
-			FocusBracketAlpha,
+			FocusRevealAlpha,
 			0.0f,
 			1.0f);
 		DrawFrame(0, ReadyAlpha * (1.0f - ReadyBlend));
@@ -7720,7 +7749,8 @@ void AIGHorrorHUD::DrawAudioCalibrationPanel()
 		DrawCenteredText(
 			RowText,
 			RowStartY + Row * RowSpacing,
-			bSelected ? IGHorrorHUD::RedAccent : IGHorrorHUD::PaleGray,
+			// 고른 줄은 밝게, 나머지는 한 단계 흐리게. 평소 고르기에 빨강을 쓰지 않는다.
+			bSelected ? IGHorrorHUD::PromptInk : IGHorrorHUD::MutedGray,
 			RowRole,
 			GetFittedTextScale(RowText, RowRole, 0.92f * Scale,
 				PanelSize.X - 72.0f * Scale, 0.65f * Scale));
@@ -9035,7 +9065,8 @@ void AIGHorrorHUD::DrawLeftAlignedText(
 	const FLinearColor& Color,
 	const EIGHudTextRole TextRole,
 	const float TextScale,
-	const bool bUseOutline)
+	const bool bUseOutline,
+	const float EffectStrength)
 {
 	if (!Canvas || Text.IsEmpty())
 	{
@@ -9051,7 +9082,7 @@ void AIGHorrorHUD::DrawLeftAlignedText(
 	FCanvasTextItem TextItem(Position, Text, Font, Color);
 	TextItem.Scale = FVector2D(SafeTextScale);
 	FLinearColor EffectColor = IGHorrorHUD::Shadow;
-	EffectColor.A *= Color.A;
+	EffectColor.A *= Color.A * FMath::Clamp(EffectStrength, 0.0f, 1.0f);
 	if (bUseOutline)
 	{
 		TextItem.bOutlined = true;
@@ -9149,131 +9180,173 @@ void AIGHorrorHUD::DrawCenterDot(const bool bFocused)
 	}
 	const float CenterX = Canvas->ClipX * 0.5f;
 	const float CenterY = Canvas->ClipY * 0.5f;
-	const float Size = FMath::Max(3.0f, Canvas->ClipY / 360.0f);
-	const FLinearColor Color = bFocused ? IGHorrorHUD::RedAccent : IGHorrorHUD::PaleGray;
+	// 겨누면 밝아지고 조금 커진다. 색만으로 가르지 않는다. 빨강은 위험을 알릴 때만 쓴다.
+	const float Size = FMath::Max(3.0f, Canvas->ClipY / 360.0f) * (bFocused ? 1.5f : 1.0f);
+	const FLinearColor Color = bFocused ? IGHorrorHUD::PromptInk : IGHorrorHUD::CenterDotIdle;
 	DrawRect(IGHorrorHUD::Shadow, CenterX - Size * 0.5f + 1.0f, CenterY - Size * 0.5f + 1.0f, Size, Size);
 	DrawRect(Color, CenterX - Size * 0.5f, CenterY - Size * 0.5f, Size, Size);
 }
 
-void AIGHorrorHUD::UpdateFocusBracket(AActor* FocusedActor, const float DeltaSeconds)
+void AIGHorrorHUD::UpdateFocusReveal(AActor* FocusedActor, const float DeltaSeconds)
 {
-	if (!Canvas)
-	{
-		return;
-	}
-
 	if (!IsValid(FocusedActor))
 	{
-		FocusBracketTarget.Reset();
-		FocusBracketAcquireElapsed = 0.0f;
-		FocusBracketAlpha = FMath::FInterpTo(FocusBracketAlpha, 0.0f, DeltaSeconds, 12.0f);
+		FocusRevealTarget.Reset();
+		FocusRevealElapsed = 0.0f;
+		FocusRevealAlpha = FMath::FInterpTo(FocusRevealAlpha, 0.0f, DeltaSeconds, 12.0f);
 		return;
 	}
-	if (FocusBracketTarget.Get() != FocusedActor)
+	if (FocusRevealTarget.Get() != FocusedActor)
 	{
-		FocusBracketTarget = FocusedActor;
-		FocusBracketAcquireElapsed = 0.0f;
-		FocusBracketAlpha = 0.0f;
+		FocusRevealTarget = FocusedActor;
+		FocusRevealElapsed = 0.0f;
+		FocusRevealAlpha = 0.0f;
 	}
-	FocusBracketAcquireElapsed += FMath::Max(0.0f, DeltaSeconds);
-
-	// Project the focused actor's bounds and fit a box around them, so the
-	// reticle visibly grabs the object instead of just recolouring a dot.
-	FVector Origin = FVector::ZeroVector;
-	FVector Extent = FVector::ZeroVector;
-	FocusedActor->GetActorBounds(true, Origin, Extent);
-
-	FVector2D ScreenMin(TNumericLimits<float>::Max(), TNumericLimits<float>::Max());
-	FVector2D ScreenMax(-TNumericLimits<float>::Max(), -TNumericLimits<float>::Max());
-	bool bAnyCornerVisible = false;
-	for (int32 CornerIndex = 0; CornerIndex < 8; ++CornerIndex)
-	{
-		const FVector Corner(
-			Origin.X + ((CornerIndex & 1) ? Extent.X : -Extent.X),
-			Origin.Y + ((CornerIndex & 2) ? Extent.Y : -Extent.Y),
-			Origin.Z + ((CornerIndex & 4) ? Extent.Z : -Extent.Z));
-		const FVector Projected = Canvas->Project(Corner);
-		if (Projected.Z <= 0.0f)
-		{
-			continue; // behind the camera
-		}
-		bAnyCornerVisible = true;
-		ScreenMin.X = FMath::Min(ScreenMin.X, Projected.X);
-		ScreenMin.Y = FMath::Min(ScreenMin.Y, Projected.Y);
-		ScreenMax.X = FMath::Max(ScreenMax.X, Projected.X);
-		ScreenMax.Y = FMath::Max(ScreenMax.Y, Projected.Y);
-	}
-
-	if (!bAnyCornerVisible)
-	{
-		FocusBracketAlpha = FMath::FInterpTo(FocusBracketAlpha, 0.0f, DeltaSeconds, 12.0f);
-		return;
-	}
-
-	// Keep the bracket readable: never smaller than the crosshair, never so
-	// large that it frames the whole screen.
-	const FVector2D Center = (ScreenMin + ScreenMax) * 0.5f;
-	FVector2D HalfSize = (ScreenMax - ScreenMin) * 0.5f + FVector2D(6.0f, 6.0f);
-	HalfSize.X = FMath::Clamp(HalfSize.X, 14.0f, Canvas->ClipX * 0.30f);
-	HalfSize.Y = FMath::Clamp(HalfSize.Y, 14.0f, Canvas->ClipY * 0.34f);
-
-	const FVector2D TargetMin = Center - HalfSize;
-	const FVector2D TargetMax = Center + HalfSize;
-	if (FocusBracketAlpha <= 0.01f)
-	{
-		FocusBracketMin = TargetMin;
-		FocusBracketMax = TargetMax;
-	}
-	else
-	{
-		FocusBracketMin = FMath::Vector2DInterpTo(FocusBracketMin, TargetMin, DeltaSeconds, 18.0f);
-		FocusBracketMax = FMath::Vector2DInterpTo(FocusBracketMax, TargetMax, DeltaSeconds, 18.0f);
-	}
-	FocusBracketAlpha = FMath::Clamp(
-		(FocusBracketAcquireElapsed - IGHorrorHUD::FocusAcquireDelaySeconds)
+	FocusRevealElapsed += FMath::Max(0.0f, DeltaSeconds);
+	// 스치는 시선마다 안내가 깜빡이면 세계가 게임 화면으로 보인다. 잠깐 늦게, 짧게 맺힌다.
+	FocusRevealAlpha = FMath::Clamp(
+		(FocusRevealElapsed - IGHorrorHUD::FocusAcquireDelaySeconds)
 			/ IGHorrorHUD::FocusAcquireRevealSeconds,
 		0.0f,
 		1.0f);
 }
 
-void AIGHorrorHUD::DrawFocusBracket(const FLinearColor& Color, const float Progress)
+void AIGHorrorHUD::DrawInteractionPrompt(
+	const FText& Action,
+	const FText& Hint,
+	const FText& KeyLabel,
+	const float HoldProgress,
+	const float Top,
+	const float TextScale,
+	const float Alpha)
 {
-	if (!Canvas)
+	UFont* ActionFont = GetFontForRole(EIGHudTextRole::Prompt);
+	UFont* HintFont = GetFontForRole(EIGHudTextRole::Hint);
+	if (!Canvas || !ActionFont || !HintFont || Action.IsEmpty() || Alpha <= 0.01f)
 	{
 		return;
 	}
-
-	FLinearColor BracketColor = Color;
-	BracketColor.A *= FMath::Clamp(FocusBracketAlpha, 0.0f, 1.0f);
-	const float CloseAlpha = FMath::Clamp(Progress, 0.0f, 1.0f);
-	const FVector2D Center = (FocusBracketMin + FocusBracketMax) * 0.5f;
-	const FVector2D ClosedHalfSize(7.0f, 7.0f);
-	const FVector2D DrawMin = FMath::Lerp(
-		FocusBracketMin,
-		Center - ClosedHalfSize,
-		CloseAlpha);
-	const FVector2D DrawMax = FMath::Lerp(
-		FocusBracketMax,
-		Center + ClosedHalfSize,
-		CloseAlpha);
-	const float CornerX = FMath::Min(18.0f, (DrawMax.X - DrawMin.X) * 0.34f);
-	const float CornerY = FMath::Min(18.0f, (DrawMax.Y - DrawMin.Y) * 0.34f);
-	constexpr float Thickness = 2.0f;
-
-	auto DrawCorner = [this, &BracketColor](
-		const FVector2D& Pivot, const float DirectionX, const float DirectionY,
-		const float LengthX, const float LengthY)
+	const FString ActionString = Action.ToString();
+	const FString HintString = Hint.ToString();
+	const FString KeyString = KeyLabel.ToString();
+	const bool bKey = !KeyString.IsEmpty();
+	// 키 이름은 동사보다 한 단계 작게 쓰고, 키 표시 상자는 글줄 높이에 맞춘다. 한 글자 키도
+	// 정사각형보다 좁아지지 않는다. 화면 폭의 90%를 넘으면(큰 글자, 긴 번역) 전체를 줄인다.
+	float Scale = FMath::Max(0.5f, TextScale);
+	float ActionWidth = 0.0f;
+	float ActionHeight = 0.0f;
+	float KeyTextWidth = 0.0f;
+	float KeyTextHeight = 0.0f;
+	float KeyWidth = 0.0f;
+	float KeyHeight = 0.0f;
+	float KeyGap = 0.0f;
+	float BlockWidth = 0.0f;
+	const auto Measure = [&]()
 	{
-		DrawLine(Pivot.X, Pivot.Y, Pivot.X + DirectionX * LengthX, Pivot.Y,
-			BracketColor, Thickness);
-		DrawLine(Pivot.X, Pivot.Y, Pivot.X, Pivot.Y + DirectionY * LengthY,
-			BracketColor, Thickness);
+		ActionWidth = MeasureTextWidth(ActionString, ActionFont, Scale);
+		ActionHeight = MeasureTextHeight(ActionString, ActionFont, Scale);
+		const float HintWidth = HintString.IsEmpty() ? 0.0f : MeasureTextWidth(HintString, HintFont, Scale * 0.9f);
+		KeyTextWidth = bKey ? MeasureTextWidth(KeyString, ActionFont, Scale * 0.84f) : 0.0f;
+		KeyTextHeight = bKey ? MeasureTextHeight(KeyString, ActionFont, Scale * 0.84f) : 0.0f;
+		KeyHeight = FMath::RoundToFloat(ActionHeight * 0.96f);
+		KeyWidth = bKey ? FMath::RoundToFloat(FMath::Max(KeyHeight, KeyTextWidth + 12.0f * Scale)) : 0.0f;
+		KeyGap = bKey ? FMath::RoundToFloat(9.0f * Scale) : 0.0f;
+		BlockWidth = KeyWidth + KeyGap + FMath::Max(ActionWidth, HintWidth);
 	};
+	Measure();
+	const float MaximumWidth = Canvas->ClipX * 0.9f;
+	if (BlockWidth > MaximumWidth && BlockWidth > 0.0f)
+	{
+		Scale = FMath::Max(0.5f, Scale * MaximumWidth / BlockWidth);
+		Measure();
+	}
+	const float Left = FMath::RoundToFloat((Canvas->ClipX - BlockWidth) * 0.5f);
+	const float ActionLeft = Left + KeyWidth + KeyGap;
 
-	DrawCorner(DrawMin, 1.0f, 1.0f, CornerX, CornerY);
-	DrawCorner(FVector2D(DrawMax.X, DrawMin.Y), -1.0f, 1.0f, CornerX, CornerY);
-	DrawCorner(FVector2D(DrawMin.X, DrawMax.Y), 1.0f, -1.0f, CornerX, CornerY);
-	DrawCorner(DrawMax, -1.0f, -1.0f, CornerX, CornerY);
+	if (bKey)
+	{
+		const FVector2D KeyMin(Left, FMath::RoundToFloat(Top + (ActionHeight - KeyHeight) * 0.5f));
+		const FVector2D KeySize(KeyWidth, KeyHeight);
+		const FVector2D KeyMax = KeyMin + KeySize;
+		FLinearColor Fill = IGHorrorHUD::KeyCapFill;
+		Fill.A *= Alpha;
+		DrawRoundedHudSurface(KeyMin, KeySize, 2.0f * Scale, Fill);
+		// 쉬는 동안은 흐린 테두리 한 겹과 네 모서리의 짧은 꺾쇠. 길게 누르면 꺾쇠가 변을 따라
+		// 자라 가운데에서 만나 테두리가 닫힌다. 숫자·퍼센트·링은 쓰지 않는다(§18.4).
+		const float Thickness = FMath::Max(1.0f, FMath::RoundToFloat(Scale));
+		FLinearColor Faint = IGHorrorHUD::KeyCapEdge;
+		Faint.A *= Alpha * 0.38f;
+		DrawLine(KeyMin.X, KeyMin.Y, KeyMax.X, KeyMin.Y, Faint, Thickness);
+		DrawLine(KeyMax.X, KeyMin.Y, KeyMax.X, KeyMax.Y, Faint, Thickness);
+		DrawLine(KeyMax.X, KeyMax.Y, KeyMin.X, KeyMax.Y, Faint, Thickness);
+		DrawLine(KeyMin.X, KeyMax.Y, KeyMin.X, KeyMin.Y, Faint, Thickness);
+		const float Close = FMath::Clamp(HoldProgress, 0.0f, 1.0f);
+		const float ReachX = FMath::Lerp(FMath::Min(4.0f * Scale, KeySize.X * 0.3f), KeySize.X * 0.5f, Close);
+		const float ReachY = FMath::Lerp(FMath::Min(4.0f * Scale, KeySize.Y * 0.3f), KeySize.Y * 0.5f, Close);
+		FLinearColor Edge = IGHorrorHUD::KeyCapEdge;
+		Edge.A *= Alpha;
+		const auto Corner = [this, &Edge, Thickness, ReachX, ReachY](
+			const FVector2D& Pivot, const float DirectionX, const float DirectionY)
+		{
+			DrawLine(Pivot.X, Pivot.Y, Pivot.X + DirectionX * ReachX, Pivot.Y, Edge, Thickness);
+			DrawLine(Pivot.X, Pivot.Y, Pivot.X, Pivot.Y + DirectionY * ReachY, Edge, Thickness);
+		};
+		Corner(KeyMin, 1.0f, 1.0f);
+		Corner(FVector2D(KeyMax.X, KeyMin.Y), -1.0f, 1.0f);
+		Corner(FVector2D(KeyMin.X, KeyMax.Y), 1.0f, -1.0f);
+		Corner(KeyMax, -1.0f, -1.0f);
+		FLinearColor KeyColor = IGHorrorHUD::PromptInk;
+		KeyColor.A *= Alpha;
+		DrawLeftAlignedText(
+			KeyLabel,
+			FVector2D(
+				FMath::RoundToFloat(KeyMin.X + (KeyWidth - KeyTextWidth) * 0.5f),
+				FMath::RoundToFloat(KeyMin.Y + (KeyHeight - KeyTextHeight) * 0.5f)),
+			KeyColor,
+			EIGHudTextRole::Prompt,
+			Scale * 0.84f,
+			false);
+	}
+	// 밝은 바닥과 벽 위에서도 읽히도록 글자 둘레에 흐린 그림자를 깐다. 굵은 테두리는 쓰지 않는다.
+	FLinearColor ActionColor = IGHorrorHUD::PromptInk;
+	ActionColor.A *= Alpha;
+	DrawPromptHalo(Action, FVector2D(ActionLeft, Top), EIGHudTextRole::Prompt, Scale, Alpha);
+	DrawLeftAlignedText(Action, FVector2D(ActionLeft, Top), ActionColor, EIGHudTextRole::Prompt, Scale, false, 0.0f);
+	if (!HintString.IsEmpty())
+	{
+		FLinearColor HintColor = IGHorrorHUD::PromptHintInk;
+		HintColor.A *= Alpha;
+		const FVector2D HintPosition(ActionLeft, FMath::RoundToFloat(Top + ActionHeight + 3.0f * Scale));
+		DrawPromptHalo(Hint, HintPosition, EIGHudTextRole::Hint, Scale * 0.9f, Alpha);
+		DrawLeftAlignedText(Hint, HintPosition, HintColor, EIGHudTextRole::Hint, Scale * 0.9f, false, 0.0f);
+	}
+}
+
+void AIGHorrorHUD::DrawPromptHalo(
+	const FText& Text,
+	const FVector2D& Position,
+	const EIGHudTextRole TextRole,
+	const float TextScale,
+	const float Alpha)
+{
+	UFont* Font = GetFontForRole(TextRole);
+	if (!Canvas || !Font || Text.IsEmpty() || Alpha <= 0.01f)
+	{
+		return;
+	}
+	// 여덟 방향으로 조금씩 비켜 겹친다. 겹친 자리일수록 진해져 글자 가장자리에서 부드럽게 옅어진다.
+	// 글자 검사 기록에는 넣지 않는다(같은 글이 여러 번 그려진 것으로 세면 안 된다).
+	const float Radius = FMath::Max(1.0f, 1.5f * TextScale);
+	const FLinearColor Halo(0.0f, 0.0f, 0.0f, 0.2f * Alpha);
+	static const FVector2D Offsets[] = {
+		{1.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, -1.0f},
+		{0.7f, 0.7f}, {-0.7f, 0.7f}, {0.7f, -0.7f}, {-0.7f, -0.7f}};
+	for (const FVector2D& Offset : Offsets)
+	{
+		FCanvasTextItem Item(Position + (Offset + FVector2D(0.0f, 0.5f)) * Radius, Text, Font, Halo);
+		Item.Scale = FVector2D(FMath::Max(0.5f, TextScale));
+		Canvas->DrawItem(Item);
+	}
 }
 
 void AIGHorrorHUD::MoveNotePage(const int32 Direction)

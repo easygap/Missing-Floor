@@ -599,11 +599,11 @@ if ($story -notmatch '즉시 팝인 금지') {
 	throw 'The §18.4 no-popin rule was removed.'
 }
 
-# 홀드 진행은 브래킷이 닫히는 것이다. 링·숫자·퍼센트는 금지다.
+# 홀드 진행은 키 표시의 테두리가 닫히는 것이다. 링·숫자·퍼센트는 금지다.
 $assertionCount++
-if ($hudSource -notmatch
-	'DrawFocusBracket\(\s*\r?\n?\s*IGHorrorHUD::RedAccent,\s*\r?\n?\s*HoldProgress\)') {
-	throw 'Hold progress must be drawn as the bracket closing (§18.4).'
+if ($hudSource -notmatch 'DrawInteractionPrompt\([^;]*HoldProgress,[^;]*\);' -or
+	-not $hudSource.Contains('const float Close = FMath::Clamp(HoldProgress, 0.0f, 1.0f);')) {
+	throw 'Hold progress must be drawn as the key outline closing (§18.4).'
 }
 foreach ($banned in @('DrawHoldRing', 'HoldPercentText', 'DrawHoldGauge')) {
 	$assertionCount++

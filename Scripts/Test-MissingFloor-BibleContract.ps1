@@ -623,7 +623,7 @@ if (-not (Test-Path (Join-Path $projectRoot 'Scripts/audit_hold_timing.py'))) {
 
 # §19.9는 4K까지 이름을 댄다. 레이아웃 검증이 거기까지 가는지 본다.
 $assertionCount++
-if ($story -notmatch '720p·1080p·1440p·4K에서 파문 링과 브래킷이 안전 영역 안에 들어온다') {
+if ($story -notmatch '720p·1080p·1440p·4K에서 파문 링과 조사 안내가 안전 영역 안에 들어온다') {
 	throw 'The §19.9 resolution criterion was removed.'
 }
 $accessibilityContract = Read-ProjectText 'Scripts/Test-MissingFloor-AccessibilityContract.ps1'

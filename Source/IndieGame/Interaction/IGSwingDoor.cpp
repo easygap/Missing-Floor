@@ -454,13 +454,15 @@ FText AIGSwingDoor::GetInteractionPrompt_Implementation(AActor* Interactor) cons
 	}
 	// The quiet/loud verb pair only matters if the player can discover it.
 	// One short suffix teaches it everywhere without a tutorial screen.
-	// 한 번 조용히 열어 본 뒤로는 모든 문에서 방법 설명을 뗀다.
+	// 한 번 조용히 열어 본 뒤로는 모든 문에서 방법 설명을 뗀다. 줄을 바꾼 둘째 줄은 HUD가
+	// 동사 아래에 작게 쓴다.
 	if (IGOnboardingMemory::IsQuietDoorLearned())
 	{
 		return BasePrompt;
 	}
-	return FText::Format(
-		NSLOCTEXT("IGSwingDoor", "HoldHintFormat", "{0} (길게 누르면 조용히)"),
+	return FText::Format(bOpen
+		? NSLOCTEXT("IGSwingDoor", "HoldHintCloseFormat", "{0}\n길게 누르면 조용히 닫기")
+		: NSLOCTEXT("IGSwingDoor", "HoldHintOpenFormat", "{0}\n길게 누르면 조용히 열기"),
 		BasePrompt);
 }
 

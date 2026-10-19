@@ -93,7 +93,7 @@ bool AIGFireDoorWedge::CanInteract_Implementation(AActor* Interactor) const
 
 FText AIGFireDoorWedge::GetInteractionPrompt_Implementation(AActor* Interactor) const
 {
-	return NSLOCTEXT("IGMissingFloor", "FireDoorWedgePrompt", "고임목 빼기 (길게 누르면 문을 잡고 천천히)");
+	return NSLOCTEXT("IGMissingFloor", "FireDoorWedgePrompt", "고임목 빼기\n길게 누르면 문을 잡고 천천히 닫기");
 }
 
 void AIGFireDoorWedge::CompleteInteraction_Implementation(const FIGInteractionContext& Context)
