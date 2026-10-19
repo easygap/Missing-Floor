@@ -7,11 +7,15 @@ MARKER = "IG_RetailFinish_20260914"
 
 
 def floor_albedo(finish):
-    """생성 원본을 직접 가져온다. 예전 타일 스캔으로 덮어쓰지 않는다."""
+    """생성 원본을 직접 가져온다. 예전 타일 스캔으로 덮어쓰지 않는다.
+
+    포천석만은 고운 알갱이를 누그러뜨린 파생본(SourceArt/Retail, soften_fine_detail.py --retail)을
+    읽는다. 파생본이 없으면 원본으로 돌아가지 않고 멈춘다."""
     name = "LandingPaint" if finish.startswith("landing_") else ("PocheonGranite" if finish == "granite" else "PorcelainStore")
     asset_name = f"T_{name}_20260915_D"
     source = os.path.join(unreal.SystemLibrary.get_project_directory(),
-                          "Content", "SourceArt", "AI", f"{name}_20260915.png")
+                          "Content", "SourceArt", "Retail" if name == "PocheonGranite" else "AI",
+                          f"{name}_20260915.png")
     if not os.path.isfile(source):
         raise RuntimeError(f"바닥 재질 원본이 없다: {source}")
     task = unreal.AssetImportTask()
@@ -43,6 +47,16 @@ GRIME = {
     "landing_dado": ("WallGrime_M", 340.0, 1.8, -.08),
     "landing_ceiling": ("CeilingStain_M", 520.0, 1.2, .0),
     "granite": ("FloorGrime_M", 300.0, 1.3, .16),
+}
+# 같은 얼룩을 모든 면에 고르게 입히지 않는다(2026-10-19). 물때는 천장과 만나는 벽 위쪽에서
+# 흘러내리고, 천장 얼룩은 비가 스미는 남쪽 바깥벽 쪽에만 번진다. 허리 아래 진한 칠은 걸레와
+# 신발 끝이 닿는 바닥 쪽이, 바닥은 걸레가 덜 닿는 벽 가장자리가 탁하다. 복도는 층마다
+# Y -375..-235이고 층 높이는 300 cm라 월드 좌표로 자리를 정한다. P는 월드 위치, G는 위 표의 세기.
+GRIME_PLACE = {
+    "landing_wall": "float h=P.z-floor(P.z/300.0)*300.0; return G*(0.18+0.82*smoothstep(130.0,228.0,h));",
+    "landing_dado": "float h=P.z-floor(P.z/300.0)*300.0; return G*(0.25+0.75*(1.0-smoothstep(20.0,70.0,h)));",
+    "landing_ceiling": "return G*saturate(1.0-(P.y+375.0)/90.0);",
+    "granite": "float e=max(saturate(1.0-(P.y+375.0)/35.0),saturate(1.0-(-235.0-P.y)/35.0)); return G*(0.3+0.7*e);",
 }
 
 
@@ -132,9 +146,13 @@ def author(material, finish):
         rough = scalar(.36 if finish == "granite" else .34)
         if painted:
             # 도장 벽은 알베도 한 장만 쓴다. 거친 미장면의 노멀·오클루전은 남기지 않는다.
+            # 벽 도장은 시안 색 #D5CEBE(선형 0.673, 0.625, 0.523)에 맞춰 회색 원본(선형 0.505, 0.491,
+            # 0.442)을 크림색으로 올린다. 그대로 두면 복도 등 아래에서 회녹색(#73766A)으로 읽혔다
+            # (2026-10-19). 허리 아래 칠은 이미 #73796B 언저리라 그대로 둔다.
             tint = node("MaterialExpressionMultiply")
             link(base, tint, "A")
-            link(color((.44, .48, .46) if finish == "landing_dado" else (1., 1., 1.)), tint, "B")
+            paint = {"landing_dado": (.44, .48, .46), "landing_wall": (1.33, 1.27, 1.18)}
+            link(color(paint.get(finish, (1., 1., 1.))), tint, "B")
             base = tint
             rough = scalar(.62 if finish == "landing_dado" else .88)
     if finish != "wall" and not painted:
@@ -186,11 +204,14 @@ def author(material, finish):
             expression.set_editor_property("inputs", pins)
             return expression
 
+        where = custom(GRIME_PLACE[finish], ("P", "G"), unreal.CustomMaterialOutputType.CMOT_FLOAT1, "때 자리")
+        link(node("MaterialExpressionWorldPosition"), where, "P")
+        link(scalar(gain), where, "G")
         tinted = custom("return B*saturate(1.0-(1.0-saturate(M.rgb*2.0))*G);",
                         ("B", "M", "G"), unreal.CustomMaterialOutputType.CMOT_FLOAT3, "때")
         link(base, tinted, "B")
         link(overlay, tinted, "M")
-        link(scalar(gain), tinted, "G")
+        link(where, tinted, "G")
         base = tinted
         if rough_shift:
             shifted = custom(
@@ -199,9 +220,16 @@ def author(material, finish):
                 ("R", "M", "G", "S"), unreal.CustomMaterialOutputType.CMOT_FLOAT1, "때 거칠기")
             link(rough, shifted, "R")
             link(overlay, shifted, "M")
-            link(scalar(gain), shifted, "G")
+            link(where, shifted, "G")
             link(scalar(rough_shift), shifted, "S")
             rough = shifted
+        if finish == "granite":
+            # 발길이 모이는 복도 가운데는 연마한 광이 닳아 덜 비친다.
+            worn = custom("return saturate(R+0.10*saturate(1.0-abs(P.y+305.0)/40.0));",
+                          ("R", "P"), unreal.CustomMaterialOutputType.CMOT_FLOAT1, "닳은 길")
+            link(rough, worn, "R")
+            link(node("MaterialExpressionWorldPosition"), worn, "P")
+            rough = worn
     lib.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
     lib.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
     # 기존 그래프의 노드를 지워도 출력 핀 참조는 남을 수 있어 모두 다시 연결한다.

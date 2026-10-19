@@ -37,10 +37,13 @@ $atlas = Join-Path $utilityRoot 'Content/SourceArt/Cctv/CctvStandby.png'
 & python (Join-Path $PSScriptRoot 'build_cctv_standby_atlas.py')
 if ($LASTEXITCODE -ne 0) { throw '실제 맵 CCTV 화면 생성 실패' }
 Copy-Item -LiteralPath $atlas -Destination $utilitySources -Force
-$graniteSources = Join-Path $utilityStage 'Content/SourceArt/AI'
-New-Item -ItemType Directory -Force -Path $graniteSources | Out-Null
-Copy-Item -LiteralPath (Join-Path $utilityRoot 'Content/SourceArt/AI/PocheonGranite_20260915.png') -Destination $graniteSources -Force
-Copy-Item -LiteralPath (Join-Path $utilityRoot 'Content/SourceArt/AI/LandingPaint_20260915.png') -Destination $graniteSources -Force
+& python (Join-Path $PSScriptRoot 'soften_fine_detail.py') --retail
+if ($LASTEXITCODE -ne 0) { throw '포천석 파생본 생성 실패' }
+$graniteSources = Join-Path $utilityStage 'Content/SourceArt/Retail'
+$paintSources = Join-Path $utilityStage 'Content/SourceArt/AI'
+New-Item -ItemType Directory -Force -Path $graniteSources, $paintSources | Out-Null
+Copy-Item -LiteralPath (Join-Path $utilityRoot 'Content/SourceArt/Retail/PocheonGranite_20260915.png') -Destination $graniteSources -Force
+Copy-Item -LiteralPath (Join-Path $utilityRoot 'Content/SourceArt/AI/LandingPaint_20260915.png') -Destination $paintSources -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'retail_surface_contract.py') -Destination (Join-Path $utilityStage 'Scripts/retail_surface_contract.py') -Force
 Copy-Item -LiteralPath (Join-Path $utilityRoot 'Content/SourceArt/AI/ApartmentNightVista_20260916.png') -Destination $utilitySources -Force
 Copy-Item -LiteralPath (Join-Path $utilityRoot 'Content/SourceArt/AI/ApartmentDawnVista.png') -Destination $utilitySources -Force
@@ -70,7 +73,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $utilityLog -Patter
 foreach ($name in @('M_ApartmentNightGlass', 'M_NightSkyline', 'M_NightSkyGlow', 'M_AnnexPanel', 'M_RoomInterior', 'M_PumpIndicator', 'M_Stucco_X', 'M_Stucco_Y', 'M_StuccoCeil', 'M_StuccoDado_X', 'M_UtilityStreetBrick', 'M_UtilityVillaBrick', 'M_GraniteTile_XY', 'M_UtilityTankSteel', 'M_UtilityFoundation', 'M_UtilityGraniteCladding', 'M_UtilityConcreteDark', 'M_CctvStandby', 'M_UtilityMeterCounter', 'M_UtilityMeterLabel', 'M_BoothAgentNote', 'M_BoothReceipts', 'M_BoothCalendar', 'M_LobbyWaterNotice', 'M_LobbyContactNotice', 'M_LobbyMeterSheet', 'M_LobbyForumPrint', 'M_PumpProcedure')) {
     Copy-Item -LiteralPath (Join-Path $utilityStage "Content/Prototype/Materials/$name.uasset") -Destination (Join-Path $utilityRoot 'Content/Prototype/Materials') -Force
 }
-foreach ($name in @('T_RoomInteriors_D', 'T_AnnexSandwichPanel_D', 'T_ApartmentNightVista_D', 'T_ApartmentNightVista_M', 'T_NightSkyline_D', 'T_NightSkyline_M', 'T_LandingPaint_20260915_D', 'T_UtilityTankSteel_D', 'T_CctvStandby_D', 'T_UtilityMeterCounter_D', 'T_UtilityMeterLabel_D', 'T_BoothAgentNote_D', 'T_BoothReceipts_D', 'T_BoothCalendar_D', 'T_LobbyWaterNotice_D', 'T_LobbyContactNotice_D', 'T_LobbyMeterSheet_D', 'T_LobbyForumPrint_D', 'T_PumpProcedure_D')) {
+foreach ($name in @('T_RoomInteriors_D', 'T_AnnexSandwichPanel_D', 'T_ApartmentNightVista_D', 'T_ApartmentNightVista_M', 'T_NightSkyline_D', 'T_NightSkyline_M', 'T_LandingPaint_20260915_D', 'T_PocheonGranite_20260915_D', 'T_UtilityTankSteel_D', 'T_CctvStandby_D', 'T_UtilityMeterCounter_D', 'T_UtilityMeterLabel_D', 'T_BoothAgentNote_D', 'T_BoothReceipts_D', 'T_BoothCalendar_D', 'T_LobbyWaterNotice_D', 'T_LobbyContactNotice_D', 'T_LobbyMeterSheet_D', 'T_LobbyForumPrint_D', 'T_PumpProcedure_D')) {
     $source = Join-Path $utilityStage "Content/Prototype/Textures/$name.uasset"
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination (Join-Path $utilityRoot 'Content/Prototype/Textures') -Force }
 }

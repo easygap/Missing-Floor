@@ -8,7 +8,7 @@ if (-not (Test-Path -LiteralPath $retailProject)) {
     throw '먼저 Import-BlenderAssets.ps1로 에디터 반입 작업 폴더를 만들어야 한다.'
 }
 # 메시 반입과 같은 작업 폴더를 쓰므로 두 반입 스크립트를 동시에 실행하지 않는다.
-foreach ($relative in @('Content/Prototype/Materials', 'Content/Prototype/Textures', 'Content/SourceArt/Atlas')) {
+foreach ($relative in @('Content/Prototype/Materials', 'Content/Prototype/Textures', 'Content/SourceArt/Atlas', 'Content/SourceArt/Retail')) {
     $destination = Join-Path $retailImport $relative
     New-Item -ItemType Directory -Force -Path $destination | Out-Null
     Copy-Item -Path (Join-Path $retailRoot "$relative/*") -Destination $destination -Recurse -Force

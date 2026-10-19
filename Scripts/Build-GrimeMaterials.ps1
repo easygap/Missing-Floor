@@ -1,7 +1,7 @@
 ﻿[CmdletBinding()]
 param()
 # 공용부 벽·천장·석재 바닥 재질에 때를 입힌다(build_grime_masks.py → retail_surface_contract.author).
-# 설비 재질 전체를 다시 만드는 Build-UtilityMaterials.ps1보다 좁게, 여섯 재질과 마스크 셋만 되가져온다.
+# 설비 재질 전체를 다시 만드는 Build-UtilityMaterials.ps1보다 좁게, 다섯 재질과 마스크 셋, 포천석 바닥 텍스처만 되가져온다.
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
 $igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Build-GrimeMaterials.ps1' -Parameters $PSBoundParameters
@@ -18,16 +18,18 @@ $masks = @('WallGrime_M', 'CeilingStain_M', 'FloorGrime_M')
 
 & python (Join-Path $PSScriptRoot 'build_grime_masks.py')
 if ($LASTEXITCODE -ne 0) { throw '때 마스크 생성 실패' }
+& python (Join-Path $PSScriptRoot 'soften_fine_detail.py') --retail
+if ($LASTEXITCODE -ne 0) { throw '포천석 파생본 생성 실패' }
 
 $stageGrime = Join-Path $stage 'Content/SourceArt/Grime'
 $stageAi = Join-Path $stage 'Content/SourceArt/AI'
-New-Item -ItemType Directory -Force -Path $stageGrime, $stageAi, (Join-Path $stage 'Content/Prototype/Materials') | Out-Null
+$stageRetail = Join-Path $stage 'Content/SourceArt/Retail'
+New-Item -ItemType Directory -Force -Path $stageGrime, $stageAi, $stageRetail, (Join-Path $stage 'Content/Prototype/Materials') | Out-Null
 foreach ($name in $masks) {
 	Copy-Item -LiteralPath (Join-Path $root "Content/SourceArt/Grime/$name.png") -Destination $stageGrime -Force
 }
-foreach ($name in @('LandingPaint_20260915.png', 'PocheonGranite_20260915.png')) {
-	Copy-Item -LiteralPath (Join-Path $root "Content/SourceArt/AI/$name") -Destination $stageAi -Force
-}
+Copy-Item -LiteralPath (Join-Path $root 'Content/SourceArt/AI/LandingPaint_20260915.png') -Destination $stageAi -Force
+Copy-Item -LiteralPath (Join-Path $root 'Content/SourceArt/Retail/PocheonGranite_20260915.png') -Destination $stageRetail -Force
 foreach ($name in $materials) {
 	Copy-Item -LiteralPath (Join-Path $root "Content/Prototype/Materials/$name.uasset") -Destination (Join-Path $stage 'Content/Prototype/Materials') -Force
 }
@@ -45,7 +47,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'GRIM
 foreach ($name in $materials) {
 	Copy-Item -LiteralPath (Join-Path $stage "Content/Prototype/Materials/$name.uasset") -Destination (Join-Path $root 'Content/Prototype/Materials') -Force
 }
-foreach ($name in $masks) {
+foreach ($name in $masks + @('PocheonGranite_20260915_D')) {
 	Copy-Item -LiteralPath (Join-Path $stage "Content/Prototype/Textures/T_$name.uasset") -Destination (Join-Path $root 'Content/Prototype/Textures') -Force
 }
 Select-String -LiteralPath $log -Pattern 'GRIME_MATERIALS PASS' | ForEach-Object { Write-Host $_.Line }
