@@ -143,8 +143,13 @@ public:
 	FVector GetKneeLocation(int32 Leg) const;
 	/** 검사용. 다리가 엉덩이→무릎→패드 사이에서 벽이나 소품을 뚫으면 뚫은 것과 자리를, 아니면 빈 문자열. */
 	FString FindLegObstruction(int32 Leg) const;
-	/** 이 점이 몸이나 다리 둘레 Radius 안에 든다. */
-	bool IsPointNearBody(const FVector& Point, float Radius) const;
+	/** 몸 살·물갈퀴·패드 막 뼈가 있는 몸인가(예전 SK_Lining에는 없다). */
+	bool HasSoftBody() const { return bHasSoftBones; }
+	/** 검사용: 몸 사분면(다리와 같은 번호) 살이 쉬는 자리에서 처진 거리(월드 cm). */
+	FVector GetMassOffset(int32 Quadrant) const;
+	/** 검사용: 이 다리의 패드 막 끝이 짚었던 면에 남아 늘어나 있는가, 늘어난 길이(cm, 붙어 있을 때만). */
+	bool IsSkinStuck(int32 Leg) const;
+	float GetSkinStretch(int32 Leg) const;
 
 	/** 5층: 정한 자리를 짚고 몸을 천장까지 편다. */
 	void SpreadTo(
@@ -217,6 +222,16 @@ private:
 		FVector Hip = FVector::ZeroVector;
 		FVector Knee = FVector::ZeroVector;
 		FVector Ankle = FVector::ZeroVector;
+		/** 마지막으로 놓은 패드 가운데(짚는 면)와 그 틀(X 바깥쪽, Z 짚은 면의 법선). */
+		FVector PadCenter = FVector::ZeroVector;
+		FQuat PadFrame = FQuat::Identity;
+	};
+
+	/** 무른 데 한 곳. 쉬는 자리에서 비킨 거리(월드 cm)와 그 속도. */
+	struct FSoftPoint
+	{
+		FVector Offset = FVector::ZeroVector;
+		FVector Velocity = FVector::ZeroVector;
 	};
 
 	void SetState(EIGLiningState NewState);
@@ -239,12 +254,30 @@ private:
 	void UpdateProbing(float DeltaSeconds);
 	/** 지금 상태에서 몸이 눌리고 늘어나는 정도(몸 기준 X 앞, Y 옆, Z 면 법선). */
 	FVector ComputeBodySquash() const;
+	/**
+	 * 무른 데의 움직임. 몸 사분면 살은 중력과 끌려가는 가속도에 처지고 늦게 따라오며, 짚을 때마다 한 번
+	 * 더 처진다. 물갈퀴는 다리를 접을수록 느슨하게 처지고 패드가 떨어지기 직전에 먼저 벌어진다. 패드 막
+	 * 끝은 짚었던 면에 붙어 늘어났다가 놓이면 튕겨 돌아온다. 뼈가 없는 몸이면 아무것도 하지 않는다.
+	 */
+	void UpdateSoftParts(float DeltaSeconds);
+	/** 자리를 옮겨 놓았다(쉬기·막은 채로 놓기·숨기기). 무른 데를 그 자리에서 다 처진 채로 맞춘다. */
+	void ResetSoftParts();
+	void PoseSoftParts(const FTransform& BodyTransform);
+	bool AreSoftPartsSettled() const;
+	/** 몸이 받는 중력. 면에 붙어 있으면 그 면이 받치는 성분을 뺀다. */
+	FVector SoftGravity() const;
+	/** 다리 하나가 짚었다. 무게가 옮겨 가며 살이 한 번 처진다. */
+	void KickSoftParts(int32 Leg, float Strength);
+	/** 패드 막 끝 뼈가 패드를 그대로 따를 때의 자리(월드). */
+	FTransform DefaultSkinWorld(int32 Leg) const;
 	void StartSwing(int32 Leg, const FVector& Pad, const FVector& Normal, float FoldTarget);
 	bool FindContact(int32 Leg, const FVector& FutureBody, const FQuat& FutureRotation, const FVector& Travel, FVector& OutPad, FVector& OutNormal) const;
 	FVector HipWorld(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
 	void PoseBody();
 	void SolveLeg(int32 Leg);
 	void UpdateColliders();
+	/** 몸판·다리·패드 충돌을 한꺼번에 켜거나 끈다. */
+	void SetBlockersEnabled(bool bEnabled);
 	void CheckGrip();
 	void SetObstructions(FName GapId, bool bObstructed);
 	void SealGap(FName GapId);
@@ -268,6 +301,10 @@ private:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UCapsuleComponent>> LegBlockers;
 
+	/** 패드 덩어리. 짚은 면에 붙은 납작한 상자다. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UBoxComponent>> PadBlockers;
+
 	/** 열린 틈의 바람 소리(틈 Id별). */
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UAudioComponent>> GapDrafts;
@@ -284,6 +321,30 @@ private:
 	float Length2[LegCount] = {};
 	/** 쉬는 자세에서 다리가 뻗은 수평 방향(몸 기준). */
 	FVector RestOutward[LegCount];
+
+	// 무른 뼈(rig_lining.py의 mass_*·web_*·skin_*)와 쉬는 자세에서 부모 뼈에 대한 자리.
+	FName MassBones[LegCount];
+	FName WebBones[LegCount];
+	FName SkinBones[LegCount];
+	FTransform MassRest[LegCount];
+	FTransform WebRestBody[LegCount];
+	FTransform WebRestUpper[LegCount];
+	FTransform SkinRest[LegCount];
+	bool bHasSoftBones = false;
+	/** 마지막으로 놓은 다리 마디(월드). 물갈퀴와 패드 막 뼈를 여기에 맞춘다. */
+	FTransform SegmentWorld[LegCount][3];
+	bool bSegmentsPosed = false;
+	FSoftPoint Mass[LegCount];
+	FSoftPoint Web[LegCount];
+	FSoftPoint Skin[LegCount];
+	bool bSkinStuck[LegCount] = {};
+	FTransform SkinStuckWorld[LegCount];
+	FVector SoftLastCenter = FVector::ZeroVector;
+	FVector SoftLastVelocity = FVector::ZeroVector;
+	FVector SoftAcceleration = FVector::ZeroVector;
+	/** 몸이 면에 붙어 있는 정도(0 다리로 들고 있음, 1 면에 붙음). 상태가 바뀌면 따라간다. */
+	float SoftContact = 1.0f;
+	bool bSoftFresh = true;
 
 	TArray<FIGLiningGap> Gaps;
 	FLeg Legs[LegCount];

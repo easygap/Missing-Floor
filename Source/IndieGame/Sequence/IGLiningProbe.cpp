@@ -48,6 +48,7 @@ void AIGLiningProbe::Configure(AIGPrologueWorldScene* InScene, AIGPlayerCharacte
 	Scene = InScene;
 	Player = InPlayer;
 	bShots = FParse::Param(FCommandLine::Get(), TEXT("IGLiningShots"));
+	bFrames = bShots && FParse::Param(FCommandLine::Get(), TEXT("IGLiningFrames"));
 	UWorld* World = GetWorld();
 	// 다른 괴이는 재운다. 어둑시니와 손님은 타이머로 돌아서 틱만 끄면 계속 나온다.
 	for (TActorIterator<AIGNightThreatDirector> It(World); It; ++It)
@@ -223,7 +224,28 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 		Finish();
 		return;
 	}
-	if (bShots && Phase >= 1 && Phase <= 7)
+	if (Phase >= 1 && Phase <= 7)
+	{
+		for (int32 Leg = 0; Leg < AIGLiningEntity::LegCount; ++Leg)
+		{
+			MaxSag = FMath::Max(MaxSag, Body->GetMassOffset(Leg).Size());
+			MaxSkinStretch = FMath::Max(MaxSkinStretch, Body->GetSkinStretch(Leg));
+			const bool bStuck = Body->IsSkinStuck(Leg);
+			bSkinLetGo |= bSkinWasStuck[Leg] && !bStuck;
+			bSkinWasStuck[Leg] = bStuck;
+		}
+	}
+	// 큰 쪽으로 옮겨 가는 동안은 고정 60fps에서 두 틱에 한 장(30fps), 5초까지 이어 찍는다. 그동안 띄엄띄엄 찍기는 쉰다.
+	if (bFrames && Phase == 5 && FrameIndex < 150)
+	{
+		if ((FrameTick++ % 2) == 0)
+		{
+			const FString Directory = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("LiningFrames")));
+			IFileManager::Get().MakeDirectory(*Directory, true);
+			FScreenshotRequest::RequestScreenshot(FPaths::Combine(Directory, FString::Printf(TEXT("f%04d.png"), FrameIndex++)), false, false);
+		}
+	}
+	else if (bShots && Phase >= 1 && Phase <= 7)
 	{
 		ShotClock += DeltaSeconds;
 		if (ShotClock >= 0.5f)
@@ -354,6 +376,11 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 		if (PhaseSeconds >= 1.0f)
 		{
 			Check(!bGripped, TEXT("bystander_at_door_not_gripped"));
+			UE_LOG(LogIndieGame, Display, TEXT("LINING_SOFT soft=%d max_sag=%.1f max_skin=%.1f let_go=%d"),
+				Body->HasSoftBody() ? 1 : 0, MaxSag, MaxSkinStretch, bSkinLetGo ? 1 : 0);
+			Check(Body->HasSoftBody(), TEXT("soft_bones_found"));
+			Check(MaxSag > 1.0f && MaxSag < 10.5f, TEXT("body_sags_while_moving"));
+			Check(MaxSkinStretch > 4.0f && bSkinLetGo, TEXT("pad_membrane_opens_then_lets_go"));
 			Shoot(TEXT("lining_end"));
 			Next(9);
 		}

@@ -18,7 +18,9 @@ param(
 	# -Shots와 함께: 1920x1080으로 HUD 없이 찍는다(소개 문서 화면).
 	[switch]$Clean,
 	# -Shots와 함께: 덧댄 것이 움직이는 구간을 30fps로 이어 찍는다(Saved/LeftoverFrames, 검수용 영상 재료).
-	[switch]$Frames
+	[switch]$Frames,
+	# -Shots와 함께: 덧댄 것의 몸판·다리·패드 충돌 모양을 선으로 그려 보이는 몸과 맞춰 본다.
+	[switch]$Collision
 )
 
 # 「302호에 남은 짐」을 실제 감독·관리인·덧댄 것·정우로 한 실행에서 겪는다. 낮1 짐 장면, 밤2 안쪽 방과
@@ -34,7 +36,7 @@ try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
-$tag = $Variant + $(if ($Culture) { "-$Culture" } else { '' }) + $(if ($TextScale -gt 1) { "-x$TextScale" } else { '' }) + $(if ($Clean) { '-clean' } else { '' })
+$tag = $Variant + $(if ($Culture) { "-$Culture" } else { '' }) + $(if ($TextScale -gt 1) { "-x$TextScale" } else { '' }) + $(if ($Clean) { '-clean' } else { '' }) + $(if ($Collision) { '-collision' } else { '' })
 $logPath = Join-Path $projectRoot "Saved/Logs/Leftover-$tag-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ('Saved/Validation/Leftover-' + $tag + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
 Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
@@ -42,6 +44,7 @@ $extra = @()
 if ($Culture) { $extra += ('-IGCulture=' + $Culture) }
 if ($TextScale -gt 1) { $extra += ('-IGCaptionScale=' + $TextScale) }
 if ($Shots -and $Frames) { $extra += '-IGLeftoverFrames' }
+if ($Shots -and $Collision) { $extra += '-IGLiningDrawCollision' }
 $audio = @('-nosound')
 if ($Record) {
 	# 숨긴 창은 초점이 없어 엔진이 소리를 줄인다. 녹음할 때는 열어 둔다.

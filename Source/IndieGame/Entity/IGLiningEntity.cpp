@@ -7,6 +7,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PoseableMeshComponent.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
@@ -15,6 +16,8 @@
 #include "IndieGame.h"
 #include "Interaction/IGAccessHatch.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Player/IGHorrorHUD.h"
 
 namespace IGLining
@@ -45,9 +48,36 @@ namespace IGLining
 	constexpr float PressSeconds = 1.45f;
 	// 다리를 옮길 때 패드가 면에서 들리는 높이.
 	constexpr float SwingLift = 26.0f;
+	// 떨어지는 패드는 옮기기 전에 제자리에서 몸 쪽 가장자리부터 든다(스윙의 앞 PeelHold). 바깥 가장자리
+	// (패드 가운데에서 PadOuterEdge)를 축으로 PeelTiltDegrees만큼 들리는 동안 물갈퀴와 패드 막이 먼저 벌어진다.
+	constexpr float PeelHold = 0.16f;
+	constexpr float PeelTiltDegrees = 20.0f;
+	constexpr float PadOuterEdge = 24.0f;
+	// 패드 막 끝은 짚었던 면에 붙어 있다가 스윙이 이만큼 지나거나 이만큼(cm) 늘어나면 놓인다.
+	constexpr float SkinRelease = 0.34f;
+	constexpr float SkinStretchMax = 26.0f;
+	// 몸 살이 처지는 깊이(cm). 면에 붙어 받칠 때, 다리로만 들고 있을 때, 넘지 않는 한도.
+	constexpr float SagRest = 3.5f;
+	constexpr float SagHung = 5.0f;
+	constexpr float SagMax = 10.0f;
+	// 물갈퀴가 느슨할 때 처지는 깊이, 패드가 떨어지기 직전에 벌어지는 거리, 한도(cm).
+	constexpr float WebDroop = 7.0f;
+	constexpr float WebOpen = 7.0f;
+	constexpr float WebMax = 14.0f;
+	// 무른 데의 용수철(고유 진동수 Hz, 감쇠비). 살은 무겁게 느리고 막은 가볍게 빠르다.
+	constexpr float MassHz = 1.8f;
+	constexpr float MassDamping = 0.38f;
+	constexpr float WebHz = 2.4f;
+	constexpr float WebDamping = 0.3f;
+	constexpr float SkinHz = 4.5f;
+	constexpr float SkinDamping = 0.28f;
 	// 몸판 반치수(몸 기준, cm). 사람이 이 안에 들면 눌린다.
 	const FVector BodyHalf(40.0f, 60.0f, 21.0f);
-	constexpr float LegRadius = 8.0f;
+	// 다리 충돌 반지름. 막 자루 겉면이 뼈 줄에서 떨어진 거리의 가운데(10.5 cm)와 4분의 3(11.9 cm) 사이다
+	// (SK_Lining manifest의 collision_reference).
+	constexpr float LegRadius = 11.0f;
+	// 패드 덩어리 충돌 상자 반치수(X 바깥쪽, Y 옆, Z 짚은 면에서 위). 막 끝 앞치마는 얇아서 넣지 않는다.
+	const FVector PadHalf(26.0f, 24.0f, 7.0f);
 	constexpr float GripRadius = 30.0f;
 	// 몸판 앞뒤(면의 법선 쪽)로는 몸에 실제로 닿을 만큼만 잡는다. 벽에서 한 걸음 물러선 사람까지
 	// 덮치면 망치질하는 자리에서 늘 눌린다.
@@ -118,9 +148,11 @@ namespace IGLining
 		}
 	}
 
-	float DistanceToSegment(const FVector& Point, const FVector& A, const FVector& B)
+	/** -IGLiningDrawCollision이면 충돌 모양을 그린다(검사 캡처에서 보이는 몸과 맞춰 본다). */
+	bool DrawCollision()
 	{
-		return FMath::PointDistToSegment(Point, A, B);
+		static const bool bDraw = FParse::Param(FCommandLine::Get(), TEXT("IGLiningDrawCollision"));
+		return bDraw;
 	}
 }
 
@@ -188,6 +220,27 @@ bool AIGLiningEntity::LoadBody()
 		Length1[Leg] = FVector::Distance(Hip, Knee);
 		Length2[Leg] = FVector::Distance(Knee, Ankle);
 	}
+	// 무른 뼈(몸 살·물갈퀴·패드 막). 없는 몸이면 다리만 놓는다.
+	bHasSoftBones = true;
+	for (int32 Leg = 0; Leg < LegCount && bHasSoftBones; ++Leg)
+	{
+		MassBones[Leg] = FName(*FString::Printf(TEXT("mass_%s"), IGLining::LegKeys[Leg]));
+		WebBones[Leg] = FName(*FString::Printf(TEXT("web_%s"), IGLining::LegKeys[Leg]));
+		SkinBones[Leg] = FName(*FString::Printf(TEXT("skin_%s"), IGLining::LegKeys[Leg]));
+		const int32 MassIndex = Ref.FindBoneIndex(MassBones[Leg]);
+		const int32 WebIndex = Ref.FindBoneIndex(WebBones[Leg]);
+		const int32 SkinIndex = Ref.FindBoneIndex(SkinBones[Leg]);
+		if (MassIndex == INDEX_NONE || WebIndex == INDEX_NONE || SkinIndex == INDEX_NONE)
+		{
+			bHasSoftBones = false;
+			break;
+		}
+		MassRest[Leg] = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, MassIndex).GetRelativeTransform(RestBody);
+		const FTransform WebPose = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, WebIndex);
+		WebRestBody[Leg] = WebPose.GetRelativeTransform(RestBody);
+		WebRestUpper[Leg] = WebPose.GetRelativeTransform(RestSegment[Leg][0]);
+		SkinRest[Leg] = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, SkinIndex).GetRelativeTransform(RestSegment[Leg][2]);
+	}
 	// 다리를 천장과 벽까지 펴면 쉬는 자세의 경계를 크게 벗어난다. 경계를 넉넉히 늘려 잘리지 않게 한다.
 	Mesh->SetPositiveBoundsExtension(FVector(140.0f, 140.0f, 280.0f));
 	Mesh->SetNegativeBoundsExtension(FVector(140.0f, 140.0f, 280.0f));
@@ -204,25 +257,38 @@ bool AIGLiningEntity::LoadBody()
 	Body->RegisterComponent();
 	Body->PrimaryComponentTick.AddPrerequisite(this, PrimaryActorTick);
 
+	// 다리·패드 충돌은 사람(Pawn)만 막는다. 짚을 데를 찾는 트레이스(WorldStatic)에는 걸리지 않는다.
+	const auto BlockPawn = [this](UPrimitiveComponent* Shape)
+	{
+		Shape->SetupAttachment(Root);
+		Shape->SetUsingAbsoluteLocation(true);
+		Shape->SetUsingAbsoluteRotation(true);
+		Shape->SetCollisionProfileName(UCollisionProfile::CustomCollisionProfileName);
+		Shape->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Shape->SetCollisionObjectType(ECC_WorldDynamic);
+		Shape->SetCollisionResponseToAllChannels(ECR_Ignore);
+		Shape->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		Shape->SetCanEverAffectNavigation(false);
+		Shape->RegisterComponent();
+	};
 	for (int32 Index = 0; Index < LegCount * 2; ++Index)
 	{
 		UCapsuleComponent* Capsule = NewObject<UCapsuleComponent>(this, *FString::Printf(TEXT("LegBlocker%d"), Index));
-		Capsule->SetupAttachment(Root);
-		Capsule->SetUsingAbsoluteLocation(true);
-		Capsule->SetUsingAbsoluteRotation(true);
 		Capsule->SetCapsuleSize(IGLining::LegRadius, 30.0f);
-		Capsule->SetCollisionProfileName(UCollisionProfile::CustomCollisionProfileName);
-		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		Capsule->SetCollisionObjectType(ECC_WorldDynamic);
-		Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
-		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-		Capsule->SetCanEverAffectNavigation(false);
-		Capsule->RegisterComponent();
+		BlockPawn(Capsule);
 		LegBlockers.Add(Capsule);
 	}
-	UE_LOG(LogIndieGame, Display, TEXT("LINING_BODY scale body=%s seg=%s rot body=%s seg=%s"),
+	for (int32 Index = 0; Index < LegCount; ++Index)
+	{
+		UBoxComponent* Box = NewObject<UBoxComponent>(this, *FString::Printf(TEXT("PadBlocker%d"), Index));
+		Box->SetBoxExtent(IGLining::PadHalf);
+		BlockPawn(Box);
+		PadBlockers.Add(Box);
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("LINING_BODY scale body=%s seg=%s rot body=%s seg=%s soft=%d"),
 		*RestBody.GetScale3D().ToCompactString(), *RestSegment[0][0].GetScale3D().ToCompactString(),
-		*RestBody.GetRotation().Rotator().ToCompactString(), *RestSegment[0][0].GetRotation().Rotator().ToCompactString());
+		*RestBody.GetRotation().Rotator().ToCompactString(), *RestSegment[0][0].GetRotation().Rotator().ToCompactString(),
+		bHasSoftBones ? 1 : 0);
 	UE_LOG(LogIndieGame, Display, TEXT("LINING_BODY loaded rest body=%s hip_fl=%s knee_fl=%s ankle_fl=%s L1=%.1f L2=%.1f"),
 		*RestBody.GetLocation().ToCompactString(),
 		*RestSegment[0][0].GetLocation().ToCompactString(),
@@ -249,12 +315,9 @@ void AIGLiningEntity::RestOnSurface(const FVector& Point, const FVector& Normal,
 	HeldGap = NAME_None;
 	TargetGap = NAME_None;
 	SetActorHiddenInGame(false);
-	BodyBlocker->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	for (UCapsuleComponent* Capsule : LegBlockers)
-	{
-		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	}
+	SetBlockersEnabled(true);
 	SetState(EIGLiningState::Folded);
+	ResetSoftParts();
 	PoseBody();
 	StartTicking();
 	UE_LOG(LogIndieGame, Display, TEXT("LINING_REST center=%s bodybone=%s padfl=%s bounds=%s/%s visible=%d hidden=%d tick=%d mats=%d lod=%d"),
@@ -350,14 +413,11 @@ void AIGLiningEntity::PlaceHolding(const FName GapId)
 	}
 	SetObstructions(GapId, true);
 	SetActorHiddenInGame(false);
-	BodyBlocker->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	for (UCapsuleComponent* Capsule : LegBlockers)
-	{
-		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	}
+	SetBlockersEnabled(true);
 	SetState(EIGLiningState::Holding);
 	HoldingCheckSeconds = 0.0f;
 	bGapsDirty = false;
+	ResetSoftParts();
 	PoseBody();
 	StartTicking();
 	UE_LOG(LogIndieGame, Display, TEXT("LINING_PLACED %s center=%s"), *GapId.ToString(), *BodyCenter.ToCompactString());
@@ -495,29 +555,19 @@ FVector AIGLiningEntity::GetKneeLocation(const int32 Leg) const
 	return Leg >= 0 && Leg < LegCount ? Legs[Leg].Knee : FVector::ZeroVector;
 }
 
-bool AIGLiningEntity::IsPointNearBody(const FVector& Point, const float Radius) const
+FVector AIGLiningEntity::GetMassOffset(const int32 Quadrant) const
 {
-	if (State == EIGLiningState::Hidden)
-	{
-		return false;
-	}
-	const FVector Local = BodyRotation.UnrotateVector(Point - BodyCenter);
-	if (FMath::Abs(Local.X) < IGLining::BodyHalf.X + Radius
-		&& FMath::Abs(Local.Y) < IGLining::BodyHalf.Y + Radius
-		&& FMath::Abs(Local.Z) < IGLining::BodyHalf.Z + Radius)
-	{
-		return true;
-	}
-	for (const FLeg& Leg : Legs)
-	{
-		if (IGLining::DistanceToSegment(Point, Leg.Hip, Leg.Knee) < Radius + IGLining::LegRadius
-			|| IGLining::DistanceToSegment(Point, Leg.Knee, Leg.Ankle) < Radius + IGLining::LegRadius
-			|| FVector::Distance(Point, Leg.Pad) < Radius + 22.0f)
-		{
-			return true;
-		}
-	}
-	return false;
+	return Quadrant >= 0 && Quadrant < LegCount ? Mass[Quadrant].Offset : FVector::ZeroVector;
+}
+
+bool AIGLiningEntity::IsSkinStuck(const int32 Leg) const
+{
+	return Leg >= 0 && Leg < LegCount && bSkinStuck[Leg];
+}
+
+float AIGLiningEntity::GetSkinStretch(const int32 Leg) const
+{
+	return IsSkinStuck(Leg) ? FVector::Distance(SkinStuckWorld[Leg].GetLocation(), DefaultSkinWorld(Leg).GetLocation()) : 0.0f;
 }
 
 void AIGLiningEntity::SetState(const EIGLiningState NewState)
@@ -788,6 +838,13 @@ void AIGLiningEntity::StartSwing(const int32 Leg, const FVector& Pad, const FVec
 	State_.SwingAlpha = 0.0f;
 	State_.bSwinging = true;
 	State_.LiftScale = 1.0f;
+	// 패드 막 끝은 짚었던 면에 붙어 남는다. 패드가 들리고 나서야 놓인다(UpdateSoftParts).
+	if (bHasSoftBones && bSegmentsPosed)
+	{
+		SkinStuckWorld[Leg] = DefaultSkinWorld(Leg);
+		bSkinStuck[Leg] = true;
+		Skin[Leg] = FSoftPoint();
+	}
 }
 
 void AIGLiningEntity::UpdateSwings(const float DeltaSeconds)
@@ -803,7 +860,8 @@ void AIGLiningEntity::UpdateSwings(const float DeltaSeconds)
 			continue;
 		}
 		Leg.SwingAlpha = FMath::Min(1.0f, Leg.SwingAlpha + DeltaSeconds / Duration);
-		const float T = IGLining::Smooth(Leg.SwingAlpha);
+		// 앞 PeelHold 동안 패드는 제자리에서 몸 쪽 가장자리만 든다(SolveLeg). 막이 먼저 벌어진 뒤에 옮긴다.
+		const float T = IGLining::Smooth((Leg.SwingAlpha - IGLining::PeelHold) / (1.0f - IGLining::PeelHold));
 		const FVector Lift = (Leg.FromNormal + Leg.ToNormal).GetSafeNormal() * IGLining::SwingLift * Leg.LiftScale * FMath::Sin(T * PI);
 		Leg.Pad = FMath::Lerp(Leg.FromPad, Leg.ToPad, T) + Lift;
 		Leg.Normal = FMath::Lerp(Leg.FromNormal, Leg.ToNormal, T).GetSafeNormal();
@@ -815,6 +873,8 @@ void AIGLiningEntity::UpdateSwings(const float DeltaSeconds)
 			Leg.Normal = Leg.ToNormal;
 			// 내려놓은 패드는 체중을 받아 한 번 더 눌렸다가 자리 잡는다. 더듬는 발은 가볍게 짚는다.
 			Leg.PlantKick = Leg.LiftScale < 0.5f ? 0.45f : 1.0f;
+			// 짚은 다리로 무게가 옮겨 가며 몸 살이 한 번 처졌다가 자리를 잡는다.
+			KickSoftParts(Index, Leg.LiftScale < 0.5f ? 0.35f : 1.0f);
 			PlayCue(TEXT("Lining_Plant"), 3, Leg.Pad, Leg.LiftScale < 0.5f ? 0.22f : 0.55f, FMath::FRandRange(0.92f, 1.06f));
 		}
 	}
@@ -869,9 +929,10 @@ void AIGLiningEntity::Tick(const float DeltaSeconds)
 	}
 	// 몸의 눌림은 순간이동하지 않고 따라간다(누르기 끝에서 납작해지고, 당길 때 늘어난다).
 	BodySquash = FMath::VInterpTo(BodySquash, ComputeBodySquash(), DeltaSeconds, 7.0f);
+	UpdateSoftParts(DeltaSeconds);
 	PoseBody();
 	CheckGrip();
-	// 쉬는 동안은 틈만 본다. 자세가 안 바뀌니 몇 틱에 한 번이면 된다.
+	// 쉬는 동안은 틈만 본다. 자세가 안 바뀌니 몇 틱에 한 번이면 된다. 처진 살이나 막이 아직 흔들리면 매 틱 본다.
 	if ((State == EIGLiningState::Folded || State == EIGLiningState::Holding || State == EIGLiningState::Spread)
 		&& !IsMoving())
 	{
@@ -880,7 +941,7 @@ void AIGLiningEntity::Tick(const float DeltaSeconds)
 		{
 			bAnySwing |= Leg.bSwinging;
 		}
-		PrimaryActorTick.TickInterval = bAnySwing ? 0.0f : 0.1f;
+		PrimaryActorTick.TickInterval = bAnySwing || !AreSoftPartsSettled() ? 0.0f : 0.1f;
 	}
 	else
 	{
@@ -1198,6 +1259,177 @@ FVector AIGLiningEntity::ComputeBodySquash() const
 	}
 }
 
+FVector AIGLiningEntity::SoftGravity() const
+{
+	const FVector Down(0.0f, 0.0f, -1.0f);
+	const FVector Up = BodyRotation.GetUpVector();
+	// 면에 붙어 있으면 면 쪽으로 누르는 성분은 그 면이 받는다. 면을 따라 흘러내리는 성분만 남는다.
+	return Down - Up * FMath::Min(0.0f, FVector::DotProduct(Down, Up)) * SoftContact;
+}
+
+void AIGLiningEntity::UpdateSoftParts(const float DeltaSeconds)
+{
+	if (!bHasSoftBones || DeltaSeconds <= 0.0f)
+	{
+		return;
+	}
+	const float Dt = FMath::Min(DeltaSeconds, 0.1f);
+	// 몸이 끌려가며 붙는 가속도. 살과 막은 그 반대쪽으로 뒤처졌다가 따라온다.
+	const FVector Velocity = bSoftFresh ? FVector::ZeroVector : (BodyCenter - SoftLastCenter) / Dt;
+	const FVector Accel = bSoftFresh ? FVector::ZeroVector : ((Velocity - SoftLastVelocity) / Dt).GetClampedToMaxSize(900.0f);
+	SoftAcceleration = FMath::Lerp(SoftAcceleration, Accel, FMath::Min(1.0f, Dt * 20.0f));
+	SoftLastCenter = BodyCenter;
+	SoftLastVelocity = Velocity;
+	bSoftFresh = false;
+	const bool bOnSurface = State == EIGLiningState::Folded || State == EIGLiningState::Pressing || State == EIGLiningState::Holding
+		|| State == EIGLiningState::Spread || State == EIGLiningState::Gripping;
+	SoftContact = FMath::FInterpTo(SoftContact, bOnSurface ? 1.0f : 0.0f, Dt, 6.0f);
+	const FVector Gravity = SoftGravity();
+	const FVector Up = BodyRotation.GetUpVector();
+	const float Sag = FMath::Lerp(IGLining::SagHung, IGLining::SagRest, SoftContact);
+	// 0.1초 간격으로 틱할 때도 튀지 않게 잘게 나눠 적분한다.
+	const int32 Steps = FMath::Clamp(FMath::CeilToInt(Dt * 120.0f), 1, 12);
+	const float H = Dt / Steps;
+	const auto Spring = [this, Steps, H](FSoftPoint& Point, const FVector& Target, const float Hz, const float Damping,
+		const float Inertia, const float Limit)
+	{
+		const float Omega = 2.0f * PI * Hz;
+		for (int32 Step = 0; Step < Steps; ++Step)
+		{
+			Point.Velocity += ((Target - Point.Offset) * (Omega * Omega) - Point.Velocity * (2.0f * Damping * Omega)
+				- SoftAcceleration * Inertia) * H;
+			Point.Offset += Point.Velocity * H;
+		}
+		if (Point.Offset.SizeSquared() > Limit * Limit)
+		{
+			Point.Offset = Point.Offset.GetClampedToMaxSize(Limit);
+			Point.Velocity *= 0.5f;
+		}
+	};
+	for (int32 Index = 0; Index < LegCount; ++Index)
+	{
+		const FLeg& Leg = Legs[Index];
+		// 받치던 다리가 들렸거나 접힌 사분면이 더 처진다.
+		const bool bUnsupported = Leg.bSwinging || Leg.Fold > 0.5f;
+		Spring(Mass[Index], Gravity * Sag * (bUnsupported ? 1.3f : 0.8f), IGLining::MassHz, IGLining::MassDamping, 0.9f,
+			IGLining::SagMax);
+
+		// 물갈퀴: 윗마디를 몸 쪽으로 접을수록 느슨해져 처지고, 패드가 떨어지기 직전에 몸에서 먼저 벌어진다.
+		const FVector Upper = BodyRotation.UnrotateVector(Leg.Knee - Leg.Hip).GetSafeNormal();
+		const float Slack = FMath::Clamp((0.85f - FVector::DotProduct(Upper, RestOutward[Index])) / 1.2f, 0.0f, 1.0f);
+		const float Opening = Leg.bSwinging && Leg.SwingAlpha > 0.0f
+			? FMath::Sin(PI * FMath::Clamp(Leg.SwingAlpha / (IGLining::PeelHold + 0.12f), 0.0f, 1.0f)) * Leg.LiftScale
+			: 0.0f;
+		Spring(Web[Index], FVector(0.0f, 0.0f, -IGLining::WebDroop * (0.3f + 0.7f * Slack)) + Up * IGLining::WebOpen * Opening,
+			IGLining::WebHz, IGLining::WebDamping, 1.0f, IGLining::WebMax);
+
+		// 패드 막 끝: 붙어 있는 동안은 짚었던 면에 남는다. 놓이면 늘어났던 자리에서 패드 쪽으로 튕겨 돌아온다.
+		if (bSkinStuck[Index])
+		{
+			const FVector Stretch = SkinStuckWorld[Index].GetLocation() - DefaultSkinWorld(Index).GetLocation();
+			if (!Leg.bSwinging || Leg.SwingAlpha >= IGLining::SkinRelease || Stretch.Size() > IGLining::SkinStretchMax)
+			{
+				bSkinStuck[Index] = false;
+				Skin[Index].Offset = Stretch.GetClampedToMaxSize(IGLining::SkinStretchMax);
+				Skin[Index].Velocity = FVector::ZeroVector;
+			}
+		}
+		else
+		{
+			Spring(Skin[Index], FVector::ZeroVector, IGLining::SkinHz, IGLining::SkinDamping, 0.6f, IGLining::SkinStretchMax);
+		}
+	}
+}
+
+void AIGLiningEntity::ResetSoftParts()
+{
+	for (int32 Index = 0; Index < LegCount; ++Index)
+	{
+		Mass[Index] = FSoftPoint();
+		Web[Index] = FSoftPoint();
+		Skin[Index] = FSoftPoint();
+		bSkinStuck[Index] = false;
+	}
+	SoftAcceleration = FVector::ZeroVector;
+	SoftLastVelocity = FVector::ZeroVector;
+	bSoftFresh = true;
+	// 옮겨 놓은 자리에서 이미 다 처진 채로 시작한다(첫 화면에서 살이 내려앉는 게 보이지 않게).
+	for (int32 Step = 0; Step < 20; ++Step)
+	{
+		UpdateSoftParts(0.05f);
+	}
+}
+
+void AIGLiningEntity::PoseSoftParts(const FTransform& BodyTransform)
+{
+	if (!bHasSoftBones)
+	{
+		return;
+	}
+	const FVector ToComponent = RestBody.GetLocation() - BodyCenter;
+	for (int32 Index = 0; Index < LegCount; ++Index)
+	{
+		// 살은 몸 뼈(눌림 포함)를 따르다 처진 만큼 비킨다.
+		FTransform MassPose = MassRest[Index] * BodyTransform;
+		MassPose.AddToTranslation(Mass[Index].Offset);
+		Body->SetBoneTransformByName(MassBones[Index], MassPose, EBoneSpaces::ComponentSpace);
+		// 물갈퀴 가운데는 몸 옆구리와 윗마디 사이 가운데에 있다가 처지거나 벌어진다.
+		FTransform Upper = SegmentWorld[Index][0];
+		Upper.AddToTranslation(ToComponent);
+		FTransform WebPose;
+		WebPose.Blend(WebRestBody[Index] * BodyTransform, WebRestUpper[Index] * Upper, 0.5f);
+		WebPose.AddToTranslation(Web[Index].Offset);
+		Body->SetBoneTransformByName(WebBones[Index], WebPose, EBoneSpaces::ComponentSpace);
+		// 패드 막 끝은 붙어 있는 동안 면에 남고, 놓인 뒤에는 늘어났던 만큼에서 패드로 돌아온다.
+		FTransform SkinPose = bSkinStuck[Index] ? SkinStuckWorld[Index] : DefaultSkinWorld(Index);
+		if (!bSkinStuck[Index])
+		{
+			SkinPose.AddToTranslation(Skin[Index].Offset);
+			const float Back = FMath::Clamp(Skin[Index].Offset.Size() / IGLining::SkinStretchMax, 0.0f, 1.0f);
+			SkinPose.SetRotation(FQuat::Slerp(SkinPose.GetRotation(), SkinStuckWorld[Index].GetRotation(), Back));
+		}
+		SkinPose.AddToTranslation(ToComponent);
+		Body->SetBoneTransformByName(SkinBones[Index], SkinPose, EBoneSpaces::ComponentSpace);
+	}
+}
+
+bool AIGLiningEntity::AreSoftPartsSettled() const
+{
+	if (!bHasSoftBones)
+	{
+		return true;
+	}
+	for (int32 Index = 0; Index < LegCount; ++Index)
+	{
+		if (bSkinStuck[Index] || Skin[Index].Offset.SizeSquared() > 0.25f || Skin[Index].Velocity.SizeSquared() > 0.25f
+			|| Mass[Index].Velocity.SizeSquared() > 0.25f || Web[Index].Velocity.SizeSquared() > 0.25f)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void AIGLiningEntity::KickSoftParts(const int32 Leg, const float Strength)
+{
+	const FVector Gravity = SoftGravity();
+	if (!bHasSoftBones || Gravity.SizeSquared() < 0.04f)
+	{
+		return;
+	}
+	const FVector Down = Gravity.GetSafeNormal();
+	for (int32 Index = 0; Index < LegCount; ++Index)
+	{
+		Mass[Index].Velocity += Down * (Index == Leg ? 32.0f : 18.0f) * Strength;
+	}
+	Web[Leg].Velocity += Down * 24.0f * Strength;
+}
+
+FTransform AIGLiningEntity::DefaultSkinWorld(const int32 Leg) const
+{
+	return SkinRest[Leg] * SegmentWorld[Leg][2];
+}
+
 void AIGLiningEntity::SpreadTo(
 	const FVector& InBodyCenter,
 	const FVector& InBodyUp,
@@ -1308,11 +1540,8 @@ void AIGLiningEntity::Hide()
 	SetObstructions(TargetGap, false);
 	SetState(EIGLiningState::Hidden);
 	SetActorHiddenInGame(true);
-	BodyBlocker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	for (UCapsuleComponent* Capsule : LegBlockers)
-	{
-		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
+	SetBlockersEnabled(false);
+	ResetSoftParts();
 	SetActorTickEnabled(false);
 }
 
@@ -1345,12 +1574,14 @@ void AIGLiningEntity::PoseBody()
 		LocalSquash[Axis] = BodySquash.X * Dir.X + BodySquash.Y * Dir.Y + BodySquash.Z * Dir.Z;
 	}
 	const FVector Settle = BodyRotation.GetUpVector() * (1.0f - BodySquash.Z) * IGLining::PressStandOff;
-	Body->SetBoneTransformByName(BodyBone,
-		FTransform(BodyRotation * RestRotation, Offset - Settle, RestBody.GetScale3D() * LocalSquash), EBoneSpaces::ComponentSpace);
+	const FTransform BodyTransform(BodyRotation * RestRotation, Offset - Settle, RestBody.GetScale3D() * LocalSquash);
+	Body->SetBoneTransformByName(BodyBone, BodyTransform, EBoneSpaces::ComponentSpace);
 	for (int32 Leg = 0; Leg < LegCount; ++Leg)
 	{
 		SolveLeg(Leg);
 	}
+	bSegmentsPosed = true;
+	PoseSoftParts(BodyTransform);
 	UpdateColliders();
 }
 
@@ -1372,14 +1603,18 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 		PadForward = OutwardWorld;
 	}
 	FQuat PadQuat = IGLining::FrameRotation(RestOutward[Index], FVector::UpVector, PadForward, Leg.Normal);
-	if (Leg.bSwinging && Leg.SwingAlpha < 0.3f)
+	FVector PadPose = Leg.Pad - Leg.Normal * 1.8f * IGLining::Smooth(Leg.PlantKick);
+	if (Leg.bSwinging && Leg.SwingAlpha > 0.0f && Leg.SwingAlpha < IGLining::PeelHold + 0.2f)
 	{
-		// 붙어 있던 패드는 몸 쪽 가장자리부터 들린다(막이 벽에서 떨어지는 모양).
-		const FVector Side = FVector::CrossProduct(Leg.Normal, PadForward).GetSafeNormal();
-		const float Tilt = FMath::DegreesToRadians(22.0f) * FMath::Sin(PI * Leg.SwingAlpha / 0.3f) * Leg.LiftScale;
-		PadQuat = FQuat(Side, -Tilt) * PadQuat;
+		// 붙어 있던 패드는 바깥 가장자리를 짚은 채 몸 쪽 가장자리부터 들린다. 그 틈으로 막이 먼저 벌어진다.
+		const float Rise = Leg.SwingAlpha < IGLining::PeelHold ? IGLining::Smooth(Leg.SwingAlpha / IGLining::PeelHold)
+			: 1.0f - IGLining::Smooth((Leg.SwingAlpha - IGLining::PeelHold) / 0.2f);
+		const FQuat Peel(FVector::CrossProduct(Leg.Normal, PadForward).GetSafeNormal(),
+			FMath::DegreesToRadians(IGLining::PeelTiltDegrees) * Rise * Leg.LiftScale);
+		const FVector Pivot = PadPose + PadForward * IGLining::PadOuterEdge;
+		PadPose = Pivot + Peel.RotateVector(PadPose - Pivot);
+		PadQuat = Peel * PadQuat;
 	}
-	const FVector PadPose = Leg.Pad - Leg.Normal * 1.8f * IGLining::Smooth(Leg.PlantKick);
 	FVector Ankle = PadPose - PadQuat.RotateVector(RestPad[Index] - RestAnkle);
 	const FVector Pole = (OutwardWorld * 0.35f + Up * 0.9f).GetSafeNormal();
 	FVector Knee = IGLining::TwoBoneKnee(Hip, Ankle, Length1[Index], Length2[Index], Pole);
@@ -1413,21 +1648,41 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 	const FVector Bend = Pole;
 	const FQuat Segment1 = IGLining::FrameRotation(RestKnee - RestHip, FVector::UpVector, Knee - Hip, Bend);
 	const FQuat Segment2 = IGLining::FrameRotation(RestAnkle - RestKnee, FVector::UpVector, Ankle - Knee, Bend);
+	// 월드 자리로 적어 두고(물갈퀴·패드 막 뼈가 따른다) 컴포넌트 공간으로 놓는다.
+	SegmentWorld[Index][0] = FTransform(Segment1 * RestSegment[Index][0].GetRotation(), Hip, RestSegment[Index][0].GetScale3D());
+	SegmentWorld[Index][1] = FTransform(Segment2 * RestSegment[Index][1].GetRotation(), Knee, RestSegment[Index][1].GetScale3D());
+	SegmentWorld[Index][2] = FTransform(Segment3 * RestSegment[Index][2].GetRotation(), Ankle, RestSegment[Index][2].GetScale3D());
 	const FVector Offset = RestBody.GetLocation() - BodyCenter;
-	Body->SetBoneTransformByName(SegmentBones[Index][0],
-		FTransform(Segment1 * RestSegment[Index][0].GetRotation(), Hip + Offset, RestSegment[Index][0].GetScale3D()), EBoneSpaces::ComponentSpace);
-	Body->SetBoneTransformByName(SegmentBones[Index][1],
-		FTransform(Segment2 * RestSegment[Index][1].GetRotation(), Knee + Offset, RestSegment[Index][1].GetScale3D()), EBoneSpaces::ComponentSpace);
-	Body->SetBoneTransformByName(SegmentBones[Index][2],
-		FTransform(Segment3 * RestSegment[Index][2].GetRotation(), Ankle + Offset, RestSegment[Index][2].GetScale3D()), EBoneSpaces::ComponentSpace);
+	for (int32 Segment = 0; Segment < 3; ++Segment)
+	{
+		FTransform Pose = SegmentWorld[Index][Segment];
+		Pose.AddToTranslation(Offset);
+		Body->SetBoneTransformByName(SegmentBones[Index][Segment], Pose, EBoneSpaces::ComponentSpace);
+	}
 	Leg.Hip = Hip;
 	Leg.Knee = Knee;
 	Leg.Ankle = Ankle;
+	// 패드 덩어리는 끝 마디에 붙어 돈다(쉬는 자세의 발목→패드를 그대로 돌린다).
+	Leg.PadCenter = Ankle + Segment3.RotateVector(RestPad[Index] - RestAnkle);
+	Leg.PadFrame = Segment3 * FRotationMatrix::MakeFromXZ(RestOutward[Index], FVector::UpVector).ToQuat();
 }
 
 void AIGLiningEntity::UpdateColliders()
 {
-	BodyBlocker->SetWorldLocationAndRotation(BodyCenter, BodyRotation, false, nullptr, ETeleportType::TeleportPhysics);
+	// 몸판 상자는 눌리고 늘어난 몸을 따라가고(벽에 붙은 바닥면은 제자리), 처진 살 쪽으로 반만큼 비킨다.
+	const FVector Extent = IGLining::BodyHalf * BodySquash;
+	if (!BodyBlocker->GetUnscaledBoxExtent().Equals(Extent, 0.3f))
+	{
+		BodyBlocker->SetBoxExtent(Extent, false);
+	}
+	FVector Sag = FVector::ZeroVector;
+	for (const FSoftPoint& Point : Mass)
+	{
+		Sag += Point.Offset;
+	}
+	const FVector BoxCenter = BodyCenter - BodyRotation.GetUpVector() * (1.0f - BodySquash.Z) * IGLining::PressStandOff
+		+ Sag * (0.5f / LegCount);
+	BodyBlocker->SetWorldLocationAndRotation(BoxCenter, BodyRotation, false, nullptr, ETeleportType::TeleportPhysics);
 	for (int32 Index = 0; Index < LegCount; ++Index)
 	{
 		const FLeg& Leg = Legs[Index];
@@ -1447,6 +1702,45 @@ void AIGLiningEntity::UpdateColliders()
 			Capsule->SetWorldLocationAndRotation((A + B) * 0.5f, FRotationMatrix::MakeFromZ(Dir.GetSafeNormal()).ToQuat(),
 				false, nullptr, ETeleportType::TeleportPhysics);
 		}
+		// 패드 덩어리는 짚은 면에 붙은 납작한 상자다.
+		if (UBoxComponent* Box = PadBlockers.IsValidIndex(Index) ? PadBlockers[Index].Get() : nullptr)
+		{
+			Box->SetWorldLocationAndRotation(Leg.PadCenter + Leg.PadFrame.GetUpVector() * IGLining::PadHalf.Z, Leg.PadFrame,
+				false, nullptr, ETeleportType::TeleportPhysics);
+		}
+	}
+#if ENABLE_DRAW_DEBUG
+	if (IGLining::DrawCollision() && GetWorld())
+	{
+		// 쉬는 동안은 0.1초에 한 번 틱하므로 선을 그만큼 남긴다.
+		const float Life = PrimaryActorTick.TickInterval > 0.0f ? PrimaryActorTick.TickInterval + 0.05f : -1.0f;
+		DrawDebugBox(GetWorld(), BodyBlocker->GetComponentLocation(), BodyBlocker->GetScaledBoxExtent(), BodyBlocker->GetComponentQuat(),
+			FColor::Cyan, false, Life, 0, 1.0f);
+		for (const UCapsuleComponent* Capsule : LegBlockers)
+		{
+			DrawDebugCapsule(GetWorld(), Capsule->GetComponentLocation(), Capsule->GetScaledCapsuleHalfHeight(),
+				Capsule->GetScaledCapsuleRadius(), Capsule->GetComponentQuat(), FColor::Yellow, false, Life, 0, 1.0f);
+		}
+		for (const UBoxComponent* Box : PadBlockers)
+		{
+			DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), Box->GetComponentQuat(),
+				FColor::Orange, false, Life, 0, 1.0f);
+		}
+	}
+#endif
+}
+
+void AIGLiningEntity::SetBlockersEnabled(const bool bEnabled)
+{
+	const ECollisionEnabled::Type Mode = bEnabled ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision;
+	BodyBlocker->SetCollisionEnabled(Mode);
+	for (UCapsuleComponent* Capsule : LegBlockers)
+	{
+		Capsule->SetCollisionEnabled(Mode);
+	}
+	for (UBoxComponent* Box : PadBlockers)
+	{
+		Box->SetCollisionEnabled(Mode);
 	}
 }
 

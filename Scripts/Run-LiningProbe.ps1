@@ -1,7 +1,11 @@
 [CmdletBinding()]
 param(
 	[ValidateSet(30, 60)][int]$FrameRate = 60,
-	[switch]$Shots
+	[switch]$Shots,
+	# -Shots와 함께: 몸판·다리·패드 충돌 모양을 선으로 그려 보이는 몸과 맞춰 본다.
+	[switch]$Collision,
+	# -Shots와 함께: 큰 점검구로 옮겨 가는 동안을 문간에서 30fps로 이어 찍는다(Saved/LiningFrames).
+	[switch]$Frames
 )
 
 # 덧댄 것이 열린 틈 가운데 넓은 쪽을 골라 가서 누르는지, 누르는 동안 덮개가 다리에 걸려 튕기는지,
@@ -21,10 +25,12 @@ $logPath = Join-Path $projectRoot "Saved/Logs/Lining-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ('Saved/Validation/Lining-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
 Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 $render = if ($Shots) { @('-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLiningShots') } else { @('-nullrhi') }
+if ($Shots -and $Collision) { $render += '-IGLiningDrawCollision' }
+if ($Shots -and $Frames) { $render += '-IGLiningFrames' }
 & $editor $projectPath -game -unattended -nosplash -nosound -NoLoadingScreen -RenderOffscreen @render `
 	-IGListenerGreybox -IGLiningProbe -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
 	"-UserDir=$probeUser" "-abslog=$logPath" | Out-Null
-Select-String -LiteralPath $logPath -Pattern 'LINING_(CHECK|PROBE|BODY|TARGET|SEALED|GRIP|ARRIVED)' | ForEach-Object { Write-Host $_.Line }
+Select-String -LiteralPath $logPath -Pattern 'LINING_(CHECK|PROBE|BODY|TARGET|SEALED|GRIP|ARRIVED|SOFT)' | ForEach-Object { Write-Host $_.Line }
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LINING_PROBE PASS failures=0')) {
 	throw "덧댄 것 검사에 실패했습니다: $logPath"
 }
