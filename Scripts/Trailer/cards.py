@@ -7,11 +7,13 @@
     python Scripts/Trailer/cards.py --social Docs/Media/social-preview.png
 """
 from pathlib import Path
+import os
 import sys
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / 'Saved/Trailer/cards'
+# 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 없으면 예전 자리다.
+OUT = Path(os.environ.get('IG_TRAILER_DIR') or ROOT / 'Saved/Trailer') / 'cards'
 FONTS = ROOT / 'Source/IndieGame/UI/Fonts'
 SIZE = (1920, 1080)
 

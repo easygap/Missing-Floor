@@ -15,12 +15,14 @@
 from pathlib import Path
 from functools import lru_cache
 import json
+import os
 import subprocess
 import sys
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-HERE = ROOT / 'Saved/Trailer'
+# 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 없으면 예전 자리다.
+HERE = Path(os.environ.get('IG_TRAILER_DIR') or ROOT / 'Saved/Trailer')
 FPS = 30
 SIZE = (1920, 1080)
 # 기어 오는 장면은 붙잡히고 끊기기까지 한 번에 찍힌다. 끊긴 뒤 다섯 프레임까지 쓴다.

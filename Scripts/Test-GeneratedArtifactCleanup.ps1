@@ -55,6 +55,19 @@ function New-Run([string]$Name, [bool]$Success, [string]$Kind = 'Validation', [s
     return [pscustomobject]@{ Directory = $dir; File = (Join-Path $dir $relative); Id = $scope.Runs[0].Id }
 }
 
+function New-TrailerRun([string]$Name) {
+    $scope = Enter-IGArtifactScope -ProjectRoot $project -Name '예고편'
+    $dir = Join-Path $project "Saved/Trailer/Runs/$Name"
+    Add-IGArtifactDirectory -Scope $scope -Directory $dir -Variant 'Trailer'
+    foreach ($relative in @('alley/frame_0001.png', 'trailer_audio.wav', 'trailer_mix.wav', 'Trailer-all.log',
+        'MissingFloor-Trailer.mp4', 'MissingFloor-Trailer-web.mp4', 'still-ko-1.5.png', 'cards/ko/knock.png', 'edl.json',
+        'User/Saved/SaveGames/AutoSave_0.sav', 'User/Saved/Logs/IndieGame.log')) {
+        Write-Fixture (Join-Path $dir $relative)
+    }
+    Complete-IGArtifactScope -Scope $scope -Succeeded $true
+    return [pscustomobject]@{ Directory = $dir; Id = $scope.Runs[0].Id }
+}
+
 function Age-Run($Run, [int]$Days) {
     $path = Join-Path $project ("Saved/ArtifactCleanup/$($Run.Id).json")
     $record = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -169,6 +182,33 @@ try {
     [IO.File]::SetLastWriteTimeUtc($usage, [DateTime]::UtcNow.AddDays(-2))
     $expired = Invoke-IGArtifactCleanup -ProjectRoot $project
     Assert-Cleanup (-not (Test-Path -LiteralPath $reused[0].File) -and -not (Test-Path -LiteralPath $usage)) '재사용 보호 기간이 끝난 임시 결과를 정리하지 않음'
+
+    # 예고편은 실행마다 새 폴더(Saved/Trailer/Runs)만 맡는다. 오래된 실행에서는 다시 찍으면 되는 장면 프레임과
+    # 중간 소리, 기록만 지우고 영상·정지 화면·글자 판·편집표·세이브는 남긴다. 예전 Saved/Trailer는 등록하지 않는다.
+    $legacyShot = Join-Path $project 'Saved/Trailer/alley'
+    Write-Fixture (Join-Path $legacyShot 'frame_0001.png')
+    $scope = Enter-IGArtifactScope -ProjectRoot $project -Name '예전 예고편'
+    try {
+        Add-IGArtifactDirectory -Scope $scope -Directory $legacyShot
+        Add-IGArtifactDirectory -Scope $scope -Directory (Join-Path $project 'Saved/Trailer/New')
+        Assert-Cleanup ($scope.Runs.Count -eq 0) '예전 예고편 폴더를 정리 대상으로 등록함'
+    }
+    finally { $scope.Lease.Dispose() }
+    $trailers = @(1..3 | ForEach-Object { New-TrailerRun "Trailer$_" })
+    Assert-Cleanup (Test-Path -LiteralPath (Join-Path $trailers[0].Directory 'alley/frame_0001.png')) '막 만든 예고편 프레임을 지움'
+    for ($index = 0; $index -lt $trailers.Count; $index++) { Age-Run $trailers[$index] (6 - $index) }
+    [void](Invoke-IGArtifactCleanup -ProjectRoot $project)
+    foreach ($gone in @('alley/frame_0001.png', 'trailer_audio.wav', 'trailer_mix.wav', 'Trailer-all.log')) {
+        Assert-Cleanup (-not (Test-Path -LiteralPath (Join-Path $trailers[0].Directory $gone))) "오래된 예고편 중간 파일을 정리하지 않음: $gone"
+    }
+    foreach ($kept in @('MissingFloor-Trailer.mp4', 'MissingFloor-Trailer-web.mp4', 'still-ko-1.5.png', 'cards/ko/knock.png',
+        'edl.json', 'User/Saved/SaveGames/AutoSave_0.sav', 'User/Saved/Logs/IndieGame.log')) {
+        Assert-Cleanup (Test-Path -LiteralPath (Join-Path $trailers[0].Directory $kept)) "예고편 결과를 지움: $kept"
+    }
+    foreach ($trailer in @($trailers[1], $trailers[2])) {
+        Assert-Cleanup (Test-Path -LiteralPath (Join-Path $trailer.Directory 'alley/frame_0001.png')) '최근 예고편 두 번의 프레임을 지움'
+    }
+    Assert-Cleanup (Test-Path -LiteralPath (Join-Path $legacyShot 'frame_0001.png')) '예전 예고편 프레임을 지움'
 
     # 연결 폴더와 상위 경로가 들어간 조작된 목록도 보호한다.
     $scope = Enter-IGArtifactScope -ProjectRoot $project -Name '연결 경로'

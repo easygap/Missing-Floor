@@ -18,7 +18,9 @@ function Test-IGArtifactPath {
 
 function Get-IGArtifactKind {
     param([string]$ProjectRoot, [string]$Directory)
-    foreach ($pair in @(@('Validation', 'Saved/Validation'), @('Package', 'Saved/Packages'), @('Pso', 'Saved/PsoRecord'))) {
+    # 예고편은 Build-Trailer.ps1이 실행마다 새로 만드는 Saved/Trailer/Runs 아래만 맡는다. 예전 Saved/Trailer는 손대지 않는다.
+    foreach ($pair in @(@('Validation', 'Saved/Validation'), @('Package', 'Saved/Packages'), @('Pso', 'Saved/PsoRecord'),
+        @('Trailer', 'Saved/Trailer/Runs'))) {
         if (Test-IGArtifactPath $Directory (Join-Path $ProjectRoot $pair[1])) { return $pair[0] }
     }
     if (Test-IGArtifactPath $Directory $ProjectRoot) { return '' }
@@ -147,6 +149,11 @@ function Test-IGArtifactFile {
     if ($Kind -eq 'Package') {
         return ($path.StartsWith('Windows/', [StringComparison]::OrdinalIgnoreCase) -and $extension -in
             '.exe', '.dll', '.pdb', '.pak', '.ucas', '.utoc', '.bin', '.dat', '.locres', '.ttf', '.otf', '.upipelinecache')
+    }
+    if ($Kind -eq 'Trailer') {
+        # 다시 찍으면 되는 장면 프레임과 중간 소리, 기록만 지운다. 영상·정지 화면·글자 판·편집표는 남긴다.
+        return ($path -match '^[a-z0-9-]+/frame_[0-9]{4}\.png$' -or $path -match '^trailer_(mix|audio)\.wav$' -or
+            ($extension -eq '.log' -and $path -notmatch '/'))
     }
     if ($Kind -eq 'Smoke' -and $path -match '^(Download|Game)/' -and $extension -in
         '.zip', '.exe', '.dll', '.pdb', '.pak', '.ucas', '.utoc', '.bin', '.dat', '.locres', '.ttf', '.otf') { return $true }

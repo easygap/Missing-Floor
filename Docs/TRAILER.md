@@ -38,7 +38,24 @@ Unreal Engine 5.8, Python(Pillow, numpy, scipy), ffmpeg가 필요하다.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/Build-ArtAssets.ps1 -CodeOnly
-powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/Trailer/Run-TrailerCapture.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/Trailer/Build-Trailer.ps1
+```
+
+`Build-Trailer.ps1`은 새 실행 폴더 `Saved/Trailer/Runs/<시각>`에서 촬영, 글자 판, 편집표, 소리,
+두 언어 영상, 배포용(`-hq`)과 README용(`-web`) 인코딩까지 한 번에 만든다. 끝으로 여섯 영상의 길이,
+화면 크기, 초당 프레임, 소리 줄을 ffprobe로 확인하고, README용이 10MB 아래인지 본다. 이 확인을
+통과해야 성공으로 기록된다.
+
+실행 폴더는 자동 정리(`GeneratedArtifactCleanup.ps1`)에 등록된다. 하루가 지나고 최근 성공 두 번에
+들지 않는 실행에서는 다시 찍으면 되는 장면 프레임과 중간 소리(`trailer_mix.wav`, `trailer_audio.wav`),
+기록만 지운다. 영상, 정지 화면, 글자 판, 편집표, 음량 측정은 남는다. 실패한 실행도 마지막 한 번은
+남는다. 예전 `Saved/Trailer`의 프레임과 영상은 등록하지 않으므로 자동으로 지워지지 않는다.
+
+장면 몇 개만 다시 찍어 볼 때는 단계를 따로 돌린다. 이때는 예전처럼 `Saved/Trailer`에 쌓이고
+자동 정리 밖이다. 다른 폴더에서 편집하려면 `IG_TRAILER_DIR`에 그 폴더를 준다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/Trailer/Run-TrailerCapture.ps1 -Shot door-402,booth-cctv
 python Scripts/Trailer/cards.py
 python Scripts/Trailer/assemble.py --marks
 python Scripts/Trailer/compose.py
@@ -60,8 +77,10 @@ python Scripts/Trailer/assemble.py en
 어둑시니 장면은 `FRAMING`에 적은 대로 복도 끝을 1.6배로 잘라 쓴다. 원래 화각에서는 등 앞에 선
 형체가 작은 화면에서 몇 픽셀밖에 안 된다. 자른 화면은 고정이고 움직이지 않는다.
 
-결과는 `Saved/Trailer/MissingFloor-Trailer.mp4`(한국어)와 `MissingFloor-Trailer-en.mp4`(영어)다.
-화면 잡티 때문에 원본이 크므로 배포용과 README용을 따로 인코딩한다.
+결과는 실행 폴더의 `MissingFloor-Trailer.mp4`(한국어)와 `MissingFloor-Trailer-en.mp4`(영어)다
+(단계를 따로 돌리면 `Saved/Trailer`). 화면 잡티 때문에 원본이 크므로 배포용과 README용을 따로
+인코딩한다. `Build-Trailer.ps1`은 아래 인코딩까지 해 둔다. 릴리스 묶음에는
+`python Scripts/make_release_zip.py --trailer <실행 폴더>/MissingFloor-Trailer-hq.mp4`로 넘긴다.
 
 ```powershell
 ffmpeg -i MissingFloor-Trailer.mp4 -c:v libx264 -preset slow -crf 22 -tune grain -c:a aac -b:a 160k -movflags +faststart MissingFloor-Trailer-hq.mp4

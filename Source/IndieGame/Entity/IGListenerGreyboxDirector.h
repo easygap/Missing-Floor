@@ -762,6 +762,8 @@ private:
 	int32 TrailerShotFrame = 0;
 	int32 TrailerNight = 0;
 	int32 TrailerDroppedFrames = 0;
+	/** 장면별 프레임 폴더의 부모. -IGTrailerOut=로 실행마다 새 폴더를 준다. 없으면 Saved/Trailer. */
+	FString TrailerOutputRoot;
 	TWeakObjectPtr<class ACameraActor> TrailerCamera;
 	int32 ImmersionReviewFailures = 0;
 	bool bProductionMode = false;

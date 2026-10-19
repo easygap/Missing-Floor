@@ -10044,6 +10044,12 @@ void AIGListenerGreyboxDirector::StartArrivalCapture()
 	if (FParse::Param(FCommandLine::Get(), TEXT("IGTrailerCapture")))
 	{
 		// 트레일러는 프레임마다 카메라를 옮기고 한 장씩 찍는다. -UseFixedTimeStep과 함께 돌린다.
+		// 예고편 만들기(Build-Trailer.ps1)는 실행마다 새 폴더를 주어 자동 정리가 그 폴더만 맡게 한다.
+		if (!FParse::Value(FCommandLine::Get(), TEXT("IGTrailerOut="), TrailerOutputRoot) || TrailerOutputRoot.IsEmpty())
+		{
+			TrailerOutputRoot = FPaths::Combine(FPaths::ProjectDir(), TEXT("Saved/Trailer"));
+		}
+		TrailerOutputRoot = FPaths::ConvertRelativePathToFull(TrailerOutputRoot);
 		TWeakObjectPtr<AIGListenerGreyboxDirector> WeakThis(this);
 		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([WeakThis](float)
 		{
@@ -10288,9 +10294,8 @@ bool AIGListenerGreyboxDirector::AdvanceTrailerCapture()
 			++TrailerDroppedFrames;
 			UE_LOG(LogTemp, Warning, TEXT("TRAILER_DROP %s frame=%d"), Shot.Name, RecordIndex);
 		}
-		const FString Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(
-			FPaths::ProjectDir(), TEXT("Saved/Trailer"), Shot.Name,
-			FString::Printf(TEXT("frame_%04d.png"), RecordIndex)));
+		const FString Path = FPaths::Combine(
+			TrailerOutputRoot, Shot.Name, FString::Printf(TEXT("frame_%04d.png"), RecordIndex));
 		FScreenshotRequest::RequestScreenshot(Path, false, false);
 	}
 	++TrailerShotFrame;

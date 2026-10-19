@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from PIL import Image, ImageOps
@@ -98,7 +99,9 @@ def build_chase() -> None:
     motion = []
     for shot, start, end in (('stair-landing', 0, 60), ('listener-approach', 0, 117)):
         for index in range(start, end, 3):
-            with Image.open(PROJECT_ROOT / 'Saved/Trailer' / shot / f'frame_{index:04d}.png') as source:
+            # 예고편 만들기의 실행 폴더를 IG_TRAILER_DIR로 줄 수 있다. 없으면 예전 자리다.
+            trailer = Path(os.environ.get('IG_TRAILER_DIR') or PROJECT_ROOT / 'Saved/Trailer')
+            with Image.open(trailer / shot / f'frame_{index:04d}.png') as source:
                 motion.append(source.convert('RGB').resize(FRAME_SIZE, Image.Resampling.LANCZOS))
     motion_palette = build_global_palette(motion[::5])
     motion = [frame.quantize(palette=motion_palette, dither=Image.Dither.FLOYDSTEINBERG) for frame in motion]

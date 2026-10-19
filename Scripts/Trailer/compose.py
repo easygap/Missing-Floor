@@ -9,13 +9,15 @@
 """
 from pathlib import Path
 import json
+import os
 import subprocess
 import wave
 import numpy as np
 from scipy.signal import butter, sosfilt
 
 ROOT = Path(__file__).resolve().parents[2]
-HERE = ROOT / 'Saved/Trailer'
+# 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 없으면 예전 자리다.
+HERE = Path(os.environ.get('IG_TRAILER_DIR') or ROOT / 'Saved/Trailer')
 AUDIO = ROOT / 'Content/SourceArt/Audio'
 SR = 48000
 EDL = json.loads((HERE / 'edl.json').read_text(encoding='utf-8'))
