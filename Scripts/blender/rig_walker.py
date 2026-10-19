@@ -95,6 +95,8 @@ def parse_args():
     parser.add_argument("--no-bake", action="store_true")
     parser.add_argument("--notes", default="")
     parser.add_argument("--profile", choices=["patrol", "resident", "officer", "mover"], default="patrol")
+    parser.add_argument("--soft-upper-arm", action="store_true",
+                        help="위팔이 몸통 옆에 붙어 뽑힌 몸. 소매 안쪽을 팔과 몸통 사이로 섞는다(skin_soft)")
     parser.add_argument("--tint-box", action="append", default=[],
                         help="xmin,xmax,zmin,zmax,색상(도),채도 배율,명도 배율. 앞이 +X인 저작 좌표(m)에서 "
                              "이 상자 안의 색만 굽기 전에 바꾼다. 시안에 없던 뒷면을 생성기가 지어낸 색을 고칠 때")
@@ -360,7 +362,116 @@ def region_bones(co, marks):
     return TORSO_BONES
 
 
+# 위팔이 몸통 옆에 붙은 채 뽑힌 몸(202호 정우)은 소매 안쪽 면이 몸통 틈 안에 들어와 몸통 뼈에만
+# 붙었다. 팔을 들면 그 면이 허리에 남아 팔꿈치까지 큰 삼각형으로 늘어났다(10-19 검토, 판 받치기
+# 34배). --soft-upper-arm을 주면 위팔 뼈에서 SOFT_ARM_CORE 안은 팔에, SOFT_ARM_EDGE까지는 팔과
+# 몸통을 거리에 따라 섞고, 그 띠를 메시 이웃끼리 몇 번 고르게 편다. 아래팔은 몸통과 떨어진 고리라
+# 예전 규칙 그대로 둔다. 이 모드에서는 골반보다 위의 몸통 정점에 허벅지 뼈를 붙이지 않는다.
+SOFT_UPPER_ARM = False
+SOFT_ARM_CORE = 0.065
+SOFT_ARM_EDGE = 0.12
+SOFT_SMOOTH_ITERATIONS = 3
+
+
+def _distance_weights(co, names, bones):
+    scored = []
+    for name in names:
+        head, tail = bones[name]
+        d = max(_segment_distance(co, head, tail) - BONE_RADIUS.get(name, 0.06), 0.0)
+        scored.append((math.exp(-(d / WEIGHT_FALLOFF) ** 2), name))
+    scored.sort(reverse=True)
+    top = [(w, n) for w, n in scored[:MAX_INFLUENCES] if w > 0.02 * scored[0][0]]
+    if not top or top[0][0] <= 1e-6:
+        return {min(names, key=lambda n: _segment_distance(co, *bones[n])): 1.0}
+    total = sum(w for w, _ in top)
+    return {n: w / total for w, n in top}
+
+
+def upper_arm_blend(co, marks):
+    """위팔 띠 안이면 (쪽, 팔 비율). 어깨에서 팔꿈치 사이, 위팔 뼈에서 SOFT_ARM_EDGE 안."""
+    height = marks["height"]
+    if not (0.47 * height < co.z < 0.84 * height):
+        return None
+    side = "l" if co.y >= 0.0 else "r"
+    shoulder, elbow, _, _ = marks["arms"][side]
+    axis = elbow - shoulder
+    t = (co - shoulder).dot(axis) / max(axis.length_squared, 1e-9)
+    if t < 0.05 or t > 1.05:
+        return None
+    d = _segment_distance(co, shoulder, elbow)
+    if d >= SOFT_ARM_EDGE:
+        return None
+    if d <= SOFT_ARM_CORE:
+        return side, 1.0
+    return side, 1.0 - (d - SOFT_ARM_CORE) / (SOFT_ARM_EDGE - SOFT_ARM_CORE)
+
+
+def skin_soft(mesh_ob, arm, marks):
+    """skin과 같은 부위 규칙에 위팔 띠 섞기와 이웃 고르기를 더한다(--soft-upper-arm)."""
+    bones = {b.name: (b.head_local.copy(), b.tail_local.copy())
+             for b in arm.data.bones if b.name != "root"}
+    groups = {name: mesh_ob.vertex_groups.get(name) or mesh_ob.vertex_groups.new(name=name) for name in bones}
+    hip_z = marks["pelvis"].z
+    torso_upper = tuple(n for n in TORSO_BONES if not n.startswith("thigh"))
+    verts = mesh_ob.data.vertices
+    table = []
+    zone = set()
+    for v in verts:
+        allowed = region_bones(v.co, marks)
+        if allowed == TORSO_BONES and v.co.z > hip_z:
+            allowed = torso_upper
+        weights = _distance_weights(v.co, allowed, bones)
+        blend = upper_arm_blend(v.co, marks)
+        if blend is not None:
+            side, alpha = blend
+            arm_w = _distance_weights(v.co, (f"clavicle_{side}", f"upperarm_{side}", f"lowerarm_{side}", "spine_03"), bones)
+            body_w = _distance_weights(v.co, torso_upper, bones)
+            weights = {}
+            for name, w in arm_w.items():
+                weights[name] = weights.get(name, 0.0) + alpha * w
+            for name, w in body_w.items():
+                weights[name] = weights.get(name, 0.0) + (1.0 - alpha) * w
+            zone.add(v.index)
+        table.append(weights)
+    # 띠와 그 바로 옆 정점을 이웃 평균으로 편다. 팔과 몸통이 한 칸 사이에서 갈리지 않게 한다.
+    neighbors = [[] for _ in verts]
+    for e in mesh_ob.data.edges:
+        a, b = e.vertices
+        neighbors[a].append(b)
+        neighbors[b].append(a)
+    ring = set(zone)
+    for i in zone:
+        ring.update(neighbors[i])
+    for _ in range(SOFT_SMOOTH_ITERATIONS):
+        updated = {}
+        for i in ring:
+            if not neighbors[i]:
+                continue
+            acc = {name: 0.5 * w for name, w in table[i].items()}
+            share = 0.5 / len(neighbors[i])
+            for j in neighbors[i]:
+                for name, w in table[j].items():
+                    acc[name] = acc.get(name, 0.0) + share * w
+            updated[i] = acc
+        for i, acc in updated.items():
+            table[i] = acc
+    for index, weights in enumerate(table):
+        top = sorted(((w, n) for n, w in weights.items()), reverse=True)[:MAX_INFLUENCES]
+        total = sum(w for w, _ in top) or 1.0
+        for w, name in top:
+            groups[name].add([index], w / total, "REPLACE")
+    mod = mesh_ob.modifiers.new("Armature", "ARMATURE")
+    mod.object = arm
+    mod.use_vertex_groups = True
+    mod.use_deform_preserve_volume = False
+    mesh_ob.parent = arm
+    ig.log(f"  skin: soft upper arm ({len(zone)} band vertices, {SOFT_SMOOTH_ITERATIONS} smoothing passes)")
+
+
 def skin(mesh_ob, arm, marks):
+    if SOFT_UPPER_ARM:
+        skin_soft(mesh_ob, arm, marks)
+        return
     bones = {b.name: (b.head_local.copy(), b.tail_local.copy())
              for b in arm.data.bones if b.name != "root"}
     groups = {}
@@ -824,8 +935,9 @@ def main():
     if args.yaw:
         bake_rotation(high, 0.0, 0.0, args.yaw)
     scale = fit_height_and_ground(high, args.height)
-    global PROFILE
+    global PROFILE, SOFT_UPPER_ARM
     PROFILE = args.profile
+    SOFT_UPPER_ARM = args.soft_upper_arm
     if PROFILE == "patrol":
         plus, minus = hand_mass(high, args.height / 100.0)
         # 저작 좌표에서 오른손은 +Y다. 손전등 쪽이 -Y면 거울상이다.
