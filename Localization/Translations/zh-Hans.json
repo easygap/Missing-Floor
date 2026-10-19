@@ -1509,5 +1509,6 @@
  "IGMissingFloor,NarinReceiptHere": "给你。",
  "IGHUD,SoundCaptionsAll": "所有声音",
  "IGHUD,SoundCaptionsImportant": "重要声音",
- "IGMissingFloor,N3ReturnHintComing": "他在那儿。朝这边过来了。"
+ "IGMissingFloor,N3ReturnHintComing": "他在那儿。朝这边过来了。",
+ "IGMissingFloor,LeftoverBraceReady": "撑住了，拉吧。"
 }

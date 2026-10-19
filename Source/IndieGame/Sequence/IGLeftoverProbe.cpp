@@ -1508,6 +1508,20 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		if (Step == 2 && Leftover->IsAnnexSpread() && !bCaptureInFlight)
 		{
+			// 소개 문서용 넓은 컷을 먼저 제 프레임에 찍는다. 몸판과 천장·벽 아래로 뻗은 다리가 한 화면에
+			// 들어오게 물러선다(2026-10-15에 다시 지은 몸). 한 프레임에 자리를 두 번 바꾸면 마지막 자리만 찍힌다.
+			if (bCleanShots && !bSpreadWideShot)
+			{
+				bSpreadWideShot = true;
+				Stand(FVector(30.0f, 640.0f, 1200.0f), FVector(245.0f, 500.0f, 1320.0f));
+				Shoot(TEXT("n4_spread_wide"));
+				PhaseSeconds = 0.0f;
+				return;
+			}
+			if (bCleanShots && PhaseSeconds < 0.4f)
+			{
+				return;
+			}
 			Check(bLiningGripped, TEXT("n4_pressed_when_standing_in_its_path"));
 			Check(State.WallStage == 2 && !Leftover->IsInspectionOverlayOn(), TEXT("n4_press_keeps_wall_stage"));
 			Check(Lining->GetHeldGap() == FName(TEXT("Annex.Inspection")), TEXT("n4_moved_to_inspection_and_spread"));
@@ -1965,6 +1979,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 				NSLOCTEXT("IGMissingFloor", "LeftoverBraceRelease", "판 놓을게요. 상자는 이따 다시 해요."), TEXT("LeftoverBraceRelease")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
 				NSLOCTEXT("IGMissingFloor", "LeftoverBraceAgain", "상자요? 잠깐만요, 판 잡을게요."), TEXT("LeftoverBraceAgain")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
+				NSLOCTEXT("IGMissingFloor", "LeftoverBraceReady", "잡았어요. 당겨요."), TEXT("LeftoverBraceReady")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
 				NSLOCTEXT("IGMissingFloor", "LeftoverGoAheadLine", "저 먼저 내려갈게요. 문은 열어 둘게요. 오래 있지 마요."), TEXT("LeftoverGoAheadLine")},
 			{TEXT('P'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),

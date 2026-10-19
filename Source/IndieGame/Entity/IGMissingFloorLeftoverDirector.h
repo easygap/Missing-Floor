@@ -383,6 +383,8 @@ private:
 	double BoardMoveStart = 0.0;
 	float BoardMoveSeconds = 0.0f;
 	bool bWedgeInHand = false;
+	/** 문을 잡고 있다가 다시 불려 와 「판 잡을게요」를 이미 했다. 판 앞에 서면 짧게만 말한다. */
+	bool bBraceAgainSpoken = false;
 	int32 DohaBoxPulls = 0;
 	FVector WardrobeFrom = FVector::ZeroVector;
 	double WardrobeMoveStart = -1.0;

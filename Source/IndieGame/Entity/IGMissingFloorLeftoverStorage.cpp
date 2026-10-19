@@ -482,6 +482,7 @@ void AIGMissingFloorLeftoverDirector::BeginStorageTrap(const bool bAnnounce)
 	StorageStage = State.WedgeSocket == WedgeBrace && !State.LiningHeldGap.IsNone() && State.LiningHeldGap != GapNarrow
 		? EStorage::Released : EStorage::Trapped;
 	StorageStageAt = GetWorld()->GetTimeSeconds();
+	bBraceAgainSpoken = false;
 	SetBoardPose(0, false);
 	if (Jeongwoo->LoadBody())
 	{
@@ -881,6 +882,7 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 		if (StorageStage == EStorage::Leaving)
 		{
 			SayIn(IGLeftoverDialogue::Brace, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceAgain", "상자요? 잠깐만요, 판 잡을게요."));
+			bBraceAgainSpoken = true;
 			// 복도의 문설주 옆에서 돌아온다. 문간 가운데로 들어와야 벽 모서리를 안 뚫는다.
 			Route.Append({FVector(-30.0f, -252.0f, StorageZ), FVector(-30.0f, -200.0f, StorageZ)});
 		}
@@ -1045,6 +1047,7 @@ void AIGMissingFloorLeftoverDirector::SelfEscapeAtDawn()
 		State.JeongwooState = bRescued ? LeftTogether : SelfEscaped;
 	}
 	StorageStage = EStorage::Idle;
+	bBraceAgainSpoken = false;
 	if (Jeongwoo)
 	{
 		Jeongwoo->Vanish();

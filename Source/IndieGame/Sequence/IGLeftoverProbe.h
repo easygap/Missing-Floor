@@ -150,6 +150,8 @@ private:
 	bool bNight3Av = false;
 	/** -IGLeftoverRecord: 마스터 믹스를 녹음한다(-DeterministicAudio와 같이 쓴다). */
 	bool bRecordAV = false;
+	/** -Clean 촬영에서 넷째 밤 편 몸의 넓은 컷을 이미 찍었다. */
+	bool bSpreadWideShot = false;
 	bool bRecordingAV = false;
 	FString LastAvDialogue;
 	FString LastAvCaption;

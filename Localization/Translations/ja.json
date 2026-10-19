@@ -1509,5 +1509,6 @@
  "IGMissingFloor,NarinReceiptHere": "はい、どうぞ。",
  "IGHUD,SoundCaptionsAll": "すべての音",
  "IGHUD,SoundCaptionsImportant": "重要な音",
- "IGMissingFloor,N3ReturnHintComing": "いた。こっちに来る。"
+ "IGMissingFloor,N3ReturnHintComing": "いた。こっちに来る。",
+ "IGMissingFloor,LeftoverBraceReady": "押さえました。引いてください。"
 }

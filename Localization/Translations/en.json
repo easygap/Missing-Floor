@@ -1509,5 +1509,6 @@
  "IGMissingFloor,NarinReceiptHere": "Here you go.",
  "IGHUD,SoundCaptionsAll": "All sounds",
  "IGHUD,SoundCaptionsImportant": "Important sounds",
- "IGMissingFloor,N3ReturnHintComing": "There he is. He’s coming this way."
+ "IGMissingFloor,N3ReturnHintComing": "There he is. He’s coming this way.",
+ "IGMissingFloor,LeftoverBraceReady": "Got it. Pull."
 }

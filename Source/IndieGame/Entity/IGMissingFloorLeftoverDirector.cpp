@@ -1785,7 +1785,16 @@ void AIGMissingFloorLeftoverDirector::HandleJeongwooArrived()
 		// 밀려난 판(25도 돈 셋째 자세)의 방 쪽 면을 본다. 두 손이 그 면에 닿는다.
 		Jeongwoo->SetPose(AIGJeongwooFigure::EPose::Brace);
 		Jeongwoo->FaceYaw(70.0f);
-		SayIn(IGLeftoverDialogue::Brace, IGLeftover::JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceLine", "제가 받칠게요. 상자부터 당겨요."));
+		// 다시 불려 온 길이면 오면서 이미 「판 잡을게요」라고 했다. 같은 부탁을 처음처럼 되풀이하지 않는다.
+		if (bBraceAgainSpoken)
+		{
+			bBraceAgainSpoken = false;
+			SayIn(IGLeftoverDialogue::Brace, IGLeftover::JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceReady", "잡았어요. 당겨요."));
+		}
+		else
+		{
+			SayIn(IGLeftoverDialogue::Brace, IGLeftover::JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceLine", "제가 받칠게요. 상자부터 당겨요."));
+		}
 		RefreshStorage();
 		return;
 	case EStorage::Leaving:
