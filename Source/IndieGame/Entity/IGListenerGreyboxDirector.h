@@ -764,6 +764,15 @@ private:
 	int32 TrailerDroppedFrames = 0;
 	/** 장면별 프레임 폴더의 부모. -IGTrailerOut=로 실행마다 새 폴더를 준다. 없으면 Saved/Trailer. */
 	FString TrailerOutputRoot;
+	/** 화면 잡티 원인 촬영(-IGScreenNoiseReview). 같은 카메라에서 설정을 하나씩 바꿔 찍는다. */
+	bool AdvanceScreenNoiseReview();
+	int32 ScreenNoiseView = 0;
+	int32 ScreenNoiseVariant = 0;
+	int32 ScreenNoiseFrame = 0;
+	int32 ScreenNoiseNight = 0;
+	int32 ScreenNoiseDropped = 0;
+	bool bScreenNoiseStarted = false;
+	FString ScreenNoiseOutputRoot;
 	TWeakObjectPtr<class ACameraActor> TrailerCamera;
 	int32 ImmersionReviewFailures = 0;
 	bool bProductionMode = false;

@@ -10057,6 +10057,22 @@ void AIGListenerGreyboxDirector::StartArrivalCapture()
 		}));
 		return;
 	}
+	if (FParse::Param(FCommandLine::Get(), TEXT("IGScreenNoiseReview")))
+	{
+		// 화면 잡티 원인 촬영도 프레임마다 한 걸음씩 간다. -UseFixedTimeStep과 함께 돌린다.
+		if (!FParse::Value(FCommandLine::Get(), TEXT("IGScreenNoiseOut="), ScreenNoiseOutputRoot)
+			|| ScreenNoiseOutputRoot.IsEmpty())
+		{
+			ScreenNoiseOutputRoot = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("ScreenNoise"));
+		}
+		ScreenNoiseOutputRoot = FPaths::ConvertRelativePathToFull(ScreenNoiseOutputRoot);
+		TWeakObjectPtr<AIGListenerGreyboxDirector> WeakThis(this);
+		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([WeakThis](float)
+		{
+			return WeakThis.IsValid() && WeakThis->AdvanceScreenNoiseReview();
+		}));
+		return;
+	}
 	// 근접 사진은 입주 자막과 시작 위치 보정이 끝난 뒤 찍는다.
 	const bool bDetailScreens = (FParse::Param(FCommandLine::Get(), TEXT("IGReadingReview")) ||
 		FParse::Param(FCommandLine::Get(), TEXT("IGReadmeCapture"))) && !bCaptureMetricsOnly;
