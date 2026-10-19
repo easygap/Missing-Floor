@@ -716,6 +716,15 @@ void AIGPrologueWorldScene::HandlePhysicsPropHit(
 		EIGAudioBus::World);
 }
 
+namespace
+{
+	/**
+	 * 골목 LED 보안등(청백)이 건너편 벽돌 벽에 맞고 되튄 빛. 벽돌 색이 묻어 따뜻하지만 401호
+	 * 문틈의 전구색보다 탁하고 옅다. 더 주황으로 두면 복도 벽이 #D5CEBE가 아니라 황토로 보였다.
+	 */
+	const FLinearColor StreetGlowColor(1.0f, 0.80f, 0.64f);
+}
+
 UPointLightComponent* AIGPrologueWorldScene::CreateLight(
 	const FVector& Location,
 	const float Intensity,
@@ -1713,6 +1722,10 @@ void AIGPrologueWorldScene::BuildApartment()
 	UMaterialInterface* Bedding = TexMat(TEXT("M_BeddingUV"), BeddingMaterial);
 	UMaterialInterface* Metal = TexMat(TEXT("M_MetalUV"), MetalFrameMaterial);
 
+	// 남벽과 동벽 끝은 X -220..220에서 복도 북벽을 겸한다. 블록 하나에 벽지를 입히면 복도 쪽 면에도
+	// 넝쿨무늬 벽지가 비쳤다. 두께를 반으로 갈라 복도 쪽 절반은 복도 도장, 집 쪽 절반은 벽지를 쓴다.
+	UMaterialInterface* CorridorPaint = TexMat(TEXT("M_Stucco_X"), WallMaterial);
+
 	// Shell: interior 380 x 430 cm (about 5 pyeong), 230 cm ceiling.
 	IGPrologueWorld::TagFootstepSurface(
 		CreateBlock(FVector(0, 10, -10), FVector(440, 470, 20), Jangpan),
@@ -1720,22 +1733,27 @@ void AIGPrologueWorldScene::BuildApartment()
 	CreateBlock(FVector(0, 0, 240), FVector(440, 490, 20), CeilHome);
 	CreateBlock(FVector(-200, 0, 115), FVector(20, 490, 230), WallY);
 	// 동쪽 벽. 현관 바로 오른쪽(Y -173..-97)에 욕실 문을 낸다(BuildBathroom).
-	CreateBlock(FVector(200, -209, 115), FVector(20, 72, 230), WallY);
+	CreateBlock(FVector(200, -240, 115), FVector(20, 10, 230), CorridorPaint);
+	CreateBlock(FVector(200, -204, 115), FVector(20, 62, 230), WallY);
 	CreateBlock(FVector(200, 74, 115), FVector(20, 342, 230), WallY);
 	CreateBlock(FVector(200, -135, 217.5f), FVector(20, 76, 25), WallY);
 	// The east wall projects ten centimetres past the south wall into the
 	// corridor. Its exposed end is a Y-facing surface, so the wall's X-facing
 	// material stretched into dense horizontal bands at the authored corridor
-	// camera. Cap that return with the correctly oriented wallpaper material.
-	CreateBlock(FVector(200, -245.6f, 115), FVector(20, 0.8f, 230), WallX, false);
+	// camera. 복도 쪽 면이라 벽지가 아니라 복도 도장으로 마구리를 덮는다. 도장 재질은 면 방향으로
+	// 투영하므로 Y를 보는 면에서도 늘어나지 않는다. 양옆은 BuildCorridor가 덮는다.
+	CreateBlock(FVector(200, -245.6f, 115), FVector(20, 0.8f, 230), CorridorPaint, false);
 	CreateBlock(FVector(0, 225, 115), FVector(440, 20, 230), WallX);
 	// 문틀 바깥 개구부 X 76..186. 동쪽 내벽은 유지하고 서쪽으로 넓힌다.
-	CreateBlock(FVector(-72, -225, 115), FVector(296, 20, 230), WallX);
-	CreateBlock(FVector(203, -225, 115), FVector(34, 20, 230), WallX);
+	CreateBlock(FVector(-72, -230, 115), FVector(296, 10, 230), CorridorPaint);
+	CreateBlock(FVector(-72, -220, 115), FVector(296, 10, 230), WallX);
+	CreateBlock(FVector(203, -230, 115), FVector(34, 10, 230), CorridorPaint);
+	CreateBlock(FVector(203, -220, 115), FVector(34, 10, 230), WallX);
 	// A 210 cm clear opening leaves headroom above the 8 cm Korean shoe step.
 	// The former 200 cm soffit exactly touched the 192 cm player capsule once
 	// the pawn stood on the step, making the doorway look open but impassable.
-	CreateBlock(FVector(131, -225, 220), FVector(110, 20, 20), WallX);
+	CreateBlock(FVector(131, -230, 220), FVector(110, 10, 20), CorridorPaint);
+	CreateBlock(FVector(131, -220, 220), FVector(110, 10, 20), WallX);
 	// Entrance shoe step.
 	CreateBlock(FVector(131, -195, 4), FVector(106, 40, 8), TexMat(TEXT("M_GraniteTile_XY"), ConcreteDarkMaterial));
 
@@ -2571,6 +2589,31 @@ void AIGPrologueWorldScene::BuildCorridor()
 			CreateBlock(FVector(WindowX + 41, -377.5f, 150), FVector(5, 6, 66), PlasticDarkMaterial, false);
 			CreateBlock(FVector(WindowX, -377.5f, 150), FVector(78, 5, 3.5f), PlasticDarkMaterial, false);
 			CreateBlock(FVector(WindowX, -379, 111), FVector(94, 10, 5), Skirting, false);
+			// 그 시간 이 창으로 드는 골목 빛(§11 V1 ⑥). 건너편 빌라 벽은 아래 보안등을 받아 창 높이까지
+			// 주황빛이고, 그 빛이 창을 지나 천장과 맞은편 문을 아래에서 비스듬히 비춘다. 복도 등이 꺼진
+			// 밤에 가까운 문, 바닥, 창 사이 벽이 이 빛으로 갈린다. 면광원은 벽면보다 11 cm 복도 쪽에 둔다.
+			// 유리 쪽에 두면 창 옆면이 몇 cm 거리에서 받아 창틀만 주황으로 타오르고 복도는 그대로였고,
+			// 벽면 가까이 두면 위로 기울인 면의 윗변이 벽 속으로 들어가 창 윗면이 빛줄처럼 빛났다.
+			// 세기는 ApplyNightAtmosphere가 밤에만 준다.
+			URectLightComponent* Glow = NewObject<URectLightComponent>(
+				this, *FString::Printf(TEXT("CorridorWindowGlow_%d"), CorridorWindowGlows.Num()));
+			Glow->SetupAttachment(ActiveParent ? ActiveParent.Get() : SceneRoot.Get());
+			Glow->SetMobility(EComponentMobility::Movable);
+			Glow->SetRelativeLocation(FVector(WindowX, -364.0f, 150.0f));
+			// 보안등은 창보다 6~7 m 아래다. 빛이 위로 들어와 천장과 맞은편 벽 윗부분부터 밝고, 창 너머로는
+			// 불 꺼진 건너편 윗층이 보인다. 수평으로 쏘면 어두운 창이 문을 환히 비추는 꼴이 됐다.
+			Glow->SetRelativeRotation(FRotator(18.0f, 90.0f, 0.0f));
+			Glow->SetSourceWidth(84.0f);
+			Glow->SetSourceHeight(64.0f);
+			Glow->SetAttenuationRadius(330.0f);
+			Glow->SetMaxDrawDistance(2000.0f);
+			Glow->SetLightColor(StreetGlowColor);
+			Glow->SetCastShadows(true);
+			Glow->SetVolumetricScatteringIntensity(0.0f);
+			Glow->SetIntensity(0.0f);
+			Glow->RegisterComponent();
+			ZoneLights[static_cast<int32>(EIGLightZone::FourthFloor)].Add(Glow);
+			CorridorWindowGlows.Add(Glow);
 		}
 	}
 
@@ -3913,6 +3956,19 @@ void AIGPrologueWorldScene::ApplyNightAtmosphere(const bool bSealed)
 		HeightFog->SetVolumetricFogExtinctionScale(bSealed ? 1.8f : 1.0f);
 	}
 	SetUnit401GapLit(bSealed);
+	// 복도 창과 403호 창으로 드는 골목 빛. 보안등은 건물 차단기와 상관없이 밤새 켜져 있어서
+	// 넷째 밤 정전에도 남는다.
+	for (URectLightComponent* Glow : CorridorWindowGlows)
+	{
+		if (Glow)
+		{
+			Glow->SetIntensity(bSealed ? CorridorWindowGlowIntensity : 0.0f);
+		}
+	}
+	if (BedroomWindowGlow)
+	{
+		BedroomWindowGlow->SetIntensity(bSealed ? BedroomWindowGlowIntensity : 0.0f);
+	}
 	if (DawnDeliveryBag)
 	{
 		// 새벽배송은 그 시간에 와 있다. 아침에는 303호가 들여간다.
@@ -7178,6 +7234,23 @@ void AIGPrologueWorldScene::SpawnInteractables()
 		WindowRight->SetInteractionPrompt(NSLOCTEXT("IGPrologue", "WindowPrompt", "창문"));
 		WindowRight->ThoughtText = NSLOCTEXT("IGPrologue", "WindowThought", "건너편 불빛이 방까지 들어오네.");
 	}
+	// 유담이 창 앞에서 하는 말 그대로, 그 시간에도 건너편 벽의 보안등 빛이 방까지 든다. 창 아래에서
+	// 올라온 빛이라 천장과 장롱 윗부분이 먼저 밝고, 블라인드를 걷어 둔 창틀이 그림자를 드리운다.
+	BedroomWindowGlow = NewObject<URectLightComponent>(this, TEXT("BedroomWindowGlow"));
+	BedroomWindowGlow->SetupAttachment(SceneRoot);
+	BedroomWindowGlow->SetMobility(EComponentMobility::Movable);
+	BedroomWindowGlow->SetRelativeLocation(FVector(-100.0f, 202.0f, 1050.0f));
+	BedroomWindowGlow->SetRelativeRotation(FRotator(10.0f, -90.0f, 0.0f));
+	BedroomWindowGlow->SetSourceWidth(118.0f);
+	BedroomWindowGlow->SetSourceHeight(86.0f);
+	BedroomWindowGlow->SetAttenuationRadius(380.0f);
+	BedroomWindowGlow->SetMaxDrawDistance(2000.0f);
+	BedroomWindowGlow->SetLightColor(StreetGlowColor);
+	BedroomWindowGlow->SetCastShadows(true);
+	BedroomWindowGlow->SetVolumetricScatteringIntensity(0.0f);
+	BedroomWindowGlow->SetIntensity(bTheHourSealed ? BedroomWindowGlowIntensity : 0.0f);
+	BedroomWindowGlow->RegisterComponent();
+	ZoneLights[static_cast<int32>(EIGLightZone::HomeInterior)].Add(BedroomWindowGlow);
 
 	// Store sliding door.
 	StoreDoor = World->SpawnActor<AIGSlidingDoor>(

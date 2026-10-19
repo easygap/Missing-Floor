@@ -731,8 +731,8 @@ private:
 
 	/**
 	 * 카메라가 있는 층에서 보일 수 없는 공간의 광원을 끈다. 4층의 창은 모두
-	 * 불투명한 원경이라 바깥 빛이 들어오지 않고, 계단의 층 압축은 모퉁이 뒤라
-	 * 로비가 보이지 않는다. 세기(연출)는 건드리지 않고 표시 여부만 바꾼다.
+	 * 불투명한 원경이라 창으로 드는 골목 빛도 그 층의 광원으로 치고, 계단의 층 압축은
+	 * 모퉁이 뒤라 로비가 보이지 않는다. 세기(연출)는 건드리지 않고 표시 여부만 바꾼다.
 	 */
 	void UpdateLightZones();
 
@@ -756,6 +756,14 @@ private:
 	/** 303호 문 옆 새벽배송 보냉 가방. 그 시간에만 놓여 있다. */
 	UPROPERTY(Transient) TObjectPtr<UStaticMeshComponent> DawnDeliveryBag;
 	UPROPERTY(Transient) TObjectPtr<class URectLightComponent> Unit401GapLight;
+	/**
+	 * §11 V1 ⑥ 창으로 드는 골목 빛. 건너편 빌라 벽이 아래 보안등을 받아 주황빛으로 밝고, 그 빛이
+	 * 4층 복도 창 넷과 403호 창으로 들어온다. 밤에만 켜고 정전과 상관없다.
+	 */
+	UPROPERTY(Transient) TArray<TObjectPtr<class URectLightComponent>> CorridorWindowGlows;
+	UPROPERTY(Transient) TObjectPtr<class URectLightComponent> BedroomWindowGlow;
+	float CorridorWindowGlowIntensity = 2000.0f;
+	float BedroomWindowGlowIntensity = 2400.0f;
 	FTimerHandle Unit401GapPollTimer;
 	FTimerHandle Unit401GapBeatTimer;
 	float Unit401GapLightIntensity = 0.0f;

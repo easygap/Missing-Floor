@@ -1189,8 +1189,10 @@ if ($restoreNarrativeIndex -lt 0 -or
 	$restoreStoryTagsIndex -le $restoreNarrativeIndex) {
 	throw 'The narrative snapshot must restore before story-tag callbacks.'
 }
+# 집 동벽이 복도로 내민 끝은 복도 쪽 면이라 복도 도장으로 덮는다. 도장 재질은 면 방향으로 투영해서
+# Y를 보는 면에서도 늘어나지 않는다(2026-10-19 전에는 같은 이유로 X 방향 벽지를 썼다).
 if (-not $worldSceneSource.Contains(
-	'CreateBlock(FVector(200, -245.6f, 115), FVector(20, 0.8f, 230), WallX, false)')) {
+	'CreateBlock(FVector(200, -245.6f, 115), FVector(20, 0.8f, 230), CorridorPaint, false)')) {
 	throw 'The apartment east-wall return must keep its correctly oriented material cap.'
 }
 
@@ -1272,8 +1274,11 @@ if (-not $playerCharacterSource.Contains(
 	throw 'First-person capsule must preserve clearance through the 84-88 cm interior doors.'
 }
 
+# 문 위 벽은 복도 쪽 절반(복도 도장)과 집 쪽 절반(벽지)으로 나뉘었다. 둘 다 밑면이 210 cm다.
 if (-not $worldSceneSource.Contains(
-	'CreateBlock(FVector(131, -225, 220), FVector(110, 20, 20), WallX)')) {
+	'CreateBlock(FVector(131, -230, 220), FVector(110, 10, 20), CorridorPaint)') -or
+	-not $worldSceneSource.Contains(
+	'CreateBlock(FVector(131, -220, 220), FVector(110, 10, 20), WallX)')) {
 	throw 'The apartment entrance must retain 210 cm clearance above the shoe step.'
 }
 if ($worldSceneSource.Contains(
