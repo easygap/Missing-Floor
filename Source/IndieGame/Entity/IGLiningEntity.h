@@ -150,6 +150,13 @@ public:
 	/** 검사용: 이 다리의 패드 막 끝이 짚었던 면에 남아 늘어나 있는가, 늘어난 길이(cm, 붙어 있을 때만). */
 	bool IsSkinStuck(int32 Leg) const;
 	float GetSkinStretch(int32 Leg) const;
+	/** 검사용: 몸 둘레 막(치마)이 면을 따라 바깥으로 퍼진 거리와 아래로 처진 거리(cm). 0 앞, 1 뒤, 2 왼쪽, 3 오른쪽. */
+	float GetSkirtSpread(int32 Side) const;
+	float GetSkirtDroop(int32 Side) const;
+	/** 검사용: 이 발이 면을 누르고 있는가(옮기는 중이 아니거나, 옮길 차례를 기다리고 있다). */
+	bool IsPadHolding(int32 Leg) const;
+	/** 검사용: 짚고 있는 발이 짚은 자리에서 벗어난 가장 큰 거리(cm). 다리가 닿지 않아 발이 끌려가면 커진다. */
+	float GetMaxPadSlip() const { return MaxPadSlip; }
 
 	/** 5층: 정한 자리를 짚고 몸을 천장까지 편다. */
 	void SpreadTo(
@@ -270,6 +277,14 @@ private:
 	void KickSoftParts(int32 Leg, float Strength);
 	/** 패드 막 끝 뼈가 패드를 그대로 따를 때의 자리(월드). */
 	FTransform DefaultSkinWorld(int32 Leg) const;
+	/** 발이 떨어질 때 제자리에서 몸 쪽 가장자리만 드는 몫(스윙 비율). 처음 벽에서 떨어질 때는 더 길다. */
+	float PeelHoldFraction() const;
+	/** 짚고 있는 발이 이 몸 자리에서도 닿는가(당기다 발이 끌려가지 않게). */
+	bool PlantedLegsReach(const FVector& Center, const FQuat& Rotation) const;
+	/** 이 다리가 지금 몸에서 얼마나 뻗었는가(1이면 다 뻗음). */
+	float LegReach(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
+	/** 이 다리로 Pad(면 법선 Normal)를 짚으려면 얼마나 뻗어야 하는가(1이면 다 뻗음). SolveLeg와 같은 수다. */
+	float ReachTo(int32 Leg, const FVector& Pad, const FVector& Normal, const FVector& Center, const FQuat& Rotation) const;
 	void StartSwing(int32 Leg, const FVector& Pad, const FVector& Normal, float FoldTarget);
 	bool FindContact(int32 Leg, const FVector& FutureBody, const FQuat& FutureRotation, const FVector& Travel, FVector& OutPad, FVector& OutNormal) const;
 	FVector HipWorld(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
@@ -330,6 +345,10 @@ private:
 	FTransform WebRestBody[LegCount];
 	FTransform WebRestUpper[LegCount];
 	FTransform SkinRest[LegCount];
+	/** 몸 둘레로 늘어진 큰 막(앞·뒤·왼쪽·오른쪽). 들려 있으면 처지고, 틈을 누르면 면을 따라 퍼진다. */
+	static constexpr int32 SkirtCount = 4;
+	FName SkirtBones[SkirtCount];
+	FTransform SkirtRest[SkirtCount];
 	bool bHasSoftBones = false;
 	/** 마지막으로 놓은 다리 마디(월드). 물갈퀴와 패드 막 뼈를 여기에 맞춘다. */
 	FTransform SegmentWorld[LegCount][3];
@@ -337,7 +356,15 @@ private:
 	FSoftPoint Mass[LegCount];
 	FSoftPoint Web[LegCount];
 	FSoftPoint Skin[LegCount];
+	FSoftPoint Skirt[SkirtCount];
 	bool bSkinStuck[LegCount] = {};
+	float MaxPadSlip = 0.0f;
+	/** 끌려간 거리가 이만큼을 넘으면 어디서 그랬는지 로그로 남기고 두 배로 올린다. */
+	float NextSlipLog = 3.0f;
+	/** 걷거나 틈 둘레를 짚는 동안 면을 누르고 있던 발의 가장 적은 수(끝날 때 로그로 남긴다). */
+	int32 MinPadsHoldingWhileWalking = LegCount;
+	/** 다리가 닿지 않아 당기기를 일찍 끝낸 횟수(잇달아). 길이 막혔으면 몇 번 뒤에는 그냥 당긴다. */
+	int32 BlockedPulls = 0;
 	FTransform SkinStuckWorld[LegCount];
 	FVector SoftLastCenter = FVector::ZeroVector;
 	FVector SoftLastVelocity = FVector::ZeroVector;

@@ -234,6 +234,27 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 			bSkinLetGo |= bSkinWasStuck[Leg] && !bStuck;
 			bSkinWasStuck[Leg] = bStuck;
 		}
+		const EIGLiningState State = Body->GetState();
+		const bool bPressed = State == EIGLiningState::Pressing
+			|| (State == EIGLiningState::Holding && !Body->GetHeldGap().IsNone());
+		const bool bWalking = State == EIGLiningState::Stepping || State == EIGLiningState::Bracing;
+		int32 Holding = 0;
+		for (int32 Side = 0; Side < AIGLiningEntity::LegCount; ++Side)
+		{
+			if (bPressed)
+			{
+				MaxSkirtSpread = FMath::Max(MaxSkirtSpread, Body->GetSkirtSpread(Side));
+			}
+			if (bWalking)
+			{
+				MaxSkirtDroop = FMath::Max(MaxSkirtDroop, Body->GetSkirtDroop(Side));
+			}
+			Holding += Body->IsPadHolding(Side) ? 1 : 0;
+		}
+		if (bWalking)
+		{
+			MinPadsHolding = FMath::Min(MinPadsHolding, Holding);
+		}
 	}
 	// 큰 쪽으로 옮겨 가는 동안은 고정 60fps에서 두 틱에 한 장(30fps), 5초까지 이어 찍는다. 그동안 띄엄띄엄 찍기는 쉰다.
 	if (bFrames && Phase == 5 && FrameIndex < 150)
@@ -376,11 +397,17 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 		if (PhaseSeconds >= 1.0f)
 		{
 			Check(!bGripped, TEXT("bystander_at_door_not_gripped"));
-			UE_LOG(LogIndieGame, Display, TEXT("LINING_SOFT soft=%d max_sag=%.1f max_skin=%.1f let_go=%d"),
-				Body->HasSoftBody() ? 1 : 0, MaxSag, MaxSkinStretch, bSkinLetGo ? 1 : 0);
+			UE_LOG(LogIndieGame, Display,
+				TEXT("LINING_SOFT soft=%d max_sag=%.1f max_skin=%.1f let_go=%d skirt_spread=%.1f skirt_droop=%.1f slip=%.1f min_hold=%d"),
+				Body->HasSoftBody() ? 1 : 0, MaxSag, MaxSkinStretch, bSkinLetGo ? 1 : 0, MaxSkirtSpread, MaxSkirtDroop,
+				Body->GetMaxPadSlip(), MinPadsHolding);
 			Check(Body->HasSoftBody(), TEXT("soft_bones_found"));
 			Check(MaxSag > 1.0f && MaxSag < 10.5f, TEXT("body_sags_while_moving"));
 			Check(MaxSkinStretch > 4.0f && bSkinLetGo, TEXT("pad_membrane_opens_then_lets_go"));
+			Check(MaxSkirtSpread > 4.0f, TEXT("skirt_spreads_along_wall_when_pressing"));
+			Check(MaxSkirtDroop > 3.0f, TEXT("skirt_droops_while_walking"));
+			Check(MinPadsHolding >= 2, TEXT("two_pads_hold_while_walking"));
+			Check(Body->GetMaxPadSlip() < 3.0f, TEXT("planted_pads_do_not_slip"));
 			Shoot(TEXT("lining_end"));
 			Next(9);
 		}

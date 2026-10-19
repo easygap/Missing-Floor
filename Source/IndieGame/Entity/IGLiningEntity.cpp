@@ -51,6 +51,8 @@ namespace IGLining
 	// 떨어지는 패드는 옮기기 전에 제자리에서 몸 쪽 가장자리부터 든다(스윙의 앞 PeelHold). 바깥 가장자리
 	// (패드 가운데에서 PadOuterEdge)를 축으로 PeelTiltDegrees만큼 들리는 동안 물갈퀴와 패드 막이 먼저 벌어진다.
 	constexpr float PeelHold = 0.16f;
+	// 처음 벽에서 떨어질 때는 더 오래 붙어 있다가 떨어진다(자재 더미가 살아 있다는 걸 보이는 순간).
+	constexpr float FirstPeelHold = 0.3f;
 	constexpr float PeelTiltDegrees = 20.0f;
 	constexpr float PadOuterEdge = 24.0f;
 	// 패드 막 끝은 짚었던 면에 붙어 있다가 스윙이 이만큼 지나거나 이만큼(cm) 늘어나면 놓인다.
@@ -71,13 +73,24 @@ namespace IGLining
 	constexpr float WebDamping = 0.3f;
 	constexpr float SkinHz = 4.5f;
 	constexpr float SkinDamping = 0.28f;
+	// 몸 둘레 막(치마): 틈을 누를 때 바깥으로 퍼지는 거리, 들려 있을 때 처지는 깊이, 한도(cm), 용수철.
+	constexpr float SkirtSpread = 9.0f;
+	constexpr float SkirtDroop = 8.0f;
+	constexpr float SkirtMax = 16.0f;
+	constexpr float SkirtHz = 2.2f;
+	constexpr float SkirtDamping = 0.3f;
+	// 누를 때 몸 살이 면을 따라 옆으로 밀려나는 거리(cm).
+	constexpr float MassSpread = 3.5f;
+	const TCHAR* const SkirtKeys[4] = {TEXT("f"), TEXT("b"), TEXT("l"), TEXT("r")};
+	const FVector SkirtSides[4] = {FVector(1.0f, 0.0f, 0.0f), FVector(-1.0f, 0.0f, 0.0f), FVector(0.0f, -1.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f)};
 	// 몸판 반치수(몸 기준, cm). 사람이 이 안에 들면 눌린다.
 	const FVector BodyHalf(40.0f, 60.0f, 21.0f);
-	// 다리 충돌 반지름. 막 자루 겉면이 뼈 줄에서 떨어진 거리의 가운데(10.5 cm)와 4분의 3(11.9 cm) 사이다
-	// (SK_Lining manifest의 collision_reference).
-	constexpr float LegRadius = 11.0f;
-	// 패드 덩어리 충돌 상자 반치수(X 바깥쪽, Y 옆, Z 짚은 면에서 위). 막 끝 앞치마는 얇아서 넣지 않는다.
-	const FVector PadHalf(26.0f, 24.0f, 7.0f);
+	// 다리 충돌 반지름. 마디를 감은 막 판과 지지대가 뼈 줄에서 떨어진 거리의 가운데(11.3 cm)와 4분의 3
+	// (13.2 cm) 사이다(SK_Lining manifest의 collision_reference).
+	constexpr float LegRadius = 12.0f;
+	// 발 충돌 상자 반치수(X 바깥쪽, Y 옆, Z 짚은 면에서 위). 짚는 면에 눌려 퍼진 덩어리를 덮는다. 몸 쪽으로
+	// 늘어진 막 끝은 얇아서 넣지 않는다.
+	const FVector PadHalf(33.0f, 30.0f, 5.5f);
 	constexpr float GripRadius = 30.0f;
 	// 몸판 앞뒤(면의 법선 쪽)로는 몸에 실제로 닿을 만큼만 잡는다. 벽에서 한 걸음 물러선 사람까지
 	// 덮치면 망치질하는 자리에서 늘 눌린다.
@@ -240,6 +253,17 @@ bool AIGLiningEntity::LoadBody()
 		WebRestBody[Leg] = WebPose.GetRelativeTransform(RestBody);
 		WebRestUpper[Leg] = WebPose.GetRelativeTransform(RestSegment[Leg][0]);
 		SkinRest[Leg] = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, SkinIndex).GetRelativeTransform(RestSegment[Leg][2]);
+	}
+	for (int32 Side = 0; Side < SkirtCount && bHasSoftBones; ++Side)
+	{
+		SkirtBones[Side] = FName(*FString::Printf(TEXT("skirt_%s"), IGLining::SkirtKeys[Side]));
+		const int32 SkirtIndex = Ref.FindBoneIndex(SkirtBones[Side]);
+		if (SkirtIndex == INDEX_NONE)
+		{
+			bHasSoftBones = false;
+			break;
+		}
+		SkirtRest[Side] = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, SkirtIndex).GetRelativeTransform(RestBody);
 	}
 	// 다리를 천장과 벽까지 펴면 쉬는 자세의 경계를 크게 벗어난다. 경계를 넉넉히 늘려 잘리지 않게 한다.
 	Mesh->SetPositiveBoundsExtension(FVector(140.0f, 140.0f, 280.0f));
@@ -570,6 +594,22 @@ float AIGLiningEntity::GetSkinStretch(const int32 Leg) const
 	return IsSkinStuck(Leg) ? FVector::Distance(SkinStuckWorld[Leg].GetLocation(), DefaultSkinWorld(Leg).GetLocation()) : 0.0f;
 }
 
+float AIGLiningEntity::GetSkirtSpread(const int32 Side) const
+{
+	return Side >= 0 && Side < SkirtCount
+		? FVector::DotProduct(Skirt[Side].Offset, BodyRotation.RotateVector(IGLining::SkirtSides[Side])) : 0.0f;
+}
+
+float AIGLiningEntity::GetSkirtDroop(const int32 Side) const
+{
+	return Side >= 0 && Side < SkirtCount ? -Skirt[Side].Offset.Z : 0.0f;
+}
+
+bool AIGLiningEntity::IsPadHolding(const int32 Leg) const
+{
+	return Leg >= 0 && Leg < LegCount && (!Legs[Leg].bSwinging || Legs[Leg].SwingAlpha <= 0.0f);
+}
+
 void AIGLiningEntity::SetState(const EIGLiningState NewState)
 {
 	if (State == NewState)
@@ -643,6 +683,7 @@ void AIGLiningEntity::BeginTravelTo(const FName GapId)
 	PathGoalRotation = IGLining::FrameRotation(FVector::ForwardVector, FVector::UpVector, GoalForward, GoalNormal);
 	PathTravelled = 0.0f;
 	PhaseSeconds = 0.0f;
+	BlockedPulls = 0;
 	OnTargetChosen.Broadcast(this, GapId);
 	UE_LOG(LogIndieGame, Display, TEXT("LINING_TARGET %s area=%.0f path=%.0f"), *GapId.ToString(), Gap->Area(), PathLength());
 	if (!bHasMoved && State == EIGLiningState::Folded)
@@ -689,6 +730,8 @@ void AIGLiningEntity::BeginTravelTo(const FName GapId)
 				if (Legs[Leg].Fold > 0.5f && FindContact(Leg, BodyCenter, BodyRotation, (Goal - BodyCenter).GetSafeNormal(), Pad, Normal))
 				{
 					StartSwing(Leg, Pad, Normal, 0.0f);
+					// 대각선 둘씩 편다. 먼저 편 둘이 면을 짚은 뒤에 나머지 둘이 펴진다.
+					Legs[Leg].SwingAlpha = (Leg == 1 || Leg == 2) ? -1.0f : 0.0f;
 				}
 			}
 		}
@@ -801,21 +844,29 @@ bool AIGLiningEntity::FindContact(
 		{
 			continue;
 		}
+		// 앞으로 갈 몸 자리를 보고 고르되, 지금 몸에서도 닿아야 한다. 안 그러면 발이 면에 닿지 못하고 몸이 따라올
+		// 때까지 허공에 떠 있다.
+		const FVector Pad = Hit.ImpactPoint + Hit.ImpactNormal * 2.0f;
+		if (ReachTo(Leg, Pad, Hit.ImpactNormal, BodyCenter, BodyRotation) > 0.96f)
+		{
+			continue;
+		}
 		const float Score = FMath::Abs(Distance - Ideal);
 		if (Score < BestScore)
 		{
 			BestScore = Score;
-			OutPad = Hit.ImpactPoint + Hit.ImpactNormal * 2.0f;
+			OutPad = Pad;
 			OutNormal = Hit.ImpactNormal;
 			bFound = true;
 		}
 	}
 	if (!bFound)
 	{
-		// 짚을 데가 없으면 엉덩이 바깥 바닥을 짚는다.
+		// 짚을 데가 없으면 엉덩이 바깥 바닥을 짚는다. 거기도 닿지 않으면 이번에는 옮기지 않는다.
 		FHitResult Hit;
 		const FVector Out = Hip + Side * 70.0f;
-		if (World->LineTraceSingleByObjectType(Hit, Out + FVector(0, 0, 30.0f), Out - FVector(0, 0, 400.0f), Objects, Params))
+		if (World->LineTraceSingleByObjectType(Hit, Out + FVector(0, 0, 30.0f), Out - FVector(0, 0, 400.0f), Objects, Params)
+			&& ReachTo(Leg, Hit.ImpactPoint + Hit.ImpactNormal * 2.0f, Hit.ImpactNormal, BodyCenter, BodyRotation) <= 0.96f)
 		{
 			OutPad = Hit.ImpactPoint + Hit.ImpactNormal * 2.0f;
 			OutNormal = Hit.ImpactNormal;
@@ -860,8 +911,9 @@ void AIGLiningEntity::UpdateSwings(const float DeltaSeconds)
 			continue;
 		}
 		Leg.SwingAlpha = FMath::Min(1.0f, Leg.SwingAlpha + DeltaSeconds / Duration);
-		// 앞 PeelHold 동안 패드는 제자리에서 몸 쪽 가장자리만 든다(SolveLeg). 막이 먼저 벌어진 뒤에 옮긴다.
-		const float T = IGLining::Smooth((Leg.SwingAlpha - IGLining::PeelHold) / (1.0f - IGLining::PeelHold));
+		// 앞 몫 동안 패드는 제자리에서 몸 쪽 가장자리만 든다(SolveLeg). 막이 먼저 벌어진 뒤에 옮긴다.
+		const float Hold = PeelHoldFraction();
+		const float T = IGLining::Smooth((Leg.SwingAlpha - Hold) / (1.0f - Hold));
 		const FVector Lift = (Leg.FromNormal + Leg.ToNormal).GetSafeNormal() * IGLining::SwingLift * Leg.LiftScale * FMath::Sin(T * PI);
 		Leg.Pad = FMath::Lerp(Leg.FromPad, Leg.ToPad, T) + Lift;
 		Leg.Normal = FMath::Lerp(Leg.FromNormal, Leg.ToNormal, T).GetSafeNormal();
@@ -923,6 +975,15 @@ void AIGLiningEntity::Tick(const float DeltaSeconds)
 		break;
 	}
 	UpdateSwings(DeltaSeconds);
+	if (State == EIGLiningState::Stepping || State == EIGLiningState::Bracing)
+	{
+		int32 Holding = 0;
+		for (int32 Leg = 0; Leg < LegCount; ++Leg)
+		{
+			Holding += IsPadHolding(Leg) ? 1 : 0;
+		}
+		MinPadsHoldingWhileWalking = FMath::Min(MinPadsHoldingWhileWalking, Holding);
+	}
 	for (FLeg& Leg : Legs)
 	{
 		Leg.PlantKick = FMath::Max(0.0f, Leg.PlantKick - DeltaSeconds / 0.18f);
@@ -988,6 +1049,8 @@ void AIGLiningEntity::UpdatePeeling(const float DeltaSeconds)
 			if (Index != PeelLeg && Legs[Index].Fold > 0.5f && FindContact(Index, BodyCenter, BodyRotation, Toward, Pad, Normal))
 			{
 				StartSwing(Index, Pad, Normal, 0.0f);
+				// 떨어진 발의 대각선 짝이 먼저 펴고, 나머지 둘은 그 두 발이 면을 짚은 뒤에 옮긴다.
+				Legs[Index].SwingAlpha = Index == LegCount - 1 - PeelLeg ? 0.0f : -1.0f;
 			}
 		}
 		bPulling = false;
@@ -1002,8 +1065,25 @@ void AIGLiningEntity::UpdateStepping(const float DeltaSeconds)
 	const float Length = PathLength();
 	if (bPulling)
 	{
-		const float Alpha = FMath::Clamp(PhaseSeconds / IGLining::PullSeconds, 0.0f, 1.0f);
-		PathTravelled = FMath::Lerp(PullFrom, PullTo, IGLining::Smooth(Alpha));
+		float Alpha = FMath::Clamp(PhaseSeconds / IGLining::PullSeconds, 0.0f, 1.0f);
+		const float Next = FMath::Lerp(PullFrom, PullTo, IGLining::Smooth(Alpha));
+		// 짚은 발이 닿지 않을 만큼은 당기지 않는다. 발이 면에서 끌려가는 대신 이번 당기기를 거기서 끝내고 뒤처진
+		// 발부터 옮긴다. 몇 번 잇달아 막히면(닿을 데가 없는 길) 그냥 당긴다.
+		if (Next > PathTravelled && BlockedPulls < 3
+			&& !PlantedLegsReach(PathPoint(Next), BodyRotationAt(Length > 0.0f ? Next / Length : 1.0f)))
+		{
+			Alpha = 1.0f;
+			PullTo = PathTravelled;
+			++BlockedPulls;
+		}
+		else
+		{
+			PathTravelled = Next;
+			if (Alpha >= 1.0f)
+			{
+				BlockedPulls = 0;
+			}
+		}
 		BodyCenter = PathPoint(PathTravelled);
 		BodyRotation = BodyRotationAt(Length > 0.0f ? PathTravelled / Length : 1.0f);
 		const double Now = GetWorld()->GetTimeSeconds();
@@ -1047,8 +1127,8 @@ void AIGLiningEntity::UpdateStepping(const float DeltaSeconds)
 							Normal = Hit.ImpactNormal;
 						}
 						StartSwing(Leg, Pad, Normal, Gap->bTuckLowerLegs && IGLining::LegSx[Leg] < 0.0f ? 1.0f : 0.0f);
-						// 대각선 둘이 먼저 짚고 나머지가 따른다.
-						Legs[Leg].SwingAlpha = (Leg == 1 || Leg == 2) ? -0.35f : 0.0f;
+						// 대각선 둘이 먼저 짚고, 그 둘이 면을 누른 뒤에 나머지 둘이 옮긴다(늘 두 발이 버틴다).
+						Legs[Leg].SwingAlpha = (Leg == 1 || Leg == 2) ? -1.0f : 0.0f;
 					}
 				}
 				else
@@ -1068,6 +1148,11 @@ void AIGLiningEntity::UpdateStepping(const float DeltaSeconds)
 				for (const int32 Leg : IGLining::GroupLegs[Group])
 				{
 					GroupLag[Group] += FVector::DotProduct(BodyCenter - Legs[Leg].Pad, Travel);
+					// 다 뻗은 다리가 있는 짝을 먼저 옮긴다(다음 당기기에서 그 발이 끌려가지 않게).
+					if (LegReach(Leg, BodyCenter, BodyRotation) > 0.9f)
+					{
+						GroupLag[Group] += 1000.0f;
+					}
 				}
 			}
 			SwingGroup = GroupLag[0] >= GroupLag[1] ? 0 : 1;
@@ -1215,28 +1300,22 @@ FVector AIGLiningEntity::ComputeBodySquash() const
 {
 	switch (State)
 	{
-	case EIGLiningState::Peeling:
-	{
-		// 벽에서 떨어지며 몸이 한 번 부푼다.
-		const float Alpha = FMath::Clamp(StateSeconds * PaceScale / IGLining::PeelSeconds, 0.0f, 1.0f);
-		return FVector(1.0f, 1.0f, 1.0f + 0.06f * FMath::Sin(Alpha * PI));
-	}
+	// 몸을 크게 키워 펼침을 흉내 내지 않는다. 눌리면 두께만 줄고, 넓게 퍼지는 것은 몸 둘레 막과 살(무른 뼈)이 맡는다.
 	case EIGLiningState::Stepping:
 		if (bPulling)
 		{
-			// 당기기 첫머리에 몸을 웅크려 힘을 모았다가, 당기는 동안 앞으로 늘어난다.
+			// 당기기 첫머리에 몸을 웅크려 힘을 모은다.
 			const float Alpha = FMath::Clamp(PhaseSeconds / IGLining::PullSeconds, 0.0f, 1.0f);
 			const float Gather = 1.0f - FMath::Clamp(Alpha / 0.25f, 0.0f, 1.0f);
-			const float Stretch = FMath::Sin(FMath::Clamp((Alpha - 0.2f) / 0.8f, 0.0f, 1.0f) * PI);
-			return FVector(1.0f + 0.07f * Stretch, 1.0f - 0.02f * Stretch, 1.0f - 0.07f * Gather - 0.03f * Stretch);
+			return FVector(1.0f, 1.0f, 1.0f - 0.07f * Gather);
 		}
-		return FVector(1.0f, 1.0f, 1.02f);
+		return FVector::OneVector;
 	case EIGLiningState::Bracing:
-		return FVector(1.02f, 1.02f, 0.96f);
+		return FVector(1.0f, 1.0f, 0.96f);
 	case EIGLiningState::Pressing:
 	{
 		const float Alpha = IGLining::Smooth(FMath::Clamp(StateSeconds * PaceScale / IGLining::PressSeconds, 0.0f, 1.0f));
-		return FVector(1.0f + 0.07f * Alpha, 1.0f + 0.07f * Alpha, 1.0f - 0.18f * Alpha);
+		return FVector(1.0f, 1.0f, 1.0f - 0.16f * Alpha);
 	}
 	case EIGLiningState::Holding:
 		if (!HeldGap.IsNone())
@@ -1245,15 +1324,13 @@ FVector AIGLiningEntity::ComputeBodySquash() const
 			const UWorld* World = GetWorld();
 			const float Time = World ? static_cast<float>(World->GetTimeSeconds()) : 0.0f;
 			const float Breath = 0.02f * FMath::Sin(Time * 2.0f * PI * 0.28f);
-			return FVector(1.06f, 1.06f, 0.83f + Breath);
+			return FVector(1.0f, 1.0f, 0.85f + Breath);
 		}
 		return FVector::OneVector;
 	case EIGLiningState::Spread:
-		return FVector(1.0f, 1.06f, 0.92f);
-	case EIGLiningState::Retreating:
-		return FVector(0.97f, 0.97f, 1.04f);
+		return FVector(1.0f, 1.0f, 0.93f);
 	case EIGLiningState::Gripping:
-		return FVector(1.06f, 1.06f, 0.86f);
+		return FVector(1.0f, 1.0f, 0.88f);
 	default:
 		return FVector::OneVector;
 	}
@@ -1287,6 +1364,14 @@ void AIGLiningEntity::UpdateSoftParts(const float DeltaSeconds)
 	const FVector Gravity = SoftGravity();
 	const FVector Up = BodyRotation.GetUpVector();
 	const float Sag = FMath::Lerp(IGLining::SagHung, IGLining::SagRest, SoftContact);
+	// 틈을 누르는 정도(0~1). 누르는 동안 차오르고, 막은 채로는 다 눌려 있다. 5층에서 편 몸과 쉬는 더미는 덜 퍼진다.
+	const float Press = State == EIGLiningState::Pressing
+		? IGLining::Smooth(FMath::Clamp(StateSeconds * PaceScale / IGLining::PressSeconds, 0.0f, 1.0f))
+		: State == EIGLiningState::Holding && !HeldGap.IsNone() ? 1.0f
+		: State == EIGLiningState::Gripping ? 1.0f
+		: State == EIGLiningState::Spread ? 0.7f
+		: State == EIGLiningState::Folded ? 0.3f : 0.0f;
+	const float Hold = PeelHoldFraction();
 	// 0.1초 간격으로 틱할 때도 튀지 않게 잘게 나눠 적분한다.
 	const int32 Steps = FMath::Clamp(FMath::CeilToInt(Dt * 120.0f), 1, 12);
 	const float H = Dt / Steps;
@@ -1311,14 +1396,16 @@ void AIGLiningEntity::UpdateSoftParts(const float DeltaSeconds)
 		const FLeg& Leg = Legs[Index];
 		// 받치던 다리가 들렸거나 접힌 사분면이 더 처진다.
 		const bool bUnsupported = Leg.bSwinging || Leg.Fold > 0.5f;
-		Spring(Mass[Index], Gravity * Sag * (bUnsupported ? 1.3f : 0.8f), IGLining::MassHz, IGLining::MassDamping, 0.9f,
-			IGLining::SagMax);
+		// 누르면 살이 면을 따라 그 사분면 쪽으로 밀려난다.
+		const FVector Outward = BodyRotation.RotateVector(FVector(IGLining::LegSx[Index], IGLining::LegSy[Index], 0.0f).GetSafeNormal());
+		Spring(Mass[Index], Gravity * Sag * (bUnsupported ? 1.3f : 0.8f) + Outward * IGLining::MassSpread * Press,
+			IGLining::MassHz, IGLining::MassDamping, 0.9f, IGLining::SagMax);
 
 		// 물갈퀴: 윗마디를 몸 쪽으로 접을수록 느슨해져 처지고, 패드가 떨어지기 직전에 몸에서 먼저 벌어진다.
 		const FVector Upper = BodyRotation.UnrotateVector(Leg.Knee - Leg.Hip).GetSafeNormal();
 		const float Slack = FMath::Clamp((0.85f - FVector::DotProduct(Upper, RestOutward[Index])) / 1.2f, 0.0f, 1.0f);
 		const float Opening = Leg.bSwinging && Leg.SwingAlpha > 0.0f
-			? FMath::Sin(PI * FMath::Clamp(Leg.SwingAlpha / (IGLining::PeelHold + 0.12f), 0.0f, 1.0f)) * Leg.LiftScale
+			? FMath::Sin(PI * FMath::Clamp(Leg.SwingAlpha / (Hold + 0.12f), 0.0f, 1.0f)) * Leg.LiftScale
 			: 0.0f;
 		Spring(Web[Index], FVector(0.0f, 0.0f, -IGLining::WebDroop * (0.3f + 0.7f * Slack)) + Up * IGLining::WebOpen * Opening,
 			IGLining::WebHz, IGLining::WebDamping, 1.0f, IGLining::WebMax);
@@ -1327,7 +1414,8 @@ void AIGLiningEntity::UpdateSoftParts(const float DeltaSeconds)
 		if (bSkinStuck[Index])
 		{
 			const FVector Stretch = SkinStuckWorld[Index].GetLocation() - DefaultSkinWorld(Index).GetLocation();
-			if (!Leg.bSwinging || Leg.SwingAlpha >= IGLining::SkinRelease || Stretch.Size() > IGLining::SkinStretchMax)
+			if (!Leg.bSwinging || Leg.SwingAlpha >= Hold + IGLining::SkinRelease - IGLining::PeelHold
+				|| Stretch.Size() > IGLining::SkinStretchMax)
 			{
 				bSkinStuck[Index] = false;
 				Skin[Index].Offset = Stretch.GetClampedToMaxSize(IGLining::SkinStretchMax);
@@ -1339,6 +1427,13 @@ void AIGLiningEntity::UpdateSoftParts(const float DeltaSeconds)
 			Spring(Skin[Index], FVector::ZeroVector, IGLining::SkinHz, IGLining::SkinDamping, 0.6f, IGLining::SkinStretchMax);
 		}
 	}
+	// 몸 둘레 막: 들려 있으면 무게로 처지고, 틈을 누를수록 면을 따라 바깥으로 퍼진다(몸을 키우지 않는다).
+	for (int32 Side = 0; Side < SkirtCount; ++Side)
+	{
+		const FVector Outward = BodyRotation.RotateVector(IGLining::SkirtSides[Side]);
+		const FVector Target = Outward * IGLining::SkirtSpread * Press + Gravity * IGLining::SkirtDroop * (1.0f - 0.7f * SoftContact);
+		Spring(Skirt[Side], Target, IGLining::SkirtHz, IGLining::SkirtDamping, 1.0f, IGLining::SkirtMax);
+	}
 }
 
 void AIGLiningEntity::ResetSoftParts()
@@ -1349,6 +1444,10 @@ void AIGLiningEntity::ResetSoftParts()
 		Web[Index] = FSoftPoint();
 		Skin[Index] = FSoftPoint();
 		bSkinStuck[Index] = false;
+	}
+	for (FSoftPoint& Point : Skirt)
+	{
+		Point = FSoftPoint();
 	}
 	SoftAcceleration = FVector::ZeroVector;
 	SoftLastVelocity = FVector::ZeroVector;
@@ -1391,6 +1490,12 @@ void AIGLiningEntity::PoseSoftParts(const FTransform& BodyTransform)
 		SkinPose.AddToTranslation(ToComponent);
 		Body->SetBoneTransformByName(SkinBones[Index], SkinPose, EBoneSpaces::ComponentSpace);
 	}
+	for (int32 Side = 0; Side < SkirtCount; ++Side)
+	{
+		FTransform SkirtPose = SkirtRest[Side] * BodyTransform;
+		SkirtPose.AddToTranslation(Skirt[Side].Offset);
+		Body->SetBoneTransformByName(SkirtBones[Side], SkirtPose, EBoneSpaces::ComponentSpace);
+	}
 }
 
 bool AIGLiningEntity::AreSoftPartsSettled() const
@@ -1403,6 +1508,13 @@ bool AIGLiningEntity::AreSoftPartsSettled() const
 	{
 		if (bSkinStuck[Index] || Skin[Index].Offset.SizeSquared() > 0.25f || Skin[Index].Velocity.SizeSquared() > 0.25f
 			|| Mass[Index].Velocity.SizeSquared() > 0.25f || Web[Index].Velocity.SizeSquared() > 0.25f)
+		{
+			return false;
+		}
+	}
+	for (const FSoftPoint& Point : Skirt)
+	{
+		if (Point.Velocity.SizeSquared() > 0.25f)
 		{
 			return false;
 		}
@@ -1422,7 +1534,49 @@ void AIGLiningEntity::KickSoftParts(const int32 Leg, const float Strength)
 	{
 		Mass[Index].Velocity += Down * (Index == Leg ? 32.0f : 18.0f) * Strength;
 	}
+	for (FSoftPoint& Point : Skirt)
+	{
+		Point.Velocity += Down * 22.0f * Strength;
+	}
 	Web[Leg].Velocity += Down * 24.0f * Strength;
+}
+
+float AIGLiningEntity::PeelHoldFraction() const
+{
+	return State == EIGLiningState::Peeling ? IGLining::FirstPeelHold : IGLining::PeelHold;
+}
+
+float AIGLiningEntity::LegReach(const int32 Leg, const FVector& Center, const FQuat& Rotation) const
+{
+	return ReachTo(Leg, Legs[Leg].Pad, Legs[Leg].Normal, Center, Rotation);
+}
+
+float AIGLiningEntity::ReachTo(const int32 Leg, const FVector& Pad, const FVector& Normal, const FVector& Center,
+	const FQuat& Rotation) const
+{
+	const FVector Hip = HipWorld(Leg, Center, Rotation);
+	// SolveLeg와 같은 수로 짚을 패드에서 발목 자리를 거꾸로 구한다.
+	FVector PadForward = Pad - Hip;
+	PadForward -= Normal * FVector::DotProduct(PadForward, Normal);
+	if (!PadForward.Normalize())
+	{
+		PadForward = Rotation.RotateVector(RestOutward[Leg]);
+	}
+	const FQuat PadQuat = IGLining::FrameRotation(RestOutward[Leg], FVector::UpVector, PadForward, Normal);
+	const FVector Ankle = Pad - PadQuat.RotateVector(RestPad[Leg] - RestSegment[Leg][2].GetLocation());
+	return FVector::Distance(Hip, Ankle) / FMath::Max(Length1[Leg] + Length2[Leg], 1.0f);
+}
+
+bool AIGLiningEntity::PlantedLegsReach(const FVector& Center, const FQuat& Rotation) const
+{
+	for (int32 Leg = 0; Leg < LegCount; ++Leg)
+	{
+		if (!Legs[Leg].bSwinging && Legs[Leg].Fold < 0.5f && Leg != PinnedLeg && LegReach(Leg, Center, Rotation) > 0.97f)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 FTransform AIGLiningEntity::DefaultSkinWorld(const int32 Leg) const
@@ -1455,7 +1609,8 @@ void AIGLiningEntity::SpreadTo(
 	for (int32 Leg = 0; Leg < LegCount; ++Leg)
 	{
 		StartSwing(Leg, Pads[Leg], PadNormals[Leg], 0.0f);
-		Legs[Leg].SwingAlpha = -0.22f * Leg;
+		// 대각선 둘이 먼저 옮겨 짚고, 그 둘이 버티는 동안 나머지 둘이 따른다.
+		Legs[Leg].SwingAlpha = (Leg == 1 || Leg == 2) ? -1.0f : 0.0f;
 	}
 	PlayCue(TEXT("Lining_Creak"), 3, InBodyCenter, 0.95f, 0.82f);
 	Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningSpread", "[철골 여러 개가 한꺼번에 펴지며 긁히는 소리]"), InBodyCenter, 2.8f,
@@ -1604,11 +1759,12 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 	}
 	FQuat PadQuat = IGLining::FrameRotation(RestOutward[Index], FVector::UpVector, PadForward, Leg.Normal);
 	FVector PadPose = Leg.Pad - Leg.Normal * 1.8f * IGLining::Smooth(Leg.PlantKick);
-	if (Leg.bSwinging && Leg.SwingAlpha > 0.0f && Leg.SwingAlpha < IGLining::PeelHold + 0.2f)
+	const float Hold = PeelHoldFraction();
+	if (Leg.bSwinging && Leg.SwingAlpha > 0.0f && Leg.SwingAlpha < Hold + 0.2f)
 	{
 		// 붙어 있던 패드는 바깥 가장자리를 짚은 채 몸 쪽 가장자리부터 들린다. 그 틈으로 막이 먼저 벌어진다.
-		const float Rise = Leg.SwingAlpha < IGLining::PeelHold ? IGLining::Smooth(Leg.SwingAlpha / IGLining::PeelHold)
-			: 1.0f - IGLining::Smooth((Leg.SwingAlpha - IGLining::PeelHold) / 0.2f);
+		const float Rise = Leg.SwingAlpha < Hold ? IGLining::Smooth(Leg.SwingAlpha / Hold)
+			: 1.0f - IGLining::Smooth((Leg.SwingAlpha - Hold) / 0.2f);
 		const FQuat Peel(FVector::CrossProduct(Leg.Normal, PadForward).GetSafeNormal(),
 			FMath::DegreesToRadians(IGLining::PeelTiltDegrees) * Rise * Leg.LiftScale);
 		const FVector Pivot = PadPose + PadForward * IGLining::PadOuterEdge;
@@ -1665,6 +1821,17 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 	// 패드 덩어리는 끝 마디에 붙어 돈다(쉬는 자세의 발목→패드를 그대로 돌린다).
 	Leg.PadCenter = Ankle + Segment3.RotateVector(RestPad[Index] - RestAnkle);
 	Leg.PadFrame = Segment3 * FRotationMatrix::MakeFromXZ(RestOutward[Index], FVector::UpVector).ToQuat();
+	// 짚고 있는 발이 짚은 자리에서 벗어났는가(다리가 닿지 않으면 마디 길이를 지키느라 발이 끌려온다).
+	if (!Leg.bSwinging && Leg.Fold < 0.01f && PinnedLeg != Index)
+	{
+		MaxPadSlip = FMath::Max(MaxPadSlip, FVector::Distance(Leg.PadCenter, PadPose));
+		if (MaxPadSlip >= NextSlipLog)
+		{
+			UE_LOG(LogIndieGame, Display, TEXT("LINING_SLIP leg=%d state=%d pulling=%d blocked=%d slip=%.1f reach=%.2f"),
+				Index, static_cast<int32>(State), bPulling ? 1 : 0, BlockedPulls, MaxPadSlip, LegReach(Index, BodyCenter, BodyRotation));
+			NextSlipLog = MaxPadSlip * 2.0f;
+		}
+	}
 }
 
 void AIGLiningEntity::UpdateColliders()
@@ -1996,5 +2163,10 @@ void AIGLiningEntity::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	GapDrafts.Reset();
 	SetObstructions(HeldGap, false);
 	SetObstructions(TargetGap, false);
+	// 검사 실행마다 짚은 발이 끌려간 거리와 걷는 동안 버틴 발 수를 남긴다(관리실·302호·5층 어디서든).
+	if (bHasMoved)
+	{
+		UE_LOG(LogIndieGame, Display, TEXT("LINING_CONTACT max_slip=%.1f min_hold=%d"), MaxPadSlip, MinPadsHoldingWhileWalking);
+	}
 	Super::EndPlay(EndPlayReason);
 }

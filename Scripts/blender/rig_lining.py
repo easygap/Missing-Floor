@@ -1,38 +1,40 @@
 """덧댄 것(SK_Lining)을 짓고 뼈를 단다.
 
-벌어진 벽을 몸으로 덮는 괴이다. 은폐 공사에 쓰고 남은 재료로 되어 있다. 몸은 낮고 넓은 한
-덩어리다. 누렇게 산화한 계란판 방음재 여러 장을 눌러 뭉친 것을 검은 아스팔트 방수막으로 겹겹이
-감았고, 막의 이음매마다 굳은 실리콘 줄이 지나간다. 등에는 찌그러진 아연도금 ㄷ자 철골이
-등뼈처럼 반쯤 묻혀 있다. 바닥(누르는 면)에는 실리콘 테두리가 둘려 있어 벽에 대면 틈을 막는다.
-다리는 넷이고 마디마다 볼트로 접히는 접자처럼 ㄷ자 철골 세 마디다. 철골은 손으로 아무렇게나
-감은 방수막에 거의 묻혔다. 한쪽은 막이 뭉쳐 두껍고 반대쪽은 얇게 당겨졌으며, 찢긴 틈으로
-쑤셔 넣은 방음재가 비어져 나오고 풀린 막 끝이 들려 있다. 마디의 볼트와 철골 끝만 드러난다.
-몸 옆구리에서 윗마디까지 막이 물갈퀴처럼 이어져 몸과 다리가 한 몸으로 읽힌다. 끝(패드)은
-뜯어 뭉친 방음재 덩어리다. 계란판 면이 그대로 드러나 있고 한쪽이 두꺼우며, 찢긴 막 조각이 몸
-쪽 절반을 덮고 끊긴 실리콘 줄 토막이 둘레에 붙어 있다. 눈·입·머리·사람 손발은 없다.
+벌어진 벽을 몸으로 덮는 괴이다. 은폐 공사에 쓰고 남은 재료로 되어 있다. 얼굴 없는 낮고 넓은 몸이다.
+누렇게 산화한 계란판 방음재를 눌러 뭉친 덩어리 위에 무광 숯색 아스팔트 방수막이 큰 판으로 겹겹이
+덮였고, 판은 몸 둘레를 넘어 처지며 짚는 면 가까이에서 퍼진다. 실루엣은 타원이 아니라 들쭉날쭉하게
+접힌 부채꼴이다. 방음재는 막 판의 잘린 테두리와 찢긴 데에서만 보인다. 등에는 찌그러진 아연도금 ㄷ자
+철골이 등뼈처럼 반쯤 묻혀 있고, 굳은 회색 실리콘이 이음매와 관절을 건너 처져 있다.
 
-몸통은 생성 모델이다. 시안 `Content/SourceArt/Generated/LiningBody/source-body.png`(몸통만,
+다리는 넷이다. 속은 눌리고 휜 ㄷ자 철골 띠이고, 그 위를 막 판 셋이 마디마다 다른 자리·꼬임·접힘으로
+감아 다리가 꼬이며 가늘어진다. 판은 관절을 넘어 이웃 마디와 겹치고 웨이트를 섞어 같이 굽는다. 둥근
+관절·볼트·깎은 경첩은 없다. 발은 짚는 면에 넓게 눌려 퍼진 비대칭 덩어리다(바닥은 평평하게 눌린
+방음재, 위는 찢긴 막 판, 둘레에 번진 실리콘). 눈·입·머리·사람 손발은 없다.
+
+몸통 속 덩어리는 생성 모델이다. 시안 `Content/SourceArt/Generated/LiningBody/source-body.png`(몸통만,
 다리 붙는 자리 넷)를 TRELLIS.2로 뽑은 `trellis1024-s56/raw/pbr_00001_.glb`를 읽어 몸 치수
-(80 × 120 × 40 cm)에 맞추고, 고밀도에서 색·노멀·거칠기를 굽는다. 다리·물갈퀴·패드·실리콘
-테두리는 여기서 절차로 짓는다. 다리와 패드 꼴은 `Content/SourceArt/AI/LiningLegPadSheet_20261019.png`,
-걷는 순간(배가 처지고 패드보다 막이 먼저 벌어짐)은 `LiningStepInSitu_20261019.png`를 따른다.
-전체 모습 시안은 `LiningTurnaround_20261015.png`, 처음 시안은 `LiningModelSheet_20261013.png`·
-`LiningInSitu_20261013.png`다.
+(80 × 120 × 40 cm)에 맞추고, 고밀도에서 색·노멀·거칠기를 굽는다. 막 판·다리·발·실리콘은 여기서 절차로
+짓는다. 모습은 `Content/SourceArt/AI/LiningLegPadSheet_20261019.png`(다리·발 부품)와
+`LiningStepInSitu_20261019.png`(걷는 순간), 검토 시안(큰 막 접힘, 안쪽의 눌린 철골, 넓게 퍼진 발)을
+따르되 치수와 관절은 게임 동작에 맞췄다. 예전 시안은 `LiningTurnaround_20261015.png`·
+`LiningModelSheet_20261013.png`·`LiningInSitu_20261013.png`다.
 
 바인드 포즈는 몸을 바닥에 눕히고 다리 넷을 대각선으로 편 모습이다. 동작은 굽지 않는다.
-게임(AIGLiningEntity)이 UPoseableMeshComponent로 뼈를 직접 놓는다. 접힌 대기, 패드가 벽에서
+게임(AIGLiningEntity)이 UPoseableMeshComponent로 뼈를 직접 놓는다. 접힌 대기, 발이 벽에서
 떨어지는 순간, 두 다리로 짚고 몸을 당기는 걸음, 천장까지 편 몸, 틀에 걸린 관절이 전부 같은
-뼈의 자세다. 몸이 처지는 것과 막이 벌어지는 것도 게임이 뼈로 놓는다.
+뼈의 자세다. 몸이 처지고 막이 벌어지고 퍼지는 것도 게임이 뼈로 놓는다(크기를 키우지 않는다).
 
     blender -b --factory-startup --python Scripts/blender/rig_lining.py
 
 뼈(UE 좌표, 미터): root(원점) → body(몸 가운데 위) → leg_{fl,fr,bl,br}_1(엉덩이→무릎) →
-_2(무릎→발목) → _3(발목→패드 가운데). f는 앞(+X), b는 뒤, l은 왼쪽(-Y), r은 오른쪽(+Y).
-철골·볼트·엉덩이 받침은 뼈 하나에 통째로 붙는다(철골은 휘지 않는다). 무른 데는 뼈를 더 둔다.
-- mass_{fl,…}(body 아래): 몸 사분면의 살. 등뼈 철골과 엉덩이 받침 둘레는 body에 남고, 배와
+_2(무릎→발목) → _3(발목→발 가운데). f는 앞(+X), b는 뒤, l은 왼쪽(-Y), r은 오른쪽(+Y).
+철골 띠는 뼈 하나에 통째로 붙는다(철골은 휘지 않는다). 무른 데는 뼈를 더 둔다.
+- mass_{fl,…}(body 아래): 몸 사분면의 살. 등뼈 철골과 엉덩이 둘레는 body에 남고, 배와
   옆구리가 이 뼈를 따라 처지고 늘어진다.
 - web_{fl,…}(body 아래): 물갈퀴 가운데. 게임이 몸과 윗마디 사이에 두고 처지거나 먼저 벌어지게 민다.
-- skin_{fl,…}(leg_*_3 아래): 패드 막 조각의 몸 쪽 끝. 패드가 떨어질 때 벽에 남아 늘어났다가 놓인다.
+- skin_{fl,…}(leg_*_3 아래): 발 막 판의 몸 쪽 끝. 발이 떨어질 때 벽에 남아 늘어났다가 놓인다.
+- skirt_{f,b,l,r}(body 아래): 몸 둘레로 늘어진 큰 막 판. 들려 있으면 처지고, 틈을 누르면 면을 따라
+  바깥으로 퍼진다.
 """
 
 import argparse
@@ -62,7 +64,7 @@ BODY_Y = 1.20
 BODY_Z = 0.40
 # 생성 몸통의 긴 축은 원본에서 -8.7도였다. 몸의 긴 축(Y)으로 돌린다.
 SHELL_YAW = 98.7
-SHELL_TRIS = 17000
+SHELL_TRIS = 15000
 # 엉덩이 볼트 자리.
 HIP_X = 0.33
 HIP_Y = 0.52
@@ -212,22 +214,6 @@ def _finish(name, bm, material, bone):
     return ob
 
 
-def _finish_keep_uv(name, bm, material, bone):
-    """_finish와 같지만 bmesh에 넣어 둔 ImageUV를 그대로 쓰고 매끈하게 음영을 준다(둥근 자루는 축
-    투영과 평면 음영이 마디마다 끊겨 깍두기처럼 보였다)."""
-    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
-    for face in bm.faces:
-        face.smooth = True
-    me = bpy.data.meshes.new(name)
-    bm.to_mesh(me)
-    bm.free()
-    ob = ig._link(bpy.data.objects.new(name, me))
-    ig.assign_material(ob, material)
-    group = ob.vertex_groups.new(name=bone)
-    group.add(list(range(len(me.vertices))), 1.0, "REPLACE")
-    return ob
-
-
 def triplanar_uv(ob):
     """면 노멀이 가장 가까운 축으로 월드 좌표를 투영한 타일 UV(ImageUV)."""
     me = ob.data
@@ -246,20 +232,6 @@ def triplanar_uv(ob):
             layer.data[li].uv = (u, v)
 
 
-def oriented_box(name, center, size, axes, material, bone, bevel=0.0, segments=2):
-    """axes=(x축, y축, z축) 단위 벡터. size는 그 축 방향 치수."""
-    bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=1.0)
-    ax, ay, az = (Vector(a).normalized() for a in axes)
-    rot = Matrix((ax, ay, az)).transposed()
-    for v in bm.verts:
-        local = Vector((v.co.x * size[0], v.co.y * size[1], v.co.z * size[2]))
-        v.co = Vector(center) + rot @ local
-    if bevel > 0.0:
-        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=bevel, segments=segments, affect="EDGES", profile=0.5)
-    return _finish(name, bm, material, bone)
-
-
 def frame_from(axis, up_hint):
     x = Vector(axis).normalized()
     up = Vector(up_hint)
@@ -270,68 +242,6 @@ def frame_from(axis, up_hint):
     z = up.normalized()
     y = z.cross(x).normalized()
     return x, y, z
-
-
-def c_channel(name, a, b, up_hint, width, flange, thick, material, bone):
-    """a→b로 뻗은 ㄷ자 철골. 플랜지는 up_hint 쪽으로 열린다."""
-    a = Vector(a)
-    b = Vector(b)
-    x, y, z = frame_from(b - a, up_hint)
-    hw = width * 0.5
-    # 단면(y, z): 등판과 양쪽 플랜지.
-    outline = [(-hw, 0.0), (hw, 0.0), (hw, flange), (hw - thick, flange), (hw - thick, thick),
-               (-hw + thick, thick), (-hw + thick, flange), (-hw, flange)]
-    bm = bmesh.new()
-
-    def ring(origin):
-        return [bm.verts.new(origin + y * py + z * pz) for py, pz in outline]
-
-    r0 = ring(a)
-    r1 = ring(b)
-    count = len(outline)
-    for i in range(count):
-        j = (i + 1) % count
-        bm.faces.new((r0[i], r0[j], r1[j], r1[i]))
-    # 마구리는 직사각형 셋(등판·플랜지 둘)으로 덮는다.
-    for ring_verts, flip in ((r0, True), (r1, False)):
-        quads = [(0, 1, 4, 5), (5, 6, 7, 0), (1, 2, 3, 4)]
-        for quad in quads:
-            verts = [ring_verts[k] for k in quad]
-            if flip:
-                verts.reverse()
-            try:
-                bm.faces.new(verts)
-            except ValueError:
-                pass
-    return _finish(name, bm, material, bone)
-
-
-def bolt(name, center, axis, radius, length, material, bone):
-    center = Vector(center)
-    x, y, z = frame_from(axis, (0.0, 0.0, 1.0))
-    bm = bmesh.new()
-    segments = 12
-    rings = []
-    for t in (-length * 0.5, length * 0.5):
-        rings.append([bm.verts.new(center + x * t + (y * math.cos(a) + z * math.sin(a)) * radius)
-                      for a in (math.tau * i / segments for i in range(segments))])
-    for i in range(segments):
-        j = (i + 1) % segments
-        bm.faces.new((rings[0][i], rings[0][j], rings[1][j], rings[1][i]))
-    bm.faces.new(list(reversed(rings[0])))
-    bm.faces.new(rings[1])
-    # 육각 너트 둘.
-    for t in (-length * 0.5, length * 0.5):
-        hexes = []
-        for d in (-0.008, 0.008):
-            hexes.append([bm.verts.new(center + x * (t + d) + (y * math.cos(a) + z * math.sin(a)) * radius * 1.8)
-                          for a in (math.tau * i / 6 + math.pi / 6 for i in range(6))])
-        for i in range(6):
-            j = (i + 1) % 6
-            bm.faces.new((hexes[0][i], hexes[0][j], hexes[1][j], hexes[1][i]))
-        bm.faces.new(list(reversed(hexes[0])))
-        bm.faces.new(hexes[1])
-    return _finish(name, bm, material, bone)
 
 
 def _blend_two(ob, bones, weight_of):
@@ -359,10 +269,6 @@ def _assign_weights(ob, weight_of):
 def _smooth(x):
     t = max(0.0, min(1.0, x))
     return t * t * (3.0 - 2.0 * t)
-
-
-def _ang_diff(a, b):
-    return (a - b + math.pi) % math.tau - math.pi
 
 
 def _turn(v, radians):
@@ -449,8 +355,8 @@ def _wobble(seed, a, b=0.0):
             + math.sin(a * 9.7 + seed * 0.7 + b * 4.3) * 0.1)
 
 
-def _sheet(name, grid, material, thickness):
-    """점 격자(열마다 같은 수)를 판으로 잇고 두께를 준 막 조각. 정점은 웨이트 없이 돌려준다."""
+def _grid_object(name, grid, material):
+    """점 격자(행마다 같은 수)를 면으로 잇는다. 웨이트는 부르는 쪽이 건다."""
     bm = bmesh.new()
     verts = [[bm.verts.new(p) for p in row] for row in grid]
     for i in range(len(verts) - 1):
@@ -461,110 +367,104 @@ def _sheet(name, grid, material, thickness):
     bm.to_mesh(me)
     bm.free()
     ob = ig._link(bpy.data.objects.new(name, me))
+    ig.assign_material(ob, material)
+    return ob
+
+
+def laminate(name, grid, thickness, face_material, edge_material):
+    """막 판. 겉과 속은 방수막이고, 잘린 테두리(두께 면)에만 속에 붙은 방음재가 드러난다."""
+    ob = _grid_object(name, grid, face_material)
+    ob.data.materials.append(edge_material)
     mod = ob.modifiers.new("Solidify", "SOLIDIFY")
     mod.thickness = thickness
     mod.offset = 0.0
+    mod.use_rim = True
+    mod.material_offset_rim = 1
     ig.apply_modifiers(ob)
-    for poly in ob.data.polygons:
-        poly.use_smooth = True
-    ig.assign_material(ob, material)
+    ig.mark_sharp_by_angle(ob, 55.0)
     triplanar_uv(ob)
     return ob
 
 
-class WrapShape:
-    """철골 마디를 손으로 감은 방수막 자루의 겉모양. radius(t, ang)은 자루 축에서 겉면까지(m)다.
-    t는 a→b 0..1, ang은 단면의 y축에서 z축 쪽으로 잰 각이다. 한쪽(bulge_ang 둘레)은 막이 뭉쳐 두껍고
-    반대쪽은 얇게 당겨졌다. 막은 구겨져 비스듬한 접힘 선이 여기저기 서고, 감아 겹친 막의 턱이 나선으로
-    두 줄 지나가며, 양 끝은 마디 쪽으로 고르지 않게 오므라든다. 매끈한 혹만 두면 근육이나 기계 팔처럼
-    읽혀서 접힘 선이 실루엣과 반사를 잘게 끊게 했다. ㄷ자 철골(플랜지가 up_hint 쪽)의 가운데에 맞춰
-    offset_z만큼 띄운다."""
-
-    def __init__(self, a, b, up_hint, ry, rz, offset_z, seed, bulge, folds=20):
-        self.a = Vector(a)
-        self.b = Vector(b)
-        self.x, self.y, self.z = frame_from(self.b - self.a, up_hint)
-        self.length = (self.b - self.a).length
-        self.ry, self.rz, self.offset_z = ry, rz, offset_z
-        self.seed = seed
-        self.girth = math.pi * (ry + rz)
-        rnd = random.Random(seed)
-        self.bulge_ang = rnd.uniform(0.0, math.tau)
-        # 뭉친 쪽: (길이 자리, 둘레 자리, 길이 폭 m, 둘레 폭 rad, 높이 m)
-        self.lumps = [(rnd.uniform(0.12, 0.88), self.bulge_ang + rnd.uniform(-1.0, 1.0), rnd.uniform(0.07, 0.16),
-                       rnd.uniform(0.5, 0.95), bulge * rnd.uniform(0.5, 1.0)) for _ in range(5)]
-        # 접힘 선: (길이 자리 m, 둘레 자리 m, 선 방향 cos·sin, 길이 m, 높이 m(음수면 골), 반폭 m)
-        self.folds = []
-        for _ in range(folds):
-            beta = rnd.choice((-1.0, 1.0)) * rnd.uniform(0.45, 1.35)
-            self.folds.append((rnd.uniform(0.0, self.length), rnd.uniform(0.0, self.girth), math.cos(beta), math.sin(beta),
-                               rnd.uniform(0.07, 0.24), rnd.uniform(0.007, 0.016) * rnd.choice((1.0, 1.0, -0.7)),
-                               rnd.uniform(0.012, 0.030)))
-        # 밀려 뭉친 띠: 소매를 밀어 올린 것처럼 한쪽으로 쏠려 두꺼워진 자리(길이 자리, 쏠린 쪽, 높이 m).
-        self.bunches = [(rnd.uniform(0.15, 0.85), rnd.uniform(0.0, math.tau), rnd.uniform(0.008, 0.016)) for _ in range(3)]
-        # 겹친 막의 턱: (나선 한 바퀴에 나가는 길이 m, 부호가 감은 방향. 위상. 턱 높이 m)
-        self.ridges = [(rnd.uniform(0.15, 0.27) * rnd.choice((-1.0, 1.0)), rnd.random(), rnd.uniform(0.005, 0.008))
-                       for _ in range(2)]
-        self.end_a = rnd.uniform(0.05, 0.11)
-        self.end_b = rnd.uniform(0.05, 0.10)
-
-    def radius(self, t, ang):
-        c, s = math.cos(ang), math.sin(ang)
-        r = (self.ry * self.rz) / math.sqrt((self.rz * c) ** 2 + (self.ry * s) ** 2)
-        end = _smooth(t / self.end_a) * _smooth((1.0 - t) / self.end_b)
-        r *= 0.80 + 0.20 * end
-        for tj, aj, span, width, height in self.lumps:
-            dt = (t - tj) * self.length / span
-            da = _ang_diff(ang, aj) / width
-            r += height * math.exp(-(dt * dt + da * da)) * end
-        for tb, ab, height in self.bunches:
-            db = (t - tb) * self.length / 0.028
-            r += height * math.exp(-db * db) * (0.55 + 0.45 * math.cos(ang - ab)) * end
-        along = t * self.length
-        around = (ang % math.tau) / math.tau * self.girth
-        for s0, p0, cb, sb, span, height, half in self.folds:
-            ds = along - s0
-            dp = (around - p0 + self.girth * 0.5) % self.girth - self.girth * 0.5
-            u = ds * cb + dp * sb
-            v = abs(-ds * sb + dp * cb)
-            if v < half and abs(u) < span * 0.5:
-                # 단면이 세모인 날카로운 접힘. 선 끝으로 갈수록 잦아든다.
-                r += height * (1.0 - v / half) * (1.0 - (2.0 * u / span) ** 2) * (0.4 + 0.6 * end)
-        for pitch, phase, step in self.ridges:
-            u = along / pitch + ang / math.tau + phase
-            f = u - math.floor(u)
-            # 한 바퀴 동안 천천히 두꺼워지다 감은 끝에서 뚝 떨어진다.
-            r += step * (_smooth(f / 0.85) if f < 0.85 else 1.0 - (f - 0.85) / 0.15)
-        return r * (1.0 + 0.04 * _wobble(self.seed + 7, t * 7.0, ang * 2.0))
-
-    def direction(self, ang):
-        return self.y * math.cos(ang) + self.z * math.sin(ang)
-
-    def point(self, t, ang, lift=0.0):
-        origin = self.a + self.x * (self.length * t) + self.z * self.offset_z
-        return origin + self.direction(ang) * (self.radius(t, ang) + lift)
-
-
-def wrap(name, shape, material, bone, sides=22, step=0.022):
-    """WrapShape를 따라 감은 막 자루. 둘레·길이를 실제 m로 편 UV(ImageUV)를 쓰고, 접힘 선은 날을 세운다."""
-    rings = max(6, int(round(shape.length / step)))
+def crushed_strip(name, a, b, up_hint, width, flange, thick, material, bone, seed, rings=7, crush=0.014, bow=0.008):
+    """안쪽 지지대인 얇은 ㄷ자 철골 띠. 두어 군데 찌그러져 한쪽 플랜지가 안으로 접히고, 길이를 따라 살짝
+    휘었다. 둥근 관이나 깎은 경첩이 아니다."""
+    a = Vector(a)
+    b = Vector(b)
+    x, y, z = frame_from(b - a, up_hint)
+    length = (b - a).length
+    hw = width * 0.5
+    outline = [(-hw, 0.0), (hw, 0.0), (hw, flange), (hw - thick, flange), (hw - thick, thick),
+               (-hw + thick, thick), (-hw + thick, flange), (-hw, flange)]
+    rnd = random.Random(seed)
+    dents = [(rnd.uniform(0.2, 0.8), rnd.choice((-1.0, 1.0)), rnd.uniform(0.6, 1.0)) for _ in range(2)]
+    bend = rnd.uniform(-1.0, 1.0)
     bm = bmesh.new()
-    loops = [[bm.verts.new(shape.point(i / rings, math.tau * k / sides)) for k in range(sides)] for i in range(rings + 1)]
-    uv_layer = bm.loops.layers.uv.new("ImageUV")
-    girth = math.pi * (shape.ry + shape.rz)
+    rings_v = []
+    for i in range(rings + 1):
+        t = i / rings
+        origin = a + x * (length * t) + (z * bow + y * (bow * 0.6 * bend)) * math.sin(math.pi * t)
+        ring = []
+        for py, pz in outline:
+            fold = sum(amount * math.exp(-(((t - td) * length) / 0.07) ** 2) for td, side, amount in dents if side * py > 0.0)
+            k = pz / flange
+            ring.append(bm.verts.new(origin + y * (py - math.copysign(crush * fold * k, py)) + z * (pz - crush * 0.5 * fold * k)))
+        rings_v.append(ring)
+    count = len(outline)
     for i in range(rings):
-        for k in range(sides):
-            m = (k + 1) % sides
-            face = bm.faces.new((loops[i][k], loops[i][m], loops[i + 1][m], loops[i + 1][k]))
-            for loop, (ku, iv) in zip(face.loops, ((k, i), (k + 1, i), (k + 1, i + 1), (k, i + 1))):
-                loop[uv_layer].uv = (girth * ku / sides, shape.length * iv / rings)
-    for cap in (list(reversed(loops[0])), loops[-1]):
-        face = bm.faces.new(cap)
-        for loop in face.loops:
-            loop[uv_layer].uv = (loop.vert.co.x * 0.5, loop.vert.co.y * 0.5)
-    ob = _finish_keep_uv(name, bm, material, bone)
-    ig.mark_sharp_by_angle(ob, 40.0)
-    return ob
+        for j in range(count):
+            m = (j + 1) % count
+            bm.faces.new((rings_v[i][j], rings_v[i][m], rings_v[i + 1][m], rings_v[i + 1][j]))
+    for ring_verts, flip in ((rings_v[0], True), (rings_v[-1], False)):
+        for quad in ((0, 1, 4, 5), (5, 6, 7, 0), (1, 2, 3, 4)):
+            verts = [ring_verts[k] for k in quad]
+            if flip:
+                verts.reverse()
+            try:
+                bm.faces.new(verts)
+            except ValueError:
+                pass
+    return _finish(name, bm, material, bone)
+
+
+def strut_lattice(key, tag, a, b, up_hint, radius, steel, bone, seed, ext_a=0.04, ext_b=0.04, width=0.06, flange=0.024):
+    """마디 속 철골: 막 바로 안쪽에 길이로 놓인 눌린 ㄷ자 띠 셋과, 이웃한 띠 사이를 비스듬히 잇는 띠 셋.
+    플랜지가 바깥을 향해 막 판 틈으로 홈이 보인다. 둥근 관이나 경첩 없이 띠끼리 겹쳐 지나간다."""
+    a = Vector(a)
+    b = Vector(b)
+    x, y, z = frame_from(b - a, up_hint)
+    length = (b - a).length
+    rnd = random.Random(seed)
+    base = rnd.uniform(0.0, math.tau)
+
+    def at(t, ang, rad):
+        return a + x * (length * t) + (y * math.cos(ang) + z * math.sin(ang)) * rad
+
+    def radial(ang):
+        return y * math.cos(ang) + z * math.sin(ang)
+
+    parts = []
+    angles = [base + math.tau * k / 3 + rnd.uniform(-0.3, 0.3) for k in range(3)]
+    twists = [rnd.uniform(-0.4, 0.4) for _ in range(3)]
+    for k, ang in enumerate(angles):
+        p0 = at(-ext_a / length, ang, radius)
+        p1 = at(1.0 + ext_b / length, ang + twists[k], radius * 0.86)
+        parts.append(crushed_strip(f"{key}_{tag}Strut{k}", p0, p1, radial(ang + twists[k] * 0.5), width, flange, 0.004,
+                                   steel, bone, seed * 13 + k, crush=0.016))
+    # 대각 버팀: 띠 0-1 사이에 X, 띠 1-2 사이에 하나. 띠보다 조금 안쪽이다.
+    braces = ((0, 1, 0.10, 0.62), (1, 0, 0.38, 0.90), (1, 2, 0.15, 0.80))
+    for n, (i, j, t0, t1) in enumerate(braces):
+        ai = angles[i] + twists[i] * t0
+        aj = angles[j] + twists[j] * t1
+        if aj - ai > math.pi:
+            aj -= math.tau
+        elif ai - aj > math.pi:
+            aj += math.tau
+        p0 = at(t0, ai, radius * 0.9)
+        p1 = at(t1, aj, radius * 0.9)
+        parts.append(crushed_strip(f"{key}_{tag}Brace{n}", p0, p1, radial((ai + aj) * 0.5), width * 0.7, flange * 0.8, 0.004,
+                                   steel, bone, seed * 13 + 7 + n, rings=5, crush=0.012))
+    return parts
 
 
 def foam_chunk(name, center, axes, half, material, bone, seed, plane=None, lop=0.35, ragged=0.12, segs=18, rings=9):
@@ -607,95 +507,110 @@ def foam_chunk(name, center, axes, half, material, bone, seed, plane=None, lop=0
     return ob
 
 
-def flap(name, shape, t0, ang0, length, width, lift_deg, material, bone, seed, toward=-1.0):
-    """풀려 들린 막 끝. 자루 겉면의 짧은 둘레 선(t0, ang0)에 붙어 길이 방향(toward 쪽)으로 뻗고,
-    겉면에서 lift_deg만큼 들리며 끝으로 갈수록 말린다. 찢긴 끝은 열마다 길이가 다르다."""
-    span = width / max(shape.radius(t0, ang0), 0.03)
+def leg_sheet(name, a, b, up_hint, seed, r0, layer, sweep_deg, twist_deg, ang0, ext_a, ext_b, flare, mats, weight_of,
+              lift=0.0, hang=0.0, pinch_a=0.0, pinch_b=0.0, bend_dir=None, floor_z=None, rows=16, cols=9):
+    """다리 마디를 감싼 막 판 하나. 단면은 길이 방향으로 한 번 접힌 V이고, 길이를 따라 꼬이며 가늘어진다.
+    양 끝은 마디를 넘어 이웃 마디와 겹쳐(ext_a·ext_b m) 관절을 덮고, 웨이트를 섞어 같이 굽는다. flare가
+    있으면 끝(발목)으로 갈수록 바깥으로 벌어져 발 위로 퍼진다. lift는 한쪽 가장자리가 들뜬 정도다(들뜬 판
+    사이로 안쪽 철골이 보인다). hang은 한쪽 가장자리가 마디 가운데에서 아래로 처져 늘어진 깊이(m)다.
+    pinch_a·pinch_b는 끝을 철골 쪽으로 오므린 정도다(관절에서 판 끝이 관 입구처럼 열려 보이지 않게).
+    bend_dir이 있으면 b를 넘어간 부분은 그 방향(끝 마디)을 따라 꺾여 내려가고, floor_z 아래로는 가지 않는다
+    (아랫마디 막이 발목에서 깔때기처럼 열리지 않고 발 위로 흘러내려 퍼진다). 단면에는 접힘이 한둘 이상 있고
+    길이를 따라 굵기가 울퉁불퉁하다. 같은 원통이 마디마다 되풀이되지 않게 판마다 도는 자리·꼬임·접힘이 다르다."""
+    a = Vector(a)
+    b = Vector(b)
+    x, y, z = frame_from(b - a, up_hint)
+    length = (b - a).length
+    rnd = random.Random(seed)
+    sweep = math.radians(sweep_deg)
+    twist = math.radians(twist_deg)
+    fold_depth = rnd.uniform(0.02, 0.04) * rnd.choice((1.0, -0.6))
+    folds = rnd.choice((1, 2, 2, 3))
+    fold_phase = rnd.uniform(0.0, 0.4)
+    bend = Vector(bend_dir).normalized() if bend_dir is not None else None
+    t_start = -ext_a / length
+    t_end = 1.0 + ext_b / length
     grid = []
-    for i in range(4):
-        s = i / 3
+    for i in range(rows + 1):
+        s = i / rows
         row = []
-        for j in range(5):
-            a = ang0 + (j / 4 - 0.5) * span
-            dist = length * s * (1.0 + 0.25 * _wobble(seed, j * 1.7))
-            t = max(0.0, min(1.0, t0 + toward * dist / shape.length))
-            lift = 0.004 + math.tan(math.radians(lift_deg)) * dist + 0.025 * s * s
-            row.append(shape.point(t, a, lift))
+        for j in range(cols + 1):
+            u = j / cols
+            # 찢긴 양 끝: 열마다 길이가 다르다.
+            t0 = t_start + 0.035 * _wobble(seed, u * 4.0) / length
+            t1 = t_end + 0.045 * _wobble(seed + 2, u * 4.3) / length
+            t = t0 + (t1 - t0) * s
+            ang = ang0 + sweep * (u - 0.5) * (1.0 + 0.12 * _wobble(seed + 4, s * 3.0)) + twist * t
+            r = r0 * (1.0 - 0.24 * max(0.0, min(1.0, t))) + layer + lift * u * u
+            # 접힘: 판 너비에 한둘 이상. 꼬임 때문에 길이를 따라 비스듬히 돈다.
+            r += fold_depth * abs(math.sin(math.pi * (folds * u + fold_phase))) ** 1.4
+            # 울퉁불퉁한 굵기: 쑤셔 넣은 방음재가 뭉친 데는 불룩하다.
+            r += 0.018 * _wobble(seed + 11, t * 2.4) + 0.006 * _wobble(seed + 6, t * 6.0, u * 3.0)
+            if flare:
+                r += flare * _smooth((t - 0.78) / 0.3) ** 1.5
+            if pinch_a:
+                r *= 1.0 - pinch_a * (1.0 - _smooth((t - t0) / 0.16))
+            if pinch_b:
+                r *= 1.0 - pinch_b * _smooth((t - (t1 - 0.16)) / 0.16)
+            radial = y * math.cos(ang) + z * math.sin(ang)
+            if bend is not None and t > 1.0:
+                p = b + bend * (length * (t - 1.0)) + radial * r
+            else:
+                p = a + x * (length * t) + radial * r
+            if floor_z is not None:
+                p.z = max(p.z, floor_z + 0.006)
+            if hang:
+                # 처지는 가장자리: 마디 가운데일수록 깊고, 관절 쪽은 붙어 있다. 짚는 면 아래로는 내려가지 않는다.
+                edge = _smooth((u - 0.5) / 0.5) ** 1.4
+                env = 0.25 + 0.75 * math.sin(math.pi * max(0.0, min(1.0, t)))
+                droop = hang * edge * env * (1.0 + 0.3 * _wobble(seed + 8, t * 5.0))
+                p = p + Vector((0.0, 0.0, -droop)) + radial * (0.45 * droop)
+                p.z = max(p.z, 0.01)
+            row.append(p)
         grid.append(row)
-    ob = _sheet(name, grid, material, 0.003)
-    group = ob.vertex_groups.new(name=bone)
-    group.add(list(range(len(ob.data.vertices))), 1.0, "REPLACE")
+    ob = laminate(name, grid, 0.014, mats["membrane"], mats["foam"])
+    _assign_weights(ob, weight_of)
     return ob
 
 
-def tape_strip(name, shape, t0, t1, ang0, turns, width, material, bone, steps=22):
-    """자루를 비스듬히 감은 테이프 한 줄. 한 바퀴를 다 돌지 않고 끝이 뜯겨 있다."""
-    half = width * 0.5 / shape.length
-    grid = []
-    for i in range(steps + 1):
-        s = i / steps
-        t = t0 + (t1 - t0) * s
-        a = ang0 + turns * math.tau * s
-        grid.append([shape.point(max(0.0, t - half), a, 0.004), shape.point(min(1.0, t + half), a, 0.004)])
-    ob = _sheet(name, grid, material, 0.0015)
-    group = ob.vertex_groups.new(name=bone)
-    group.add(list(range(len(ob.data.vertices))), 1.0, "REPLACE")
-    return ob
+def segment_weights(start, axis, length, own, before=None, after=None, before_reach=0.12, after_reach=0.14):
+    """마디 막 판의 웨이트. 마디 안은 제 뼈, 앞뒤로 넘어간 자리는 이웃 뼈와 섞는다(관절에서 같이 굽는다)."""
+    start = Vector(start)
+    axis = Vector(axis).normalized()
+
+    def weights(co):
+        s = (co - start).dot(axis)
+        out = {own: 1.0}
+        if before:
+            w = 1.0 - _smooth((s + 0.02) / before_reach)
+            out[before] = w
+            out[own] -= w
+        if after:
+            w = _smooth((s - (length - 0.06)) / after_reach)
+            out[after] = w
+            out[own] -= w
+        out[own] = max(out[own], 0.0)
+        return out
+
+    return weights
 
 
-def wrap_details(key, tag, shape, mats, bone, seed, bulges):
-    """자루에 붙는 것: 찢긴 틈으로 비어져 나온 방음재, 감은 양 끝에서 비어져 나온 방음재, 풀려 들린 막 끝
-    하나, 비스듬한 테이프 한 줄. 몸통 쪽 방음재는 막이 얇게 당겨진 쪽(뭉친 쪽 반대)에서 나온다. 검은 막
-    사이로 노란 데가 군데군데 보여야 어둠 속에서 매끈한 검은 관으로 읽히지 않는다."""
-    rnd = random.Random(seed * 97 + len(tag))
-    parts = []
-    for n in range(bulges):
-        t = 0.16 + 0.68 * (n + rnd.uniform(0.15, 0.85)) / bulges
-        ang = shape.bulge_ang + math.pi + rnd.uniform(-1.3, 1.3)
-        normal = shape.direction(ang)
-        tangent = shape.direction(ang + math.pi * 0.5)
-        # 찢긴 틈은 비스듬하고 크기가 제각각이다(같은 크기로 늘어서면 얼룩무늬처럼 읽힌다).
-        twist = rnd.uniform(-0.9, 0.9)
-        along = shape.x * math.cos(twist) + tangent * math.sin(twist)
-        across = normal.cross(along).normalized()
-        size = (rnd.choice((0.06, 0.09, 0.13)) * rnd.uniform(0.85, 1.15), rnd.uniform(0.035, 0.065), 0.03)
-        parts.append(foam_chunk(f"{key}_{tag}Foam{n}", shape.point(t, ang, -0.019), (along, across, normal), size,
-                                mats["foam"], bone, seed * 13 + n + len(tag), lop=0.45, ragged=0.34, segs=12, rings=5))
-    for end, t in (("A", 0.035), ("B", 0.965)):
-        base = rnd.uniform(0.0, math.tau)
-        for n in range(2):
-            ang = base + math.pi * n + rnd.uniform(-0.6, 0.6)
-            normal = shape.direction(ang)
-            tangent = shape.direction(ang + math.pi * 0.5)
-            parts.append(foam_chunk(f"{key}_{tag}Stuff{end}{n}", shape.point(t, ang, -0.010), (shape.x, tangent, normal),
-                                    (rnd.uniform(0.035, 0.05), rnd.uniform(0.05, 0.08), 0.03), mats["foam"], bone,
-                                    seed * 17 + n + len(tag) + len(end) * 5, lop=0.3, ragged=0.25, segs=8, rings=5))
-    parts.append(flap(f"{key}_{tag}Flap", shape, rnd.uniform(0.62, 0.8), shape.bulge_ang + rnd.uniform(0.4, 0.9),
-                      rnd.uniform(0.12, 0.17), rnd.uniform(0.07, 0.10), rnd.uniform(18.0, 28.0), mats["wrap"], bone, seed + 41))
-    t0 = rnd.uniform(0.25, 0.55)
-    parts.append(tape_strip(f"{key}_{tag}Tape", shape, t0, t0 + rnd.uniform(0.08, 0.14), rnd.uniform(0.0, math.tau),
-                            rnd.uniform(0.62, 0.8), rnd.uniform(0.04, 0.055), mats["tape"], bone))
-    return parts
-
-
-def pad_clump(key, pad, d, seed, mats, bone):
-    """패드: 뜯어 뭉친 계란판 방음재 덩어리 셋(짚는 면은 눌려 평평하다)에, 몸 쪽 절반을 덮은 찢긴 막과
-    끊긴 실리콘 줄. 막의 몸 쪽 끝은 덩어리 밖으로 나와 짚는 면에 들러붙는다. 패드가 떨어질 때 이 끝이
-    벽에 남았다가 놓인다(skin 뼈)."""
+def foot(key, pad, d, seed, mats, bone):
+    """발: 짚는 면에 넓게 눌려 퍼진 비대칭 덩어리. 바닥은 평평하게 눌린 방음재이고 위는 찢긴 방수막 판이
+    덮었다. 막이 덮지 못한 둘레와 판의 잘린 테두리에서만 방음재가 보인다. 굳은 실리콘이 짚는 면 둘레에
+    눌려 번졌다. 막의 몸 쪽 끝은 짚는 면까지 내려와 들러붙는다. 발이 떨어질 때 이 끝이 면에 남았다가
+    놓인다(skin 뼈)."""
     Z = Vector((0.0, 0.0, 1.0))
     side = Vector((-d.y, d.x, 0.0))
     rnd = random.Random(seed * 53 + 11)
     flip = 1.0 if rnd.random() < 0.5 else -1.0
     plane = (pad, Z)
     chunks = [
-        foam_chunk(f"{key}_PadFoam", pad + Z * 0.040, (d, side, Z), (0.25, 0.20, 0.068), mats["foam"], bone,
-                   seed * 7 + 1, plane=plane, lop=0.38, ragged=0.13, segs=22, rings=10),
-        foam_chunk(f"{key}_PadFoamTop", pad + d * 0.07 + side * (0.05 * flip) + Z * 0.095,
-                   (_turn(d, 0.4 * flip), _turn(side, 0.4 * flip), Z), (0.15, 0.11, 0.05), mats["foam"], bone,
-                   seed * 7 + 2, plane=(pad + Z * 0.05, Z), lop=0.30, ragged=0.18, segs=14, rings=7),
-        foam_chunk(f"{key}_PadFoamSide", pad - d * 0.03 - side * (0.17 * flip) + Z * 0.045,
-                   (_turn(d, -0.5 * flip), _turn(side, -0.5 * flip), Z), (0.11, 0.08, 0.055), mats["foam"], bone,
-                   seed * 7 + 3, plane=plane, lop=0.25, ragged=0.20, segs=12, rings=6),
+        foam_chunk(f"{key}_FootFoam", pad + Z * 0.028 + d * 0.02, (d, side, Z), (0.31, 0.25, 0.045), mats["foam"], bone,
+                   seed * 7 + 1, plane=plane, lop=0.5, ragged=0.16, segs=22, rings=8),
+        foam_chunk(f"{key}_FootLobe", pad + d * 0.07 - side * (0.21 * flip) + Z * 0.022,
+                   (_turn(d, 0.5 * flip), _turn(side, 0.5 * flip), Z), (0.16, 0.12, 0.035), mats["foam"], bone,
+                   seed * 7 + 3, plane=plane, lop=0.3, ragged=0.22, segs=14, rings=6),
     ]
     bm = bmesh.new()
     for ob in chunks:
@@ -703,53 +618,59 @@ def pad_clump(key, pad, d, seed, mats, bone):
     tree = BVHTree.FromBMesh(bm)
     bm.free()
     parts = list(chunks)
-    # 막 조각: 위에서 덩어리에 덮어씌운다. 덩어리를 벗어난 몸 쪽 끝은 짚는 면까지 내려와 붙는다.
+    # 막 판: 위에서 덩어리에 덮어씌운다. 둘레 몇 군데는 짚는 면까지 흘러내리고, 몸 쪽 끝은 면에 붙는다.
     grid = []
-    for i in range(10):
-        u = i / 9
+    for i in range(12):
+        u = i / 11
         row = []
-        for j in range(8):
-            v = j / 7 * 2.0 - 1.0
-            reach = 0.36 + 0.05 * _wobble(seed, v * 2.7)
-            half_w = 0.17 + 0.03 * _wobble(seed + 2, u * 3.1)
-            p = pad - d * (-0.02 + u * reach) + side * (v * half_w)
+        for j in range(10):
+            v = j / 9 * 2.0 - 1.0
+            reach_out = 0.24 + 0.05 * _wobble(seed, v * 2.3)
+            reach_in = 0.36 + 0.04 * _wobble(seed + 1, v * 2.9)
+            along = reach_out - (reach_out + reach_in) * u
+            half_w = 0.22 + 0.04 * _wobble(seed + 2, u * 3.1)
+            p = pad + d * along + side * (v * half_w)
             hit = tree.ray_cast(p + Z * 0.5, -Z, 1.0)
-            if hit[0] is not None and hit[0].z - pad.z > 0.012:
+            if hit[0] is not None and hit[0].z - pad.z > 0.010:
                 row.append(hit[0] + hit[1] * 0.006)
             else:
-                # 덩어리 밖: 짚는 면에 붙는다. 덩어리 둘레를 뚫지 않게 조금 바깥으로 민다.
-                row.append(Vector((p.x, p.y, pad.z + 0.004)) - d * 0.012)
+                # 덩어리 밖: 짚는 면까지 흘러내려 붙는다. 덩어리 둘레를 뚫지 않게 조금 바깥으로 민다.
+                out = (p - pad)
+                out.z = 0.0
+                row.append(Vector((p.x, p.y, pad.z + 0.004)) + (out.normalized() * 0.012 if out.length > 1e-4 else Vector()))
         grid.append(row)
-    drape = _sheet(f"{key}_PadMembrane", grid, mats["wrap"], 0.004)
+    drape = laminate(f"{key}_FootMembrane", grid, 0.007, mats["membrane"], mats["foam"])
     skin = f"skin_{key}"
 
     def drape_weights(co):
         height = co.z - pad.z
         inner = -(co - pad).dot(d)
-        across = abs((co - pad).dot(side)) / 0.17
-        w = (1.0 - _smooth((height - 0.006) / 0.045)) * _smooth((inner - 0.17) / 0.06) * (1.0 - _smooth(across / 0.55))
+        across = abs((co - pad).dot(side)) / 0.22
+        w = (1.0 - _smooth((height - 0.006) / 0.06)) * _smooth((inner - 0.12) / 0.2) ** 1.3 * (1.0 - _smooth(across / 0.6))
         return {bone: 1.0 - w, skin: w}
 
     _assign_weights(drape, drape_weights)
     parts.append(drape)
-    SKIN_ANCHORS[key] = pad - d * 0.31 + Z * 0.008
-    # 끊긴 실리콘 줄: 긴 토막 하나와 짧은 토막 둘이 덩어리 둘레 중간 높이에 붙어 있다.
-    for arc, (a0, a1) in enumerate(((0.5, 1.9), (3.6, 4.0), (4.9, 5.2))):
+    SKIN_ANCHORS[key] = pad - d * 0.33 + Z * 0.008
+    # 짚는 면 둘레에 눌려 번진 실리콘: 끊긴 굵은 줄 둘.
+    for arc, (a0, a1) in enumerate(((0.4, 1.7), (3.5, 4.4))):
         points = []
         for i in range(9):
             ang = a0 + (a1 - a0) * i / 8
             out = d * math.cos(ang) + side * math.sin(ang)
-            origin = pad + Z * (0.032 + 0.012 * _wobble(seed + arc, ang * 2.0)) + out * 0.6
-            hit = tree.ray_cast(origin, -out, 0.7)
+            origin = pad + Z * (0.012 + 0.006 * _wobble(seed + arc, ang * 2.0)) + out * 0.7
+            hit = tree.ray_cast(origin, -out, 0.8)
             if hit[0] is not None:
-                points.append(hit[0] + hit[1] * 0.006)
+                q = hit[0] + hit[1] * 0.008
+                q.z = max(q.z, pad.z + 0.015)
+                points.append(q)
         if len(points) >= 3:
-            parts.append(bead(f"{key}_PadSilicone{arc}", points, 0.010, mats["silicone"], bone))
+            parts.append(bead(f"{key}_FootSealant{arc}", points, 0.014, mats["sealant"], bone))
     return parts
 
 
-def web(name, body_edge, leg_edge, sag, material, bones, seed, rows=6, cols=8, thickness=0.004):
-    """몸 옆구리(body_edge 두 점)에서 윗마디(leg_edge 두 점)까지 늘어진 방수막 물갈퀴.
+def web(name, body_edge, leg_edge, sag, mats, bones, seed, rows=6, cols=8):
+    """몸 옆구리(body_edge 두 점)에서 윗마디(leg_edge 두 점)까지 늘어진 방수막 물갈퀴(두께 있는 판).
     몸 쪽 가장자리는 몸 뼈, 다리 쪽은 윗마디 뼈를 따른다. 가운데는 물갈퀴 뼈(bones[2])를 따라
     게임이 처지게 하거나 먼저 벌어지게 민다."""
     b0, b1 = (Vector(p) for p in body_edge)
@@ -768,7 +689,7 @@ def web(name, body_edge, leg_edge, sag, material, bones, seed, rows=6, cols=8, t
             p.z += 0.012 * _wobble(seed, u * 5.0, v * 3.0) * math.sin(math.pi * v)
             row.append(p)
         grid.append(row)
-    ob = _sheet(name, grid, material, thickness)
+    ob = laminate(name, grid, 0.006, mats["membrane"], mats["foam"])
 
     # 몸 가장자리에서 다리 가장자리까지의 비율로 섞고, 가운데일수록 물갈퀴 뼈가 더 가진다.
     def weights(co):
@@ -779,13 +700,102 @@ def web(name, body_edge, leg_edge, sag, material, bones, seed, rows=6, cols=8, t
             bu = b0.lerp(b1, u)
             span = l0.lerp(l1, u) - bu
             t = max(0.0, min(1.0, (co - bu).dot(span) / max(span.length_squared, 1e-6)))
-            d = (bu + span * t - co).length
-            if d < best_d:
-                best_d = d
+            dist = (bu + span * t - co).length
+            if dist < best_d:
+                best_d = dist
                 best = t
         s = _smooth(best)
         mid = 0.9 * math.sin(math.pi * best) ** 1.2
         return {bones[0]: (1.0 - s) * (1.0 - mid), bones[1]: s * (1.0 - mid), bones[2]: mid}
+
+    _assign_weights(ob, weights)
+    return ob
+
+
+SKIRT_SIDES = {"f": Vector((1.0, 0.0, 0.0)), "b": Vector((-1.0, 0.0, 0.0)), "l": Vector((0.0, -1.0, 0.0)),
+               "r": Vector((0.0, 1.0, 0.0))}
+
+
+def skirt_weights(co):
+    """몸 둘레 쪽 무게. 몸 가운데에서 본 방향으로 앞·뒤·왼쪽·오른쪽 치마 뼈에 나눈다."""
+    flat = Vector((co.x / 0.40, co.y / 0.60, 0.0))
+    if flat.length < 1e-4:
+        return {"skirt_f": 0.25, "skirt_b": 0.25, "skirt_l": 0.25, "skirt_r": 0.25}
+    flat.normalize()
+    out = {f"skirt_{k}": max(0.0, flat.dot(v)) ** 2 for k, v in SKIRT_SIDES.items()}
+    total = sum(out.values())
+    return {k: w / total for k, w in out.items()}
+
+
+def body_drape(name, shell_tree, front, seed, mats, layer=0.0, x0=0.07, overhang=0.15, pleats=0.22):
+    """몸통에 덮어씌운 큰 방수막 판(앞 또는 뒤 절반). 등뼈 철골 옆에서 시작해 몸통 위를 덮고, 몸 둘레를 넘어
+    아래로 처지며 짚는 면 높이 가까이에서 바깥으로 퍼진다. 접힘(주름)은 가장자리로 갈수록 깊다. 몸 위는
+    살 처짐 뼈를, 몸 밖으로 늘어진 데는 치마 뼈를, 엉덩이 근처는 윗마디를 따른다. 짚는 면(z 0) 아래로는
+    내려가지 않는다."""
+    sign = 1.0 if front else -1.0
+    rnd = random.Random(seed)
+    phase = rnd.uniform(0.0, math.tau)
+    rows, cols = 22, 12
+    grid = []
+    for i in range(rows + 1):
+        yy = -0.66 + 1.32 * i / rows
+        # 몸통 둘레(x)와 그 높이를 옆에서 쏘아 찾는다.
+        hit = shell_tree.ray_cast(Vector((sign * 1.2, yy, 0.16)), Vector((-sign, 0.0, 0.0)), 1.3)
+        edge_x = abs(hit[0].x) if hit[0] is not None else 0.40 * math.sqrt(max(0.0, 1.0 - (yy / 0.62) ** 2))
+        reach = overhang * (0.8 + 0.5 * _wobble(seed, yy * 3.1)) + 0.02 * abs(yy) / 0.6
+        row = []
+        for j in range(cols + 1):
+            u = j / cols
+            span = max(edge_x + reach - x0, 0.05)
+            xx = x0 + span * u
+            beyond = max(0.0, xx - edge_x)
+            top = shell_tree.ray_cast(Vector((sign * min(xx, edge_x - 0.005), yy, 1.0)), Vector((0.0, 0.0, -1.0)), 1.2)
+            z_top = (top[0].z if top[0] is not None else 0.12) + 0.018 + layer
+            if beyond <= 0.0:
+                z = z_top
+            else:
+                k = _smooth(beyond / max(reach, 0.01))
+                z = 0.03 + layer * 0.5 + (z_top - 0.03) * (1.0 - k) ** 1.6
+            # 접힘: 가장자리로 갈수록 깊어지는 주름이 몸 길이를 따라 물결친다.
+            depth = (0.006 + 0.052 * u ** 1.5) * (1.0 + 0.3 * _wobble(seed + 3, yy * 2.0))
+            z += depth * math.sin(math.tau * yy / pleats + phase + 0.6 * _wobble(seed + 5, u * 2.0))
+            xx += 0.025 * u ** 2 * _wobble(seed + 7, yy * 5.0)
+            # 엉덩이 근처에서는 다리 위로 걸쳐 놓인다(다리를 뚫지 않게 들어 올린다).
+            p = Vector((sign * xx, yy, max(z, 0.012)))
+            for hx, hy in ((HIP_X * sign, HIP_Y), (HIP_X * sign, -HIP_Y)):
+                hip = Vector((hx, hy, HIP_Z))
+                dd = Vector((hx, hy, 0.0)).normalized()
+                rel = p - hip
+                along = rel.dot(dd)
+                lateral = (rel - dd * along)
+                lateral.z = 0.0
+                if -0.05 < along < 0.45 and lateral.length < 0.17:
+                    lift = (1.0 - _smooth(lateral.length / 0.17)) * (1.0 - _smooth((along - 0.30) / 0.15))
+                    p.z = max(p.z, HIP_Z + 0.13 * lift + (p.z - HIP_Z) * (1.0 - lift))
+            row.append(p)
+        grid.append(row)
+    ob = laminate(name, grid, 0.02, mats["membrane"], mats["foam"])
+
+    def weights(co):
+        edge = abs(co.x) - 0.38
+        on_body = Vector((max(-0.40, min(0.40, co.x)), max(-0.60, min(0.60, co.y)), max(0.0, min(0.40, co.z))))
+        base = mass_weights(on_body)
+        k = _smooth(edge / 0.16) * 0.9
+        out = {bone: w * (1.0 - k) for bone, w in base.items()}
+        for bone, w in skirt_weights(co).items():
+            out[bone] = out.get(bone, 0.0) + w * k
+        for leg_key, (sx, sy) in LEGS.items():
+            hip = Vector((HIP_X * sx, HIP_Y * sy, HIP_Z))
+            dd = Vector((sx, sy, 0.0)).normalized()
+            rel = co - hip
+            along = rel.dot(dd)
+            lateral = rel - dd * along
+            lateral.z = 0.0
+            if along > -0.05 and lateral.length < 0.17:
+                wl = (1.0 - _smooth(lateral.length / 0.17)) * _smooth((along + 0.05) / 0.25) * 0.85
+                out = {bone: w * (1.0 - wl) for bone, w in out.items()}
+                out[f"leg_{leg_key}_1"] = out.get(f"leg_{leg_key}_1", 0.0) + wl
+        return out
 
     _assign_weights(ob, weights)
     return ob
@@ -839,6 +849,14 @@ def import_shell(path):
             hsv.inputs["Value"].default_value = 0.62
             links.new(base.links[0].from_socket, hsv.inputs["Color"])
             links.new(hsv.outputs["Color"], base)
+        rough = bsdf.inputs["Roughness"]
+        if rough.is_linked:
+            # 생성기는 막을 젖은 플라스틱처럼 번들거리게 구웠다. 무광 쪽으로 올린다.
+            lift = nodes.new("ShaderNodeMapRange")
+            lift.inputs["To Min"].default_value = 0.5
+            lift.inputs["To Max"].default_value = 1.0
+            links.new(rough.links[0].from_socket, lift.inputs["Value"])
+            links.new(lift.outputs["Result"], rough)
         metal = bsdf.inputs["Metallic"]
         if metal.is_linked:
             source = metal.links[0].from_socket
@@ -940,86 +958,112 @@ def leg_points(sx, sy):
 
 def build_parts(mats, shell):
     parts = [shell]
-    membrane, steel, silicone, glue, iron = (mats[k] for k in ("membrane", "steel", "silicone", "glue", "iron"))
-    X, Y, Z = Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1))
+    membrane, steel, sealant = mats["membrane"], mats["steel"], mats["sealant"]
+    Z = Vector((0, 0, 1))
     tree = BVHTree.FromObject(shell, bpy.context.evaluated_depsgraph_get())
     # 바닥 둘레의 실리콘 테두리. 벽에 대면 이 줄이 틈을 막는다. 몸 살과 같이 처진다.
     rim = bottom_outline(shell)
     if rim:
-        ob = bead("SealRim", rim, 0.014, silicone, None)
+        ob = bead("SealRim", rim, 0.014, sealant, None)
         _assign_weights(ob, mass_weights)
         parts.append(ob)
+    # 몸통을 덮은 큰 막 판 둘(앞·뒤 절반)과 한쪽 모서리에 겹친 작은 판 하나. 몸 실루엣이 타원 대신
+    # 들쭉날쭉하게 접힌 부채꼴이 된다.
+    parts.append(body_drape("DrapeFront", tree, True, 71, mats, layer=0.0, overhang=0.22, pleats=0.26))
+    parts.append(body_drape("DrapeBack", tree, False, 83, mats, layer=0.008, overhang=0.20, pleats=0.21))
+    parts.append(body_drape("DrapeCorner", tree, True, 97, mats, layer=0.028, x0=0.20, overhang=0.14, pleats=0.17))
     for key, (sx, sy) in LEGS.items():
         hip, knee, ankle, pad = leg_points(sx, sy)
         d = (knee - hip).normalized()
-        joint_axis = Vector((-d.y, d.x, 0.0))
+        side_d = Vector((-d.y, d.x, 0.0))
         b1, b2, b3 = f"leg_{key}_1", f"leg_{key}_2", f"leg_{key}_3"
         seed = (2 if sx > 0 else 5) + (1 if sy > 0 else 0)
-        # 엉덩이 받침판: 몸통 옆구리 겉면에 댄다(몸통 안의 엉덩이 볼트에서 바깥으로).
-        side, side_n = surface_point(tree, Vector((hip.x, 0.0, hip.z)), Vector((0.0, sy, 0.0)), hip + Vector((0.0, 0.04 * sy, 0.0)))
-        plate_center = side + side_n * 0.006
-        parts.append(oriented_box(f"HipPlate_{key}", plate_center, (0.17, 0.012, 0.15), (X, Y, Z), steel, "body", bevel=0.004))
-        parts.append(bolt(f"{key}_HipBolt", Vector((hip.x, side.y + 0.02 * sy, hip.z)), Vector((0.0, 1.0, 0.0)), 0.021, 0.07, iron, "body"))
-        # 바깥 마디가 안쪽 마디를 품는다(접자). 무릎에서 6 cm 겹친다. 끝 마디는 패드 덩어리 속에서 끝난다.
-        parts.append(c_channel(f"{key}_Seg1", hip - d * 0.05, knee + d * 0.07, (0, 0, 1), 0.135, 0.062, 0.007, steel, b1))
-        parts.append(c_channel(f"{key}_Seg2", knee - d * 0.07, ankle + d * 0.06, (0, 0, -1), 0.14, 0.066, 0.008, steel, b2))
+        rnd = random.Random(seed * 101)
+        # 안쪽 지지대: 막 바로 안쪽에 눌린 ㄷ자 띠를 길이로 셋, 그 사이를 비스듬히 잇는 띠를 셋 둔다. 엉덩이 쪽 띠는
+        # 몸통 속으로 들어가 몸에 물리고, 무릎에서는 위아래 마디의 띠가 겹쳐 지나갈 뿐 둥근 경첩이나 볼트가 없다.
+        parts.extend(strut_lattice(key, "Upper", hip, knee, (0, 0, 1), 0.085, steel, b1, seed * 11 + 1, ext_a=0.12, ext_b=0.06))
+        parts.extend(strut_lattice(key, "Lower", knee, ankle, (0, 0, -1), 0.072, steel, b2, seed * 11 + 5, ext_a=0.06, ext_b=0.03,
+                                   width=0.052, flange=0.02))
+        # 막 판: 마디마다 감싼 판 셋과 위에 걸쳐 한쪽이 처진 판 하나. 감싼 판 사이에 틈을 두어 철골 띠가 보인다.
+        # 도는 자리·꼬임·접힘이 판마다 다르고, 관절을 넘어 이웃 마디와 겹친다. 무릎 쪽 끝은 철골로 오므린다.
+        base = rnd.uniform(0.0, math.tau)
+        w1 = segment_weights(hip, d, SEG1, b1, before="body", after=b2)
+        w2 = segment_weights(knee, d, SEG2, b2, before=b1, after=b3, after_reach=0.10)
         seg3_dir = (pad - ankle).normalized()
-        parts.append(c_channel(f"{key}_Seg3", ankle - seg3_dir * 0.04, ankle + (pad - ankle) * 0.70, (d.x, d.y, 0.3), 0.12, 0.056, 0.008, steel, b3))
-        parts.append(bolt(f"{key}_KneeBolt", knee, joint_axis, 0.019, 0.16, iron, b2))
-        parts.append(bolt(f"{key}_AnkleBolt", ankle, joint_axis, 0.017, 0.13, iron, b3))
-        # 마디마다 손으로 감은 막 자루. 한쪽은 뭉쳐 두껍고 반대쪽은 얇다. 철골은 마디 끝에서만 보인다.
-        upper = WrapShape(hip + d * 0.07, knee - d * 0.08, (0, 0, 1), 0.098, 0.082, 0.031, seed * 31 + 1, 0.038)
-        lower = WrapShape(knee + d * 0.08, ankle - d * 0.07, (0, 0, -1), 0.088, 0.074, 0.030, seed * 31 + 2, 0.032)
-        ankle_wad = WrapShape(ankle + (pad - ankle) * 0.20, ankle + (pad - ankle) * 0.78, (d.x, d.y, 0.3), 0.074, 0.064, 0.026,
-                              seed * 31 + 3, 0.030, folds=5)
-        for tag, shape, bone, bulges in (("Upper", upper, b1, 4), ("Lower", lower, b2, 3)):
-            ob = wrap(f"{key}_{tag}Wrap", shape, mats["wrap"], bone)
-            COLLISION_REF.setdefault("leg", []).extend((v.co - shape.a).cross(shape.x).length for v in ob.data.vertices)
-            parts.append(ob)
-            parts.extend(wrap_details(key, tag, shape, mats, bone, seed, bulges))
-        parts.append(wrap(f"{key}_AnkleWrap", ankle_wad, mats["wrap"], b3, sides=16))
-        # 무릎에 짜 넣은 실리콘 덩어리.
-        parts.append(bead(f"{key}_KneeBead", [knee + joint_axis * 0.09 + Vector((0, 0, 0.05)), knee + Vector((0, 0, 0.075)),
-                                              knee - joint_axis * 0.09 + Vector((0, 0, 0.05))], 0.016, silicone, b2))
+        for k in range(3):
+            ang = base + math.tau * k / 3 + rnd.uniform(-0.3, 0.3)
+            parts.append(leg_sheet(f"{key}_Sheet1_{k}", hip, knee, (0, 0, 1), seed * 17 + k, 0.108, 0.018 * k,
+                                   rnd.uniform(80, 105), rnd.choice((-1, 1)) * rnd.uniform(40, 90), ang,
+                                   0.05, 0.09, 0.0, mats, w1, lift=rnd.choice((0.0, 0.03)), pinch_b=0.28))
+            ang = base + 0.7 + math.tau * k / 3 + rnd.uniform(-0.3, 0.3)
+            parts.append(leg_sheet(f"{key}_Sheet2_{k}", knee, ankle, (0, 0, -1), seed * 19 + k, 0.090, 0.016 * k,
+                                   rnd.uniform(75, 100), rnd.choice((-1, 1)) * rnd.uniform(40, 90), ang,
+                                   0.08, 0.17, 0.12, mats, w2, lift=rnd.choice((0.0, 0.02)), pinch_a=0.24,
+                                   bend_dir=seg3_dir, floor_z=pad.z))
+        # 위에 걸친 판: 마디 위쪽을 덮고 한쪽 가장자리가 마디 가운데에서 아래로 처진다.
+        top = math.pi * 0.5 + rnd.uniform(-0.5, 0.5)
+        parts.append(leg_sheet(f"{key}_Flap1", hip, knee, (0, 0, 1), seed * 23, 0.112, 0.05,
+                               rnd.uniform(120, 150), rnd.choice((-1, 1)) * rnd.uniform(20, 50), top,
+                               0.03, 0.06, 0.0, mats, w1, hang=rnd.uniform(0.12, 0.17), pinch_b=0.2))
+        top = -math.pi * 0.5 + rnd.uniform(-0.5, 0.5)
+        parts.append(leg_sheet(f"{key}_Flap2", knee, ankle, (0, 0, -1), seed * 29, 0.094, 0.046,
+                               rnd.uniform(110, 140), rnd.choice((-1, 1)) * rnd.uniform(20, 50), top,
+                               0.05, 0.02, 0.06, mats, w2, hang=rnd.uniform(0.08, 0.12), pinch_a=0.18))
+        COLLISION_REF.setdefault("leg_shapes", []).append((hip, knee, ankle))
+        # 굳은 실리콘이 관절을 건너 처진다(무릎: 윗마디→아랫마디, 엉덩이: 몸→윗마디).
+        p0 = knee - d * 0.14 + Z * 0.09 + side_d * 0.03
+        p1 = knee + d * 0.16 + Z * 0.07 - side_d * 0.02
+        parts.append(strand(f"{key}_KneeSealant", p0, p1, 0.06, 0.035, sealant, (b1, b2)))
+        p0, _ = surface_point(tree, Vector((hip.x * 0.7, 0.0, 0.30)), Vector((0.0, sy, 0.0)), hip)
+        p1 = hip + d * 0.28 + Z * 0.10
+        parts.append(strand(f"{key}_HipSealant", p0, p1, 0.07, 0.04, sealant, ("body", b1)))
         # 몸 옆구리에서 윗마디까지 늘어진 물갈퀴. 앞다리는 뒤쪽 옆구리로, 뒷다리는 앞쪽으로 펼쳐진다.
         # 몸통 옆구리는 둥글게 낮아진다. 옆구리 높이(18~20 cm)에서 쏴야 등 위로 넘어가지 않는다.
         b0, _ = surface_point(tree, Vector((hip.x * 0.95, 0.0, 0.18)), Vector((0.0, sy, 0.0)), hip)
         b1p, _ = surface_point(tree, Vector((hip.x - 0.42 * sx, 0.0, 0.20)), Vector((0.0, sy, 0.0)), hip - Vector((0.42 * sx, 0, 0)))
-        l0 = hip + d * (SEG1 * 0.22) + Vector((0.0, 0.0, 0.10))
-        l1 = hip + d * (SEG1 * 0.88) + Vector((0.0, 0.0, 0.10))
+        l0 = hip + d * (SEG1 * 0.22) + Vector((0.0, 0.0, 0.08))
+        l1 = hip + d * (SEG1 * 0.92) + Vector((0.0, 0.0, 0.08))
         body_edge = (b0 + Vector((0, 0, 0.01)), b1p + Vector((0, 0, 0.01)))
-        parts.append(web(f"{key}_Web", body_edge, (l0, l1), 0.09, membrane, ("body", b1, f"web_{key}"), seed))
+        parts.append(web(f"{key}_Web", body_edge, (l0, l1), 0.10, mats, ("body", b1, f"web_{key}"), seed))
         WEB_ANCHORS[key] = (body_edge[0] + body_edge[1] + l0 + l1) * 0.25 - Vector((0.0, 0.0, 0.09))
-        # 패드: 방음재 덩어리와 막 조각, 끊긴 실리콘 줄.
-        pad_parts = pad_clump(key, pad, d, seed, mats, b3)
-        side_dir = Vector((-d.y, d.x, 0.0))
-        rel = [Vector(((v.co - pad).dot(d), (v.co - pad).dot(side_dir), v.co.z - pad.z)) for ob in pad_parts for v in ob.data.vertices]
+        # 발: 짚는 면에 넓게 눌려 퍼진 덩어리와 막, 번진 실리콘.
+        foot_parts = foot(key, pad, d, seed, mats, b3)
+        rel = [Vector(((v.co - pad).dot(d), (v.co - pad).dot(side_d), v.co.z - pad.z)) for ob in foot_parts for v in ob.data.vertices]
         COLLISION_REF.setdefault("pad", []).append((Vector([min(p[i] for p in rel) for i in range(3)]),
                                                     Vector([max(p[i] for p in rel) for i in range(3)])))
-        parts.extend(pad_parts)
-        # 몸과 첫 마디 사이, 무릎에 늘어진 검은 접착층 실.
-        p0, _ = surface_point(tree, Vector((hip.x * 0.7, 0.0, 0.30)), Vector((0.0, sy, 0.0)), hip)
-        p1 = hip + (knee - hip) * 0.40 + Vector((0.0, 0.0, 0.10))
-        parts.append(strand(f"{key}_Glue0", p0, p1, 0.08, 0.06, glue, ("body", b1)))
-        p0 = hip + (knee - hip) * 0.80 + Vector((0.0, 0.0, 0.05))
-        p1 = knee + (ankle - knee) * 0.22 + Vector((0.0, 0.0, 0.03))
-        parts.append(strand(f"{key}_KneeGlue0", p0, p1, 0.07, 0.05, glue, (b1, b2)))
+        parts.extend(foot_parts)
     return parts
 
 
-def collision_reference():
-    """게임 충돌 모양과 맞춰 볼 치수(cm). 다리는 자루 겉면이 뼈 줄에서 떨어진 거리의 분위수, 패드는
-    패드 가운데(짚는 면) 기준 상자(바깥쪽 d, 옆, 높이)."""
+def collision_reference(body):
+    """게임 충돌 모양과 맞춰 볼 치수(cm). 다리는 윗마디·아랫마디에 붙은 정점이 뼈 줄에서 떨어진 거리의
+    분위수(막 판·지지대 모두), 발은 짚는 면 기준 상자(바깥쪽 d, 옆, 높이)."""
     out = {}
-    legs = sorted(COLLISION_REF.get("leg", []))
-    if legs:
+    me = body.data
+    distances = []
+    for key, (hip, knee, ankle) in zip(LEGS, COLLISION_REF.get("leg_shapes", [])):
+        for segment, (a, b) in enumerate(((hip, knee), (knee, ankle))):
+            group = body.vertex_groups.get(f"leg_{key}_{segment + 1}")
+            if group is None:
+                continue
+            axis = (b - a).normalized()
+            length = (b - a).length
+            for v in me.vertices:
+                w = next((g.weight for g in v.groups if g.group == group.index), 0.0)
+                if w < 0.5:
+                    continue
+                s = (v.co - a).dot(axis)
+                if 0.08 < s < length - 0.08:
+                    distances.append((v.co - a).cross(axis).length)
+    distances.sort()
+    if distances:
         def pick(q):
-            return round(legs[min(len(legs) - 1, int(q * len(legs)))] * 100.0, 1)
-        out["leg_wrap_from_bone_cm"] = {"p25": pick(0.25), "p50": pick(0.5), "p75": pick(0.75), "p95": pick(0.95),
-                                        "max": round(legs[-1] * 100.0, 1)}
+            return round(distances[min(len(distances) - 1, int(q * len(distances)))] * 100.0, 1)
+        out["leg_from_bone_cm"] = {"p25": pick(0.25), "p50": pick(0.5), "p75": pick(0.75), "p95": pick(0.95),
+                                   "max": round(distances[-1] * 100.0, 1)}
     pads = COLLISION_REF.get("pad", [])
     if pads:
-        out["pad_box_cm"] = [{"min": [round(c * 100.0, 1) for c in lo], "max": [round(c * 100.0, 1) for c in hi]} for lo, hi in pads]
+        out["foot_box_cm"] = [{"min": [round(c * 100.0, 1) for c in lo], "max": [round(c * 100.0, 1) for c in hi]} for lo, hi in pads]
     return out
 
 
@@ -1028,8 +1072,8 @@ def collision_reference():
 # --------------------------------------------------------------------------
 
 def bone_points():
-    """UE 좌표의 뼈 머리·꼬리·부모. 물갈퀴·패드 막 뼈는 build_parts가 채운 자리에 둔다. 처짐·물갈퀴 뼈는
-    몸 뼈와 같은 쪽(+X)을 본다. 게임이 몸 뼈에 거는 비균일 눌림이 이 뼈들에도 같은 축으로 걸린다."""
+    """UE 좌표의 뼈 머리·꼬리·부모. 물갈퀴·패드 막 뼈는 build_parts가 채운 자리에 둔다. 처짐·물갈퀴·치마
+    뼈는 몸 뼈와 같은 쪽(+X)을 본다. 게임이 몸 뼈에 거는 비균일 눌림이 이 뼈들에도 같은 축으로 걸린다."""
     spec = [("root", Vector((0, 0, 0)), Vector((0, 0, 0.10)), None),
             ("body", Vector((0, 0, HIP_Z)), Vector((0.30, 0, HIP_Z)), "root")]
     for key, (sx, sy) in LEGS.items():
@@ -1048,8 +1092,11 @@ def bone_points():
     for key, (sx, sy) in LEGS.items():
         hip, knee, ankle, pad = leg_points(sx, sy)
         d = (knee - hip).normalized()
-        head = SKIN_ANCHORS.get(key, pad - d * 0.31)
+        head = SKIN_ANCHORS.get(key, pad - d * 0.33)
         spec.append((f"skin_{key}", head, head - d * 0.05, f"leg_{key}_3"))
+    for key, side in SKIRT_SIDES.items():
+        head = Vector((side.x * 0.44, side.y * 0.66, 0.08))
+        spec.append((f"skirt_{key}", head, head + Vector((0.06, 0.0, 0.0)), "body"))
     return spec
 
 
@@ -1178,6 +1225,8 @@ def step_demo(arm):
     bpy.context.view_layer.update()
     for key, sag in (("fl", 0.025), ("br", 0.025), ("fr", 0.06), ("bl", 0.055)):
         nudge_bone(arm, f"mass_{key}", Vector((0.0, 0.0, -sag)))
+    for key, sag in (("f", 0.05), ("b", 0.06), ("l", 0.07), ("r", 0.08)):
+        nudge_bone(arm, f"skirt_{key}", Vector((0.0, 0.0, -sag)))
     nudge_bone(arm, "web_fr", Vector((0.0, 0.0, 0.05)))
     nudge_bone(arm, "web_bl", Vector((0.0, 0.0, -0.06)))
 
@@ -1396,19 +1445,15 @@ def main():
     out_dir = os.path.join(out_root, name)
     os.makedirs(out_dir, exist_ok=True)
     ig.reset_scene()
+    # 막은 무광 숯색(번들거리는 검은 플라스틱이 아니다), 방음재는 누런 회색, 철골은 둔한 아연도금, 실리콘은
+    # 굳은 회색이다. 반사는 큰 접힘에서만 갈린다.
     mats = {
-        "foam": tiled_material("LiningFoam", "T_LiningFoam", 0.60, normal_strength=1.2, contact_grime=0.55),
-        "membrane": tiled_material("LiningMembrane", "T_LiningMembrane", 1.0, normal_strength=0.9, rough_scale=0.62,
-                                   contact_grime=0.35, tint=(0.42, 0.43, 0.46)),
-        # 다리를 감은 막은 구김을 더 잘고 깊게, 반사를 조금 죽인다(긴 반사 띠가 매끈한 고무 관처럼 보였다).
-        "wrap": tiled_material("LiningWrap", "T_LiningMembrane", 0.32, normal_strength=1.8, rough_scale=0.78,
-                               contact_grime=0.3, tint=(0.31, 0.32, 0.34)),
-        "steel": tiled_material("LiningSteel", "T_LiningSteel", 0.40, metallic=0.40, normal_strength=0.6, rough_scale=1.15,
-                                tint=(0.34, 0.33, 0.31), contact_grime=0.25),
-        "silicone": flat_material("LiningSilicone", (0.55, 0.55, 0.52), 0.48),
-        "glue": flat_material("LiningGlue", (0.012, 0.011, 0.010), 0.22),
-        "iron": flat_material("LiningBolt", (0.30, 0.29, 0.27), 0.38, metallic=0.9),
-        "tape": flat_material("LiningTape", (0.035, 0.034, 0.033), 0.5),
+        "foam": tiled_material("LiningFoam", "T_LiningFoam", 0.45, normal_strength=1.2, contact_grime=0.4),
+        "membrane": tiled_material("LiningMembrane", "T_LiningMembrane", 0.7, normal_strength=1.2, rough_scale=1.35,
+                                   contact_grime=0.3, tint=(0.15, 0.15, 0.145)),
+        "steel": tiled_material("LiningSteel", "T_LiningSteel", 0.35, metallic=0.3, normal_strength=0.7, rough_scale=1.6,
+                                tint=(0.30, 0.30, 0.29), contact_grime=0.3),
+        "sealant": flat_material("LiningSealant", (0.10, 0.10, 0.088), 0.6),
     }
     high = import_shell(os.path.abspath(args.shell_glb))
     shell = shell_low(high, args.shell_tris, mats["membrane"])
@@ -1425,6 +1470,8 @@ def main():
     body.data.name = name
     lo, hi = ig.bounds(body)
     ig.log(f"{name}: tris={ig.triangle_count(body)} bounds {(hi - lo).x:.2f} x {(hi - lo).y:.2f} x {(hi - lo).z:.2f} m")
+    collision = collision_reference(body)
+    ig.log(f"{name}: collision {json.dumps(collision)[:400]}")
     ue_bounds = (lo.copy(), hi.copy())
     high.hide_render = True
     ig.render_preview(body, os.path.join(out_dir, f"{name}_source_preview.png"), camera_yaw_deg=-35.0, camera_pitch_deg=28.0)
@@ -1485,15 +1532,15 @@ def main():
     fbx_path = os.path.join(out_dir, f"{name}.fbx")
     export_rig_fbx(fbx_path, arm, body)
     ig.write_manifest(out_dir, name, "hero", fbx_path, textures, body, slots,
-                      notes="덧댄 것. 생성 몸통(LiningBody trellis1024-s56)과 절차 막 자루 다리·물갈퀴·방음재 패드(rig_lining.py), "
-                            "뼈 스물여섯(몸 처짐·물갈퀴·패드 막 포함), 동작 없음(게임이 뼈를 놓는다)",
+                      notes="덧댄 것. 생성 몸통(LiningBody trellis1024-s56)에 절차로 지은 큰 막 판·눌린 ㄷ자 띠 다리·방음재 발"
+                            "(rig_lining.py), 뼈 서른(몸 처짐·물갈퀴·발 막·치마 포함), 동작 없음(게임이 뼈를 놓는다)",
                       origin="body-bottom-center", ue_bounds=ue_bounds)
     manifest_path = os.path.join(out_dir, "manifest.json")
     with open(manifest_path, "r", encoding="utf-8") as handle:
         data = json.load(handle)
     data["skeletal"] = True
     data["animations"] = {}
-    data["collision_reference"] = collision_reference()
+    data["collision_reference"] = collision
     data["generated_from"] = os.path.relpath(os.path.abspath(args.shell_glb), out_root).replace("\\", "/")
     data["bones"] = {b: {"head_cm": [round(v * 100.0, 2) for v in h], "tail_cm": [round(v * 100.0, 2) for v in t], "parent": p}
                      for b, h, t, p in bone_points()}

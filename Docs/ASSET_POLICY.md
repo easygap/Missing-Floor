@@ -49,7 +49,7 @@
 | `/Game/Meshes/SK_PolicePatrol`, `SK_PolicePatrol_Skeleton`, `A_PolicePatrol_{Idle,Walk,LookBack,Knock,Listen}`, `/Game/Prototype/Materials/MI_PolicePatrol`, `/Game/Prototype/Textures/T_PolicePatrol_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile officer`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PolicePatrolFront_20261012.png`, `Content/SourceArt/Generated/PolicePatrol/` | 셋째 아침 5층 현장 확인에 오는 순찰 경찰관. 벽을 세 번 두드리는 동작과 귀를 대는 동작이 있다 |
 | `/Game/Meshes/SK_PaperGuest`, `SK_PaperGuest_Skeleton`, `/Game/Prototype/Materials/MI_PaperGuest`, `/Game/Prototype/Textures/T_PaperGuest_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_eoduksini.py --keep-color`) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/PaperGuestFront_20261012.png`, `Content/SourceArt/Generated/PaperGuest/` | 문 밖 손님의 종이 몸. 원기둥에 종이를 붙인 예전 몸을 바꿨다. 얼굴 자리에 SM_DoorDeliveryMagnet이 붙는다 |
 | `/Game/Meshes/SM_SeoVoiceRecorder`, `/Game/Prototype/Materials/MI_SeoVoiceRecorder`, `/Game/Prototype/Textures/T_SeoVoiceRecorder_{D,N,ORM}` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-12 | 원본 | `Content/SourceArt/AI/SeoVoiceRecorder_20261012.png`, `Scripts/blender/build_seo_recorder.py` | 5층 첫 판재 더미 밑에 끈만 나와 있는 서일영 소형 녹음기. 윗면에만 석고 가루가 있고 스피커 구멍은 점 격자로 구웠다 |
-| `/Game/Meshes/SK_Lining`, `SK_Lining_Skeleton`, `/Game/Prototype/Materials/MI_Lining`, `/Game/Prototype/Textures/T_Lining_{D,N,ORM}` | 프로젝트 제작 (gpt-image 시안 → 몸통은 TRELLIS.2 생성, 다리·막·패드는 Blender 절차 모델링, 리깅 `rig_lining.py`) | 프로젝트 소유 | 2026-10-13, 2026-10-15 다시 지음, 2026-10-19 다리·패드 다듬음 | 원본 | `Content/SourceArt/AI/Lining{LegPadSheet,StepInSitu}_20261019.png`, `Content/SourceArt/AI/LiningTurnaround_20261015.png`, `Content/SourceArt/Generated/LiningBody/`, `Content/SourceArt/AI/Lining{ModelSheet,InSitu,FoamTile,MembraneTile,SteelTile}_20261013.png`, `Content/SourceArt/T_Lining{Foam,Membrane,Steel}_{D,N,R,A}.png`, `Scripts/blender/rig_lining.py` | 벌어진 벽을 몸으로 덮는 괴이(「302호에 남은 짐」). 방수막으로 감은 방음재 뭉치 몸통에 ㄷ자 철골 다리 넷. 다리는 막을 한쪽으로 뭉치게 감았고 찢긴 틈으로 방음재가 비어져 나오며, 패드는 계란판 방음재 덩어리다. 동작은 굽지 않고 게임이 뼈를 직접 놓는다(몸 살 처짐·물갈퀴·패드 막 뼈 포함). 방음재 타일은 채도를 반으로 내려 다시 구웠다 |
+| `/Game/Meshes/SK_Lining`, `SK_Lining_Skeleton`, `/Game/Prototype/Materials/MI_Lining`, `/Game/Prototype/Textures/T_Lining_{D,N,ORM}` | 프로젝트 제작 (gpt-image 시안 → 몸통 속 덩어리는 TRELLIS.2 생성, 막 판·철골 띠·다리·발은 Blender 절차 모델링, 리깅 `rig_lining.py`) | 프로젝트 소유 | 2026-10-13, 2026-10-15 다시 지음, 2026-10-19 다리·발을 막 판과 철골 띠로 다시 지음 | 원본 | `Content/SourceArt/AI/Lining{FoldedSheets,LegPadSheet,StepInSitu}_20261019.png`, `Content/SourceArt/AI/LiningTurnaround_20261015.png`, `Content/SourceArt/Generated/LiningBody/`, `Content/SourceArt/AI/Lining{ModelSheet,InSitu,FoamTile,MembraneTile,SteelTile}_20261013.png`, `Content/SourceArt/T_Lining{Foam,Membrane,Steel}_{D,N,R,A}.png`, `Scripts/blender/rig_lining.py` | 벌어진 벽을 몸으로 덮는 괴이(「302호에 남은 짐」). 방수막 큰 판이 겹쳐 덮이고 둘레로 처진 낮고 넓은 방음재 뭉치에 다리 넷. 다리는 눌린 ㄷ자 철골 띠를 막 판이 틈을 두고 감았고 위에 걸친 판이 처지며, 발은 짚는 면에 눌려 퍼진 방음재 덩어리에 막이 흘러내린 꼴이다. 동작은 굽지 않고 게임이 뼈를 직접 놓는다(몸 살 처짐·물갈퀴·발 막·몸 둘레 막 뼈 포함). 방음재 타일은 채도를 반으로 내려 다시 구웠다 |
 | `/Game/Meshes/SK_Jeongwoo`, `SK_Jeongwoo_Skeleton`, `A_Jeongwoo_{Idle,Walk,LookBack,Carry,CarryIdle,Crouch,Brace,HoldDoor}`, `MI_Jeongwoo`, `T_Jeongwoo_{D,N,ORM}` | 프로젝트 제작 (gpt-image 정면 기준 → TRELLIS.2 → Blender 리깅 `rig_walker.py --profile mover`) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/JeongwooFront_20261013.png`, `Content/SourceArt/Generated/Jeongwoo/` | 걸어 다니는 202호 정우. 상자 나르기·쪼그려 앉기·판 받치기·문 잡기 동작이 있다. 오토바이에 탄 모습은 예전 `SM_DeliveryScooterRidden` 그대로다 |
 | `/Game/Meshes/SM_InnerRoom{Cot,Cabinet,Workbench}`, `SM_HandCart`, `SM_WasteSack`, `SM_StorageBox`, `SM_RemovedBoards`, `SM_BareBulb`, `SM_LinedWallPanel{A,B}` | 프로젝트 제작 (gpt-image 시안과 타일 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/{FoldingCot,SteelCabinet,HandCart,SacksBoxes}_20261013.png`, `{CotCanvas,BlanketFloral,CabinetPaint,WorkbenchPlywood,WovenSack}Tile_20261013.png`, `Content/SourceArt/T_{CotCanvas,BlanketFloral,CabinetPaintGrey,WorkbenchPlywood,WovenSack}_*.png`, `Scripts/blender/build_inner_room.py` | 관리실 안쪽 방의 간이침대·보관함·작업대·손수레·마대·상자·떼어 낸 판재·백열등과 벽에 덧댄 방음 판 |
 | `/Game/Meshes/SM_AccessHatch{Frame,Door}{S,M,L}`, `SM_HatchSealPlug`, `SM_CoverPiece{A,B,C}`, `SM_CoverFlap{A,B}`, `SM_CoverFrame`, `SM_CoverClamp`, `SM_ToolPouch`, `SM_GlovePouch`, `SM_InspectionOverlayBoard`, `SM_BentShieldSheet`, `SM_FinishBoard`, `SM_TimberWedge` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크, 덮개 앞면은 시안 그림을 덮개 전체 좌표로 펴서 조각마다 굽는다) | 프로젝트 소유 | 2026-10-13 | 원본 | `Content/SourceArt/AI/{AccessHatch,AccessCoverFront,ToolPouch}_20261013.png`, `Scripts/blender/build_leftover_props.py` | 벽 점검구 세 크기, 덧댄 것이 눌러 막은 자리, P6 덮개 조각·틀·고정쇠, 오빠의 공구 주머니, 정우의 장갑 주머니, 5층 점검 자리 덧판과 차폐판, 302호 마감판과 쐐기 |
@@ -751,6 +751,29 @@ OpenAI 이미지 생성으로 생성하고 각 항목의 생성 방식과 날짜
   manifest의 `collision_reference`). 패드 덩어리마다 짚은 면에 붙은 납작한 상자를 더했고, 몸판 상자는 눌린
   몸과 처진 살을 따라간다
 - 권리/참조: 10월 15일과 같다. 자재에 글자와 상표가 없고 얼굴·눈·이빨이 없다
+
+## 2026-10-19 덧댄 것 막 판과 철골 띠로 다시 짓기
+
+- 도구/모드: Codex 내장 이미지 생성(10월 19일 검토 시안), Blender 5.2 절차 모델링
+- 보존 원본과 SHA-256:
+  - `Content/SourceArt/AI/LiningFoldedSheets_20261019.png`
+    `FCBD5E82C43D535AFC4C49EB0FE0569872EE75F1E386D695F7AC87061243235B`
+- 파생: 오전에 다듬은 몸도 검토에서 다리는 로봇 팔, 발은 청소기 머리 같다는 말을 들었고, 몸통과 막이 한 덩어리로
+  딱딱하게 움직였다. 고쳐 짓다가 Blender에서 다시 보니 다리가 고른 굵기의 매끈한 자루였고, 발목에서 자루 끝이
+  열린 채 발 위에 얹혀 호스 끝처럼 읽혔다. 검토 시안(큰 막 판이 접혀 덮인 낮은 몸, 안쪽의 눌린 철골, 면에 눌려
+  퍼진 발)을 따르되 다리 길이와 관절 자리는 게임 동작에 맞춘 그대로 두고, 시안에서 관절이 안 보이게 가린 곳은
+  따르지 않았다. `rig_lining.py`가 몸통 위에 큰 막 판 셋을 겹쳐 덮어 둘레 밖으로 처지게 하고, 다리 마디마다 막
+  바로 안쪽에 눌린 ㄷ자 띠 셋과 비스듬한 버팀 띠 셋을 짓는다. 그 위를 막 판 셋이 틈을 두고 감고, 위에 걸친 판
+  하나가 마디 가운데에서 아래로 처진다. 판마다 접힘이 한둘 이상이고 굵기가 울퉁불퉁하며, 무릎 쪽 끝은 철골
+  쪽으로 오므렸다. 아랫마디 판은 발목에서 끝 마디를 따라 꺾여 발 위로 흘러내린다. 둥근 관절·볼트·경첩은
+  없앴다. 발은 짚는 면에 눌린 방음재 덩어리 둘을 막이 덮어 짚는 면까지 흘러내린 꼴이고, 몸 쪽 막 끝은
+  웨이트를 넓게 섞어 떨어질 때 판이 길게 늘어난다. 막은 무광 숯색, 철골은 둔한 아연도금, 실리콘은 굳은
+  회색이다. 삼각형 51,980개, 뼈 30개
+- 움직임: 몸 둘레로 처진 막에 뼈 넷(`skirt_*`)을 더했다. 게임이 용수철로 놓아 들려 있으면 처지고, 틈을 누를
+  때는 면을 따라 바깥으로 퍼진다. 몸판 크기를 키워 펼침을 흉내 내던 것은 없앴다. 눌릴 때 두께만 준다
+- 충돌: 다리 캡슐 반지름 12 cm(뼈 줄에서 막 겉면까지 가운데 10.9 cm, 4분의 3 13.6 cm, manifest의
+  `collision_reference`), 발 상자 반치수 33 × 30 × 5.5 cm
+- 권리/참조: 시안은 프로젝트에서 뽑았고 자재에 글자·상표가 없다. 얼굴·눈·입이 없다
 
 ## 생성 시안에 참고한 외부 자료
 
