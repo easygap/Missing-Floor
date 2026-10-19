@@ -37,6 +37,11 @@ namespace IGListener
 {
 	// 어깨 폭. 팔꿈치는 그보다 넓게 벌어지지만 벽에 닿는 것은 팔이다.
 	constexpr float BodyRadius = 34.0f;
+	// 벽 듣기 자리에서 이만큼 안에 멈춰 있으면 벽 자세를 튼다.
+	constexpr float WallListenAnchorRadius = 30.0f;
+	// 벽에서 떨어진 뒤 다시 붙지 않는 시간. 떨어지기가 끝난 바로 그 프레임에는 아직 기기
+	// 전이라, 이것이 없으면 붙기와 떨어지기를 번갈아 틀며 제자리에 서 있게 된다.
+	constexpr double WallReenterDelaySeconds = 1.5;
 	// §4. 숨은 자리 안의 소리는 이 거리 안에서 들었을 때만 그 자리를 연다. 그 밖에서
 	// 들은 소리는 평소처럼 그 자리로 찾아오게 할 뿐이다.
 	constexpr float HiddenDetectRadius = 220.0f;
@@ -1913,6 +1918,9 @@ void AIGListenerEntity::ParkForBeat(const FVector& Where, const float Yaw)
 	}
 	TeleportTo(Parked, FRotator(0.0f, Yaw, 0.0f), false, true);
 	SetActorEnableCollision(true);
+	// 다른 자리로 옮겼으니 벽에서 떨어지던 동작은 이어지지 않는다.
+	WallRiseUntilSeconds = -1000.0;
+	WallReenterAfterSeconds = -1000.0;
 	PatrolIndex = 0;
 	// 연출이 세운 자리에서 새로 시작한다. 쫓던 길과 놓친 흔적, 경계를 남기면 카메오가
 	// 시작하자마자 엉뚱한 층으로 기어간다.
@@ -2282,6 +2290,11 @@ bool AIGListenerEntity::CrawlTowards(
 	if (Distance <= 24.0f)
 	{
 		return true;
+	}
+	if (HoldForWallRise())
+	{
+		LastMoveSpeed = 0.0f;
+		return false;
 	}
 
 	const FVector Direction = ToTarget / Distance;
@@ -2747,6 +2760,11 @@ bool AIGListenerEntity::StepAlongStair(
 		SetActorLocation(TargetFeet + FVector(0.0f, 0.0f, HalfHeight + 2.0f));
 		return true;
 	}
+	if (HoldForWallRise())
+	{
+		LastMoveSpeed = 0.0f;
+		return false;
+	}
 	// 네 발로 디딤판을 짚는다. 오를 때가 조금 더 느리다.
 	const float Scale = Delta.Z > 2.0f
 		? IGListener::StairClimbSpeedScale
@@ -3200,6 +3218,11 @@ bool AIGListenerEntity::BuildSkeletalBody()
 	ListenAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_Listen.A_ListenerCrawler_Listen"));
 	BangAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_Bang.A_ListenerCrawler_Bang"));
 	LungeAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_Lunge.A_ListenerCrawler_Lunge"));
+	// 벽에 귀를 대는 자세. 없으면 벽 듣기는 평소 듣기로 내려간다.
+	ListenWallInAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_ListenWallIn.A_ListenerCrawler_ListenWallIn"));
+	ListenWallAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_ListenWall.A_ListenerCrawler_ListenWall"));
+	ListenWallOutAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_ListenWallOut.A_ListenerCrawler_ListenWallOut"));
+	BangWallAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_BangWall.A_ListenerCrawler_BangWall"));
 	if (!CrawlAnim || !ListenAnim)
 	{
 		// 기는 동작 없는 뼈대는 서 있는 조각이다. 정적 셸이 낫다.
@@ -3248,6 +3271,10 @@ void AIGListenerEntity::PlayBodyAnim(
 	case EIGListenerBodyAnim::Listen: Sequence = ListenAnim; break;
 	case EIGListenerBodyAnim::Bang: Sequence = BangAnim ? BangAnim.Get() : ListenAnim.Get(); break;
 	case EIGListenerBodyAnim::Lunge: Sequence = LungeAnim ? LungeAnim.Get() : CrawlAnim.Get(); break;
+	case EIGListenerBodyAnim::ListenWallIn: Sequence = ListenWallInAnim; break;
+	case EIGListenerBodyAnim::ListenWall: Sequence = ListenWallAnim; break;
+	case EIGListenerBodyAnim::ListenWallOut: Sequence = ListenWallOutAnim; break;
+	case EIGListenerBodyAnim::BangWall: Sequence = BangWallAnim ? BangWallAnim.Get() : BangAnim.Get(); break;
 	default: break;
 	}
 	if (!Sequence)
@@ -3260,6 +3287,77 @@ void AIGListenerEntity::PlayBodyAnim(
 		ActiveBodyAnim = Anim;
 	}
 	ListenerSkeletal->SetPlayRate(Rate);
+}
+
+bool AIGListenerEntity::HasWallPoseAnims() const
+{
+	return ListenWallInAnim && ListenWallAnim && ListenWallOutAnim;
+}
+
+bool AIGListenerEntity::IsInWallPose() const
+{
+	return ActiveBodyAnim == EIGListenerBodyAnim::ListenWallIn
+		|| ActiveBodyAnim == EIGListenerBodyAnim::ListenWall
+		|| ActiveBodyAnim == EIGListenerBodyAnim::BangWall;
+}
+
+void AIGListenerEntity::SetWallListenForBeat(const bool bEnable, const FVector& Anchor, const float Yaw)
+{
+	bWallListenForBeat = bEnable;
+	if (bEnable)
+	{
+		WallListenAnchor = Anchor;
+		WallListenYaw = Yaw;
+		WallReenterAfterSeconds = -1000.0;
+		return;
+	}
+	// 연출이 끝났다. 붙어 있던 몸은 떨어지는 동작부터 튼다.
+	if (IsInWallPose())
+	{
+		HoldForWallRise();
+	}
+}
+
+bool AIGListenerEntity::HoldForWallRise()
+{
+	const UWorld* World = GetWorld();
+	if (!World || !ListenerSkeletal)
+	{
+		return false;
+	}
+	const double Now = World->GetTimeSeconds();
+	if (IsInWallPose() && ListenWallOutAnim)
+	{
+		// 벽에 붙은 몸이 기기 전에 먼저 벽에서 떨어진다. 붙은 채로 미끄러지지 않는다.
+		PlayBodyAnim(EIGListenerBodyAnim::ListenWallOut, false, 1.0f);
+		WallRiseUntilSeconds = Now + ListenWallOutAnim->GetPlayLength();
+		WallReenterAfterSeconds = WallRiseUntilSeconds + IGListener::WallReenterDelaySeconds;
+	}
+	return Now < WallRiseUntilSeconds;
+}
+
+void AIGListenerEntity::EnsureWallPose(const float Rate)
+{
+	// 벽과 나란히 둔다. 소리 쪽으로 몸을 돌리면 벽에서 떨어지니, 귀를 댄 채 듣는다.
+	SetActorRotation(FRotator(0.0f, WallListenYaw, 0.0f));
+	switch (ActiveBodyAnim)
+	{
+	case EIGListenerBodyAnim::ListenWall:
+		ListenerSkeletal->SetPlayRate(Rate);
+		return;
+	case EIGListenerBodyAnim::ListenWallIn:
+	case EIGListenerBodyAnim::BangWall:
+		// 붙는 동작과 벽 치기는 끝까지 튼 뒤에 듣기로 넘어간다.
+		if (ListenerSkeletal->IsPlaying())
+		{
+			return;
+		}
+		PlayBodyAnim(EIGListenerBodyAnim::ListenWall, true, Rate);
+		return;
+	default:
+		PlayBodyAnim(EIGListenerBodyAnim::ListenWallIn, false, 1.0f);
+		return;
+	}
 }
 
 float AIGListenerEntity::ComputeCrawlRate(const float Speed) const
@@ -3279,6 +3377,17 @@ void AIGListenerEntity::UpdateSkeletalPose(
 	{
 		return;
 	}
+	const double PoseNow = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	// 벽에서 떨어지는 동안은 그 동작을 끝까지 튼다. 몸도 그동안 기지 않는다(HoldForWallRise).
+	if (ActiveBodyAnim == EIGListenerBodyAnim::ListenWallOut && PoseNow < WallRiseUntilSeconds)
+	{
+		return;
+	}
+	const bool bAtWall = bWallListenForBeat
+		&& HasWallPoseAnims()
+		&& PoseNow >= WallReenterAfterSeconds
+		&& FVector::DistSquared2D(GetActorLocation(), WallListenAnchor)
+			<= FMath::Square(IGListener::WallListenAnchorRadius);
 	switch (State)
 	{
 	case EIGListenerState::CaptureHold:
@@ -3310,6 +3419,13 @@ void AIGListenerEntity::UpdateSkeletalPose(
 	case EIGListenerState::Banging:
 		// 노크 소리와 같은 2.1초짜리 동작. 한 번 재생하고 듣기로 넘어간다. 티어가
 		// 올라 노크가 빨라지면 손도 같은 배율로 빨라져야 소리와 닿는 순간이 맞는다.
+		// 벽에 귀를 댄 채면 머리 앞 벽을 친다. 소리 쪽으로 돌아보지 않는다.
+		if (bAtWall)
+		{
+			SetActorRotation(FRotator(0.0f, WallListenYaw, 0.0f));
+			PlayBodyAnim(EIGListenerBodyAnim::BangWall, false, KnockRate);
+			return;
+		}
 		PlayBodyAnim(EIGListenerBodyAnim::Bang, false, KnockRate);
 		return;
 	case EIGListenerState::Chasing:
@@ -3322,6 +3438,11 @@ void AIGListenerEntity::UpdateSkeletalPose(
 	case EIGListenerState::Waiting:
 		// 대답에 얼어붙는다. 숨도 멈춘 것처럼 보이도록 재생을 세운다. 기다림이
 		// 닳아 가면 숨이 느리게 돌아온다.
+		if (bAtWall)
+		{
+			EnsureWallPose(bWaitStirred ? 0.6f : 0.0f);
+			return;
+		}
 		PlayBodyAnim(EIGListenerBodyAnim::Listen, true, bWaitStirred ? 0.6f : 0.0f);
 		return;
 	default:
@@ -3330,6 +3451,11 @@ void AIGListenerEntity::UpdateSkeletalPose(
 	if (SpeedAlpha > 0.03f)
 	{
 		PlayBodyAnim(EIGListenerBodyAnim::Crawl, true, BodyRate);
+		return;
+	}
+	if (bAtWall && State != EIGListenerState::Chasing)
+	{
+		EnsureWallPose(1.0f);
 		return;
 	}
 	// 멈춰 있다. 추격 중이라 거칠면 숨이 빠르다.

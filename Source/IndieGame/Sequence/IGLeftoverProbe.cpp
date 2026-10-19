@@ -2711,9 +2711,9 @@ void AIGLeftoverProbe::BuildNightThreeContinuation()
 	Walk(FVector(-277.5f, -150.0f, FourthZ + 72.0f), 22.0f, TEXT("n3av_back_half_landing"));
 	Walk(FVector(-277.5f, -238.0f, FourthZ), 22.0f, TEXT("n3av_back_lower_flight"));
 	Walk(FVector(-262.0f, -292.0f, FourthZ), 25.0f, TEXT("n3av_back_roof_stair_foot"));
-	// 복도의 그(남쪽 벽에 귀를 대고 있다)를 계단 밑에서 보자마자 박자로 대답해 세운 뒤, 북쪽으로 어깨를
-	// 스치며 옆을 지나 403호로 간다. 그를 보면 붙들림이 풀려 걸음 소리를 듣기 시작한다.
-	AimPoint(FVector(-110.0f, -345.0f, FourthZ + 60.0f), TEXT("n3av_look_at_figure"));
+	// 복도의 그(남쪽 벽에 엎드려 옆머리를 대고 서쪽을 본다)를 계단 밑에서 보자마자 박자로 대답해 세운 뒤,
+	// 북쪽으로 어깨를 스치며 옆을 지나 403호로 간다. 그를 보면 붙들림이 풀려 걸음 소리를 듣기 시작한다.
+	AimPoint(FVector(-135.0f, -345.0f, FourthZ + 30.0f), TEXT("n3av_look_at_figure"));
 	Until([this]() { Shoot(TEXT("n3av_figure_at_wall")); return true; }, 0.1f, TEXT("av_shot_figure"));
 	Press(nullptr, 0.08f, TEXT("n3av_answer_tap1"), EKeys::Q);
 	Wait(0.32f);
@@ -2736,6 +2736,9 @@ void AIGLeftoverProbe::BuildNightThreeContinuation()
 	Walk(FVector(-110.0f, -268.0f, FourthZ), 20.0f, TEXT("n3av_pass_shoulder"));
 	Until([this]() { Shoot(TEXT("n3av_passing_beside")); return true; }, 0.1f, TEXT("av_shot_pass"));
 	Walk(FVector(-40.0f, -268.0f, FourthZ), 20.0f, TEXT("n3av_pass_beside"));
+	// 지나간 뒤 돌아서서 발 쪽에서 다시 본다. 벽 관통은 정면보다 뒤와 옆에서 드러난다.
+	AimPoint(FVector(-110.0f, -345.0f, FourthZ + 25.0f), TEXT("n3av_look_back_at_figure"));
+	Until([this]() { Shoot(TEXT("n3av_figure_from_behind")); return true; }, 0.1f, TEXT("av_shot_behind"));
 	Walk(FVector(150.0f, -300.0f, FourthZ), 25.0f, TEXT("n3av_passed_east"));
 	Until([this]() { return GetNarrative() && GetNarrative()->HasBeatPlayed(FName(TEXT("Night3.PassBy"))); }, 3.0f,
 		TEXT("n3av_passed_while_waiting"));

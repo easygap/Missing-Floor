@@ -53,6 +53,18 @@ function Require-All(
 	}
 }
 
+function Require-Absent(
+	[string]$Source,
+	[string[]]$Needles,
+	[string]$ContractName) {
+	foreach ($needle in $Needles) {
+		if ($Source.Contains($needle)) {
+			throw "$ContractName must not contain: $needle"
+		}
+		$script:assertions++
+	}
+}
+
 # --- 밤3은 벽에서 끝나지 않는다 --------------------------------------------
 Require-All $nightThreeHeader @(
 	'void ArmReturnPass();',
@@ -80,20 +92,35 @@ Require-All $greybox @(
 
 # --- 그가 길을 막고 선다 ---------------------------------------------------
 # 복도 안쪽은 Y -375..-235로 폭이 140cm뿐이다. 계단코어(X=-277.5)와 403호 문(X=101)
-# 사이에 세우므로 지나치는 일이 실제로 좁다. 그는 남쪽 벽에 귀를 대고 벽을 따라 움직이고,
-# 멈춘 동안 몸 반지름이 26cm라 북쪽에 84cm가 남는다. 복도 가운데(Y -300)에 세우던 때는
-# 남북 어느 쪽에도 몸이 지나갈 틈이 없었다(2026-10-19 실제 입력 검사).
+# 사이에 세우므로 지나치는 일이 실제로 좁다. 그는 남쪽 벽에 엎드려 옆머리를 대고 있다.
+# 벽 자세는 몸을 벽과 나란히 두고 벽에서 70cm만 차지해 북쪽에 70cm가 남는다. 복도 가운데
+# (Y -300)에 세우던 때는 지나갈 틈이 없었고(2026-10-19 실제 입력 검사), 벽을 정면으로 보고
+# 30cm 앞에 세우던 때는 머리와 상체가 벽에 묻혔다(같은 날 검토).
 Require-All $nightThree @(
-	'const FVector ReturnPassPoint(-95.0f, -345.0f, FourthFloorZ);',
-	'const FVector ReturnShufflePoint(-125.0f, -345.0f, FourthFloorZ);',
+	'const FVector ReturnPassPoint(-95.0f, -375.0f + AIGListenerEntity::WallListenStandOff, FourthFloorZ);',
 	'constexpr float ReturnBodyRadius = 26.0f;',
 	'Listener->SetBodyRadiusForBeat(IGNightThree::ReturnBodyRadius);',
+	'Listener->SetWallListenForBeat(true, IGNightThree::ReturnPassPoint, IGNightThree::ReturnPassYaw);',
+	'Listener->SetWallListenForBeat(false);',
 	'Listener->SetWaitHoldForBeat(IGNightThree::ReturnWaitHoldSeconds);',
 	'Listener->SetBeatHold(true);',
-	'constexpr float ReturnPassYaw = -90.0f;',
+	'constexpr float ReturnPassYaw = 180.0f;',
 	'constexpr float PassClearanceCentimeters = 70.0f;',
 	'const FName PassByBeatId(TEXT("Night3.PassBy"));'
 ) '비트 3-7 staging'
+Require-Absent $nightThree @('ReturnShufflePoint') '비트 3-7 no wall-raking shuffle'
+# 벽 자세는 몸의 오른쪽을 벽에 붙인다. 원점과 벽면 사이 43cm, 붙기·떨어지기 사이에 미끄러지지 않는다.
+Require-All $listenerHeader @(
+	'static constexpr float WallListenStandOff = 43.0f;',
+	'void SetWallListenForBeat(bool bEnable, const FVector& Anchor = FVector::ZeroVector, float Yaw = 0.0f);'
+) 'wall listen pose surface'
+Require-All $listener @(
+	'A_ListenerCrawler_ListenWall.A_ListenerCrawler_ListenWall',
+	'A_ListenerCrawler_BangWall.A_ListenerCrawler_BangWall',
+	'if (HoldForWallRise())',
+	'PlayBodyAnim(EIGListenerBodyAnim::BangWall, false, KnockRate);',
+	'EnsureWallPose(bWaitStirred ? 0.6f : 0.0f);'
+) 'wall listen pose runtime'
 # ParkForBeat가 반응을 지운다. 이것이 없으면 P4의 세 탭 직후에 세운 그가
 # 별관의 소리를 향해 기어 나간다 — 비트 2-1도 같은 이유로 같은 함수를 쓴다.
 Require-All $listenerHeader @(

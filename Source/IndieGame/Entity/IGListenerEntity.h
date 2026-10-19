@@ -55,14 +55,19 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FIGPlayerCapturedSignature, APawn* /*Player*
  */
 DECLARE_MULTICAST_DELEGATE_OneParam(FIGListenerKnockSignature, const FVector& /*KnockLocation*/);
 
-/** 스켈레탈 몸이 재생하는 동작. rig_crawler.py의 액션 넷과 같은 이름이다. */
+/** 스켈레탈 몸이 재생하는 동작. rig_crawler.py의 액션과 같은 이름이다. */
 enum class EIGListenerBodyAnim : uint8
 {
 	None,
 	Crawl,
 	Listen,
 	Bang,
-	Lunge
+	Lunge,
+	/** 벽에 귀를 대는 자세(crawler_wall_listen.py). 붙기·듣기·떨어지기·벽 치기. */
+	ListenWallIn,
+	ListenWall,
+	ListenWallOut,
+	BangWall
 };
 
 /**
@@ -225,6 +230,22 @@ public:
 	 * 0이면 평소대로다.
 	 */
 	void SetWaitHoldForBeat(float ExtraSeconds) { BeatWaitHoldSeconds = FMath::Max(0.0f, ExtraSeconds); }
+
+	/**
+	 * 벽에 귀를 대고 듣는 자세의 몸 원점과 벽면 사이 거리. 이 자세는 엎드린 몸의 오른쪽(팔다리가
+	 * 벌어진 쪽)을 벽에 붙이고 옆머리를 댄다. 몸 폭은 벽에서 70 cm다(rig_crawler.py WALL_POSE).
+	 */
+	static constexpr float WallListenStandOff = 43.0f;
+
+	/**
+	 * 연출이 세운 자리(Anchor)에서 그가 벽에 귀를 대고 듣는다. 그 자리에 멈춰 있는 동안 몸을 Yaw로
+	 * 돌려 벽과 나란히 두고 붙는 동작부터 튼다. 두드릴 때는 머리 앞 벽을 친다. 움직이기 전에는
+	 * 벽에서 떨어지는 동작(0.6초)이 끝날 때까지 제자리에 있다 — 붙은 채로 미끄러지지 않는다.
+	 * Yaw는 벽이 몸 오른쪽에 오는 방향, Anchor는 벽면에서 WallListenStandOff만큼 떨어진 바닥 점이다.
+	 * bEnable이 false면 평소처럼 듣는다(붙어 있었으면 떨어지는 동작부터).
+	 */
+	void SetWallListenForBeat(bool bEnable, const FVector& Anchor = FVector::ZeroVector, float Yaw = 0.0f);
+	bool IsInWallPose() const;
 
 	/** Returns the entity to its patrol start after a capture reset. */
 	UFUNCTION(BlueprintCallable, Category = "Listener")
@@ -576,7 +597,33 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> LungeAnim;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> ListenWallInAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> ListenWallAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> ListenWallOutAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> BangWallAnim;
+
 	EIGListenerBodyAnim ActiveBodyAnim = EIGListenerBodyAnim::None;
+	/** SetWallListenForBeat가 켠 벽 듣기. 자리와 몸 방향. */
+	bool bWallListenForBeat = false;
+	FVector WallListenAnchor = FVector::ZeroVector;
+	float WallListenYaw = 0.0f;
+	/** 벽에서 떨어지는 동작이 끝나는 시각. 그 전에는 기지 않는다. */
+	double WallRiseUntilSeconds = -1000.0;
+	/** 떨어진 뒤 이 시각까지는 다시 붙지 않는다. */
+	double WallReenterAfterSeconds = -1000.0;
+	/** 벽 자세 동작 넷이 다 실렸다. 하나라도 없으면 벽 듣기는 평소 듣기로 내려간다. */
+	bool HasWallPoseAnims() const;
+	/** 벽에 붙은 몸이 움직이려 한다. 떨어지는 동작을 시작하고, 그것이 끝날 때까지 true. */
+	bool HoldForWallRise();
+	/** 연출 자리에 멈춰 벽 자세를 튼다(붙기 → 듣기). Rate는 듣기 재생 배율. */
+	void EnsureWallPose(float Rate);
 	FVector CaptureViewTarget = FVector::ZeroVector;
 	/** 잡기 시작한 순간의 얼굴 위치. 여기서 CaptureViewTarget까지 기어 올라온다. */
 	FVector CaptureFaceStart = FVector::ZeroVector;

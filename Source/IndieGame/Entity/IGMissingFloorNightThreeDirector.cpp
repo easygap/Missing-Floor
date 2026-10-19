@@ -225,14 +225,13 @@ namespace IGNightThree
 	 * 4층 복도, 계단코어와 403호 문 사이. 복도 안쪽은 Y -375..-235로 폭이 140 cm뿐이라
 	 * 사람 하나를 지나치는 일이 실제로 좁다 — 그것이 이 비트의 전부다.
 	 * 그녀는 서쪽(계단코어, X=-277.5)에서 내려와 동쪽 403호 문(X=101)으로 간다.
-	 * 그는 남쪽 벽에 귀를 대고 벽을 따라 조금씩 움직인다. 예전에는 복도 가운데(Y -300)와 벽 쪽(Y -334)을
-	 * 오가서, 가운데에서 멈추면 남북 어느 쪽에도 몸이 지나갈 틈(60 cm)이 없었다. 순간 이동으로 옆을
-	 * 건너뛰는 검사만 있어 실제 입력으로 지나가 보고서야 드러났다.
+	 * 그는 남쪽 벽(안쪽 면 Y -375)에 엎드려 옆머리를 대고 있다. 몸은 벽과 나란히, 팔다리가 벌어진
+	 * 오른쪽을 벽에 붙이고 왼팔과 다리를 모은 자세(A_ListenerCrawler_ListenWall)라 벽에서 70 cm만
+	 * 차지한다. 예전에는 벽을 정면으로 보고 30 cm 앞에 기는 몸을 세워서 머리와 상체가 벽 속에 묻혔고,
+	 * 그 전에는 복도 가운데에 멈춰 지나갈 틈이 없었다.
 	 */
-	const FVector ReturnPassPoint(-95.0f, -345.0f, FourthFloorZ);
-	/** 서 있는 것이 아니라 기다리는 것으로 읽히도록 벽을 따라 조금 움직인다. */
-	const FVector ReturnShufflePoint(-125.0f, -345.0f, FourthFloorZ);
-	/** 벽에 귀를 대고 팔을 붙인 몸. 북쪽에 84 cm가 남아 어깨를 스치며 지나간다. */
+	const FVector ReturnPassPoint(-95.0f, -375.0f + AIGListenerEntity::WallListenStandOff, FourthFloorZ);
+	/** 벽에 붙은 몸의 복도 쪽 끝(Y -305)까지 막는다. 북쪽에 70 cm가 남아 어깨를 스치며 지나간다. */
 	constexpr float ReturnBodyRadius = 26.0f;
 	/**
 	 * 대답에 멈춘 그가 이 장면에서 더 기다리는 시간. 평소 기다림(둘째 대답이면 12초)만으로는 옆을 지나
@@ -249,8 +248,11 @@ namespace IGNightThree
 	constexpr float ReturnHoldReleaseCentimeters = 220.0f;
 	/** 4층 복도 바닥에 서 있다고 보는 발 높이 오차. 첫 계단 디딤판이 18 cm다. */
 	constexpr float CorridorFloorToleranceCentimeters = 12.0f;
-	/** 그가 향한 쪽. 남쪽 벽에 귀를 대고 있다 — 1-4의 자세 그대로. */
-	constexpr float ReturnPassYaw = -90.0f;
+	/**
+	 * 그가 향한 쪽. 서쪽(계단, 그녀가 내려오는 쪽)을 보면 벽 자세의 오른쪽이 남쪽 벽에 닿는다.
+	 * 그녀는 내려오며 벽에 옆머리를 댄 그의 얼굴을 마주 보고, 왼쪽 어깨 옆을 지나간다.
+	 */
+	constexpr float ReturnPassYaw = 180.0f;
 	/** 지나쳤다고 인정하는 여유. 몸 하나 폭보다 넉넉하게. */
 	constexpr float PassClearanceCentimeters = 70.0f;
 	/** 403호 실내는 4층 X -190..190, Y -235..235. */
@@ -2716,18 +2718,16 @@ void AIGMissingFloorNightThreeDirector::StageReturnFigure()
 		return;
 	}
 	bFigureStaged = true;
-	// 1-4의 계단 카메오와 같은 장치다. 두 점을 주어 복도를 가로질러 조금씩
-	// 움직이게 하면, 세워 둔 프롭이 아니라 자리를 지키는 사람으로 읽힌다.
-	Listener->SetPatrolPoints({
-		IGNightThree::ReturnPassPoint,
-		IGNightThree::ReturnShufflePoint,
-	});
+	// 한 자리를 지킨다. 벽을 따라 오가면 기는 몸(폭 84 cm)이 벽을 파고들었다. 살아 있는 것은
+	// 벽 자세 안의 숨과, 귀를 더 붙였다 늦추며 벽을 따라 조금 밀리는 몸으로 보인다.
+	Listener->SetPatrolPoints({IGNightThree::ReturnPassPoint});
 	// ParkForBeat, not TeleportTo: P4's own three taps just left him
 	// investigating a spot up in the annex, and a teleported-but-still-reacting
 	// pursuer crawls out of the corridor before she ever gets down the stairs.
 	Listener->ParkForBeat(
 		IGNightThree::ReturnPassPoint,
 		IGNightThree::ReturnPassYaw);
+	Listener->SetWallListenForBeat(true, IGNightThree::ReturnPassPoint, IGNightThree::ReturnPassYaw);
 	Listener->SetBodyRadiusForBeat(IGNightThree::ReturnBodyRadius);
 	Listener->SetWaitHoldForBeat(IGNightThree::ReturnWaitHoldSeconds);
 	// 그녀가 옥상과 계단에 있는 동안은 작은 소리를 흘려듣는다(뛰면 깬다). AdvanceReturn이 푼다.
@@ -2745,6 +2745,7 @@ void AIGMissingFloorNightThreeDirector::ReleaseReturnFigure()
 	bReturnHoldsFigure = false;
 	if (AIGListenerEntity* Listener = Entity.Get())
 	{
+		Listener->SetWallListenForBeat(false);
 		Listener->SetBodyRadiusForBeat(0.0f);
 		Listener->SetWaitHoldForBeat(0.0f);
 		Listener->SetBeatHold(false);

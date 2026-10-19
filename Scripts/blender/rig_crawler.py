@@ -573,6 +573,131 @@ def author_lunge(arm, frames=24):
 
 
 # --------------------------------------------------------------------------
+# 벽에 귀를 대는 자세 (2026-10-19)
+# --------------------------------------------------------------------------
+# 셋째 밤 귀환길에서 그는 4층 복도 남쪽 벽에 귀를 대고 있다. 예전에는 벽을 정면으로 보고
+# Listen을 틀어서 190 cm 몸의 머리와 상체가 벽 속에 묻혔다. 이 자세는 몸을 벽과 나란히
+# 두고 팔다리가 벌어진 오른쪽(저작 좌표 -Y, UE에서는 몸의 오른쪽)을 벽에 붙인다. 머리를
+# 벽 쪽으로 기울여 옆머리를 대고, 오른주먹은 머리 앞 벽을 짚는다. 왼팔과 두 다리는 몸
+# 아래로 모아 복도 쪽 폭을 줄인다. 좌표는 저작 공간 미터, 회전은 뼈 로컬 도(°)다.
+WALL_POSE = {
+    # 벽면. 게임에서는 몸 원점을 벽에서 이만큼(43 cm) 띄워 세운다. 기는 자세로 돌아간
+    # 순간에도 오른 허벅지(-0.424)가 벽을 넘지 않는 거리다. 벽 자세에서는 몸을 11 cm 벽
+    # 쪽으로 붙여 오른 위팔과 옆머리가 벽에 닿는다. 복도 쪽 끝은 +0.27이라 몸 폭이 70 cm다.
+    "wall_y": -0.43,
+    "pelvis_shift": (0.0, -0.11, -0.01),
+    # 엎드린 몸의 척추는 바닥 평면에서 옆으로 굽는다(로컬 rz). 굽힌 만큼 얼굴이 벽으로
+    # 돌아가므로 머리는 반대로 돌리고(ry +25) 벽 쪽으로 기울여(rz +19) 귀를 댄다.
+    "spine": {"spine_01": (0.0, 0.0, -3.0), "spine_02": (0.0, 0.0, -5.0), "spine_03": (0.0, 3.0, -7.0)},
+    "neck": (0.0, 0.0, -18.0),
+    "head": (0.0, 25.0, 19.0),
+    "hand_r": (0.80, -0.28, 0.05), "elbow_r": (0.55, -0.29, 0.06),
+    "hand_l": (0.70, -0.06, 0.05), "elbow_l": (0.56, 0.09, 0.05),
+    "ankle_r": (-0.60, -0.20, 0.05), "knee_r": (-0.25, -0.25, 0.08),
+    "ankle_l": (-0.82, -0.08, 0.10), "knee_l": (-0.50, 0.04, 0.10),
+}
+
+
+def _shift_bone(arm, name, frame, delta):
+    """뼈대 좌표의 이동을 그 뼈의 로컬 이동 키로 적는다(부모가 자세를 안 잡은 뼈만)."""
+    bone = arm.data.bones[name]
+    local = bone.matrix_local.to_3x3().inverted() @ Vector(delta)
+    key_loc(arm, name, frame, local.x, local.y, local.z)
+
+
+def key_wall_pose(arm, frame, s, breath=0.0, sway=0.0, press=0.0, pose=None):
+    """s=0이면 바닥 자세, 1이면 벽 자세. 몸통을 먼저 잡고 그 어깨·엉덩이에서 팔다리를 푼다."""
+    p = pose or WALL_POSE
+    shift = Vector(p["pelvis_shift"]) * s + Vector((sway, 0.0, 0.0))
+    _shift_bone(arm, "pelvis", frame, shift)
+    for name, (rx, ry, rz) in p["spine"].items():
+        extra = 1.2 * breath if name == "spine_02" else (-1.6 * breath if name == "spine_03" else 0.0)
+        key_rot(arm, name, frame, rx=rx * s + extra, ry=ry * s, rz=rz * s)
+    rx, ry, rz = p["neck"]
+    key_rot(arm, "neck", frame, rx=rx * s + 0.8 * breath, ry=ry * s, rz=rz * s)
+    rx, ry, rz = p["head"]
+    key_rot(arm, "head", frame, rx=rx * s, ry=(ry - press) * s, rz=rz * s)
+    for side in ("l", "r"):
+        forearm = arm.data.bones[f"lowerarm_{side}"]
+        target = forearm.tail_local.lerp(Vector(p[f"hand_{side}"]), s)
+        if side == "r":
+            # 주먹을 바닥에서 들어 벽으로 옮긴다. 끌지 않는다.
+            target = target + Vector((0.0, 0.0, 0.08 * math.sin(math.pi * min(1.0, s))))
+        pole = forearm.head_local.lerp(Vector(p[f"elbow_{side}"]), s)
+        plant_limb(arm, f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", target, pole, frame)
+        calf = arm.data.bones[f"calf_{side}"]
+        target = calf.tail_local.lerp(Vector(p[f"ankle_{side}"]), s)
+        pole = calf.head_local.lerp(Vector(p[f"knee_{side}"]), s)
+        plant_limb(arm, f"thigh_{side}", f"calf_{side}", f"foot_{side}", target, pole, frame)
+
+
+def _smooth(x):
+    x = max(0.0, min(1.0, x))
+    return x * x * (3.0 - 2.0 * x)
+
+
+def author_listen_wall_in(arm, frames=24, pose=None):
+    """기던 자세에서 벽에 붙는다. 0.8초. 오른주먹이 먼저 벽을 짚고 머리가 따라간다."""
+    action = new_action(arm, "ListenWallIn", frames)
+    for f in range(frames + 1):
+        key_wall_pose(arm, f, _smooth(f / frames), pose=pose)
+    return action
+
+
+def author_listen_wall(arm, frames=120, pose=None):
+    """벽에 귀를 댄 채 숨을 쉰다. 4초 루프. 귀를 더 붙였다 늦추고 몸이 벽을 따라 조금 밀린다."""
+    action = new_action(arm, "ListenWall", frames)
+    for f in range(0, frames + 1, 4):
+        t = f / frames * math.tau
+        key_wall_pose(arm, f, 1.0, breath=math.sin(2.0 * t), sway=0.012 * math.sin(t),
+                      press=3.0 * max(0.0, math.sin(t + 0.6)), pose=pose)
+    cyclic(arm, action)
+    return action
+
+
+def author_listen_wall_out(arm, frames=18, pose=None):
+    """벽에서 떨어져 기는 자세로 돌아간다. 0.6초. 이동은 이 동작이 끝난 뒤에 시작한다."""
+    action = new_action(arm, "ListenWallOut", frames)
+    for f in range(frames + 1):
+        key_wall_pose(arm, f, 1.0 - _smooth(f / frames), pose=pose)
+    return action
+
+
+def author_bang_wall(arm, frames=63, pose=None):
+    """벽에 귀를 댄 채 오른주먹으로 벽을 세 번 친다. Bang과 같은 0/19/37프레임에 닿는다."""
+    action = new_action(arm, "BangWall", frames)
+    p = dict(pose or WALL_POSE)
+    rest = Vector(p["hand_r"])
+    # 주먹 겉면은 손목 목표보다 5 cm쯤 벽 쪽에 있다. 닿는 자리는 머리 앞, 바닥에서 22 cm.
+    contact = Vector((rest.x - 0.03, p["wall_y"] + 0.058, 0.22))
+    back = Vector((rest.x - 0.02, p["wall_y"] + 0.15, 0.26))
+    strikes = (0, 19, 37)
+    for f in range(frames + 1):
+        # 각 타격: 6프레임 동안 뒤로 뺐다가 닿고, 2프레임 붙어 있다가 다시 뺀다.
+        target = None
+        for s in strikes:
+            if s - 6 <= f < s:
+                target = back.lerp(contact, _smooth((f - (s - 6)) / 6.0))
+            elif s <= f <= s + 2:
+                target = contact
+            elif s + 2 < f <= s + 6 and s != strikes[-1]:
+                target = contact.lerp(back, _smooth((f - s - 2) / 4.0))
+        if target is None:
+            if f < strikes[-1]:
+                target = back
+            else:
+                target = contact.lerp(rest, _smooth((f - strikes[-1] - 2) / 14.0))
+        jolt = 0.6 if any(s <= f <= s + 2 for s in strikes) else 0.0
+        p["hand_r"] = tuple(target)
+        p["elbow_r"] = (0.55, -0.30, 0.16)
+        key_wall_pose(arm, f, 1.0, breath=jolt, pose=p)
+    for fc in action_fcurves(action):
+        for kp in fc.keyframe_points:
+            kp.interpolation = "BEZIER"
+    return action
+
+
+# --------------------------------------------------------------------------
 # 미리보기 · 내보내기
 # --------------------------------------------------------------------------
 
@@ -750,6 +875,10 @@ def main():
         "Listen": author_listen(arm),
         "Bang": author_bang(arm),
         "Lunge": author_lunge(arm),
+        "ListenWallIn": author_listen_wall_in(arm),
+        "ListenWall": author_listen_wall(arm),
+        "ListenWallOut": author_listen_wall_out(arm),
+        "BangWall": author_bang_wall(arm),
     }
 
     # 뼈 자리 확인 한 장, 기는 동작 네 프레임, 손전등 한 장.
@@ -788,7 +917,7 @@ def main():
         data = json.load(handle)
     data["skeletal"] = True
     data["animations"] = {key: {"frames": int(a.frame_range[1]), "fps": FPS,
-                                "loop": key in ("Crawl", "Listen")} for key, a in actions.items()}
+                                "loop": key in ("Crawl", "Listen", "ListenWall")} for key, a in actions.items()}
     data["generated_from"] = os.path.relpath(os.path.abspath(args.glb), out_root).replace("\\", "/")
     with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(data, handle, indent=2, ensure_ascii=False)
