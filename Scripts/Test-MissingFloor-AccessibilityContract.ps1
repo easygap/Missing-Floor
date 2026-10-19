@@ -284,9 +284,7 @@ $categoryRanges = [regex]::Matches(
 Assert-True ($categoryRanges.Count -eq 6) '접근성 묶음 여섯 개'
 $rowNames = [regex]::Match(
 	$settingsLayout,
-	'enum EAccessibilityRow : int32\s*
-?
-\s*\{(?<body>[\s\S]*?)\}')
+	'enum EAccessibilityRow : int32\s*\{(?<body>[\s\S]*?)\}')
 Assert-True $rowNames.Success '접근성 행 이름 목록'
 $orderedNames = @()
 foreach ($entry in [regex]::Matches(
