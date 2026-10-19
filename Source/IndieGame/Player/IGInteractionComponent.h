@@ -59,6 +59,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	void RefreshFocus();
 
+	/** 손이 닿는 시선 거리(cm). 조준 감사가 같은 거리로 잰다. */
+	float GetTraceDistance() const { return TraceDistance; }
+
+	/**
+	 * 숨겨 둔 채 꺼 둔 상호작용 물체. 다음 밤이나 다음 단계에 쓸 표적을 미리 세워 두고 숨기는데,
+	 * 숨겨도 충돌은 남아 시선을 막았다. 넷째 밤 벽 표적이 셋째 밤 내내 빈 벽 칸 앞을 가려 그 칸에
+	 * 귀를 대거나 대답하는 조준이 하나도 잡히지 않았다. 초점과 조준 감사는 이런 것을 건너뛴다.
+	 */
+	static bool IsDormantInteractable(AActor* Actor, AActor* Interactor);
+	/** 시선 하나가 건너뛸 수 있는 잠든 표적 수. 한자리에 겹쳐 세운 것도 서넛이면 끝난다. */
+	static constexpr int32 MaxDormantSkips = 4;
+
 	UFUNCTION(BlueprintPure, Category = "Interaction")
 	AActor* GetFocusedActor() const;
 

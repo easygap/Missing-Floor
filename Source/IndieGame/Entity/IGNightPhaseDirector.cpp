@@ -11,6 +11,7 @@
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGMissingFloorLeftoverDirector.h"
 #include "Entity/IGMissingFloorNightFourDirector.h"
+#include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGNightLoopDirector.h"
 #include "Entity/IGNightThreatDirector.h"
 #include "GameplayTagContainer.h"
@@ -362,8 +363,8 @@ void AIGNightPhaseDirector::TickHour()
 		{
 			return;
 		}
-		// 손에 든 조각을 놓기 전, 정우가 문을 잡고 선 한가운데, 펼쳐 읽는 종이 앞에서 화면을 감지
-		// 않는다. 다 합쳐 40초까지다.
+		// 손에 든 조각을 놓기 전, 정우가 문을 잡고 선 한가운데, 벽의 대답을 기다리는 사이, 펼쳐 읽는 종이 앞,
+		// 누군가 하던 말 한가운데서 화면을 감지 않는다. 다 합쳐 40초까지다.
 		if (!bImmediateDawn && DawnHoldSeconds < IGNightPhase::MaxDawnHoldSeconds
 			&& (bReadingHold || IsDawnHeldByActivity()))
 		{
@@ -377,7 +378,9 @@ void AIGNightPhaseDirector::TickHour()
 bool AIGNightPhaseDirector::IsDawnHeldByActivity() const
 {
 	return AIGMissingFloorLeftoverDirector::IsHoldingDawn(GetWorld())
-		|| AIGMissingFloorNightFourDirector::IsHoldingDawn(GetWorld());
+		|| AIGMissingFloorNightFourDirector::IsHoldingDawn(GetWorld())
+		|| AIGMissingFloorNightThreeDirector::IsHoldingDawn(GetWorld())
+		|| AIGHorrorHUD::IsHoldingStoryDialogue(this);
 }
 
 bool AIGNightPhaseDirector::IsReadingHold()

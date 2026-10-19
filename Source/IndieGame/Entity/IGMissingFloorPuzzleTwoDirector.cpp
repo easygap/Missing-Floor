@@ -105,7 +105,9 @@ namespace IGPuzzleTwo
 	 * Y가 0에 가까운 쪽이다.
 	 */
 	constexpr float FourthFloorZ = AIGPrologueWorldScene::FourthFloorZ;
-	const FVector PhoneAtDoorLocation(150.0f, -196.0f, FourthFloorZ + 4.0f);
+	// 현관 신발 단(높이 8 cm) 위. 예전 높이(+4)는 폰이 단 속에 3.4 cm 묻혀 시선이 단에 먼저 맞았다.
+	// 폰 메시는 가운데가 원점이고 두께가 1.2 cm다.
+	const FVector PhoneAtDoorLocation(150.0f, -196.0f, FourthFloorZ + 8.7f);
 	/** 폰을 놓는 것은 소리를 내는 행동이다. 발소리보다 조용하지만 0은 아니다. */
 	constexpr float PhonePlacementLoudness = 0.08f;
 	/** 재생의 결론은 공백이 끝나고 숨 한 번 뒤에 온다. */

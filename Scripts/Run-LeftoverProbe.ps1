@@ -5,7 +5,11 @@ param(
 	# night2: 밤2 안쪽 방만. wall: 밤4 벽 단계마다 저장 상태로 되살린 모습(불러오기 길).
 	# input: 밤3 302호를 순간 이동 없이 실제 키·마우스 입력으로 지난다(구간별 시간을 남긴다).
 	# lines: 이 줄기의 새 문장을 한 줄씩 띄워 찍는다(-Shots, -Culture, -TextScale과 같이).
-	[ValidateSet('full', 'dawn', 'dawnbrace', 'night2', 'wall', 'input', 'lines')][string]$Variant = 'full',
+	# night3av: input에 이어 계단·옥상·5층(밸브, 벽 듣기, 수첩, 박자 두드리기, 벽의 대답)과 복도의 그를 지나
+	# 403호까지 실제 입력으로 간다. -Record와 같이 쓰면 믹스를 녹음한다.
+	[ValidateSet('full', 'dawn', 'dawnbrace', 'night2', 'wall', 'input', 'lines', 'night3av')][string]$Variant = 'full',
+	# 스피커로 내지 않고 마스터 믹스를 녹음한다(-DeterministicAudio). 오프스크린 D3D로 그린다.
+	[switch]$Record,
 	[switch]$Shots,
 	# en·ja·zh-Hans·zh-Hant로 찍으면 이 줄기의 글(안내문·대장·힌트·자막)을 그 언어로 본다.
 	[string]$Culture,
@@ -38,18 +42,29 @@ $extra = @()
 if ($Culture) { $extra += ('-IGCulture=' + $Culture) }
 if ($TextScale -gt 1) { $extra += ('-IGCaptionScale=' + $TextScale) }
 if ($Shots -and $Frames) { $extra += '-IGLeftoverFrames' }
-$render = if ($Shots -and $Clean) { @('-d3d12', '-Windowed', '-ResX=1920', '-ResY=1080', '-ForceRes', '-IGLeftoverShots', '-IGLeftoverCleanShots') }
+$audio = @('-nosound')
+if ($Record) {
+	# 숨긴 창은 초점이 없어 엔진이 소리를 줄인다. 녹음할 때는 열어 둔다.
+	$audio = @('-DeterministicAudio', '-AudioMixer', '-IGLeftoverRecord', '-ini:Engine:[Audio]:UnfocusedVolumeMultiplier=1.0')
+}
+$render = if ($Record) { @('-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes') }
+	elseif ($Shots -and $Clean) { @('-d3d12', '-Windowed', '-ResX=1920', '-ResY=1080', '-ForceRes', '-IGLeftoverShots', '-IGLeftoverCleanShots') }
 	elseif ($Shots) { @('-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLeftoverShots') } else { @('-nullrhi') }
 $probeArg = if ($Variant -eq 'full') { '-IGLeftoverProbe' } else { "-IGLeftoverProbe=$Variant" }
-& $editor $projectPath -game -unattended -nosplash -nosound -NoLoadingScreen -RenderOffscreen @render `
+& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen @audio @render `
 	-IGListenerGreybox $probeArg -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
 	"-UserDir=$probeUser" "-abslog=$logPath" @extra | Out-Null
-Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_(CHECK|PROBE|N2|N3|DAY1|TAKEN|LINING)|MANAGER_(ERRAND|CHASE|CATCH|INVESTIGATE)|LINING_(TARGET|SEALED|GRIP|PLACED)|INPUT_(SEGMENT|ROUTE|MOUSE|STUCK|FOCUS|BLOCK|LINING_LEG)|LEFTOVER_LEG' | ForEach-Object { Write-Host $_.Line }
+Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_(CHECK|PROBE|N2|N3|DAY1|TAKEN|LINING)|N3AV t=[0-9.]+ (setup|record)|MANAGER_(ERRAND|CHASE|CATCH|INVESTIGATE)|LINING_(TARGET|SEALED|GRIP|PLACED)|INPUT_(SEGMENT|ROUTE|MOUSE|STUCK|FOCUS|BLOCK|LINING_LEG)|LEFTOVER_LEG' | ForEach-Object { Write-Host $_.Line }
 if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
 	throw "남은 짐 검사에 실패했습니다: $logPath"
 }
 if ($Shots) {
 	Write-Host ("LEFTOVER_SHOTS " + (Join-Path $probeUser 'Saved/LeftoverReview'))
+}
+if ($Record) {
+	$mix = Join-Path $probeUser 'Saved/Night3AV/mix.wav'
+	if (-not (Test-Path -LiteralPath $mix)) { throw "믹서 녹음이 없습니다: $mix" }
+	Write-Host "N3AV_MIX $mix"
 }
 
 $igArtifactSucceeded = $true

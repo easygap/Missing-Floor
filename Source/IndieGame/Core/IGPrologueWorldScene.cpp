@@ -87,7 +87,7 @@ namespace IGPrologueWorld
 
 	// 403호가 앉은 층. 값은 클래스가 든다.
 	constexpr float FourthFloorZ = AIGPrologueWorldScene::FourthFloorZ;
-	constexpr float MissingFloorRoofZ = 1200.0f;
+	constexpr float MissingFloorRoofZ = AIGPrologueWorldScene::RoofZ;
 	constexpr int32 MissingFloorUpperStepCount = 14;
 	constexpr float MissingFloorRouteLengthCentimeters = 640.0f;
 	const FVector MissingFloorRouteStart(-277.5f, 220.0f, MissingFloorRoofZ);
@@ -2468,7 +2468,10 @@ void AIGPrologueWorldScene::BuildCorridor()
 	IGPrologueWorld::TagFootstepSurface(
 		CreateBlock(FVector(190, -305, -10), FVector(1040, 160, 20), CorridorFloor),
 		IGPrologueWorld::FootstepConcreteTag);
-	CreateBlock(FVector(190, -305, 250), FVector(1040, 160, 20), CorridorCeil);
+	// 서쪽 끝 100 cm는 옥상 계단 문간이다. 천장이 벽 두께 안으로 10 cm 걸치면 둘째 단에서 셋째 단으로
+	// 오르는 몸의 머리가 그 모서리에 걸린다. 그 구간만 벽 앞면(Y -235)에서 끊는다.
+	CreateBlock(FVector(240, -305, 250), FVector(940, 160, 20), CorridorCeil);
+	CreateBlock(FVector(-280, -310, 250), FVector(100, 150, 20), CorridorCeil);
 
 	// §11 V2 끌린 자국 (복도 러너). 계단에서 403호로 수레를 돌린 지점에만
 	// 바퀴 자국을 남긴다. 복도 전체에 같은 큰 무늬를 반복하지 않는다.
@@ -2593,9 +2596,12 @@ void AIGPrologueWorldScene::BuildCorridor()
 	// 집 구간 밖으로 이어지는 북쪽 벽과, 집 벽(230 cm) 위를 복도 높이(240 cm)까지
 	// 채우는 띠. 동쪽은 옛 문 자리를 벽 마개로 메워 한 장의 벽으로 읽히고, 서쪽은
 	// 4층에서 5층으로 오르는 계단 입구를 비워 둔다.
-	CreateBlock(FVector(-332.5f, -225, 120), FVector(15, 20, 240), CorridorWallX);
-	CreateBlock(FVector(-225.0f, -225, 120), FVector(10, 20, 240), CorridorWallX);
-	CreateBlock(FVector(-277.5f, -225, 225), FVector(95, 20, 30), CorridorWallX);
+	// 5층 계단 입구의 문틀과 머리. 머리가 바닥에서 210 cm에 있으면 첫 단에 오른 몸(192 cm)이 둘째 단을
+	// 못 올라섰다(실제 입력 검사에서 잡힘). 첫 단이 벽 두께 안에서 시작하므로 머리는 260 cm부터 둔다.
+	// 위는 옥상 슬래브 높이의 덮개(BuildCorridor 계단 천장)가 막는다.
+	CreateBlock(FVector(-332.5f, -225, 140), FVector(15, 20, 280), CorridorWallX);
+	CreateBlock(FVector(-225.0f, -225, 140), FVector(10, 20, 280), CorridorWallX);
+	CreateBlock(FVector(-277.5f, -225, 270), FVector(95, 20, 20), CorridorWallX);
 	CreateBlock(FVector(302.5f, -225, 120), FVector(165, 20, 240), CorridorWallX);
 	CreateBlock(FVector(587.5f, -225, 120), FVector(225, 20, 240), CorridorWallX);
 	CreateBlock(FVector(430, -225, 225), FVector(90, 20, 30), CorridorWallX);
@@ -2997,17 +3003,24 @@ void AIGPrologueWorldScene::BuildCorridor()
 		FVector(-277.5f, -125.0f, 63.0f),
 		FVector(85, 28, 18),
 		StairSteel), IGPrologueWorld::FootstepMetalStairTag);
+	// 아래 계단 위는 복도 천장(240 cm)이 아니라 옥상 슬래브 높이(280..300 cm)의 덮개가 막는다. 넷째 단(72 cm)에
+	// 선 몸의 머리가 264 cm다. 덮개는 문간 뒤 복도 천장 위의 빈 곳까지 덮어 옥상에서 구덩이로 보이지 않게 하고,
+	// 북쪽 끝은 Y -145에서 멈춘다. 그보다 북쪽으로 오면 위 계단 첫째·둘째 단을 오르는 머리가 덮개 모서리에
+	// 걸린다. 그 위로는 하늘이 열린 계단탑이다. 옆벽은 덮개 밑까지, 덮개 북쪽은 옥상 높이까지 세운다.
+	for (const float SideWallX : {-332.5f, -222.5f})
+	{
+		CreateBlock(
+			FVector(SideWallX, -180.0f, 140),
+			FVector(15, 70, 280),
+			ConcreteDarkMaterial);
+		CreateBlock(
+			FVector(SideWallX, -125.0f, 150),
+			FVector(15, 40, 300),
+			ConcreteDarkMaterial);
+	}
 	CreateBlock(
-		FVector(-332.5f, -160.0f, 120),
-		FVector(15, 110, 240),
-		ConcreteDarkMaterial);
-	CreateBlock(
-		FVector(-222.5f, -160.0f, 120),
-		FVector(15, 110, 240),
-		ConcreteDarkMaterial);
-	CreateBlock(
-		FVector(-277.5f, -165.0f, 250),
-		FVector(125, 120, 20),
+		FVector(-277.5f, -222.5f, 290),
+		FVector(125, 155, 20),
 		CorridorCeil);
 
 	// 서쪽 끝 목 너머는 계단탑이다(BuildStairCore). 1층까지 실제 계단이 이어지고,
@@ -4501,7 +4514,10 @@ void AIGPrologueWorldScene::BuildFifthFloorAnnex()
 	// 가로지르고, 기둥 하나가 열두 번째 디딤판 16 cm 위에 떠서 통로 85 cm
 	// 중 42.5 cm를 막았다. 캡슐 지름이 68 cm이므로 옥상으로 올라갈 수 없었다.
 	AddRail(FVector(-215.0f, 160.0f, 0.0f), FVector(-180.0f, 160.0f, 0.0f));
-	AddRail(FVector(-277.5f, 280.0f, 0.0f), FVector(70.0f, 280.0f, 0.0f));
+	// 북쪽 난간은 계단탑 문 앞을 비워 두고 X -130에서 시작한다. 문 한가운데(X -277.5)에서 시작하면
+	// 문틀 동쪽 기둥 끝(Y 226)과 난간(Y 278) 사이가 52 cm라, 문을 나와 동쪽 통로로 꺾는 몸(지름 60 cm)이
+	// 지나갈 수 없었다. 순간 이동으로 옥상에 올라가는 검사만 있어 실제 입력 검사에서야 드러났다.
+	AddRail(FVector(-130.0f, 280.0f, 0.0f), FVector(70.0f, 280.0f, 0.0f));
 	// 북쪽 끝은 부속동 남벽의 바깥면(Y=445)에서 멈춘다. Y 452.5는 그 벽의
 	// 중심선이라, 마지막 기둥이 두께 15 cm 벽 한가운데에 통째로 파묻혀
 	// 보이지도 않는 물건이 되고 가로대는 벽으로 7.5 cm 들어갔다.
@@ -4650,6 +4666,16 @@ void AIGPrologueWorldScene::BuildFifthFloorAnnex()
 		FVector(310, 750, 1320), FVector(24, 24, 240),
 		TexMat(TEXT("M_StainlessUV"), MetalFrameMaterial), false,
 		CylinderMesh);
+	// 밤3 배관 밸브가 달린 가지관. 굵은 관에서 첫 칸 뒤로 돌아 나와 첫째·둘째 칸 사이 스터드 틈으로
+	// 빠진다. 손잡이(밤3 감독의 ValveLocation, X 243.5, 두께 2.6 cm)는 벽 앞에 걸려 방에서 바로 보인다.
+	CreateBlock(
+		FVector(272.25f, 631.0f, 1266.0f), FVector(4, 4, 55.5f),
+		TexMat(TEXT("M_StainlessUV"), MetalFrameMaterial), false,
+		CylinderMesh, FRotator(90.0f, 0.0f, 0.0f));
+	CreateBlock(
+		FVector(300.0f, 684.5f, 1266.0f), FVector(5, 5, 107),
+		TexMat(TEXT("M_StainlessUV"), MetalFrameMaterial), false,
+		CylinderMesh, FRotator(0.0f, 0.0f, 90.0f));
 
 	// 12.5T 판재 사이에 0.3mm 틈을 둔다. 잘린 코어와 종이 겉지는 메시 재질을 쓴다.
 	UInstancedStaticMeshComponent* BoardStack = NewObject<UInstancedStaticMeshComponent>(this, TEXT("AnnexGypsumStack"));

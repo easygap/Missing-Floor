@@ -22,6 +22,14 @@ namespace IGInteraction
 	constexpr float SweepStickyBonus = 6.0f;
 }
 
+bool UIGInteractionComponent::IsDormantInteractable(AActor* Actor, AActor* Interactor)
+{
+	return IsValid(Actor)
+		&& Actor->IsHidden()
+		&& Actor->GetClass()->ImplementsInterface(UIGInteractable::StaticClass())
+		&& !IIGInteractable::Execute_CanInteract(Actor, Interactor);
+}
+
 UIGInteractionComponent::UIGInteractionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -317,12 +325,23 @@ void UIGInteractionComponent::RefreshFocus()
 	QueryParams.AddIgnoredActor(OwnerActor);
 
 	FHitResult HitResult;
-	const bool bBlockingHit = World->LineTraceSingleByChannel(
+	bool bBlockingHit = World->LineTraceSingleByChannel(
 		HitResult,
 		TraceStart,
 		TraceEnd,
 		TraceChannel,
 		QueryParams);
+	for (int32 Skip = 0; Skip < UIGInteractionComponent::MaxDormantSkips && bBlockingHit
+		&& UIGInteractionComponent::IsDormantInteractable(HitResult.GetActor(), OwnerActor); ++Skip)
+	{
+		QueryParams.AddIgnoredActor(HitResult.GetActor());
+		bBlockingHit = World->LineTraceSingleByChannel(
+			HitResult,
+			TraceStart,
+			TraceEnd,
+			TraceChannel,
+			QueryParams);
+	}
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	if (bDrawDebugTrace)
@@ -380,9 +399,17 @@ void UIGInteractionComponent::RefreshFocus()
 			FHitResult VisibilityHit;
 			const FVector SightEnd = SweepHit.ImpactPoint
 				+ (SweepHit.ImpactPoint - TraceStart).GetSafeNormal() * 1.0f;
-			if (World->LineTraceSingleByChannel(
-					VisibilityHit, TraceStart, SightEnd, TraceChannel, QueryParams)
-				&& VisibilityHit.GetActor() != SweptActor)
+			bool bSightBlocked = World->LineTraceSingleByChannel(
+				VisibilityHit, TraceStart, SightEnd, TraceChannel, QueryParams);
+			for (int32 Skip = 0; Skip < UIGInteractionComponent::MaxDormantSkips && bSightBlocked
+				&& VisibilityHit.GetActor() != SweptActor
+				&& UIGInteractionComponent::IsDormantInteractable(VisibilityHit.GetActor(), OwnerActor); ++Skip)
+			{
+				QueryParams.AddIgnoredActor(VisibilityHit.GetActor());
+				bSightBlocked = World->LineTraceSingleByChannel(
+					VisibilityHit, TraceStart, SightEnd, TraceChannel, QueryParams);
+			}
+			if (bSightBlocked && VisibilityHit.GetActor() != SweptActor)
 			{
 				continue;
 			}

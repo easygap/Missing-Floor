@@ -212,6 +212,20 @@ public:
 	 */
 	void ParkForBeat(const FVector& Where, float Yaw);
 
+	/**
+	 * 연출 동안 몸의 충돌 반지름. 기본 몸(34 cm)은 팔꿈치를 벌리고 문틀과 계단을 지나는 몸이다.
+	 * 좁은 복도에서 벽에 귀를 대고 기다리는 장면은 팔을 몸에 붙인 자세라 어깨 폭만 막는다.
+	 * 0 이하를 주면 기본 몸으로 돌아간다.
+	 */
+	void SetBodyRadiusForBeat(float Radius);
+
+	/**
+	 * 연출이 세운 장면 동안 대답에 멈춰 기다리는 시간을 이만큼 늘린다. 밤3 귀환길은 그녀가 403호에
+	 * 들어가 그를 보지 않게 되어 순찰로 돌려보낼 때까지 그가 따라오지 않아야 「안 따라오네.」가 참이다.
+	 * 0이면 평소대로다.
+	 */
+	void SetWaitHoldForBeat(float ExtraSeconds) { BeatWaitHoldSeconds = FMath::Max(0.0f, ExtraSeconds); }
+
 	/** Returns the entity to its patrol start after a capture reset. */
 	UFUNCTION(BlueprintCallable, Category = "Listener")
 	void ResetToPatrolStart(bool bRaiseAggression);
@@ -797,6 +811,8 @@ private:
 	double LastCloseCallSeconds = -1000.0;
 	/** 대답 뒤의 기다림이 끝나 간다. 팔꿈치를 고쳐 짚고 숨이 돌아왔다. */
 	bool bWaitStirred = false;
+	/** SetWaitHoldForBeat가 더한 기다림. */
+	float BeatWaitHoldSeconds = 0.0f;
 	/** 노크 사이클 번호. 사이클마다 빠르기와 세기를 조금씩 흔드는 씨앗이다. */
 	int32 KnockSerial = 0;
 	/** 이번 노크의 재생 배율. 두드리는 동작이 같은 배율로 돌아야 손과 소리가 맞는다. */

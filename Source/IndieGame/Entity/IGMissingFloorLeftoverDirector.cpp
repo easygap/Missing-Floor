@@ -1077,17 +1077,18 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 			FTransform(FRotator::ZeroRotator, FVector(1.0f, -14.0f, -17.5f)));
 		Piece->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
 	}
-	// 작업대 밑 상자. 「202 정우 겨울 장비」에 「주인 없음」 딱지.
+	// 작업대 밑에서 반쯤 끌어내 둔 상자. 「202 정우 겨울 장비」에 「주인 없음」 딱지. 예전에는 작업대(X -95..-35)
+	// 밑에 통째로 들어가 있어 작업대 충돌에 가려 어느 자리에서도 조준되지 않았다. 동쪽 절반이 작업대 밖으로 나온다.
 	SpawnProp(FName(TEXT("Inner.GloveBox")), IGLeftover::Mesh(TEXT("SM_StorageBox")),
-		FTransform(FRotator(0.0f, 95.0f, 0.0f), FVector(-62.0f, 128.0f, 0.0f)), true);
+		FTransform(FRotator(0.0f, 95.0f, 0.0f), FVector(-32.0f, 128.0f, 0.0f)), true);
 	SpawnProp(FName(TEXT("Inner.GloveBoxLabel")), IGLeftover::Mesh(TEXT("SM_LeftoverLabelJeongwoo")),
-		FTransform(FRotator(0.0f, 95.0f, 0.0f), FVector(-62.0f, 128.0f, 0.0f)), false);
-	if (AIGLeftoverTarget* Box = SpawnTarget(FName(TEXT("Inner.GloveBoxOpen")), FVector(-62.0f, 128.0f, 20.0f), FRotator::ZeroRotator,
+		FTransform(FRotator(0.0f, 95.0f, 0.0f), FVector(-32.0f, 128.0f, 0.0f)), false);
+	if (AIGLeftoverTarget* Box = SpawnTarget(FName(TEXT("Inner.GloveBoxOpen")), FVector(-32.0f, 128.0f, 20.0f), FRotator::ZeroRotator,
 			FVector(22.0f, 27.0f, 18.0f), NSLOCTEXT("IGMissingFloor", "LeftoverGloveBoxPrompt", "상자 열어 보기"), 0.8f, 0.10f))
 	{
 		Box->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
 	}
-	if (AIGLeftoverTarget* Pouch = SpawnTarget(IGLeftover::Gloves, FVector(-60.0f, 126.0f, 38.0f), FRotator(0.0f, 20.0f, 0.0f),
+	if (AIGLeftoverTarget* Pouch = SpawnTarget(IGLeftover::Gloves, FVector(-30.0f, 126.0f, 38.0f), FRotator(0.0f, 20.0f, 0.0f),
 			FVector(14.0f, 9.0f, 7.0f), NSLOCTEXT("IGMissingFloor", "LeftoverGlovesPrompt", "장갑 주머니 챙기기"), 0.0f, 0.04f))
 	{
 		Pouch->SetVisual(IGLeftover::Mesh(TEXT("SM_GlovePouch")), FTransform(FRotator::ZeroRotator, FVector(0.0f, 0.0f, -4.5f)));

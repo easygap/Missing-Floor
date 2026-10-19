@@ -9,7 +9,7 @@
 	하나, 밤3이 벽에서 끝나지 않아야 한다. T9가 확정되는 순간 밤을 끝내면
 	귀환길이 없고, 귀환길이 없으면 이 비트가 없다.
 
-	둘, 그가 실제로 길을 막고 서 있어야 한다. 깊이 160cm 복도에 사람 하나를
+	둘, 그가 실제로 길을 막고 서 있어야 한다. 폭 140cm 복도에 사람 하나를
 	세우는 것이 이 비트의 전부이며, 텔레포트만 하면 그는 직전에 들은 소리를
 	향해 기어가 버린다 — 반응을 지우는 것이 카메오를 성립시킨다.
 
@@ -79,11 +79,17 @@ Require-All $greybox @(
 ) '05:30 report belongs to dawn'
 
 # --- 그가 길을 막고 선다 ---------------------------------------------------
-# 복도는 Y -385..-225로 깊이 160cm뿐이다. 계단코어(X=-277.5)와 403호 문(X=101)
-# 사이에 세우므로 지나치는 일이 실제로 좁다.
+# 복도 안쪽은 Y -375..-235로 폭이 140cm뿐이다. 계단코어(X=-277.5)와 403호 문(X=101)
+# 사이에 세우므로 지나치는 일이 실제로 좁다. 그는 남쪽 벽에 귀를 대고 벽을 따라 움직이고,
+# 멈춘 동안 몸 반지름이 26cm라 북쪽에 84cm가 남는다. 복도 가운데(Y -300)에 세우던 때는
+# 남북 어느 쪽에도 몸이 지나갈 틈이 없었다(2026-10-19 실제 입력 검사).
 Require-All $nightThree @(
-	'const FVector ReturnPassPoint(-95.0f, -300.0f, FourthFloorZ);',
-	'const FVector ReturnShufflePoint(-95.0f, -334.0f, FourthFloorZ);',
+	'const FVector ReturnPassPoint(-95.0f, -345.0f, FourthFloorZ);',
+	'const FVector ReturnShufflePoint(-125.0f, -345.0f, FourthFloorZ);',
+	'constexpr float ReturnBodyRadius = 26.0f;',
+	'Listener->SetBodyRadiusForBeat(IGNightThree::ReturnBodyRadius);',
+	'Listener->SetWaitHoldForBeat(IGNightThree::ReturnWaitHoldSeconds);',
+	'Listener->SetBeatHold(true);',
 	'constexpr float ReturnPassYaw = -90.0f;',
 	'constexpr float PassClearanceCentimeters = 70.0f;',
 	'const FName PassByBeatId(TEXT("Night3.PassBy"));'

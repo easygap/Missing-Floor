@@ -138,8 +138,28 @@ private:
 		TFunction<bool()> Done;
 		/** 구간 이름이 있으면 여기서 시간 구간이 바뀐다. */
 		const TCHAR* Segment = nullptr;
+		/** Press가 누르는 키. 박자 두드리기는 Q다. */
+		FKey Key = EKeys::E;
 	};
 	bool bInputVariant = false;
+	/**
+	 * night3av: 302호 입력 길을 마치고 그대로 계단과 옥상으로 5층에 올라가 밸브·벽 듣기·수첩·박자 두드리기로
+	 * 벽의 대답을 듣고, 복도에서 기다리는 그의 옆을 지나 403호로 돌아온다. 준비로 주는 것(열쇠 꾸러미,
+	 * 입주 때 들은 음성 메시지, 관리인과 손님·어둑시니 재우기)은 N3AV setup 줄에 적는다.
+	 */
+	bool bNight3Av = false;
+	/** -IGLeftoverRecord: 마스터 믹스를 녹음한다(-DeterministicAudio와 같이 쓴다). */
+	bool bRecordAV = false;
+	bool bRecordingAV = false;
+	FString LastAvDialogue;
+	FString LastAvCaption;
+	/** 포획 암전이 도는 중이었는가. 바뀔 때 capture_start·capture_end를 남긴다(검사가 잡힌 것을 놓치지 않게). */
+	bool bLastAvCapture = false;
+	int32 AvCaptures = 0;
+	double LastAvPositionAt = -10.0;
+	void WatchAV();
+	void AvEvent(const FString& What);
+	void BuildNightThreeContinuation();
 	/** lines: 새 문장을 한 줄씩 화면에 띄워 찍는다(번역 길이·글자·줄바꿈을 언어마다 본다). -Shots와 같이 쓴다. */
 	bool bLinesVariant = false;
 	int32 LineIndex = 0;

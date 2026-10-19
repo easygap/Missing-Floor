@@ -235,8 +235,11 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 			Bind(Target);
 		}
 	}
-	Bind(SpawnTarget(FName(TEXT("Storage.Wardrobe")), FVector(-112.0f, 0.0f, StorageZ + 100.0f), FRotator::ZeroRotator,
-		FVector(4.0f, 40.0f, 60.0f), NSLOCTEXT("IGMissingFloor", "LeftoverWardrobePrompt", "장롱 밀기"), 1.6f, 0.45f));
+	// 장롱은 남쪽(-Y)으로 밀리니 손은 앞면 북쪽 모서리(Y 20..41)를 잡는다. 예전에는 이 표적이 앞면 전체를 덮어
+	// 셋째 밤에 장롱에 숨으려고 겨누면 늘 「장롱 밀기」가 잡혔다(숨으려다 시끄럽게 밀었다). 북쪽 옆면은 그때
+	// 덧댄 것이 북벽 틈을 누르고 있어 설 자리가 없다. 가운데와 남쪽을 겨누면 숨는 자리가 잡힌다.
+	Bind(SpawnTarget(FName(TEXT("Storage.Wardrobe")), FVector(-112.0f, 30.5f, StorageZ + 100.0f), FRotator::ZeroRotator,
+		FVector(4.0f, 10.5f, 60.0f), NSLOCTEXT("IGMissingFloor", "LeftoverWardrobePrompt", "장롱 밀기"), 1.6f, 0.45f));
 	Bind(SpawnTarget(FName(TEXT("Storage.Lift")), BoardBase + FVector(-18.0f, -18.0f, 95.0f), FRotator(0.0f, -45.0f, 0.0f),
 		FVector(6.0f, 46.0f, 40.0f), NSLOCTEXT("IGMissingFloor", "LeftoverBoardLiftPrompt", "판 세워 받치기"), 1.2f, 0.3f));
 	Bind(SpawnTarget(FName(TEXT("Storage.Sack")), PartsSack + FVector(0.0f, 0.0f, 40.0f), FRotator::ZeroRotator,

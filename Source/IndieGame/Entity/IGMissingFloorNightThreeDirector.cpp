@@ -30,6 +30,7 @@
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Narrative/IGStoryHelpers.h"
 #include "Player/IGHorrorHUD.h"
+#include "Components/CapsuleComponent.h"
 #include "Player/IGPlayerCharacter.h"
 #include "Player/IGStressComponent.h"
 #include "TimerManager.h"
@@ -57,7 +58,10 @@ namespace IGNightThree
 	const FName WrenchTakenBeatId(TEXT("Night3.WrenchTaken"));
 	const FVector WorkGloveLocation(-135.0f, 774.0f, 1231.97f);
 	const FVector TunerToolCartLocation(-280.0f, 865.0f, 1201.0f);
-	const FVector ValveLocation(296.0f, 610.0f, 1266.0f);
+	// 첫째·둘째 칸 사이 스터드 틈(Y 620..640)으로 나온 가지관 끝의 손잡이. 벽 앞 4.5 cm에 걸린다.
+	// 예전 자리(296, 610)는 첫 칸 벽 뒤 31 cm라 틈으로 비스듬히 들여다봐야만 조준이 됐다.
+	// 가지관은 씬(BuildFifthFloorAnnex)이 같은 Y·Z로 짓는다.
+	const FVector ValveLocation(243.5f, 631.0f, 1266.0f);
 	const FVector ImpactMarkLocation(-10.0f, 585.0f, 1264.0f);
 	/**
 	 * T5 「새 벽 미장 시기」의 높이. 귀·주먹 판정이 Z 1277..1303을 쓰므로
@@ -218,13 +222,33 @@ namespace IGNightThree
 	// -- 비트 3-7 「귀환길」 ------------------------------------------------
 	constexpr float FourthFloorZ = AIGPrologueWorldScene::FourthFloorZ;
 	/**
-	 * 4층 복도, 계단코어와 403호 문 사이. 복도는 Y -385..-225로 깊이가 160cm뿐이라
+	 * 4층 복도, 계단코어와 403호 문 사이. 복도 안쪽은 Y -375..-235로 폭이 140 cm뿐이라
 	 * 사람 하나를 지나치는 일이 실제로 좁다 — 그것이 이 비트의 전부다.
 	 * 그녀는 서쪽(계단코어, X=-277.5)에서 내려와 동쪽 403호 문(X=101)으로 간다.
+	 * 그는 남쪽 벽에 귀를 대고 벽을 따라 조금씩 움직인다. 예전에는 복도 가운데(Y -300)와 벽 쪽(Y -334)을
+	 * 오가서, 가운데에서 멈추면 남북 어느 쪽에도 몸이 지나갈 틈(60 cm)이 없었다. 순간 이동으로 옆을
+	 * 건너뛰는 검사만 있어 실제 입력으로 지나가 보고서야 드러났다.
 	 */
-	const FVector ReturnPassPoint(-95.0f, -300.0f, FourthFloorZ);
-	/** 서 있는 것이 아니라 기다리는 것으로 읽히도록 복도를 가로질러 조금 움직인다. */
-	const FVector ReturnShufflePoint(-95.0f, -334.0f, FourthFloorZ);
+	const FVector ReturnPassPoint(-95.0f, -345.0f, FourthFloorZ);
+	/** 서 있는 것이 아니라 기다리는 것으로 읽히도록 벽을 따라 조금 움직인다. */
+	const FVector ReturnShufflePoint(-125.0f, -345.0f, FourthFloorZ);
+	/** 벽에 귀를 대고 팔을 붙인 몸. 북쪽에 84 cm가 남아 어깨를 스치며 지나간다. */
+	constexpr float ReturnBodyRadius = 26.0f;
+	/**
+	 * 대답에 멈춘 그가 이 장면에서 더 기다리는 시간. 평소 기다림(둘째 대답이면 12초)만으로는 옆을 지나
+	 * 403호에 들어서는 사이에 끝나서, 「안 따라오네.」 직후에 그가 열린 현관으로 따라 들어와 잡았다.
+	 * 집에 들어가 3초 동안 그를 보지 않으면 순찰로 돌려보내므로 그 전에 끝나지 않을 만큼만 늘린다.
+	 */
+	constexpr float ReturnWaitHoldSeconds = 25.0f;
+	/**
+	 * 계단에서 그를 붙들어 두는 것을 푸는 거리. 철계단 걸음(0.22)은 붙들린 그가 흘려듣는 크기라, 걸어
+	 * 내려오면 그는 벽에 귀를 댄 채 있다. 예전에는 그 발소리를 듣고 계단 밑까지 와서, 복도에서 그를 보기도
+	 * 전에 잡히는 일이 흔했다. 그녀가 4층 복도 바닥에 내려서서 그를 보거나 이 거리 안에 들어오면 평소대로
+	 * 듣는다. 계단 밑(-262, -292)에서 그까지 1.8 m 남짓이다.
+	 */
+	constexpr float ReturnHoldReleaseCentimeters = 220.0f;
+	/** 4층 복도 바닥에 서 있다고 보는 발 높이 오차. 첫 계단 디딤판이 18 cm다. */
+	constexpr float CorridorFloorToleranceCentimeters = 12.0f;
 	/** 그가 향한 쪽. 남쪽 벽에 귀를 대고 있다 — 1-4의 자세 그대로. */
 	constexpr float ReturnPassYaw = -90.0f;
 	/** 지나쳤다고 인정하는 여유. 몸 하나 폭보다 넉넉하게. */
@@ -246,6 +270,11 @@ namespace IGNightThree
 	constexpr float PassReliefCentimeters = 150.0f;
 	/** 계단을 내려와 복도에 들어선 자리에서 그가 보이는 거리. */
 	constexpr float ReturnHintRangeCentimeters = 600.0f;
+	/**
+	 * 잡힌 뒤 그를 다시 짚기까지. 깨어나는 생각(2.4초 뒤에 2.8초)이 먼저 지나가야 한다. 예전에는 화면이
+	 * 아직 덮인 동안 「또 저기 서 있어.」가 먼저 뜨고 「여기까지 끌려왔네.」가 뒤따랐다.
+	 */
+	constexpr float ReturnHintAfterWakeSeconds = 5.5f;
 	constexpr float ReturnPollSeconds = 0.25f;
 
 	const FName PassByBeatId(TEXT("Night3.PassBy"));
@@ -673,10 +702,15 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 	{
 		return false;
 	}
+	// 1층 부스 밸브와 넷째 밤 밸브가 쓰는 손잡이다. 원기둥은 틈 앞에 나오면 손잡이로 안 읽힌다.
+	UStaticMesh* RiserValveMesh = LoadObject<UStaticMesh>(
+		nullptr, TEXT("/Game/Meshes/SM_P3ValveWheelSmall.SM_P3ValveWheelSmall"));
+	UMaterialInterface* RiserValveMetal = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Game/Prototype/Materials/M_P3CabinetMetalUV.M_P3CabinetMetalUV"));
 	RiserValve->Configure(
-		CylinderMesh,
-		AnnexMetalMaterial,
-		FVector(16.0f, 16.0f, 5.0f),
+		RiserValveMesh ? RiserValveMesh : CylinderMesh,
+		RiserValveMesh && RiserValveMetal ? RiserValveMetal : AnnexMetalMaterial,
+		RiserValveMesh ? FVector::ZeroVector : FVector(16.0f, 16.0f, 5.0f),
 		NSLOCTEXT("IGMissingFloor", "ValvePrompt", "배관 밸브 열기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
@@ -1023,6 +1057,22 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			this, &AIGMissingFloorNightThreeDirector::HandleTruthConfirmed);
 	}
 	return true;
+}
+
+bool AIGMissingFloorNightThreeDirector::IsHoldingDawn(const UWorld* World)
+{
+	if (!World)
+	{
+		return false;
+	}
+	for (TActorIterator<AIGMissingFloorNightThreeDirector> It(const_cast<UWorld*>(World)); It; ++It)
+	{
+		if (It->bAnswerPending || It->GetWorldTimerManager().IsTimerActive(It->AnswerAftermathTimer))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 bool AIGMissingFloorNightThreeDirector::IsPlayerKnockTarget(
@@ -2678,6 +2728,11 @@ void AIGMissingFloorNightThreeDirector::StageReturnFigure()
 	Listener->ParkForBeat(
 		IGNightThree::ReturnPassPoint,
 		IGNightThree::ReturnPassYaw);
+	Listener->SetBodyRadiusForBeat(IGNightThree::ReturnBodyRadius);
+	Listener->SetWaitHoldForBeat(IGNightThree::ReturnWaitHoldSeconds);
+	// 그녀가 옥상과 계단에 있는 동안은 작은 소리를 흘려듣는다(뛰면 깬다). AdvanceReturn이 푼다.
+	Listener->SetBeatHold(true);
+	bReturnHoldsFigure = true;
 }
 
 void AIGMissingFloorNightThreeDirector::ReleaseReturnFigure()
@@ -2687,8 +2742,12 @@ void AIGMissingFloorNightThreeDirector::ReleaseReturnFigure()
 		return;
 	}
 	bFigureStaged = false;
+	bReturnHoldsFigure = false;
 	if (AIGListenerEntity* Listener = Entity.Get())
 	{
+		Listener->SetBodyRadiusForBeat(0.0f);
+		Listener->SetWaitHoldForBeat(0.0f);
+		Listener->SetBeatHold(false);
 		Listener->SetPatrolPoints(CorridorPatrolPoints);
 		// 연출이었지 실패가 아니다. 공격 티어는 건드리지 않는다.
 		Listener->ResetToPatrolStart(/*bRaiseAggression=*/false);
@@ -2718,26 +2777,57 @@ void AIGMissingFloorNightThreeDirector::AdvanceReturn()
 	}
 
 	// 복도에서 그를 처음 마주친 순간의 한 줄. 대답으로 그를 세울 수 있다는
-	// 것은 방금 벽에서 확인한 사실(T9)이지만, 폭 160cm 복도에서 그것이 떠오르지
-	// 않으면 거듭 잡히다 새벽을 맞는다. 잡힌 뒤에는 더 짧게 짚는다.
+	// 것은 방금 벽에서 확인한 사실(T9)이지만, 폭 140cm 복도에서 그것이 떠오르지
+	// 않으면 거듭 잡히다 새벽을 맞는다. 잡힌 뒤에는 더 짧게 짚는다. 본 대로 말한다.
+	// 기는 몸이라 「서 있다」고 하지 않고, 소리를 듣고 이쪽으로 오는 중이면 그렇게 말한다.
+	const EIGListenerState HisState = Listener->GetListenerState();
+	const bool bAwake = !bCaughtDuringReturn
+		|| GetWorld()->GetTimeSeconds() - ReturnCaughtAtSeconds >= IGNightThree::ReturnHintAfterWakeSeconds;
 	if (!bReturnHintShown
 		&& !bPassedWhileWaiting
-		&& Listener->GetListenerState() != EIGListenerState::Waiting
+		&& bAwake
+		&& HisState != EIGListenerState::Waiting
 		&& IsReturnFigureInSight())
 	{
 		bReturnHintShown = true;
+		const bool bComing = HisState == EIGListenerState::Investigating
+			|| HisState == EIGListenerState::Chasing;
 		AIGHorrorHUD::PushThought(
 			this,
 			bCaughtDuringReturn
 				? NSLOCTEXT(
 					"IGMissingFloor",
 					"N3ReturnHintAgain",
-					"또 저기 서 있어.")
-				: NSLOCTEXT(
-					"IGMissingFloor",
-					"N3ReturnHint",
-					"저기 있다. 움직이지 않고 서 있어."),
+					"또 저기 있어.")
+				: bComing
+					? NSLOCTEXT(
+						"IGMissingFloor",
+						"N3ReturnHintComing",
+						"저기 있다. 이쪽으로 와.")
+					: NSLOCTEXT(
+						"IGMissingFloor",
+						"N3ReturnHint",
+						"저기 있다. 벽에 귀를 대고 있어."),
 			3.4f);
+	}
+
+	// 그녀가 복도 바닥에 내려서서 그를 봤거나 가까이 왔다. 여기서부터는 평소대로 듣는다 — 대답하거나
+	// 숨을 죽여야 한다.
+	const float FeetZ = PlayerCharacter->GetActorLocation().Z
+		- PlayerCharacter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const bool bOnCorridorFloor = FMath::Abs(FeetZ - IGNightThree::FourthFloorZ)
+		<= IGNightThree::CorridorFloorToleranceCentimeters;
+	if (bReturnHoldsFigure
+		&& bOnCorridorFloor
+		&& (bReturnHintShown
+			|| FVector::Dist(PlayerCharacter->GetActorLocation(), Listener->GetActorLocation())
+				< IGNightThree::ReturnHoldReleaseCentimeters))
+	{
+		bReturnHoldsFigure = false;
+		if (AIGListenerEntity* HeldFigure = Entity.Get())
+		{
+			HeldFigure->SetBeatHold(false);
+		}
 	}
 
 	// 「그가 멈춰 기다리는 옆을 걸어 지나가는」. 서쪽에 있었다가 그가 기다리는
@@ -2889,6 +2979,7 @@ void AIGMissingFloorNightThreeDirector::NotifyCaptureReset()
 		bReliefPending = false;
 		// 잡힌 뒤에 그를 다시 보면 한 번 더, 더 짧게 짚는다.
 		bCaughtDuringReturn = true;
+		ReturnCaughtAtSeconds = GetWorld()->GetTimeSeconds();
 		bReturnHintShown = false;
 		bFigureStaged = false;
 		StageReturnFigure();

@@ -10,6 +10,7 @@
 #include "Sequence/IGHorrorRegressionProbe.h"
 #include "Sequence/IGLiningProbe.h"
 #include "Sequence/IGLeftoverProbe.h"
+#include "Sequence/IGAimReachProbe.h"
 #include "Sequence/IGNightFlowProbe.h"
 #include "Sequence/IGSiteCheckProbe.h"
 #include "Sequence/IGNightFourHammerProbe.h"
@@ -496,6 +497,16 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 			}
 			return;
 		}
+		// 밤과 낮을 차례로 열고 켜진 상호작용 물체마다 사람이 설 자리에서 시선이 닿는지 보는 검사.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGAimReachProbe")))
+		{
+			if (ManagerPatrol) { ManagerPatrol->SetActorTickEnabled(false); }
+			if (AIGAimReachProbe* AimProbe = GetWorld()->SpawnActor<AIGAimReachProbe>())
+			{
+				AimProbe->Configure(Player.Get());
+			}
+			return;
+		}
 		// 밤의 일을 마친 것과 새벽을 나눈 흐름(침대의 아침까지 쉬기, 읽는 동안 서는 시계)을 겪는 검사.
 		if (FParse::Param(FCommandLine::Get(), TEXT("IGNightFlowProbe")))
 		{
@@ -937,7 +948,9 @@ void AIGListenerGreyboxDirector::PlaySettleEvent()
 			this, Wave, Location, FMath::FRandRange(0.50f, 0.64f) * Weight,
 			FMath::FRandRange(0.93f, 1.07f) * Depth, 180.0f, 1700.0f, EIGAudioBus::World);
 	}
-	AIGHorrorHUD::PushAudioCaptionAt(this, Caption, 2.0f, Location);
+	// 건물이 저절로 내는 소리다. 진행에 쓰이지 않으므로 기본(중요한 소리)에서는 띄우지 않고
+	// 「모든 소리」를 고른 사람에게만 띄운다. 그의 소리와 헷갈리게 하는 장치라도 그 판단은 소리로 한다.
+	AIGHorrorHUD::PushBackgroundAudioCaptionAt(this, Caption, 2.0f, Location);
 }
 
 void AIGListenerGreyboxDirector::DestroyPartialStage()

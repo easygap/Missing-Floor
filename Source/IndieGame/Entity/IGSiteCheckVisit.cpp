@@ -87,7 +87,7 @@ namespace IGSiteCheckVisit
 	constexpr float AnnexMaxX = 390.0f;
 	constexpr float AnnexMinY = 462.0f;
 	constexpr float AnnexMaxY = 940.0f;
-	constexpr float RoofZ = 1200.0f;
+	constexpr float RoofZ = AIGPrologueWorldScene::RoofZ;
 	/** 그녀의 발이 이보다 높으면 옥상에 올라와 있다. */
 	constexpr float RoofLevelZ = 1100.0f;
 

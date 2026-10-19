@@ -1,4 +1,4 @@
-#include "Environment/IGStoreClerk.h"
+﻿#include "Environment/IGStoreClerk.h"
 
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGToneSequenceSoundWave.h"

@@ -85,10 +85,11 @@ Require-All $beat @(
 ) '문에서 재는 세 점'
 
 # §5.5의 폰은 관리실이 아니라 403호 안에 있다. 처음 넣을 때 슬래브 높이를
-# 빠뜨려서 9미터 아래 관리실 바닥에 놓여 있었다.
+# 빠뜨려서 9미터 아래 관리실 바닥에 놓여 있었다. 그 뒤 +4 cm는 현관 신발 단(8 cm) 속이라
+# 시선이 단에 먼저 맞아 조준되지 않았다(2026-10-19 조준 감사). 단 위에 얹는다.
 Require-All $puzzleTwo @(
 	'constexpr float FourthFloorZ = AIGPrologueWorldScene::FourthFloorZ;',
-	'const FVector PhoneAtDoorLocation(150.0f, -196.0f, FourthFloorZ + 4.0f);'
+	'const FVector PhoneAtDoorLocation(150.0f, -196.0f, FourthFloorZ + 8.7f);'
 ) '§5.5 phone placement'
 
 # --- 순서. 한 번 → 문구멍 → 폰 → 3연 → 기다림 → 끌림 ----------------------

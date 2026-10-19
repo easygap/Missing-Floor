@@ -131,6 +131,11 @@ public:
 	bool IsFigureInCorridor() const { return bFigureStaged; }
 	/** 둘-쉬고-하나를 두드리고 벽의 대답을 기다리는 8초다. 그동안 다른 괴이는 오지 않는다. */
 	bool IsAwaitingWallAnswer() const { return bAnswerPending; }
+	/**
+	 * 박자를 두드린 뒤 벽이 대답하고 그 여운이 끝나기 전이다. 05:30이 이 사이에 오면 새벽 유예가
+	 * 기다린다(모두 합쳐 40초). 대답을 듣는 순간을 시간 전환이 자르지 않는다.
+	 */
+	static bool IsHoldingDawn(const UWorld* World);
 	/** 검사 전용. 벽의 대답을 기다리는 8초를 흉내 낸다. */
 	void SetAnswerPendingForProbe(const bool bPending) { bAnswerPending = bPending; }
 	/** 5층 녹음기를 듣고 있다. 그동안 다른 괴이는 오지 않는다. */
@@ -314,6 +319,10 @@ private:
 	/** 복도에서 그를 처음 본 순간의 한 줄. 잡힌 뒤에는 한 번 더. */
 	bool bReturnHintShown = false;
 	bool bCaughtDuringReturn = false;
+	/** 귀환길에 잡혀 다시 세워진 때. 깨어나는 생각이 지나간 뒤에야 그를 다시 짚는다. */
+	double ReturnCaughtAtSeconds = -1000.0;
+	/** 계단을 내려오는 동안 그를 벽 앞에 붙들어 둔다. 그녀가 그를 보거나 가까이 오면 푼다. */
+	bool bReturnHoldsFigure = false;
 	/** 옆을 지난 뒤 몇 걸음 더 가면 참았던 숨이 나간다. */
 	bool bReliefPending = false;
 	/** 문턱이 아니라 방 안에 머문 시간. 돌아볼 틈을 둔다. */

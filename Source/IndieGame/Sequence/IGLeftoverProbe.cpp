@@ -1,5 +1,6 @@
 ﻿#include "Sequence/IGLeftoverProbe.h"
 
+#include "AudioMixerBlueprintLibrary.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Core/IGGameInstance.h"
 #include "Components/CapsuleComponent.h"
@@ -39,6 +40,7 @@
 #include "Misc/Paths.h"
 #include "Narrative/IGMissingFloorHints.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "Narrative/IGStoryHelpers.h"
 #include "Player/IGFlashlightComponent.h"
 #include "Player/IGHorrorHUD.h"
 #include "Player/IGInteractionComponent.h"
@@ -84,7 +86,9 @@ void AIGLeftoverProbe::Configure(AIGPrologueWorldScene* InScene, AIGPlayerCharac
 	bDawnBraceVariant = Variant == TEXT("dawnbrace");
 	bNightTwoOnly = Variant == TEXT("night2");
 	bWallOnly = Variant == TEXT("wall");
-	bInputVariant = Variant == TEXT("input");
+	bNight3Av = Variant == TEXT("night3av");
+	bInputVariant = Variant == TEXT("input") || bNight3Av;
+	bRecordAV = bNight3Av && FParse::Param(FCommandLine::Get(), TEXT("IGLeftoverRecord"));
 	bLinesVariant = Variant == TEXT("lines");
 	if (UIGGameInstance* GameInstance = Cast<UIGGameInstance>(GetGameInstance()))
 	{
@@ -183,6 +187,14 @@ void AIGLeftoverProbe::Finish()
 		return;
 	}
 	Phase = -1;
+	if (bRecordingAV)
+	{
+		const FString Directory = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Night3AV")));
+		IFileManager::Get().MakeDirectory(*Directory, true);
+		UAudioMixerBlueprintLibrary::StopRecordingOutput(this, EAudioRecordingExportType::WavFile, TEXT("mix"), Directory);
+		AvEvent(TEXT("record_stop"));
+		bRecordingAV = false;
+	}
 	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_PROBE %s failures=%d seconds=%.1f"),
 		Failures ? TEXT("FAIL") : TEXT("PASS"), Failures, TotalSeconds);
 	// 배포본(Shipping)은 로그를 남기지 않는다. 성능 검사가 경로를 끝까지 돌았는지 알 수 있게 결과를 파일로도 쓴다.
@@ -450,7 +462,8 @@ void AIGLeftoverProbe::TickFrames()
 
 void AIGLeftoverProbe::Shoot(const TCHAR* Name)
 {
-	if (!bShots)
+	// 녹화 실행(night3av -Record)도 오프스크린으로 그리므로 어두운 장면과 덧댄 것을 몇 장 남긴다.
+	if (!bShots && !bRecordAV)
 	{
 		return;
 	}
@@ -995,6 +1008,21 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		{
 			// 여기서부터는 순간 이동하지 않는다. 302호 문 밖 복도에서 시작한다.
 			Stand(FVector(-30.0f, -330.0f, 600.0f), FVector(-30.0f, -150.0f, 660.0f));
+			if (bNight3Av)
+			{
+				// 준비(상태): 관리실에서 열쇠 꾸러미를 가져왔고, 입주 날 음성 메시지(「둘, 하나」)를 들었다.
+				// 관리인은 세워 둔다(이 길은 302호와 5층을 본다. 관리인 순찰은 열쇠 찾기 검사가 본다).
+				IGStory::AddState(this, FGameplayTag::RequestGameplayTag(FName(TEXT("State.MissingFloor.HasStairKey")), false));
+				Narrative->RegisterTruthSource(EIGMissingFloorTruth::WaitingForAnAnswer, EIGMissingFloorSource::AnswerRhythmVoicemail);
+				Mok->SetActorTickEnabled(false);
+				AvEvent(TEXT("setup teleport=3f_corridor_outside_302 state=HasStairKey,AnswerRhythmVoicemail asleep=manager,guest,darkness,listener"));
+				if (bRecordAV)
+				{
+					UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 900.0f);
+					bRecordingAV = true;
+					AvEvent(TEXT("record_start"));
+				}
+			}
 			BuildStorageInputRoute();
 			Next(200);
 			return;
@@ -1849,6 +1877,10 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 
 	// -- 실제 입력 길(=input) ------------------------------------------------------------
 	case 200:
+		if (bNight3Av)
+		{
+			WatchAV();
+		}
 		if (TickInputRoute(DeltaSeconds))
 		{
 			UE_LOG(LogIndieGame, Display, TEXT("INPUT_ROUTE done seconds=%.1f"), PhaseSeconds);
@@ -2382,6 +2414,14 @@ bool AIGLeftoverProbe::TickInputRoute(const float DeltaSeconds)
 	case EInputStep::Press:
 		if (!bInputKeyDown)
 		{
+			// 초점은 10~15 Hz 타이머로 고쳐진다. 누르는 순간 게임이 하듯 한 번 다시 잡고 본다.
+			if (AIGPlayerCharacter* Character = Player.Get())
+			{
+				if (UIGInteractionComponent* Interaction = Character->FindComponentByClass<UIGInteractionComponent>())
+				{
+					Interaction->RefreshFocus();
+				}
+			}
 			AActor* Focus = FocusedActor();
 			if (Step_.Expect.IsValid())
 			{
@@ -2389,17 +2429,33 @@ bool AIGLeftoverProbe::TickInputRoute(const float DeltaSeconds)
 				Check(bOnTarget, *FString::Printf(TEXT("%s_focus"), Step_.Name));
 				if (!bOnTarget)
 				{
-					UE_LOG(LogIndieGame, Display, TEXT("INPUT_FOCUS %s want=%s got=%s cam=%s"), Step_.Name,
-						*Step_.Expect->GetName(), Focus ? *Focus->GetName() : TEXT("none"), *CameraLocation().ToCompactString());
+					// 시선이 처음 맞은 것. 보이지 않는 충돌이 표적을 가리는지 여기서 바로 보인다.
+					FString FirstHit(TEXT("none"));
+					if (APlayerController* Controller = GetWorld()->GetFirstPlayerController())
+					{
+						FHitResult Hit;
+						FCollisionQueryParams Params(SCENE_QUERY_STAT(IGLeftoverFocusProbe), false, Controller->GetPawn());
+						const FVector Start = CameraLocation();
+						const FVector End = Start + Controller->GetControlRotation().Vector() * 220.0f;
+						if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+						{
+							FirstHit = FString::Printf(TEXT("%s/%s@%s"), Hit.GetActor() ? *Hit.GetActor()->GetName() : TEXT("?"),
+								Hit.GetComponent() ? *Hit.GetComponent()->GetName() : TEXT("?"), *Hit.ImpactPoint.ToCompactString());
+						}
+					}
+					UE_LOG(LogIndieGame, Display, TEXT("INPUT_FOCUS %s want=%s got=%s cam=%s first_hit=%s target_enabled=%d"), Step_.Name,
+						*Step_.Expect->GetName(), Focus ? *Focus->GetName() : TEXT("none"), *CameraLocation().ToCompactString(), *FirstHit,
+						Step_.Expect->GetClass()->ImplementsInterface(UIGInteractable::StaticClass())
+							? (IIGInteractable::Execute_CanInteract(Step_.Expect.Get(), Player.Get()) ? 1 : 0) : -1);
 				}
 			}
-			SendKey(EKeys::E, true);
+			SendKey(Step_.Key, true);
 			bInputKeyDown = true;
 			InputStepSeconds = 0.0f;
 		}
 		else if (InputStepSeconds >= Step_.Value)
 		{
-			SendKey(EKeys::E, false);
+			SendKey(Step_.Key, false);
 			bInputKeyDown = false;
 			bDone = true;
 		}
@@ -2429,6 +2485,252 @@ bool AIGLeftoverProbe::TickInputRoute(const float DeltaSeconds)
 		InputStepSeconds = 0.0f;
 	}
 	return false;
+}
+
+void AIGLeftoverProbe::AvEvent(const FString& What)
+{
+	const UWorld* World = GetWorld();
+	UE_LOG(LogIndieGame, Display, TEXT("N3AV t=%.3f %s"), World ? World->GetTimeSeconds() : 0.0, *What);
+}
+
+void AIGLeftoverProbe::WatchAV()
+{
+	const UWorld* World = GetWorld();
+	const APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
+	const AIGHorrorHUD* Hud = PC ? Cast<AIGHorrorHUD>(PC->GetHUD()) : nullptr;
+	if (Hud)
+	{
+		const FString Line = Hud->GetActiveDialogueLineForTesting().ToString();
+		if (Line != LastAvDialogue)
+		{
+			AvEvent(Line.IsEmpty() ? FString(TEXT("dialogue_end"))
+				: FString::Printf(TEXT("dialogue speaker=\"%s\" line=\"%s\""), *Hud->GetActiveDialogueSpeakerForTesting().ToString(), *Line));
+			LastAvDialogue = Line;
+		}
+		const FString Caption = Hud->GetActiveAudioCaptionForTesting().ToString();
+		if (Caption != LastAvCaption)
+		{
+			AvEvent(Caption.IsEmpty() ? FString(TEXT("caption_end")) : FString::Printf(TEXT("caption \"%s\""), *Caption));
+			LastAvCaption = Caption;
+		}
+	}
+	bool bCapture = false;
+	if (World)
+	{
+		for (TActorIterator<AIGNightLoopDirector> It(const_cast<UWorld*>(World)); It; ++It)
+		{
+			bCapture |= It->IsCaptureResetInFlight();
+		}
+	}
+	if (bCapture != bLastAvCapture)
+	{
+		bLastAvCapture = bCapture;
+		if (bCapture)
+		{
+			++AvCaptures;
+		}
+		AvEvent(FString::Printf(TEXT("%s count=%d segment=%s"), bCapture ? TEXT("capture_start") : TEXT("capture_end"),
+			AvCaptures, *InputSegment));
+	}
+	if (World && Player.IsValid() && World->GetTimeSeconds() - LastAvPositionAt >= 0.5)
+	{
+		LastAvPositionAt = World->GetTimeSeconds();
+		const FVector At = Player->GetActorLocation();
+		const FRotator View = PC ? PC->GetControlRotation() : FRotator::ZeroRotator;
+		AvEvent(FString::Printf(TEXT("player at=%.1f,%.1f,%.1f yaw=%.1f pitch=%.1f segment=%s"), At.X, At.Y, At.Z, View.Yaw,
+			View.Pitch, *InputSegment));
+	}
+}
+
+void AIGLeftoverProbe::BuildNightThreeContinuation()
+{
+	// 302호에서 나와 계단으로 4층, 옥상 계단, 옥상, 5층. 좌표는 관리인 열쇠 찾기 길(IGManagerPatrol)과
+	// 밤3 감독(IGMissingFloorNightThreeDirector)의 것을 그대로 쓴다. 문은 실제로 E로 연다.
+	const auto Walk = [this](const FVector& Goal, const float Tolerance, const TCHAR* Name, const TCHAR* Segment = nullptr)
+	{
+		FInputStep S; S.Kind = EInputStep::Walk; S.Point = Goal; S.Value = Tolerance; S.Name = Name; S.Segment = Segment;
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto AimPoint = [this](const FVector& Point, const TCHAR* Name)
+	{
+		FInputStep S; S.Kind = EInputStep::Aim; S.Point = Point; S.Name = Name;
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto Press = [this](AActor* Expect, const float Seconds, const TCHAR* Name, const FKey& Key = EKeys::E)
+	{
+		FInputStep S; S.Kind = EInputStep::Press; S.Value = Seconds; S.Name = Name; S.Expect = Expect; S.Key = Key;
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto Wait = [this](const float Seconds)
+	{
+		FInputStep S; S.Kind = EInputStep::Wait; S.Value = Seconds; S.Name = TEXT("wait");
+		InputSteps.Add(MoveTemp(S));
+	};
+	const auto Until = [this](TFunction<bool()> Done, const float Limit, const TCHAR* Name)
+	{
+		FInputStep S; S.Kind = EInputStep::Until; S.Value = Limit; S.Name = Name; S.Done = MoveTemp(Done);
+		InputSteps.Add(MoveTemp(S));
+	};
+	AIGMissingFloorNightThreeDirector* Three = nullptr;
+	for (TActorIterator<AIGMissingFloorNightThreeDirector> It(GetWorld()); It; ++It)
+	{
+		Three = *It;
+	}
+	if (!Three)
+	{
+		Check(false, TEXT("n3av_night_three_director"));
+		return;
+	}
+	TWeakObjectPtr<AIGMissingFloorNightThreeDirector> WeakThree(Three);
+	const float ThirdZ = AIGPrologueWorldScene::GetStoreyFloorZ(2);
+	const float FourthZ = AIGPrologueWorldScene::GetStoreyFloorZ(3);
+	constexpr float RoofZ = AIGPrologueWorldScene::RoofZ;
+
+	// 3층 복도에서 서쪽 계단탑으로, 디딤판 점을 밟아 4층으로.
+	Walk(FVector(-150.0f, -305.0f, ThirdZ), 30.0f, TEXT("n3av_third_corridor_west"), TEXT("to_roof"));
+	Walk(AIGPrologueWorldScene::GetStairDoorwayFeet(2), 28.0f, TEXT("n3av_third_stair_door"));
+	TArray<FVector> Climb;
+	AIGPrologueWorldScene::GetStairClimbFeet(2, Climb);
+	for (int32 Index = 1; Index + 1 < Climb.Num(); ++Index)
+	{
+		Walk(Climb[Index], 26.0f, TEXT("n3av_climb"));
+	}
+	Walk(AIGPrologueWorldScene::GetStairDoorwayFeet(3), 28.0f, TEXT("n3av_fourth_stair_door"));
+	// 4층 서쪽 끝 옥상 계단.
+	Walk(FVector(-262.0f, -292.0f, FourthZ), 25.0f, TEXT("n3av_roof_stair_foot"));
+	Walk(FVector(-277.5f, -238.0f, FourthZ), 22.0f, TEXT("n3av_roof_lower_flight"));
+	Walk(FVector(-277.5f, -150.0f, FourthZ + 72.0f), 22.0f, TEXT("n3av_roof_half_landing"));
+	Walk(FVector(-277.5f, -125.0f, FourthZ + 72.0f), 22.0f, TEXT("n3av_roof_half_landing_end"));
+	Walk(FVector(-277.5f, -100.0f, 980.0f), 22.0f, TEXT("n3av_roof_upper_flight"));
+	Walk(FVector(-277.5f, 110.0f, 1142.3f), 22.0f, TEXT("n3av_below_roof_gate"));
+	if (AIGSwingDoor* Gate = Three->GetStairGate())
+	{
+		AimPoint(Gate->GetLatchSoundLocation(), TEXT("n3av_aim_roof_gate"));
+		Press(Gate, 0.3f, TEXT("n3av_open_roof_gate"));
+		TWeakObjectPtr<AIGSwingDoor> WeakGate(Gate);
+		Until([WeakGate]() { return WeakGate.IsValid() && WeakGate->IsOpen() && !WeakGate->IsSwinging(); }, 6.0f, TEXT("n3av_roof_gate_open"));
+	}
+	Walk(FVector(-277.5f, 208.5f, RoofZ), 22.0f, TEXT("n3av_roof_top_tread"));
+	Walk(FVector(-277.5f, 245.0f, RoofZ), 22.0f, TEXT("n3av_roof_outside"), TEXT("roof"));
+	// 문틀 동쪽 기둥 끝(-222.5, 226)을 30 cm 넘게 비켜 북쪽으로 돌아 통로에 든다.
+	Walk(FVector(-255.0f, 262.0f, RoofZ), 22.0f, TEXT("n3av_roof_step_north"));
+	Walk(FVector(-180.0f, 262.0f, RoofZ), 22.0f, TEXT("n3av_passage_west"));
+	Walk(FVector(-150.0f, 240.0f, RoofZ), 25.0f, TEXT("n3av_passage_mouth"));
+	Walk(FVector(130.0f, 220.0f, RoofZ), 25.0f, TEXT("n3av_passage_east"));
+	Walk(FVector(130.0f, 390.0f, RoofZ), 22.0f, TEXT("n3av_annex_front"));
+	if (AIGSwingDoor* Gate = Three->GetAnnexGate())
+	{
+		AimPoint(Gate->GetLatchSoundLocation(), TEXT("n3av_aim_annex_gate"));
+		Press(Gate, 0.3f, TEXT("n3av_open_annex_gate"));
+		TWeakObjectPtr<AIGSwingDoor> WeakGate(Gate);
+		Until([WeakGate]() { return WeakGate.IsValid() && WeakGate->IsOpen() && !WeakGate->IsSwinging(); }, 6.0f, TEXT("n3av_annex_gate_open"));
+	}
+	// 5층. 밸브를 열고 두 칸에 귀를 대 견준다.
+	Walk(FVector(130.0f, 520.0f, RoofZ), 25.0f, TEXT("n3av_annex_inside"), TEXT("annex"));
+	Walk(FVector(185.0f, 631.0f, RoofZ), 20.0f, TEXT("n3av_walk_to_valve"));
+	if (AIGMissingFloorEvidence* Valve = Three->GetRiserValve())
+	{
+		AimPoint(Valve->GetActorLocation(), TEXT("n3av_aim_valve"));
+		Until([this]() { Shoot(TEXT("n3av_valve_in_gap")); return true; }, 0.1f, TEXT("av_shot_valve"));
+		Wait(0.4f);
+		Press(Valve, 1.2f, TEXT("n3av_open_valve"));
+	}
+	Until([WeakThree]() { return WeakThree.IsValid() && WeakThree->IsValveOpen(); }, 3.0f, TEXT("n3av_valve_open"));
+	Wait(2.5f);
+	Walk(FVector(200.0f, 534.0f, RoofZ), 18.0f, TEXT("n3av_walk_to_bay0"));
+	AimPoint(FVector(247.0f, 534.0f, 1290.0f), TEXT("n3av_aim_listen_bay0"));
+	Press(Three->GetWallListen(0), 1.1f, TEXT("n3av_listen_bay0"));
+	Wait(3.5f);
+	Walk(FVector(200.0f, 674.0f, RoofZ), 18.0f, TEXT("n3av_walk_to_bay1"));
+	AimPoint(FVector(247.0f, 674.0f, 1290.0f), TEXT("n3av_aim_listen_bay1"));
+	Press(Three->GetWallListen(1), 1.1f, TEXT("n3av_listen_bay1"));
+	Wait(4.0f);
+	// 수첩을 읽는다(펴고, 읽고, 덮는다). 덮은 뒤에 벽의 정체가 선다.
+	Walk(FVector(-90.0f, 715.0f, RoofZ), 18.0f, TEXT("n3av_walk_to_notebook"), TEXT("notebook"));
+	if (AIGReadableNote* Notebook = Three->GetTunerNotebook())
+	{
+		AimPoint(Notebook->GetActorLocation(), TEXT("n3av_aim_notebook"));
+		Press(Notebook, 0.2f, TEXT("n3av_open_notebook"));
+		Wait(6.0f);
+		Press(nullptr, 0.15f, TEXT("n3av_close_notebook"));
+	}
+	Until([this]() { return GetNarrative() && GetNarrative()->HasTruth(EIGMissingFloorTruth::SomeoneInTheWall); }, 10.0f,
+		TEXT("n3av_wall_identified"));
+	Wait(5.0f);
+	// 대답하는 벽 앞에서 박자대로 Q를 세 번(둘, 쉬고, 하나). 첫째→둘째 0.4초, 둘째→셋째 0.8초.
+	Walk(FVector(200.0f, 700.0f, RoofZ), 18.0f, TEXT("n3av_walk_to_answer_wall"), TEXT("answer"));
+	AimPoint(FVector(247.0f, 700.0f, 1266.0f), TEXT("n3av_aim_answer_wall"));
+	Until([WeakThree]() { return WeakThree.IsValid() && WeakThree->GetAnswerTarget() && WeakThree->GetAnswerTarget()->IsInteractionEnabled(); },
+		8.0f, TEXT("n3av_answer_wall_ready"));
+	// 준비(상태): 재워 두었던 위층 사람을 대답 직전에 깨운다. 게임에서 그는 이 밤 내내 깨어 있다. 대답과
+	// 같은 프레임에 밤3 감독이 그를 4층 복도 벽 앞에 세우고 붙든다(깨우기가 붙들림을 지우므로 먼저 깨운다).
+	Until([this]()
+	{
+		for (TActorIterator<AIGListenerEntity> It(GetWorld()); It; ++It)
+		{
+			It->SetDormant(false);
+		}
+		AvEvent(TEXT("setup listener_awake=1"));
+		return true;
+	}, 1.0f, TEXT("n3av_wake_listener"));
+	Press(Three->GetAnswerTarget(), 0.08f, TEXT("n3av_rhythm_tap1"), EKeys::Q);
+	Wait(0.32f);
+	Press(Three->GetAnswerTarget(), 0.08f, TEXT("n3av_rhythm_tap2"), EKeys::Q);
+	Wait(0.72f);
+	Press(Three->GetAnswerTarget(), 0.08f, TEXT("n3av_rhythm_tap3"), EKeys::Q);
+	Until([this]() { return GetNarrative() && GetNarrative()->HasTruth(EIGMissingFloorTruth::WaitingForAnAnswer); }, 20.0f,
+		TEXT("n3av_wall_answers"));
+	Wait(9.0f);
+	// 귀환. 옥상을 지나 4층으로 내려온다.
+	Walk(FVector(130.0f, 390.0f, RoofZ), 22.0f, TEXT("n3av_back_annex_front"), TEXT("return"));
+	Walk(FVector(130.0f, 220.0f, RoofZ), 25.0f, TEXT("n3av_back_passage_east"));
+	Walk(FVector(-150.0f, 240.0f, RoofZ), 25.0f, TEXT("n3av_back_passage_mouth"));
+	Walk(FVector(-180.0f, 262.0f, RoofZ), 22.0f, TEXT("n3av_back_passage_west"));
+	Walk(FVector(-255.0f, 262.0f, RoofZ), 22.0f, TEXT("n3av_back_roof_step_north"));
+	Walk(FVector(-277.5f, 245.0f, RoofZ), 22.0f, TEXT("n3av_back_roof_outside"));
+	Walk(FVector(-277.5f, 208.5f, RoofZ), 22.0f, TEXT("n3av_back_top_tread"));
+	Walk(FVector(-277.5f, 110.0f, 1142.3f), 22.0f, TEXT("n3av_back_below_gate"));
+	Walk(FVector(-277.5f, -100.0f, 980.0f), 22.0f, TEXT("n3av_back_upper_flight"));
+	Walk(FVector(-277.5f, -125.0f, FourthZ + 72.0f), 22.0f, TEXT("n3av_back_half_landing_end"));
+	Walk(FVector(-277.5f, -150.0f, FourthZ + 72.0f), 22.0f, TEXT("n3av_back_half_landing"));
+	Walk(FVector(-277.5f, -238.0f, FourthZ), 22.0f, TEXT("n3av_back_lower_flight"));
+	Walk(FVector(-262.0f, -292.0f, FourthZ), 25.0f, TEXT("n3av_back_roof_stair_foot"));
+	// 복도의 그(남쪽 벽에 귀를 대고 있다)를 계단 밑에서 보자마자 박자로 대답해 세운 뒤, 북쪽으로 어깨를
+	// 스치며 옆을 지나 403호로 간다. 그를 보면 붙들림이 풀려 걸음 소리를 듣기 시작한다.
+	AimPoint(FVector(-110.0f, -345.0f, FourthZ + 60.0f), TEXT("n3av_look_at_figure"));
+	Until([this]() { Shoot(TEXT("n3av_figure_at_wall")); return true; }, 0.1f, TEXT("av_shot_figure"));
+	Press(nullptr, 0.08f, TEXT("n3av_answer_tap1"), EKeys::Q);
+	Wait(0.32f);
+	Press(nullptr, 0.08f, TEXT("n3av_answer_tap2"), EKeys::Q);
+	Wait(0.72f);
+	Press(nullptr, 0.08f, TEXT("n3av_answer_tap3"), EKeys::Q);
+	Until([this]()
+	{
+		for (TActorIterator<AIGListenerEntity> It(GetWorld()); It; ++It)
+		{
+			if (It->GetListenerState() == EIGListenerState::Waiting)
+			{
+				return true;
+			}
+		}
+		return false;
+	}, 6.0f, TEXT("n3av_figure_waits"));
+	Walk(FVector(-200.0f, -270.0f, FourthZ), 22.0f, TEXT("n3av_step_into_corridor"), TEXT("pass"));
+	Walk(FVector(-150.0f, -268.0f, FourthZ), 20.0f, TEXT("n3av_pass_north_side"));
+	Walk(FVector(-110.0f, -268.0f, FourthZ), 20.0f, TEXT("n3av_pass_shoulder"));
+	Until([this]() { Shoot(TEXT("n3av_passing_beside")); return true; }, 0.1f, TEXT("av_shot_pass"));
+	Walk(FVector(-40.0f, -268.0f, FourthZ), 20.0f, TEXT("n3av_pass_beside"));
+	Walk(FVector(150.0f, -300.0f, FourthZ), 25.0f, TEXT("n3av_passed_east"));
+	Until([this]() { return GetNarrative() && GetNarrative()->HasBeatPlayed(FName(TEXT("Night3.PassBy"))); }, 3.0f,
+		TEXT("n3av_passed_while_waiting"));
+	Walk(FVector(AIGPrologueWorldScene::HomeDoorX, -290.0f, FourthZ), 22.0f, TEXT("n3av_home_door"), TEXT("home"));
+	Walk(FVector(AIGPrologueWorldScene::HomeDoorX, -160.0f, FourthZ), 25.0f, TEXT("n3av_inside_403"));
+	Wait(4.0f);
+	Until([this]() { return GetNarrative() && GetNarrative()->HasBeatPlayed(AIGNightPhaseDirector::GoalBeatId(3)); }, 6.0f,
+		TEXT("n3av_night_goal"));
+	// 조심해서 지난 길이다. 계단 밑이나 집 안에서 잡혔으면 귀환길 연출이 무너진 것이다.
+	Wait(3.0f);
+	Until([this]() { return AvCaptures == 0 && !bLastAvCapture; }, 0.1f, TEXT("n3av_no_capture"));
 }
 
 void AIGLeftoverProbe::BuildStorageInputRoute()
@@ -2482,6 +2784,12 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	// 복도에서 302호로 걸어 들어간다.
 	Walk(FVector(-30.0f, -236.0f, 690.0f), 22.0f, TEXT("input_walk_to_302_door"), TEXT("enter_302"));
 	Walk(FVector(-32.0f, -125.0f, 690.0f), 25.0f, TEXT("input_walk_into_302"));
+	if (bRecordAV)
+	{
+		AimPoint(FVector(60.0f, 40.0f, 700.0f), TEXT("av_look_board"));
+		Until([this]() { Shoot(TEXT("n3av_302_board_and_lining")); return true; }, 0.1f, TEXT("av_shot_302"));
+		Wait(0.4f);
+	}
 	// 문 옆 쐐기를 줍는다.
 	AimAt(Target(TEXT("Storage.WedgePick")), FVector::ZeroVector, TEXT("input_aim_wedge"));
 	Press(Target(TEXT("Storage.WedgePick")), 0.12f, TEXT("input_pick_wedge"));
@@ -2496,7 +2804,19 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	// 장롱을 민다. 덧댄 것이 북쪽 작업 틈을 누르며 다리를 방 가운데로 뻗고 있어 남쪽으로 돌아간다.
 	Walk(FVector(-15.0f, -70.0f, 690.0f), 20.0f, TEXT("input_walk_around_legs"), TEXT("wardrobe"));
 	Walk(FVector(-80.0f, -45.0f, 690.0f), 18.0f, TEXT("input_walk_to_wardrobe"));
+	if (bRecordAV)
+	{
+		// 장롱 앞면 가운데는 숨는 자리, 북쪽 모서리는 미는 손잡이다.
+		AimPoint(FVector(-114.0f, -10.0f, 700.0f), TEXT("av_look_wardrobe_center"));
+		Until([this]() { Shoot(TEXT("n3av_wardrobe_hide_prompt")); return true; }, 0.1f, TEXT("av_shot_wardrobe"));
+		Wait(0.4f);
+	}
 	AimAt(Target(TEXT("Storage.Wardrobe")), FVector::ZeroVector, TEXT("input_aim_wardrobe"));
+	if (bRecordAV)
+	{
+		Until([this]() { Shoot(TEXT("n3av_wardrobe_push_prompt")); return true; }, 0.1f, TEXT("av_shot_wardrobe_push"));
+		Wait(0.4f);
+	}
 	Press(Target(TEXT("Storage.Wardrobe")), 1.9f, TEXT("input_push_wardrobe"));
 	Until([WeakNarrative]() { return WeakNarrative.IsValid() && WeakNarrative->GetLeftover().bWardrobeMoved; }, 3.0f, TEXT("input_wardrobe_moved"));
 	Wait(2.5f);
@@ -2507,6 +2827,16 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	Press(Large, 0.3f, TEXT("input_open_hatch"));
 	// 덧댄 것이 지나가는 길 밖으로 비켜서 기다린다.
 	Walk(FVector(40.0f, -110.0f, 690.0f), 20.0f, TEXT("input_step_aside"), TEXT("lining_moves"));
+	if (bRecordAV)
+	{
+		// 덧댄 것이 벽에서 떨어져 큰 점검구로 옮겨 가는 동안. 실제 조명에서 몸과 다리를 본다.
+		AimPoint(FVector(-90.0f, 20.0f, 720.0f), TEXT("av_look_lining"));
+		Until([this]() { Shoot(TEXT("n3av_lining_moving_a")); return true; }, 0.1f, TEXT("av_shot_lining_a"));
+		Wait(1.2f);
+		Until([this]() { Shoot(TEXT("n3av_lining_moving_b")); return true; }, 0.1f, TEXT("av_shot_lining_b"));
+		Wait(1.2f);
+		Until([this]() { Shoot(TEXT("n3av_lining_moving_c")); return true; }, 0.1f, TEXT("av_shot_lining_c"));
+	}
 	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Freed")); },
 		60.0f, TEXT("input_jeongwoo_freed"));
 	// 꺼내자마자 다른 걸 해도 판에 끼어 있던 때의 말은 다시 나오지 않는다.
@@ -2630,4 +2960,8 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	Walk(FVector(-30.0f, -320.0f, 690.0f), 25.0f, TEXT("input_walk_out"));
 	Until([this]() { return GetNarrative() != nullptr && GetNarrative()->GetLeftover().JeongwooState == FName(TEXT("LeftTogether")); },
 		12.0f, TEXT("input_jeongwoo_out"));
+	if (bNight3Av)
+	{
+		BuildNightThreeContinuation();
+	}
 }

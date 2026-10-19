@@ -79,6 +79,8 @@ public:
 	 * 문·노크·순찰 높이가 옛 층에 남는다. 건물의 사실은 건물이 하나만 든다.
 	 */
 	static constexpr float FourthFloorZ = 900.0f;
+	/** 옥상 슬래브 윗면이자 5층 부속동 바닥(cm). */
+	static constexpr float RoofZ = 1200.0f;
 
 	/**
 	 * 403호 현관문이 선 자리(cm). 남쪽 벽이 Y=-225라 집 안은 Y가

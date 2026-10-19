@@ -1152,6 +1152,27 @@ bool AIGHorrorHUD::HasDialogueInContext(const UObject* WorldContext, const FName
 	return HorrorHUD && !Context.IsNone() && HorrorHUD->HasDialogueInContextForTesting(Context);
 }
 
+bool AIGHorrorHUD::IsHoldingStoryDialogue(const UObject* WorldContext)
+{
+	const AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	if (!HorrorHUD)
+	{
+		return false;
+	}
+	if (HorrorHUD->bHasCurrentDialogue && HorrorHUD->CurrentDialogue.Priority != EIGDialoguePriority::Ambient)
+	{
+		return true;
+	}
+	for (const FIGDialogueMessage& Message : HorrorHUD->DialogueQueue)
+	{
+		if (Message.Priority != EIGDialoguePriority::Ambient)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 TFunction<bool()> AIGHorrorHUD::MakeSceneGuard(const UObject* WorldContext)
 {
 	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);

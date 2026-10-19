@@ -368,6 +368,11 @@ public:
 	static bool IsPresentingDialogue(const UObject* WorldContext);
 	/** 그 사건의 줄이 떠 있거나 밀려 있다. */
 	static bool HasDialogueInContext(const UObject* WorldContext, FName Context);
+	/**
+	 * 배경 혼잣말이 아닌 줄(이야기·중요)이 떠 있거나 밀려 있다. 05:30 새벽 유예가 본다. 새벽은 장면을
+	 * 바꾸며 줄을 지우므로, 하던 말을 마칠 때까지 정해 둔 유예 안에서 기다린다.
+	 */
+	static bool IsHoldingStoryDialogue(const UObject* WorldContext);
 
 	/**
 	 * 소리가 난 자리를 아는 자막. §10.5는 자막 레인에 방위를 병기하라고

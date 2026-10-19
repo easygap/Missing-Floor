@@ -759,7 +759,9 @@ $reviewedTickingFiles = @(
 	# 소리(삑, 출력, 뜯기)를 같은 프레임에 맞춘다. 켜고 끄는 판단은 0.1초 타이머가 맡는다.
 	'IGStoreClerk.cpp',
 	# -IGStoreCounterProbe에서만 생성한다. 편의점 계산대 장면을 실제 입력으로 겪고 종료한다.
-	'IGStoreCounterProbe.cpp'
+	'IGStoreCounterProbe.cpp',
+	# -IGAimReachProbe에서만 생성한다. 밤과 낮을 열 때마다 상호작용 물체의 조준 자리를 재고 종료한다.
+	'IGAimReachProbe.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)

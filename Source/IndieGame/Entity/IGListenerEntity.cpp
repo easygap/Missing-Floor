@@ -35,6 +35,8 @@
 
 namespace IGListener
 {
+	// 어깨 폭. 팔꿈치는 그보다 넓게 벌어지지만 벽에 닿는 것은 팔이다.
+	constexpr float BodyRadius = 34.0f;
 	// §4. 숨은 자리 안의 소리는 이 거리 안에서 들었을 때만 그 자리를 연다. 그 밖에서
 	// 들은 소리는 평소처럼 그 자리로 찾아오게 할 뿐이다.
 	constexpr float HiddenDetectRadius = 220.0f;
@@ -201,7 +203,7 @@ AIGListenerEntity::AIGListenerEntity()
 	// Low and wide: an upper body on elbows with the legs trailing behind.
 	// 반지름은 어깨 폭이다. 팔꿈치는 그보다 넓게 벌어지지만, 90 cm 문틀과 폭 105 cm
 	// 계단을 지나야 하는 몸이라 벽에 닿는 것은 팔이지 몸통이 아니다.
-	Body->InitCapsuleSize(34.0f, 58.0f);
+	Body->InitCapsuleSize(IGListener::BodyRadius, 58.0f);
 	Body->SetCollisionProfileName(TEXT("Pawn"));
 	Body->SetCanEverAffectNavigation(false);
 	SetRootComponent(Body);
@@ -1162,6 +1164,8 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 		{
 			return;
 		}
+		UE_LOG(LogIndieGame, Display, TEXT("LISTENER_HOLD broken loudness=%.2f at=%s by=%s"), Event.Loudness,
+			*Event.Location.ToCompactString(), Event.Instigator.IsValid() ? *Event.Instigator->GetName() : TEXT("none"));
 		bBeatHold = false;
 	}
 	// 닫힌 문 너머의 소리에는 문 앞에서 대답한다. 쫓아 들어가지도, 추격으로
@@ -1331,7 +1335,7 @@ float AIGListenerEntity::WaitSecondsForTier() const
 	const int32 EffectiveTier = Difficulty == EIGNightDifficulty::Hasty
 		? FMath::Max(AggressionTier, 1) : AggressionTier;
 	return Seconds[FMath::Clamp(EffectiveTier, 0, 3)] * Tuning.WaitScale
-		* AnswerDecay[AnswerIndex];
+		* AnswerDecay[AnswerIndex] + BeatWaitHoldSeconds;
 }
 
 // -- public controls -------------------------------------------------------
@@ -1464,6 +1468,10 @@ void AIGListenerEntity::SetPatrolPoints(const TArray<FVector>& Points)
 
 void AIGListenerEntity::SetBeatHold(const bool bHold)
 {
+	if (bBeatHold != bHold)
+	{
+		UE_LOG(LogIndieGame, Display, TEXT("LISTENER_HOLD set=%d at=%s"), bHold ? 1 : 0, *GetActorLocation().ToCompactString());
+	}
 	bBeatHold = bHold;
 }
 
@@ -1920,6 +1928,14 @@ void AIGListenerEntity::ParkForBeat(const FVector& Where, const float Yaw)
 	TapStallCount = 0;
 	TapStallWindowStart = -1000.0;
 	EnterState(EIGListenerState::Patrolling);
+}
+
+void AIGListenerEntity::SetBodyRadiusForBeat(const float Radius)
+{
+	if (Body)
+	{
+		Body->SetCapsuleRadius(Radius > 0.0f ? Radius : IGListener::BodyRadius, true);
+	}
 }
 
 void AIGListenerEntity::ResetToPatrolStart(const bool bRaiseAggression)
