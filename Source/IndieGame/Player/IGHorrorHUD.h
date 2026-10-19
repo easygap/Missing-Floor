@@ -333,14 +333,18 @@ public:
 		const FVector& SourceLocation,
 		FName Context,
 		float AudibleRadius = 0.0f);
-	/** 범위를 붙인 소리 자막인데 들리는 곳을 거리 대신 조건으로 판단한다(벽으로 나뉜 방). */
+	/**
+	 * 범위를 붙인 소리 자막인데 들리는 곳을 거리 대신 조건으로 판단한다(벽으로 나뉜 방).
+	 * 가게 단말기처럼 진행과 상관없는 생활 소리는 Background로 낸다. 「모든 소리」에서만 보인다.
+	 */
 	static void PushAudioCaptionWhileAudible(
 		const UObject* WorldContext,
 		const FText& Caption,
 		float DurationSeconds,
 		const FVector& SourceLocation,
 		FName Context,
-		TFunction<bool()> Audible);
+		TFunction<bool()> Audible,
+		EIGSoundCaptionWeight Weight = EIGSoundCaptionWeight::Important);
 	/** 그 사건의 대사와 소리 자막(떠 있는 것과 밀린 것)을 거둔다. */
 	static void CancelDialogue(
 		const UObject* WorldContext,
@@ -846,12 +850,6 @@ private:
 		const FVector2D& Size,
 		float CornerRadius,
 		const FLinearColor& Color) const;
-	/** Adds the authored optical-film grain while keeping rounded corners clean. */
-	void DrawDialogueFilm(
-		const FVector2D& Position,
-		const FVector2D& Size,
-		float CornerRadius,
-		float Alpha) const;
 	bool DrawDialoguePanel(double CurrentTime, float& OutPanelTop);
 	/** 자막은 넘겨받은 게임 시간 대신 자막 시계(AdvanceAudioCaptionClock)로 잰다. */
 	bool DrawAudioCaption(double CurrentTime, float MaximumBottomY, float* OutPanelTop = nullptr);
@@ -993,10 +991,6 @@ private:
 	/** Aged-paper sheet the reading panel is printed on. */
 	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> NotePaperTexture;
-
-	/** ImageGen-derived, low-contrast optical grain used by dialogue surfaces. */
-	UPROPERTY(Transient)
-	TObjectPtr<UTexture2D> DialogueFilmTexture;
 
 	/** Text-free ImageGen key art; every title/menu glyph stays runtime-localized. */
 	UPROPERTY(Transient)

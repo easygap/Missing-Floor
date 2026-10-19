@@ -457,10 +457,6 @@ bool AIGHorrorHUD::IsNoiseRippleActive() const
 
 void AIGHorrorHUD::InitializeDialogueSurfaceTextures()
 {
-	DialogueFilmTexture = LoadObject<UTexture2D>(
-		nullptr,
-		TEXT("/Game/Prototype/Textures/T_HudDialogueFilm_D.T_HudDialogueFilm_D"));
-
 	constexpr int32 TextureSize = IGHorrorHUD::HudRoundedMaskTextureSize;
 	constexpr float SourceRadius = TextureSize * 0.25f;
 	TArray64<uint8> PixelBytes;
@@ -2168,10 +2164,11 @@ void AIGHorrorHUD::PushAudioCaptionWhileAudible(
 	const float DurationSeconds,
 	const FVector& SourceLocation,
 	const FName Context,
-	TFunction<bool()> Audible)
+	TFunction<bool()> Audible,
+	const EIGSoundCaptionWeight Weight)
 {
 	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
-	if (!HorrorHUD || !IGHorrorHUDCaptions::IsWeightShown(WorldContext, EIGSoundCaptionWeight::Important))
+	if (!HorrorHUD || !IGHorrorHUDCaptions::IsWeightShown(WorldContext, Weight))
 	{
 		return;
 	}
@@ -4722,60 +4719,6 @@ bool AIGHorrorHUD::DrawMissingFloorFailureEnding(const double CurrentTime)
 	return true;
 }
 
-void AIGHorrorHUD::DrawDialogueFilm(
-	const FVector2D& Position,
-	const FVector2D& Size,
-	const float CornerRadius,
-	const float Alpha) const
-{
-	if (!Canvas || !DialogueFilmTexture || !DialogueFilmTexture->GetResource()
-		|| Size.X <= 0.0f || Size.Y <= 0.0f || Alpha <= 0.001f)
-	{
-		return;
-	}
-
-	const float Radius = FMath::Clamp(
-		CornerRadius,
-		0.0f,
-		FMath::Min(Size.X, Size.Y) * 0.5f);
-	const auto DrawFilmRegion = [this, Position, Size, Alpha](
-		const FVector2D& RegionPosition,
-		const FVector2D& RegionSize)
-	{
-		if (RegionSize.X <= 0.01f || RegionSize.Y <= 0.01f)
-		{
-			return;
-		}
-		const FVector2D Uv0(
-			(RegionPosition.X - Position.X) / Size.X,
-			(RegionPosition.Y - Position.Y) / Size.Y);
-		const FVector2D Uv1(
-			(RegionPosition.X + RegionSize.X - Position.X) / Size.X,
-			(RegionPosition.Y + RegionSize.Y - Position.Y) / Size.Y);
-		FCanvasTileItem Grain(
-			RegionPosition,
-			DialogueFilmTexture->GetResource(),
-			RegionSize,
-			Uv0,
-			Uv1,
-			FLinearColor(0.78f, 0.86f, 0.82f, Alpha));
-		Grain.BlendMode = SE_BLEND_Translucent;
-		Canvas->DrawItem(Grain);
-	};
-
-	// Three rectangles are the inexpensive equivalent of a rounded clip: the
-	// curved corner squares remain owned by the 9-slice base surface.
-	DrawFilmRegion(
-		FVector2D(Position.X + Radius, Position.Y),
-		FVector2D(FMath::Max(0.0f, Size.X - Radius * 2.0f), Size.Y));
-	DrawFilmRegion(
-		FVector2D(Position.X, Position.Y + Radius),
-		FVector2D(Radius, FMath::Max(0.0f, Size.Y - Radius * 2.0f)));
-	DrawFilmRegion(
-		FVector2D(Position.X + Size.X - Radius, Position.Y + Radius),
-		FVector2D(Radius, FMath::Max(0.0f, Size.Y - Radius * 2.0f)));
-}
-
 bool AIGHorrorHUD::DrawDialoguePanel(
 	const double CurrentTime,
 	float& OutPanelTop)
@@ -4964,13 +4907,7 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 				PanelHeight - BorderInset * 2.0f),
 			FMath::Max(2.0f, CornerRadius - BorderInset),
 			FLinearColor(0.012f, 0.017f, 0.016f, SurfaceAlpha));
-		DrawDialogueFilm(
-			FVector2D(PanelX + BorderInset, PanelY + BorderInset),
-			FVector2D(
-				PanelWidth - BorderInset * 2.0f,
-				PanelHeight - BorderInset * 2.0f),
-			FMath::Max(2.0f, CornerRadius - BorderInset),
-			SurfaceAlpha * 0.14f);
+		// 바탕은 단색으로 둔다. 필름 스캔 무늬를 얹었더니 글자 뒤가 자글거렸다.
 	}
 	FLinearColor KeylineColor = Accent;
 	KeylineColor.A = Alpha * 0.52f;
@@ -5298,11 +5235,6 @@ bool AIGHorrorHUD::DrawAudioCaption(
 		FVector2D(PanelWidth, PanelHeight),
 		CornerRadius,
 		FLinearColor(0.018f, 0.026f, 0.024f, SurfaceAlpha));
-	DrawDialogueFilm(
-		FVector2D(PanelX, PanelY),
-		FVector2D(PanelWidth, PanelHeight),
-		CornerRadius,
-		SurfaceAlpha * 0.11f);
 	RecordLayoutValidationRect(
 		FVector2D(PanelX, PanelY),
 		FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));

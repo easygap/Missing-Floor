@@ -108,13 +108,6 @@ $plan = @(
         Source = 'TextureP3CabinetPaintedSteel'; Target = 'T_P3CabinetPaintedSteel_D.png'
         Crop = @(0.000, 0.000, 1.000, 1.000); Size = @(1024, 1024)
     }
-    # The generated UI scan is intentionally free of frames and baked text.
-    # Runtime geometry supplies the rounded mask and channel accents while this
-    # low-contrast layer prevents a sterile flat-color subtitle surface.
-    [pscustomobject]@{
-        Source = 'TextureHudDialogueFilm'; Target = 'T_HudDialogueFilm_D.png'
-        Crop = @(0.000, 0.000, 1.000, 1.000); Size = @(1024, 1024)
-    }
     # 최초 실행 보정판은 글자 없는 벽면 계조만 ImageGen에서 가져온다.
     # 문구와 눈금은 HUD가 그려 해상도·언어·접근성 배율에 종속되지 않는다.
     [pscustomobject]@{

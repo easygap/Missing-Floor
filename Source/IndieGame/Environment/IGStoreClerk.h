@@ -56,6 +56,8 @@ public:
 	/** 하던 일을 그 자리에서 거둔다. 나던 소리와 나오던 종이도 같이 거둔다. */
 	void CancelTask();
 	bool IsBusy() const { return CurrentTask != EIGClerkTask::None; }
+	/** 영수증 출력 일에서 프린터가 돌기 시작한 뒤다. 검사가 자막 없이도 장면을 잡을 수 있게 둔다. */
+	bool IsPrinting() const { return CurrentTask == EIGClerkTask::PrintReceipt && FiredEvents >= 2; }
 
 	/** 뽑은 영수증을 손님 앞 계산대에 놓는 자리. 프린터 바로 앞이다. */
 	static FTransform GetReceiptRestTransform();

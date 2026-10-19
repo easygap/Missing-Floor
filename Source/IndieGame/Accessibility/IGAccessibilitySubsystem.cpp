@@ -148,6 +148,8 @@ void UIGAccessibilitySubsystem::LoadPersistedSettings()
 		GGameUserSettingsIni);
 	// 0.10.0까지는 켜고 끄는 것뿐이었다. 그때 저장한 「켬」은 설명대로 진행에 필요한 소리를
 	// 뜻했으므로 이 값이 없으면 「중요한 소리」로 읽는다. 끈 사람은 그대로 꺼져 있다.
+	// 위의 SoundCaptionsEnabled도 저장된 값이 있으면 그 값을 따른다. 기본을 끔으로 바꾼 것은
+	// 아직 아무것도 저장하지 않은 새 설치에만 닿는다.
 	GConfig->GetBool(
 		IGAccessibility::ConfigSection,
 		TEXT("BackgroundSoundCaptions"),
@@ -422,6 +424,11 @@ void UIGAccessibilitySubsystem::ApplyCommandLineOverrides(
 	if (FParse::Param(CommandLine, TEXT("IGNoSoundCaptions")))
 	{
 		Settings.bSoundCaptionsEnabled = false;
+	}
+	if (FParse::Param(CommandLine, TEXT("IGImportantSoundCaptions")))
+	{
+		Settings.bSoundCaptionsEnabled = true;
+		Settings.bBackgroundSoundCaptions = false;
 	}
 	if (FParse::Param(CommandLine, TEXT("IGAllSoundCaptions")))
 	{

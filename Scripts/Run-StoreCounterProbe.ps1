@@ -5,6 +5,8 @@ param(
 	[ValidateSet('stay', 'leave', 'spam')][string]$Variant = 'stay',
 	# 마스터 믹스를 녹음하고(-DeterministicAudio라 스피커로는 나가지 않는다) 몇 장면을 찍는다.
 	[switch]$Record,
+	# 소리 설명 설정. default는 새 설치 그대로(끔)다. important·all은 설정에서 고른 사람의 화면이다.
+	[ValidateSet('default', 'important', 'all')][string]$Captions = 'default',
 	[ValidateSet(30, 60)][int]$FrameRate = 30,
 	[ValidateRange(60, 600)][int]$TimeoutSeconds = 360
 )
@@ -22,7 +24,11 @@ try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
-$tag = $Variant + $(if ($Record) { '-av' } else { '' })
+$tag = $Variant + $(if ($Captions -ne 'default') { '-' + $Captions } else { '' }) + $(if ($Record) { '-av' } else { '' })
+$captionArguments = @(switch ($Captions) {
+	'important' { '-IGImportantSoundCaptions' }
+	'all' { '-IGAllSoundCaptions' }
+})
 $logPath = Join-Path $projectRoot "Saved/Logs/StoreCounter-$tag.log"
 $probeRoot = Join-Path $projectRoot ('Saved/Validation/StoreCounter-' + $tag + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
 $probeUser = Join-Path $probeRoot 'User'
@@ -36,7 +42,7 @@ $arguments = @(
 	'-IGListenerGreybox', '-IGMissingFloor', $(if ($Variant -eq 'stay') { '-IGStoreCounterProbe' } else { "-IGStoreCounterProbe=$Variant" }),
 	'-IGSkipFrontend', '-UseFixedTimeStep', "-FPS=$FrameRate",
 	('"-UserDir={0}"' -f $probeUser), ('"-abslog={0}"' -f $logPath)
-) + $audio
+) + $audio + $captionArguments
 $process = Start-Process -FilePath $editor -ArgumentList $arguments -WindowStyle Hidden -PassThru
 # Windows PowerShell 5.1은 핸들을 먼저 잡아 두지 않으면 ExitCode를 비워 둔다.
 $null = $process.Handle
@@ -44,7 +50,7 @@ if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
 	& taskkill.exe /PID $process.Id /T /F | Out-Null
 	throw "계산대 검사 시간 초과: $logPath"
 }
-Select-String -LiteralPath $logPath -Pattern 'STORE_(CHECK|PROBE)|INPUT_(STUCK|FOCUS|BLOCK)' | ForEach-Object { Write-Host $_.Line }
+Select-String -LiteralPath $logPath -Pattern 'STORE_(CHECK|PROBE|CAPTIONS)|INPUT_(STUCK|FOCUS|BLOCK)' | ForEach-Object { Write-Host $_.Line }
 $output = Join-Path $probeUser ('Saved/StoreCounterAV/' + $Variant)
 if ($Record) {
 	$mix = Join-Path $output 'mix.wav'

@@ -948,7 +948,7 @@ void AIGListenerGreyboxDirector::PlaySettleEvent()
 			this, Wave, Location, FMath::FRandRange(0.50f, 0.64f) * Weight,
 			FMath::FRandRange(0.93f, 1.07f) * Depth, 180.0f, 1700.0f, EIGAudioBus::World);
 	}
-	// 건물이 저절로 내는 소리다. 진행에 쓰이지 않으므로 기본(중요한 소리)에서는 띄우지 않고
+	// 건물이 저절로 내는 소리다. 진행에 쓰이지 않으므로 「중요한 소리」에서는 띄우지 않고
 	// 「모든 소리」를 고른 사람에게만 띄운다. 그의 소리와 헷갈리게 하는 장치라도 그 판단은 소리로 한다.
 	AIGHorrorHUD::PushBackgroundAudioCaptionAt(this, Caption, 2.0f, Location);
 }
@@ -3455,10 +3455,13 @@ void AIGListenerGreyboxDirector::ContinueStoreReceipt(const bool bTalkCompleted)
 		}
 		if (Cue == EIGClerkCue::FirstTap)
 		{
+			// 가게 일하는 소리다. 보통 화면에서는 나린의 몸짓과 소리로만 알리고, 「모든 소리」를 고른
+			// 사람에게만 글로 띄운다.
 			AIGHorrorHUD::PushAudioCaptionWhileAudible(Self,
 				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기를 삑삑 누르는 소리]"), 2.4f,
 				AIGStoreClerk::GetPosScreen(), IGListenerGreybox::StoreReceiptContext,
-				[WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); });
+				[WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); },
+				EIGSoundCaptionWeight::Background);
 		}
 		else if (Cue == EIGClerkCue::Finished)
 		{
@@ -3559,7 +3562,8 @@ void AIGListenerGreyboxDirector::PrintStoreReceipt()
 			AIGHorrorHUD::PushAudioCaptionWhileAudible(Self,
 				NSLOCTEXT("IGMissingFloor", "StorePrinterCaption", "[영수증이 뽑혀 나오다 딸깍 잘리는 소리]"), 2.4f,
 				AIGStoreClerk::GetPrinterExit(), IGListenerGreybox::StoreReceiptContext,
-				[WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); });
+				[WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); },
+				EIGSoundCaptionWeight::Background);
 		}
 		else if (Cue == EIGClerkCue::ReceiptPlaced)
 		{

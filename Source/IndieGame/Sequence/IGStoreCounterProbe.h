@@ -75,4 +75,8 @@ private:
 	bool bShotPrint = false;
 	bool bShotPrinting = false;
 	bool bShotPlaced = false;
+	/** 소리 설명이 한 번이라도 떴는가. 기본 화면(소리 설명 끔)에서는 아무것도 뜨지 않아야 한다. */
+	bool bAnyCaptionSeen = false;
+	bool bTerminalCaptionSeen = false;
+	bool bPrinterCaptionSeen = false;
 };

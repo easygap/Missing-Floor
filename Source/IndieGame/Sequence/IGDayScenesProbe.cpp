@@ -1,5 +1,6 @@
 ﻿#include "Sequence/IGDayScenesProbe.h"
 
+#include "Accessibility/IGAccessibilitySubsystem.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
@@ -736,6 +737,27 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 		const FText LineA = FText::FromString(TEXT("규칙 검사 반응 하나."));
 		const FText LineB = FText::FromString(TEXT("규칙 검사 이야기 둘."));
 
+		// 0. 새 설치에서는 소리 설명이 꺼져 있다. 보통 화면에는 대사만 오르고 소리를 글로 풀지 않는다.
+		//    아래 소리 자막 규칙은 설정에서 「중요한 소리」를 고른 사람의 화면으로 본다.
+		UGameInstance* GameInstance = GetGameInstance();
+		UIGAccessibilitySubsystem* Accessibility = GameInstance
+			? GameInstance->GetSubsystem<UIGAccessibilitySubsystem>() : nullptr;
+		Hud->ClearDialogueForTesting();
+		AIGHorrorHUD::PushAudioCaption(this, LineA, 2.0f);
+		Check(Accessibility && !Accessibility->AreSoundCaptionsEnabled() && !Hud->HasPendingAudioCaption(),
+			TEXT("sound_captions_off_by_default"));
+		const auto ChooseSoundCaptions = [Accessibility](const bool bOn, const bool bAllSounds)
+		{
+			if (Accessibility)
+			{
+				FIGAccessibilitySettings Settings = Accessibility->GetSettings();
+				Settings.bSoundCaptionsEnabled = bOn;
+				Settings.bBackgroundSoundCaptions = bAllSounds;
+				Accessibility->ApplySettings(Settings);
+			}
+		};
+		ChooseSoundCaptions(true, false);
+
 		// 1. 사건을 거두면 떠 있는 줄과 밀린 줄이 함께 사라진다.
 		Hud->ClearDialogueForTesting();
 		AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::Conversation, 0.0f,
@@ -932,7 +954,20 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			Hud->AdvanceAudioCaptionsForTesting();
 			Check(bNearShown && !Hud->HasPendingAudioCaption(), TEXT("caption_drops_when_out_of_earshot"));
 			MoveListener(Here);
+
+			// 12. 가게 단말기 같은 생활 소리는 「중요한 소리」에서 뜨지 않고 「모든 소리」에서만 뜬다.
+			const FText LifeSound = FText::FromString(TEXT("[규칙 검사 생활 소리]"));
+			Hud->ClearDialogueForTesting();
+			AIGHorrorHUD::PushAudioCaptionWhileAudible(this, LifeSound, 2.0f, Here, TEXT("Rule.Life"),
+				[]() { return true; }, EIGSoundCaptionWeight::Background);
+			const bool bHiddenWhenImportant = !Hud->HasPendingAudioCaption();
+			ChooseSoundCaptions(true, true);
+			AIGHorrorHUD::PushAudioCaptionWhileAudible(this, LifeSound, 2.0f, Here, TEXT("Rule.Life"),
+				[]() { return true; }, EIGSoundCaptionWeight::Background);
+			Check(bHiddenWhenImportant && Hud->HasPendingAudioCaption(), TEXT("life_sounds_only_with_all_sounds"));
+			Hud->ClearDialogueForTesting();
 		}
+		ChooseSoundCaptions(false, false);
 		Finish();
 		break;
 	}

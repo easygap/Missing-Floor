@@ -81,14 +81,18 @@ struct INDIEGAME_API FIGAccessibilitySettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Accessibility")
 	bool bSubtitlesEnabled = true;
 
-	/** Important non-speech sounds can be configured separately from dialogue. */
+	/**
+	 * 말이 아닌 소리를 글로 띄우는 접근성 설명. 대사 자막과 따로 켜고 끈다. 기본은 꺼 둔다.
+	 * 보통 화면에는 대사만 오르고, 소리 설명은 설정에서 고른 사람에게만 보인다. 0.10.0까지는
+	 * 기본이 켬이었다. 그때 저장해 둔 값은 그대로 읽으므로 이미 고른 사람의 설정은 바뀌지 않는다.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Accessibility")
-	bool bSoundCaptionsEnabled = true;
+	bool bSoundCaptionsEnabled = false;
 
 	/**
-	 * 소리 자막을 켰을 때 건물과 동네의 평범한 소리까지 글로 띄운다. 꺼 두면(기본)
-	 * 위협·대답·사건처럼 진행에 쓰이는 소리만 띄운다. 설정의 「소리 자막」 칸에서
-	 * 끔 → 중요한 소리 → 모든 소리 순으로 고른다.
+	 * 소리 자막을 켰을 때 건물과 동네의 평범한 소리, 가게 단말기와 영수증 같은 생활 소리까지
+	 * 글로 띄운다. 꺼 두면 위협·대답·사건처럼 진행에 쓰이는 소리만 띄운다. 설정의 「소리 자막」
+	 * 칸에서 끔(기본) → 중요한 소리 → 모든 소리 순으로 고른다.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Accessibility")
 	bool bBackgroundSoundCaptions = false;

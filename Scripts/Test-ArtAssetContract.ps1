@@ -80,7 +80,6 @@ $requiredMaterialTextures = @(
 	'T_AlleyCatTabby_D.png',
 	'T_P3CabinetPaintedSteel_D.png',
 	'T_AudioCalibrationWall_D.png',
-	'T_HudDialogueFilm_D.png',
 	'T_MissingFloorJournalPaper_D.png',
 	'T_ApartmentWallpaperV2_D.png',
 	'T_MissingFloorDryPlaster_D.png',
@@ -324,12 +323,6 @@ foreach ($relativePath in $requiredDerived) {
 				'T_P3CabinetPaintedSteel_D.png' {
 					if ($meanLuma -lt 120 -or $meanLuma -gt 180 -or $dynamicRange -lt 45) {
 						throw "P3 cabinet lost its restrained painted-steel range: $relativePath"
-					}
-				}
-				'T_HudDialogueFilm_D.png' {
-					if ($meanLuma -lt 12 -or $meanLuma -gt 70 -or
-						$dynamicRange -lt 8 -or $dynamicRange -gt 90) {
-						throw "Dialogue film lost its restrained near-black UI range: $relativePath"
 					}
 				}
 				'T_AudioCalibrationWall_D.png' {
@@ -696,7 +689,6 @@ foreach ($token in @(
 	'SM_CaptureMercyNote.uasset',
 	'T_CaptureMercyNote_D.uasset',
 	'M_CaptureMercyNote.uasset',
-	'T_HudDialogueFilm_D.uasset',
 	'T_AudioCalibrationWall_D.uasset',
 	'T_MissingFloorJournalPaper_D.uasset',
 	'T_MovingBoxCardboard_D.uasset',

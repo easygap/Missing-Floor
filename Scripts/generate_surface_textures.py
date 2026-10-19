@@ -21,7 +21,6 @@ FRONTEND_TEXTURE_PACKAGE_ROOT = "/Game/UI/Textures"
 HUD_UI_ONLY = os.environ.get("IG_HUD_UI_ONLY") == "1"
 HUD_UI_TEXTURE_NAMES = {
     "T_AudioCalibrationWall_D",
-    "T_HudDialogueFilm_D",
     "T_MissingFloorJournalPaper_D",
     "T_FPHandKnock0_D",
     "T_FPHandKnock1_D",

@@ -1,8 +1,10 @@
 ﻿#include "Sequence/IGStoreCounterProbe.h"
 
+#include "Accessibility/IGAccessibilitySubsystem.h"
 #include "AudioMixerBlueprintLibrary.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
@@ -146,6 +148,9 @@ void AIGStoreCounterProbe::WatchState()
 		{
 			Event(Caption.IsEmpty() ? FString(TEXT("caption_end")) : FString::Printf(TEXT("caption \"%s\""), *Caption));
 			LastCaption = Caption;
+			bAnyCaptionSeen |= !Caption.IsEmpty();
+			bTerminalCaptionSeen |= Caption.Contains(TEXT("단말기"));
+			bPrinterCaptionSeen |= Caption.Contains(TEXT("영수증"));
 		}
 	}
 	const bool bReceipt = IsReceiptShown();
@@ -411,7 +416,8 @@ void AIGStoreCounterProbe::Tick(const float DeltaSeconds)
 			bShotTap = true;
 			Shoot(TEXT("01_narin_taps_pos"));
 		}
-		if (!bShotPrint && LastCaption.Contains(TEXT("영수증")))
+		// 자막이 아니라 프린터가 실제로 돌기 시작한 때를 잡는다. 소리 설명은 기본으로 꺼져 있다.
+		if (!bShotPrint && Clerk.IsValid() && Clerk->IsPrinting())
 		{
 			bShotPrint = true;
 			PrintStartedAt = Now;
@@ -439,6 +445,32 @@ void AIGStoreCounterProbe::Tick(const float DeltaSeconds)
 				FString::Printf(TEXT("bell_spam_adds_no_question questions=%d at_spam=%d"), YudamQuestions, YudamQuestionsAtSpam));
 		}
 		Check(ReceiptShownAt > 0.0, TEXT("receipt_appeared"));
+		// 가게 일하는 소리는 「모든 소리」를 고른 사람에게만 글로 뜬다. 기본 화면에는 소리 설명이 없다.
+		const UGameInstance* GameInstance = GetGameInstance();
+		const UIGAccessibilitySubsystem* Accessibility = GameInstance
+			? GameInstance->GetSubsystem<UIGAccessibilitySubsystem>() : nullptr;
+		const bool bCaptionsOn = Accessibility && Accessibility->AreSoundCaptionsEnabled();
+		const bool bAllSounds = Accessibility && Accessibility->AreBackgroundSoundCaptionsEnabled();
+		UE_LOG(LogIndieGame, Display, TEXT("STORE_CAPTIONS mode=%s any=%d terminal=%d printer=%d"),
+			bAllSounds ? TEXT("all") : bCaptionsOn ? TEXT("important") : TEXT("off"),
+			bAnyCaptionSeen ? 1 : 0, bTerminalCaptionSeen ? 1 : 0, bPrinterCaptionSeen ? 1 : 0);
+		if (!bCaptionsOn)
+		{
+			Check(!bAnyCaptionSeen, TEXT("default_screen_has_no_sound_captions"));
+		}
+		else if (!bAllSounds)
+		{
+			Check(!bTerminalCaptionSeen && !bPrinterCaptionSeen, TEXT("important_sounds_skip_store_work"));
+		}
+		else if (Variant == TEXT("leave"))
+		{
+			// 프린터는 밖에 나가 있는 동안 돌았다. 들리지 않은 소리는 글로도 뜨지 않는다.
+			Check(!bPrinterCaptionSeen, TEXT("all_sounds_skips_printer_heard_from_outside"));
+		}
+		else
+		{
+			Check(bTerminalCaptionSeen && bPrinterCaptionSeen, TEXT("all_sounds_describes_store_work"));
+		}
 		Shoot(TEXT("04_back_at_counter"));
 		Finish();
 	}

@@ -15,6 +15,8 @@ $accessibilitySource = Get-Content -Raw -Encoding UTF8 -LiteralPath (
 	Join-Path $projectRoot 'Source/IndieGame/Accessibility/IGAccessibilitySubsystem.cpp')
 $controller = Get-Content -Raw -Encoding UTF8 -LiteralPath (
 	Join-Path $projectRoot 'Source/IndieGame/Player/IGPlayerController.cpp')
+$greyboxDirector = Get-Content -Raw -Encoding UTF8 -LiteralPath (
+	Join-Path $projectRoot 'Source/IndieGame/Entity/IGListenerGreyboxDirector.cpp')
 $assertionCount = 0
 
 function Assert-True {
@@ -52,7 +54,6 @@ Assert-ContainsAll $hudHeader @(
 	'GetDialogueRenderSample',
 	'InitializeDialogueSurfaceTextures',
 	'DrawRoundedHudSurface',
-	'DrawDialogueFilm',
 	'DrawDialoguePanel',
 	'DrawLeftAlignedText',
 	'PrepareDialoguePage',
@@ -61,7 +62,6 @@ Assert-ContainsAll $hudHeader @(
 	'AudioCaptionQueue',
 	'bCurrentDialogueHasContinuation',
 	'bDialogueLastInsideSafeArea',
-	'DialogueFilmTexture',
 	'HudRoundedMaskTexture'
 ) '하단 대화 UI 공용 표면'
 
@@ -121,7 +121,6 @@ Assert-ContainsAll $hudSource @(
 ) '화면 크기·안전 영역·동작 감소·HUD 레인'
 
 Assert-ContainsAll $hudSource @(
-	'/Game/Prototype/Textures/T_HudDialogueFilm_D.T_HudDialogueFilm_D',
 	'HudRoundedMaskTextureSize = 64',
 	'Canvas->ClipX * 0.56f',
 	'Canvas->ClipX * 0.42f',
@@ -131,11 +130,15 @@ Assert-ContainsAll $hudSource @(
 	'DrawAudioCaptionBearingGlyph(',
 	'const FString Inner = DisplayCaption.Mid(1, DisplayCaption.Len() - 2);',
 	'DisplayCaption = Inner.TrimStartAndEnd();',
-	'DrawDialogueFilm(',
 	'SpeakerChipHeight * 0.5f'
 ) '2026 하단 글래스 표면·화자 칩·효과음 캡슐'
 Assert-True (-not $hudSource.Contains('FVector2D(3.0f * ResolutionScale, PanelHeight)')) (
 	'구형 디버그형 왼쪽 강조 막대가 남아 있다')
+# 자막 바탕에 필름 질감을 얹으면 글자 뒤가 자글거린다. 바탕은 단색으로 둔다.
+Assert-True (-not ($hudSource.Contains('DrawDialogueFilm') -or $hudHeader.Contains('DrawDialogueFilm'))) (
+	'자막 바탕에 필름 질감을 다시 얹었다')
+Assert-True (-not ($hudSource.Contains('T_HudDialogueFilm_D') -or $hudHeader.Contains('DialogueFilmTexture'))) (
+	'자막 필름 질감 텍스처를 다시 읽는다')
 # 소리 자막 칸에 대사 색 파형을 그리면 아무도 말하지 않는데 목소리가 나는 것처럼 보인다.
 Assert-True (-not $hudSource.Contains('const float WaveHeights[] = {5.0f, 11.0f, 16.0f, 8.0f}')) (
 	'소리 자막에 목소리처럼 보이는 파형 막대가 남아 있다')
@@ -168,10 +171,25 @@ Assert-ContainsAll $accessibilitySource @(
 	'TEXT("CaptionBackgroundOpacity")',
 	'IGNoSubtitles',
 	'IGNoSoundCaptions',
+	'IGImportantSoundCaptions',
 	'IGAllSoundCaptions',
 	'TEXT("BackgroundSoundCaptions")',
 	'IGCaptionBackground='
 ) '200% 확대·배경·명령행 검증 경로'
+# 소리 설명은 새 설치에서 꺼 둔다. 보통 화면에는 대사만 오른다. 저장된 값은 그대로 읽으므로
+# 이미 고른 사람의 설정은 바뀌지 않는다.
+Assert-True ($accessibilityHeader.Contains('bool bSoundCaptionsEnabled = false;')) (
+	'소리 설명이 새 설치에서 켜져 있다')
+Assert-True (-not $accessibilityHeader.Contains('bool bSoundCaptionsEnabled = true;')) (
+	'소리 설명 기본값이 둘이다')
+# 가게에서 일하는 소리는 「모든 소리」를 고른 사람에게만 글로 뜬다.
+Assert-True ($hudHeader.Contains('EIGSoundCaptionWeight Weight = EIGSoundCaptionWeight::Important);')) (
+	'들리는 동안만 뜨는 소리 자막에 무게를 고를 수 없다')
+foreach ($lifeCaption in @('StoreTerminalCaption', 'StorePrinterCaption')) {
+	Assert-True ([regex]::IsMatch($greyboxDirector,
+		('"' + $lifeCaption + '"[\s\S]{0,420}?EIGSoundCaptionWeight::Background\);'))) (
+		"가게 생활 소리가 「중요한 소리」로 뜬다: $lifeCaption")
+}
 Assert-ContainsAll $controller @(
 	'RowCount = IGSettingsMenuLayout::AccessibilityRowCount',
 	'Settings.bSoundCaptionsEnabled = Next > 0;',

@@ -100,7 +100,7 @@ OpenAI 이미지 생성으로 생성하고 각 항목의 생성 방식과 날짜
 | 위 재질 스캔 3종(고양이·봉지·도장 강판)의 `T_*_D` | `T_*_{N,R,A}` 9종 · `T_P3CabinetPaintedSteel_W` | `generate_ai_pbr_maps.py`로 만드는 PBR 동반 채널 10종. 젖음 맵은 알베도·거칠기·노멀 블렌드에 함께 쓴다 |
 | `ApplicationIcon_20260930.png` | `Build/Windows/ApplicationIcon.png` · `Application.ico` | 새벽 빌라 옥상의 무단 증축 옥탑방에 불이 하나 켜진 Windows 배포 아이콘. `prepare_application_icon.py`가 옥탑방 쪽을 잘라 1024px 등급 PNG와 16~256px 7단계 ICO를 만든다 |
 | `DialogueHUDConcept_v1.png` | UI 아트 디렉션 기준 이미지 | 실제 Shipping 캡처의 디버그형 대화창을 낮은 하단 점유율, 분리된 환경음 캡슐, 작은 화자 태그와 습기 낀 smoked-glass 재질로 재설계한 시안. 런타임 텍스트를 굽지 않고 색·여백·질감 기준만 사용 |
-| `TextureHudDialogueFilm.png` | `T_HudDialogueFilm_D` | 대화창 표면의 저대비 charcoal/oxidized-green 미세 필름 스캔. UI 그룹·NoMipmaps·비스트리밍으로 임포트하고 런타임 둥근 마스크 안에서 낮은 알파로만 사용 |
+| `TextureHudDialogueFilm.png` | 미사용 (원본 보관) | 대화창 바탕에 낮은 알파로 얹던 저대비 필름 스캔. 글자 뒤가 자글거려 2026-10-19에 자막 바탕에서 뺐다. 파생 PNG와 `T_HudDialogueFilm_D`는 지우고 이 원본만 남긴다 |
 | `TextureMissingFloorJournalPaper_v1.png` | `T_MissingFloorJournalPaper_D` | 「듣는 것들」 전체 화면의 무문자 장부 종이 표면. 16:9 정면 스캔 질감만 쓰고 모든 한글·출처 카드·썸네일·교차선은 런타임이 그린다. UI 그룹·NoMipmaps·Clamp·비스트리밍으로 임포트 |
 | `TextureAudioCalibrationWall_v1.png` | `T_AudioCalibrationWall_D` | 첫 실행 소리·밝기 보정판의 무문자 청흑색 빌라 벽면. 저대비 광물 결만 낮은 알파로 사용하고 한글·눈금·암부 계조는 전부 런타임 HUD가 그린다. UI 그룹·NoMipmaps·Clamp·비스트리밍으로 임포트 |
 | `ApartmentVisualTarget_v1.png` | 원룸 비주얼 아트 디렉션 기준 이미지 | 실제 Shipping 원룸 캡처의 카메라·동선·가구·HUD는 유지하고, 주황 스탠드와 청록 새벽광, 낡은 벽지·장판의 물성, 국부 습기 흔적만 보강한 목표 시안. 런타임 텍스처로 직접 사용하지 않음 |

@@ -166,7 +166,6 @@ Assert-ContainsAll $hudSource @(
 	'Accessibility->AreSoundCaptionsEnabled()',
 	'bool AIGHorrorHUD::DrawAudioCaption',
 	'DrawRoundedHudSurface(',
-	'DrawDialogueFilm(',
 	'void AIGHorrorHUD::DrawAudioCaptionBearingGlyph(',
 	'FCanvasLineItem Segment(',
 	'Settings.CaptionSizeScale',

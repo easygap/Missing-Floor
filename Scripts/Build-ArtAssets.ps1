@@ -431,7 +431,6 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 	$targetRelativeAssets = if ($HudUiOnly) {
 		@(
 			'Content\Prototype\Textures\T_AudioCalibrationWall_D.uasset',
-			'Content\Prototype\Textures\T_HudDialogueFilm_D.uasset',
 			'Content\Prototype\Textures\T_MissingFloorJournalPaper_D.uasset',
 			'Content\Prototype\Textures\T_FPHandKnock0_D.uasset',
 			'Content\Prototype\Textures\T_FPHandKnock1_D.uasset',
@@ -1001,7 +1000,6 @@ $requiredAssets = @(
 	'Content\Prototype\Textures\T_CarrierBagFilm_D.uasset',
 	'Content\Prototype\Textures\T_AlleyCatTabby_D.uasset',
 	'Content\Prototype\Textures\T_P3CabinetPaintedSteel_D.uasset',
-	'Content\Prototype\Textures\T_HudDialogueFilm_D.uasset',
 	'Content\Prototype\Textures\T_MissingFloorJournalPaper_D.uasset',
 	'Content\Prototype\Textures\T_MovingBoxCardboard_D.uasset',
 	'Content\Prototype\Textures\T_MovingBoxCardboard_N.uasset',
