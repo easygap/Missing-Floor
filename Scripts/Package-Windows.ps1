@@ -1,11 +1,18 @@
 [CmdletBinding()]
-param([string]$ArchiveDirectory, [switch]$RequireCleanCommit)
+param(
+    [string]$ArchiveDirectory,
+    [switch]$RequireCleanCommit,
+    # C: 여유가 모자랄 때 쿠크 저장소(Zen)를 이 폴더에 따로 띄운다.
+    [string]$ZenDataDirectory,
+    [ValidateRange(1024, 65535)][int]$ZenPort = 8568
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
 $igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Package-Windows.ps1' -Parameters $PSBoundParameters
 $igArtifactSucceeded = $false
+$zenProcess = $null
 try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $buildCommit = (& git -C $projectRoot rev-parse HEAD)
@@ -42,6 +49,31 @@ $buildProject = Join-Path $buildRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $engineRoot = Split-Path (Split-Path (Split-Path $editor -Parent) -Parent) -Parent
 $uat = Join-Path $engineRoot 'Build/BatchFiles/RunUAT.bat'
+
+# Zen은 C: 여유가 2 GB 아래면 쓰기를 거부해 쿠크가 멈춘다. 그럴 때는 다른 드라이브에 Zen을 따로 띄우고
+# 이 실행의 엔진 프로세스가 새로 띄우지 않고 거기에만 붙게 한다. 자동 실행은 같은 포트에 데이터 폴더가 다른
+# Zen이 있으면 그걸 내리므로, 같은 PC의 다른 프로젝트가 쓰는 기본 포트 8558은 피한다.
+$zenArguments = @()
+if ($ZenDataDirectory) {
+    if ($ZenPort -eq 8558) { throw '따로 띄우는 Zen은 기본 포트 8558을 쓸 수 없습니다.' }
+    $ZenDataDirectory = [IO.Path]::GetFullPath($ZenDataDirectory)
+    New-Item -ItemType Directory -Force -Path $ZenDataDirectory | Out-Null
+    $zenUtility = Join-Path $engineRoot 'Binaries/Win64/zen.exe'
+    $zenProcess = Start-Process -FilePath (Join-Path $engineRoot 'Binaries/Win64/zenserver.exe') -WindowStyle Hidden -PassThru `
+        -ArgumentList @('--port', $ZenPort, '--data-dir', ('"' + $ZenDataDirectory + '"'), '--http', 'asio',
+            '--http-forceloopback', '--owner-pid', $PID, '--quiet')
+    $null = $zenProcess.Handle
+    $zenReady = $false
+    $zenDeadline = (Get-Date).AddSeconds(60)
+    while (-not $zenReady -and -not $zenProcess.HasExited -and (Get-Date) -lt $zenDeadline) {
+        Start-Sleep -Milliseconds 500
+        try { $zenReady = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://127.0.0.1:$ZenPort/health/").StatusCode -eq 200 }
+        catch { $zenReady = $false }
+    }
+    if (-not $zenReady) { throw "따로 띄운 Zen이 포트 ${ZenPort}에서 응답하지 않습니다." }
+    $zenArguments = @("-NoZenAutoLaunch=127.0.0.1:$ZenPort")
+}
+
 # UE 5.8은 지정한 보관 폴더에 실행 파일을 바로 놓는다.
 $windowsDirectory = Join-Path $ArchiveDirectory 'Windows'
 $arguments = @(
@@ -51,14 +83,14 @@ $arguments = @(
     '-compressed', '-nodebuginfo', '-prereqs',
     '-applocaldirectory=$(EngineDir)/Binaries/ThirdParty/AppLocalDependencies',
     '-archive', "-archivedirectory=$windowsDirectory"
-)
+) + $zenArguments
 & $uat @arguments
 if ($LASTEXITCODE -ne 0) { throw "Windows 배포 파일 생성 실패: $LASTEXITCODE" }
 
 # 쿠커는 설정을 읽고도 에셋을 조용히 빠뜨릴 수 있다. 실제 컨테이너 목록으로 코드가
 # 경로로 부르는 에셋이 다 들었는지 확인한다(Scripts/check_package_contents.py).
 $containerCsv = Join-Path $ArchiveDirectory 'container.csv'
-& $editor -run=IoStore "-List=$(Join-Path $windowsDirectory 'IndieGame/Content/Paks/IndieGame-Windows.utoc')" "-csv=$containerCsv" -unattended -nopause | Out-Null
+& $editor -run=IoStore "-List=$(Join-Path $windowsDirectory 'IndieGame/Content/Paks/IndieGame-Windows.utoc')" "-csv=$containerCsv" -unattended -nopause @zenArguments | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $containerCsv)) { throw "배포 컨테이너 목록을 읽지 못했습니다: $LASTEXITCODE" }
 & python (Join-Path $PSScriptRoot 'check_package_contents.py') $containerCsv
 if ($LASTEXITCODE -ne 0) { throw '배포본에 코드가 부르는 에셋이 빠져 있습니다.' }
@@ -103,5 +135,9 @@ Write-Host "WINDOWS_PACKAGE PASS $ArchiveDirectory"
 $igArtifactSucceeded = $true
 }
 finally {
+    if ($zenProcess -and -not $zenProcess.HasExited) {
+        & $zenUtility down --port $ZenPort | Out-Null
+        if (-not $zenProcess.WaitForExit(30000)) { Stop-Process -Id $zenProcess.Id -ErrorAction SilentlyContinue }
+    }
     Complete-IGArtifactScope -Scope $igArtifactScope -Succeeded $igArtifactSucceeded
 }
