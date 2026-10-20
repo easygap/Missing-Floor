@@ -129,6 +129,15 @@ namespace IGLeftoverStorage
 	/** 5층 남쪽 벽에 기대 둔 철골 틀의 가운데(밤4 벽 감독이 세운다). */
 	const FVector BraceLeanCenter(218.0f, 478.0f, 1310.0f);
 	const FVector SiteLeanSpot(236.0f, 585.0f, 1200.0f);
+	/**
+	 * 덧판에 대 본 덮개. 덧판(앞면 X 248.75)에 틀 뒤 슬리브가 닿아 날개 면이 2.9 cm 앞에 선다. 덧판과
+	 * 덮개 모두 점검 자리 가운데(Y 492, 높이 1265)에 맞춰져 있다.
+	 */
+	const FTransform SiteHold(FRotator(0.0f, 180.0f, 0.0f), FVector(245.85f, 492.0f, 1265.0f));
+	const FTransform SiteLean(FRotator(-12.0f, 180.0f, 0.0f), SiteLeanSpot + FVector(0.0f, 0.0f, 37.0f));
+	/** 대 보고 있는 시간과 기대 두러 옮기는 시간. */
+	constexpr float SiteHoldSeconds = 5.5f;
+	constexpr float SiteSetDownSeconds = 0.8f;
 
 	UStaticMesh* Mesh(const TCHAR* Name)
 	{
@@ -370,9 +379,11 @@ void AIGMissingFloorLeftoverDirector::RefreshStorage()
 	const bool bMarked = HasBeat(BeatDayOneMarked);
 	const bool bBoxInCorner = !bLegacy && Night == 3 && !HasTaken(DohaBox);
 	ShowProp(FName(TEXT("Storage.Pile3")), bPile && !bBoxInCorner && Night <= 2);
-	ShowProp(FName(TEXT("Storage.DohaBox")), bBoxInCorner);
-	ShowProp(FName(TEXT("Storage.DohaLabel")), bBoxInCorner);
-	ShowProp(FName(TEXT("Storage.DohaMark")), bBoxInCorner && bMarked);
+	// 당겨 빼는 동안에는 챙긴 뒤에도 미끄러져 나오는 상자가 보인다.
+	const bool bBoxShown = bBoxInCorner || BoxSlideStart >= 0.0;
+	ShowProp(FName(TEXT("Storage.DohaBox")), bBoxShown);
+	ShowProp(FName(TEXT("Storage.DohaLabel")), bBoxShown);
+	ShowProp(FName(TEXT("Storage.DohaMark")), bBoxShown && bMarked);
 	SetTargetLive(FindTarget(FName(TEXT("Storage.DohaName"))), !bHourActive && bPile && Night <= 2 && !bMarked);
 	// 셋째 밤의 302호. 판, 바닥 틀, 마대, 조립대.
 	const bool bNightThree = !bLegacy && Night == 3 && bHourActive;
@@ -412,8 +423,10 @@ void AIGMissingFloorLeftoverDirector::RefreshStorage()
 	SetTargetLive(FindTarget(FName(TEXT("Storage.Sack"))), !bLegacy && Night == 3 && !bPartsTaken
 		&& (StorageStage == EStorage::Freed || StorageStage == EStorage::Bracing || StorageStage == EStorage::Leaving
 			|| StorageStage == EStorage::Gone || (State && State->JeongwooState == SelfEscaped) || !bHourActive));
-	SetTargetLive(FindTarget(FName(TEXT("Storage.DohaPull"))), bNightThree && bBoxInCorner
-		&& (StorageStage == EStorage::Freed || StorageStage == EStorage::Bracing || StorageStage == EStorage::Leaving));
+	// 정우가 숨을 고르는 동안에는 부를 수 없고, 판 앞에 와서 손에 힘을 싣기 전에는 당길 수 없다.
+	SetTargetLive(FindTarget(FName(TEXT("Storage.DohaPull"))), bNightThree && bBoxInCorner && BoxSlideStart < 0.0
+		&& ((StorageStage == EStorage::Freed && bJeongwooUp) || (StorageStage == EStorage::Bracing && bBraceHeld)
+			|| StorageStage == EStorage::Leaving));
 	SetTargetLive(FindTarget(FName(TEXT("Storage.Jeongwoo"))), bNightThree && (StorageStage == EStorage::Trapped || StorageStage == EStorage::Fallen));
 	// 장롱: 한 번 밀면 그 자리다. 숨는 자리도 같이 옮긴다.
 	if (Scene)
@@ -483,6 +496,8 @@ void AIGMissingFloorLeftoverDirector::BeginStorageTrap(const bool bAnnounce)
 		? EStorage::Released : EStorage::Trapped;
 	StorageStageAt = GetWorld()->GetTimeSeconds();
 	bBraceAgainSpoken = false;
+	bBraceHeld = false;
+	bJeongwooUp = false;
 	SetBoardPose(0, false);
 	if (Jeongwoo->LoadBody())
 	{
@@ -748,8 +763,14 @@ void AIGMissingFloorLeftoverDirector::TickWardrobeMove()
 	{
 		GetWorldTimerManager().ClearTimer(WardrobeTimer);
 		WardrobeMoveStart = -1.0;
-		// 정우가 아직 판 뒤에 있을 때의 발견이다. 그를 꺼낸 뒤에는 이 말이 뒤늦게 뜨지 않는다.
-		ThinkIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverWardrobeHatch", "장롱 뒤에 점검구가 있었어. 저쪽 틈보다 훨씬 커."), 3.4f);
+		// 정우가 아직 판 뒤에 있을 때의 발견이다. 그를 꺼낸 뒤에는 이 말이 뒤늦게 뜨지 않는다. 그 점검구가
+		// 판을 누르던 틈보다 크다는 것, 그래서 무엇이 옮겨 갈지는 보고 듣는 사람이 잇는다.
+		if (const AIGAccessHatch* LargeHatch = Hatches.FindRef(GapLarge))
+		{
+			Caption(NSLOCTEXT("IGMissingFloor", "LeftoverHatchDraftCaption", "[점검구 안으로 바람이 빨려 드는 소리]"),
+				LargeHatch->GetActorLocation(), 2.6f);
+		}
+		ThinkIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverWardrobeHatch", "장롱 뒤에 점검구가 있었어."), 2.6f);
 		RefreshStorage();
 	}
 }
@@ -851,8 +872,11 @@ void AIGMissingFloorLeftoverDirector::FreeJeongwoo()
 	SetBoardPose(3, true);
 	PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), DohaBoxUnderBoard.GetLocation() + FVector(0.0f, 0.0f, 20.0f), 0.6f, 0.8f);
 	Jeongwoo->SetBlocksPlayer(false);
-	Jeongwoo->Appear(JeongwooCorner, -135.0f, AIGJeongwooFigure::EPose::Idle);
-	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::WalkJeongwooOut, 1.25f, false);
+	// 판 뒤 구석에서 두 손으로 판을 밀어 낸다(받치는 자세의 손이 판 뒷면에 닿는 거리다). 판이 비켜나면
+	// 그 자리에 쪼그려 숨을 고르고(JeongwooCatchBreath), 다 고르면 일어나 걸어 나온다.
+	bJeongwooUp = false;
+	Jeongwoo->Appear(JeongwooCorner, -135.0f, AIGJeongwooFigure::EPose::Brace);
+	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooCatchBreath, 0.7f, false);
 	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		if (StorageStage != EStorage::Freed)
@@ -875,12 +899,13 @@ void AIGMissingFloorLeftoverDirector::FreeJeongwoo()
 		{
 			Jeongwoo->SetBlocksPlayer(true);
 		}
-		// 말이 다 끝나면 문으로 간다. 그 사이 상자를 당기면 판부터 같이 받친다(JeongwooLeave가 받치는 중이면 하지 않는다).
+		// 말이 다 끝나고 한숨 돌린 뒤 문으로 간다. 그 사이 남은 물건을 둘러볼 수 있고, 상자를 당기면 판부터
+		// 같이 받친다(JeongwooLeave가 받치는 중이면 하지 않는다).
 		const auto GoToDoor = [this]()
 		{
 			if (StorageStage == EStorage::Freed)
 			{
-				GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooLeave, 0.6f, false);
+				GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooLeave, 2.0f, false);
 			}
 		};
 		if (bBoxLeft)
@@ -893,9 +918,20 @@ void AIGMissingFloorLeftoverDirector::FreeJeongwoo()
 			FTimerHandle Wait;
 			GetWorldTimerManager().SetTimer(Wait, FTimerDelegate::CreateWeakLambda(this, GoToDoor), 3.2f, false);
 		}
-	}), 2.4f, false);
+	}), 1.5f, false);
 	RefreshStorage();
 	UE_LOG(LogTemp, Display, TEXT("LEFTOVER_N3 freed"));
+}
+
+void AIGMissingFloorLeftoverDirector::JeongwooCatchBreath()
+{
+	if (!Jeongwoo || StorageStage != EStorage::Freed)
+	{
+		return;
+	}
+	// 판이 비켜났다. 구석에 쪼그려 앉아 숨을 고른다. 인사는 이 자세로 한다.
+	Jeongwoo->SetPose(AIGJeongwooFigure::EPose::Crouch);
+	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::WalkJeongwooOut, 2.4f, false);
 }
 
 void AIGMissingFloorLeftoverDirector::WalkJeongwooOut()
@@ -904,6 +940,8 @@ void AIGMissingFloorLeftoverDirector::WalkJeongwooOut()
 	{
 		return;
 	}
+	bJeongwooUp = true;
+	RefreshStorage();
 	// 바닥 틀 끝(61, 52)과 밀려난 판 서쪽 끝(24, 29) 사이를 지난다. 둘 다 20 cm 넘게 비킨다.
 	Jeongwoo->WalkRoute({JeongwooCorner, FVector(70.0f, 46.0f, StorageZ), FVector(35.0f, 47.0f, StorageZ), FVector(5.0f, 50.0f, StorageZ), JeongwooOutSpot},
 		false, AIGJeongwooFigure::EPose::Idle, 80.0f);
@@ -938,7 +976,7 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 		RefreshStorage();
 		return;
 	}
-	if (StorageStage != EStorage::Bracing)
+	if (StorageStage != EStorage::Bracing || !bBraceHeld || BoxSlideStart >= 0.0)
 	{
 		return;
 	}
@@ -947,6 +985,8 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 	StorageStageAt = GetWorld()->GetTimeSeconds();
 	if (DohaBoxPulls == 1)
 	{
+		// 한 뼘쯤 끌려 나오다 모서리가 판에 걸려 멈춘다.
+		SlideDohaBox(7.0f, 0.3f, false);
 		PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), PushedAside(DohaBoxUnderBoard).GetLocation() + FVector(0.0f, 0.0f, 15.0f), 0.55f, 0.9f);
 		SayIn(IGLeftoverDialogue::BoxStuck, YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuck", "잠깐만요. 상자가 걸렸어요."));
 		SayIn(IGLeftoverDialogue::BoxStuck, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuckReply", "모서리가 판에 걸렸어요. 조금만 더요."));
@@ -955,12 +995,15 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 	// 빠졌다. 걸렸다는 말과 받치는 동안의 말은 이제 지난 일이다. 안에 오빠의 공구 주머니가 있다.
 	Hush(IGLeftoverDialogue::BoxStuck);
 	Hush(IGLeftoverDialogue::Brace);
+	// 걸렸던 모서리가 빠지며 상자가 발치까지 끌려 나온다. 다 나오면 그녀가 챙긴다.
+	SlideDohaBox(40.0f, 0.55f, true);
 	Take(DohaBox);
 	Take(ToolPouch);
 	AIGNightThreatDirector::HoldQuietAfterDiscovery(this, 60.0f);
 	PlaySound(UIGToneSequenceSoundWave::CreateToolRollClink(this), PushedAside(DohaBoxUnderBoard).TransformPosition(FVector(-40.0f, 0.0f, 20.0f)), 0.55f);
 	Think(NSLOCTEXT("IGMissingFloor", "LeftoverPouchThought", "오빠 공구 주머니야. 집에 가져가자."), 3.2f);
 	StorageStage = EStorage::Freed;
+	bBraceHeld = false;
 	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), JeongwooOutSpot}, false, AIGJeongwooFigure::EPose::Idle, 90.0f);
 	GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooLeave, 3.0f, false);
 	RefreshStorage();
@@ -973,10 +1016,18 @@ void AIGMissingFloorLeftoverDirector::JeongwooLeave()
 	{
 		return;
 	}
+	if (StorageStage == EStorage::Freed && Jeongwoo->IsWalking())
+	{
+		// 판 뒤에서 아직 걸어 나오는 중이다. 다 나온 뒤에 문으로 간다.
+		GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooLeave, 0.5f, false);
+		return;
+	}
 	// 정우가 먼저 302호 문으로 가서 문을 잡고 기다린다. 그녀가 문을 지나 나오면 같이 나간 것이고,
 	// 남아서 더 보면 기다리다가 먼저 내려간다. 상자를 당기면 돌아와 판을 받친다.
 	StorageStage = EStorage::Leaving;
 	StorageStageAt = GetWorld()->GetTimeSeconds();
+	bBraceHeld = false;
+	GetWorldTimerManager().ClearTimer(BraceTimer);
 	Hush(IGLeftoverDialogue::Brace);
 	const bool bBoxLeft = !HasTaken(DohaBox);
 	SayIn(IGLeftoverDialogue::DoorWait, JeongwooName(), bBoxLeft
@@ -984,6 +1035,88 @@ void AIGMissingFloorLeftoverDirector::JeongwooLeave()
 		: NSLOCTEXT("IGMissingFloor", "LeftoverLeaveLine", "문 잡고 있을게요. 더 볼 거 있으면 보고 나와요."), true);
 	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), FVector(-30.0f, -120.0f, StorageZ), FVector(-30.0f, -222.0f, StorageZ),
 		FVector(-30.0f, -252.0f, StorageZ), JeongwooDoorSpot}, false, AIGJeongwooFigure::EPose::HoldDoor, 100.0f);
+	RefreshStorage();
+}
+
+void AIGMissingFloorLeftoverDirector::JeongwooTakeHold()
+{
+	if (StorageStage != EStorage::Bracing || !Jeongwoo || Jeongwoo->IsWalking())
+	{
+		return;
+	}
+	bBraceHeld = true;
+	// 받친 채 기다리는 시간은 손에 힘을 실은 때부터 센다.
+	StorageStageAt = GetWorld()->GetTimeSeconds();
+	// 판이 두 손에 실리며 한 번 삐걱한다. 손이 닿는 높이(발 앞 60 cm, 130 cm 남짓)에서 난다.
+	const FVector Hands = Jeongwoo->GetFeet() + Jeongwoo->GetActorForwardVector() * 60.0f + FVector(0.0f, 0.0f, 130.0f);
+	PlaySound(IGAudio::Sample(TEXT("Settle_Creak_1")), Hands, 0.5f, 1.15f, 60.0f, 900.0f);
+	// 다시 불려 온 길이면 오면서 이미 「판 잡을게요」라고 했다. 같은 부탁을 처음처럼 되풀이하지 않는다.
+	if (bBraceAgainSpoken)
+	{
+		bBraceAgainSpoken = false;
+		SayIn(IGLeftoverDialogue::Brace, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceReady", "잡았어요. 당겨요."));
+	}
+	else
+	{
+		SayIn(IGLeftoverDialogue::Brace, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceLine", "제가 받칠게요. 상자부터 당겨요."));
+	}
+	RefreshStorage();
+}
+
+bool AIGMissingFloorLeftoverDirector::IsBraceHeld() const
+{
+	return StorageStage == EStorage::Bracing && bBraceHeld;
+}
+
+void AIGMissingFloorLeftoverDirector::SlideDohaBox(const float Distance, const float Seconds, const bool bTakeAtEnd)
+{
+	UStaticMeshComponent* Box = Props.FindRef(FName(TEXT("Storage.DohaBox")));
+	if (!Box)
+	{
+		return;
+	}
+	// 당기는 쪽은 상자의 손잡이 면(이름표 면, 상자 기준 -X)이다. 바닥을 따라 수평으로 끌려 나온다.
+	const FVector Pull = Box->GetComponentQuat().RotateVector(FVector(-1.0f, 0.0f, 0.0f)).GetSafeNormal2D();
+	BoxSlideFrom = Box->GetComponentLocation();
+	BoxSlideTo = BoxSlideFrom + Pull * Distance;
+	BoxSlideStart = GetWorld()->GetTimeSeconds();
+	BoxSlideSeconds = FMath::Max(Seconds, 0.05f);
+	bBoxSlideTake = bTakeAtEnd;
+	GetWorldTimerManager().SetTimer(BoxSlideTimer, this, &AIGMissingFloorLeftoverDirector::TickBoxSlide, 1.0f / 60.0f, true);
+	RefreshStorage();
+}
+
+void AIGMissingFloorLeftoverDirector::TickBoxSlide()
+{
+	// 멤버 함수로 건 타이머다(끝에 자기 타이머를 지우고 멤버를 계속 쓴다).
+	const float Alpha = FMath::Clamp(static_cast<float>((GetWorld()->GetTimeSeconds() - BoxSlideStart) / BoxSlideSeconds), 0.0f, 1.0f);
+	// 끌리다 걸리면 뚝 멈춘다. 빠질 때는 끝에서 천천히 선다.
+	const float Ease = bBoxSlideTake ? 1.0f - FMath::Square(1.0f - Alpha) : FMath::Sin(Alpha * UE_HALF_PI);
+	const FVector Where = FMath::Lerp(BoxSlideFrom, BoxSlideTo, Ease);
+	for (const TCHAR* Key : {TEXT("Storage.DohaBox"), TEXT("Storage.DohaLabel"), TEXT("Storage.DohaMark")})
+	{
+		if (UStaticMeshComponent* Part = Props.FindRef(FName(Key)))
+		{
+			Part->SetWorldLocation(Where);
+		}
+	}
+	if (Alpha < 1.0f)
+	{
+		return;
+	}
+	GetWorldTimerManager().ClearTimer(BoxSlideTimer);
+	BoxSlideStart = -1.0;
+	if (bBoxSlideTake)
+	{
+		// 챙겼다. 숨긴 소품은 다음에 이 밤을 다시 세울 때 원래 자리에서 시작한다.
+		for (const TCHAR* Key : {TEXT("Storage.DohaBox"), TEXT("Storage.DohaLabel"), TEXT("Storage.DohaMark")})
+		{
+			if (UStaticMeshComponent* Part = Props.FindRef(FName(Key)))
+			{
+				Part->SetWorldLocation(BoxSlideFrom);
+			}
+		}
+	}
 	RefreshStorage();
 }
 
@@ -1092,6 +1225,8 @@ void AIGMissingFloorLeftoverDirector::SelfEscapeAtDawn()
 	}
 	StorageStage = EStorage::Idle;
 	bBraceAgainSpoken = false;
+	bBraceHeld = false;
+	GetWorldTimerManager().ClearTimer(BraceTimer);
 	if (Jeongwoo)
 	{
 		Jeongwoo->Vanish();
@@ -1200,11 +1335,10 @@ void AIGMissingFloorLeftoverDirector::BuildAssembly()
 		Site->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleSiteMatch);
 	}
 	// 대 본 뒤 벽 밑에 기대 둔 덮개. 틀과 조각 셋이 한 장으로 맞춰져 있다.
-	const FTransform Lean(FRotator(-12.0f, 180.0f, 0.0f), SiteLeanSpot + FVector(0.0f, 0.0f, 37.0f));
-	SpawnProp(FName(TEXT("Annex.CoverLean")), Mesh(TEXT("SM_CoverFrame")), Lean, false);
-	SpawnProp(FName(TEXT("Annex.CoverLeanA")), Mesh(TEXT("SM_CoverPieceA")), Lean, false);
-	SpawnProp(FName(TEXT("Annex.CoverLeanB")), Mesh(TEXT("SM_CoverPieceB")), Lean, false);
-	SpawnProp(FName(TEXT("Annex.CoverLeanC")), Mesh(TEXT("SM_CoverPieceC")), Lean, false);
+	SpawnProp(FName(TEXT("Annex.CoverLean")), Mesh(TEXT("SM_CoverFrame")), SiteLean, false);
+	SpawnProp(FName(TEXT("Annex.CoverLeanA")), Mesh(TEXT("SM_CoverPieceA")), SiteLean, false);
+	SpawnProp(FName(TEXT("Annex.CoverLeanB")), Mesh(TEXT("SM_CoverPieceB")), SiteLean, false);
+	SpawnProp(FName(TEXT("Annex.CoverLeanC")), Mesh(TEXT("SM_CoverPieceC")), SiteLean, false);
 }
 
 FTransform AIGMissingFloorLeftoverDirector::PieceSlotTransform(const int32 Piece) const
@@ -1666,13 +1800,45 @@ void AIGMissingFloorLeftoverDirector::HandleSiteMatch(AIGLeftoverTarget* Target)
 	AIGNightThreatDirector::HoldQuietAfterDiscovery(this, 60.0f);
 	Narrative->RecordWitness(EIGMissingFloorWitness::InspectionCoverMatched);
 	MarkExamined(FName(TEXT("Annex.SiteMatch")));
+	// 덮개를 덧판에 대 본다. 틀 날개 구멍 넷 뒤로 덧판 나사 넷이 보이고, 덧판 양쪽 끝 나사 둘은 덮개 밖에
+	// 남는다. 그녀는 보이는 것만 말한다. 덮개를 떼어 간 뒤 그 구멍에 덧판을 박았다는 것은 보는 사람이
+	// 잇고, 넷째 밤 관리인 앞에서 그녀가 처음 입 밖에 낸다.
 	PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, true), SiteMatchSpot, 0.4f, 0.9f);
-	Think(NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch1", "나사 자리도 잘린 면도 맞아. 원래 여기 달려 있던 덮개야."), 4.0f);
-	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
-	{
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch2", "덮개 나사 자리 위로 덧판 나사가 박혔어. 덮개를 떼어 간 다음에 막은 거야."), 4.0f);
-	}), 4.2f, false);
+	SiteHoldStart = GetWorld()->GetTimeSeconds();
+	bSiteLinePending = true;
+	GetWorldTimerManager().SetTimer(SiteHoldTimer, this, &AIGMissingFloorLeftoverDirector::TickSiteHold, 1.0f / 60.0f, true);
+	// 대는 순간부터 덧판 앞에 있다(첫 타이머를 기다리면 한 프레임 벽 밑에 기댄 채 보인다).
+	TickSiteHold();
 	RefreshAssembly();
+}
+
+void AIGMissingFloorLeftoverDirector::TickSiteHold()
+{
+	// 멤버 함수로 건 타이머다(끝에 자기 타이머를 지우고 멤버를 계속 쓴다).
+	const float Seconds = static_cast<float>(GetWorld()->GetTimeSeconds() - SiteHoldStart);
+	if (bSiteLinePending && Seconds >= 1.8f)
+	{
+		bSiteLinePending = false;
+		Think(NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch1", "틀 구멍 넷이 덧판 나사 넷이랑 딱 맞아."), 3.6f);
+	}
+	FTransform Where = SiteHold;
+	if (Seconds >= SiteHoldSeconds)
+	{
+		const float Alpha = FMath::Clamp((Seconds - SiteHoldSeconds) / SiteSetDownSeconds, 0.0f, 1.0f);
+		Where.Blend(SiteHold, SiteLean, Alpha * Alpha * (3.0f - 2.0f * Alpha));
+		if (Alpha >= 1.0f)
+		{
+			GetWorldTimerManager().ClearTimer(SiteHoldTimer);
+			SiteHoldStart = -1.0;
+		}
+	}
+	for (const TCHAR* Key : {TEXT("Annex.CoverLean"), TEXT("Annex.CoverLeanA"), TEXT("Annex.CoverLeanB"), TEXT("Annex.CoverLeanC")})
+	{
+		if (UStaticMeshComponent* Part = Props.FindRef(FName(Key)))
+		{
+			Part->SetWorldTransform(Where);
+		}
+	}
 }
 
 void AIGMissingFloorLeftoverDirector::StartDayOneBoxesForTesting()

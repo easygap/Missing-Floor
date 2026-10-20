@@ -162,6 +162,8 @@ public:
 	/** 검사용. 세운 소품 하나(없으면 null). */
 	UStaticMeshComponent* GetPropForTesting(const FName Key) const { return Props.FindRef(Key); }
 	FName GetStorageStage() const;
+	/** 검사용: 정우가 판 앞에 서서 두 손에 힘을 실었다(이때부터 상자를 당길 수 있다). */
+	bool IsBraceHeld() const;
 	bool IsInnerRoomErrandRunning() const;
 	/**
 	 * 검사용: 깨어나는 안쪽 방 장면을 접고 곧장 귀환 추격을 건다. 비트는 남기지 않는다(겪지 않은
@@ -284,6 +286,15 @@ private:
 	void JeongwooLeave();
 	/** 받치던 판을 놓는다(그녀가 자리를 떴거나 오래 안 당겼다). 정우는 다시 문을 잡으러 간다. */
 	void JeongwooStopBracing();
+	/** 판 앞에 선 정우가 두 손에 힘을 싣는다. 판이 한 번 삐걱하고, 그때 당기라고 한다. */
+	void JeongwooTakeHold();
+	/** 판을 밀어 낸 정우가 그 자리에 쪼그려 숨을 고른다. 다 고르면 일어나 걸어 나온다. */
+	void JeongwooCatchBreath();
+	/** 판 밑 상자를 당긴 만큼 미끄러뜨린다. bTakeAtEnd면 다 빠진 뒤 숨긴다(그녀가 챙겼다). */
+	void SlideDohaBox(float Distance, float Seconds, bool bTakeAtEnd);
+	void TickBoxSlide();
+	/** 5층 덧판에 대 본 덮개를 몇 초 들고 있다가 벽 밑에 기대 둔다. */
+	void TickSiteHold();
 	/** 정우가 먼저 계단으로 내려간다. bTogether면 같이 나온 것이다. */
 	void JeongwooGoDownstairs(bool bTogether);
 	/** 손에 들고 있던 조각을 조립대 옆에 내려놓는다(자리를 떴거나 새벽이 왔다). */
@@ -389,7 +400,24 @@ private:
 	bool bWedgeInHand = false;
 	/** 문을 잡고 있다가 다시 불려 와 「판 잡을게요」를 이미 했다. 판 앞에 서면 짧게만 말한다. */
 	bool bBraceAgainSpoken = false;
+	/** 판 앞에 선 정우가 손에 힘을 실었다. 그 전에는 상자를 당길 수 없고 당기라는 말도 하지 않는다. */
+	bool bBraceHeld = false;
+	/** 구출 뒤 숨을 다 고르고 일어났다. 그 전에는 받쳐 달라고 부를 수 없다(쪼그린 채 판 뒤에 있다). */
+	bool bJeongwooUp = false;
+	FTimerHandle BraceTimer;
 	int32 DohaBoxPulls = 0;
+	/** 판 밑에서 끌려 나오는 상자. 놓인 자리(밀린 판 밑)에서 당긴 쪽으로 미끄러진다. */
+	FTimerHandle BoxSlideTimer;
+	/** 덧판에 덮개를 대 보기 시작한 시각(아니면 -1). */
+	FTimerHandle SiteHoldTimer;
+	double SiteHoldStart = -1.0;
+	/** 대 본 지 1.8초에 보이는 것을 한 번 말한다. 장면 타이머는 다음 장면이 다시 걸어서 따로 둔다. */
+	bool bSiteLinePending = false;
+	FVector BoxSlideFrom = FVector::ZeroVector;
+	FVector BoxSlideTo = FVector::ZeroVector;
+	double BoxSlideStart = -1.0;
+	float BoxSlideSeconds = 0.0f;
+	bool bBoxSlideTake = false;
 	FVector WardrobeFrom = FVector::ZeroVector;
 	double WardrobeMoveStart = -1.0;
 

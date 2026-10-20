@@ -1305,7 +1305,6 @@
  "IGMissingFloor,LeftoverGloves3": "跑完外送差不多四點。回來的時候我順便搬出來。",
  "IGMissingFloor,LeftoverGlovesPrompt": "拿走手套袋",
  "IGMissingFloor,LeftoverGlovesThought": "白天拿給正宇看吧。",
- "IGMissingFloor,LeftoverHatchDraft": "風被吸進去了。",
  "IGMissingFloor,LeftoverHeapPrompt": "看貼在牆上的那一堆",
  "IGMissingFloor,LeftoverHeapThought": "隔音棉和防水膜一層一層補上去了。連鋼骨都一起黏在上面。",
  "IGMissingFloor,LeftoverHeldPrompt": "轉轉看 · 長按翻面",
@@ -1350,8 +1349,7 @@
  "IGMissingFloor,LeftoverReleasedBraced": "咦，板子鬆了。我推推看。",
  "IGMissingFloor,LeftoverSackPrompt": "打開麻布袋看看",
  "IGMissingFloor,LeftoverSackThought": "最後一塊碎片，還有金屬框。上面的膜跟管理室拿來的那幾塊一樣。",
- "IGMissingFloor,LeftoverSiteMatch1": "螺絲孔和切口都對得上。這塊蓋板原本就裝在這裡。",
- "IGMissingFloor,LeftoverSiteMatch2": "補板的螺絲就鎖在蓋板的螺絲孔上面。是先把蓋板拆走，再封起來的。",
+ "IGMissingFloor,LeftoverSiteMatch1": "框上的四個孔，正好對上補板的四顆螺絲。",
  "IGMissingFloor,LeftoverSitePrompt": "把拆下的蓋板對上去看看",
  "IGMissingFloor,LeftoverSlotPrompt": "放到框上試試",
  "IGMissingFloor,LeftoverTrappedCall": "有人在嗎？我被板子卡住了。",
@@ -1364,7 +1362,7 @@
  "IGMissingFloor,LeftoverWakeSwitch": "［按下開關的聲音］",
  "IGMissingFloor,LeftoverWakeThought": "阿伯醒了。得躲起來。",
  "IGMissingFloor,LeftoverWardrobeCaption": "［衣櫃腳刮著地板被推開的聲音］",
- "IGMissingFloor,LeftoverWardrobeHatch": "衣櫃後面有個檢修口。比那邊的縫大多了。",
+ "IGMissingFloor,LeftoverWardrobeHatch": "衣櫃後面有個檢修口。",
  "IGMissingFloor,LeftoverWardrobePrompt": "推衣櫃",
  "IGMissingFloor,LeftoverWedgeHeld": "卡住了。這下板子推不動了。",
  "IGMissingFloor,LeftoverWedgePickPrompt": "撿起木楔",
@@ -1505,5 +1503,6 @@
  "IGHUD,SoundCaptionsAll": "所有聲音",
  "IGHUD,SoundCaptionsImportant": "重要聲音",
  "IGMissingFloor,N3ReturnHintComing": "他在那裡。往這邊過來了。",
- "IGMissingFloor,LeftoverBraceReady": "撐住了，拉吧。"
+ "IGMissingFloor,LeftoverBraceReady": "撐住了，拉吧。",
+ "IGMissingFloor,LeftoverHatchDraftCaption": "［風被吸進檢修口的聲音］"
 }

@@ -62,6 +62,8 @@ private:
 	/** 5층 벽 칸 둘레의 벽·천장까지 거리와 편 몸의 패드 자리를 남긴다(다리를 놓을 자리를 고를 때). */
 	void LogAnnexGeometry();
 	void Next(int32 NewPhase);
+	/** 지금 쓸 수 있는가(살아 있는 표적이고 상호작용을 받는가). */
+	bool CanUse(AActor* Actor) const;
 	bool Use(AActor* Target, bool bTap = false);
 	AIGLeftoverTarget* Target(const TCHAR* Key) const;
 	UIGMissingFloorNarrativeSubsystem* GetNarrative() const;
@@ -123,6 +125,10 @@ private:
 	int32 Step = 0;
 	/** 한 단계 안에서 찍은 뒤 다음 행동까지 기다린 시간(PhaseSeconds를 쓰는 조건과 따로 센다). */
 	float StepSeconds = 0.0f;
+	/** 처음 당기기 전 오빠 상자 자리. 한 뼘 끌려 나오다 걸리는지 본다. */
+	FVector BoxBeforePull = FVector::ZeroVector;
+	/** 판을 밀어 낸 정우가 쪼그려 숨을 고르는 모습을 한 번 찍었다. */
+	bool bBreathShot = false;
 
 	// -- 실제 입력 길(input) -------------------------------------------------------------
 	enum class EInputStep : uint8 { Walk, Aim, Press, Wait, Until };

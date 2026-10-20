@@ -1305,7 +1305,6 @@
  "IGMissingFloor,LeftoverGloves3": "配達が終わると4時ごろになります。帰ってくるついでに出しておきますね。",
  "IGMissingFloor,LeftoverGlovesPrompt": "手袋のポーチを持っていく",
  "IGMissingFloor,LeftoverGlovesThought": "昼間、ジョンウさんに見せよう。",
- "IGMissingFloor,LeftoverHatchDraft": "風が中に吸い込まれていく。",
  "IGMissingFloor,LeftoverHeapPrompt": "壁に張りついたかたまりを見る",
  "IGMissingFloor,LeftoverHeapThought": "防音材と防水シートが何重にも貼ってある。鉄骨までくっついてる。",
  "IGMissingFloor,LeftoverHeldPrompt": "回してみる · 長押しで裏返す",
@@ -1350,8 +1349,7 @@
  "IGMissingFloor,LeftoverReleasedBraced": "あ、板が緩みました。押してみます。",
  "IGMissingFloor,LeftoverSackPrompt": "麻袋を開けてみる",
  "IGMissingFloor,LeftoverSackThought": "最後の破片と、金属の枠だ。管理人室から持ってきたのと同じシートがついてる。",
- "IGMissingFloor,LeftoverSiteMatch1": "ネジの位置も、切り口も合ってる。もともとここについてたふただ。",
- "IGMissingFloor,LeftoverSiteMatch2": "ふたのネジ穴の上から、当て板のネジが打ってある。ふたを外して持っていったあとで、ふさいだんだ。",
+ "IGMissingFloor,LeftoverSiteMatch1": "枠の穴四つが、当て板のネジ四本とぴったり重なる。",
  "IGMissingFloor,LeftoverSitePrompt": "外されたふたを当ててみる",
  "IGMissingFloor,LeftoverSlotPrompt": "枠にはめてみる",
  "IGMissingFloor,LeftoverTrappedCall": "そこ、誰かいますか？ 板に挟まって……",
@@ -1364,7 +1362,7 @@
  "IGMissingFloor,LeftoverWakeSwitch": "［スイッチを入れる音］",
  "IGMissingFloor,LeftoverWakeThought": "管理人さんが起きた。隠れなきゃ。",
  "IGMissingFloor,LeftoverWardrobeCaption": "［クローゼットの脚が床をこすりながらずれる音］",
- "IGMissingFloor,LeftoverWardrobeHatch": "クローゼットの裏に点検口があった。あっちの隙間よりずっと大きい。",
+ "IGMissingFloor,LeftoverWardrobeHatch": "クローゼットの裏に点検口があった。",
  "IGMissingFloor,LeftoverWardrobePrompt": "クローゼットを押す",
  "IGMissingFloor,LeftoverWedgeHeld": "くさびが効いた。もう板はずれない。",
  "IGMissingFloor,LeftoverWedgePickPrompt": "木のくさびを拾う",
@@ -1505,5 +1503,6 @@
  "IGHUD,SoundCaptionsAll": "すべての音",
  "IGHUD,SoundCaptionsImportant": "重要な音",
  "IGMissingFloor,N3ReturnHintComing": "いた。こっちに来る。",
- "IGMissingFloor,LeftoverBraceReady": "押さえました。引いてください。"
+ "IGMissingFloor,LeftoverBraceReady": "押さえました。引いてください。",
+ "IGMissingFloor,LeftoverHatchDraftCaption": "［点検口の中へ風が吸い込まれる音］"
 }

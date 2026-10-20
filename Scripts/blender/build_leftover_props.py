@@ -47,6 +47,8 @@ MEMBRANE_T = 0.0015
 FLAP_Z = 0.23
 # 고정쇠 넷이 들어가는 나사 구멍. 조각 A가 왼쪽 둘(Y-), B가 오른쪽 위, C가 오른쪽 아래.
 HOLES = {"A": [(-0.27, 0.32), (-0.27, -0.32)], "B": [(0.27, 0.32)], "C": [(0.27, -0.32)]}
+# 덮개 틀 날개의 벽 고정 구멍(가로 ±20 cm, 날개 가운데 높이). 5층 덧판 나사 넷이 이 자리에 박혔다.
+COVER_FIX = [(y, z) for z in ((COVER_H + 0.002) * 0.5 + 0.01, -((COVER_H + 0.002) * 0.5 + 0.01)) for y in (-0.20, 0.20)]
 A_EDGE = [(-0.02, 0.35), (0.0, 0.22), (-0.04, 0.10), (-0.0015, 0.0), (0.01, -0.03), (-0.03, -0.18), (0.0, -0.28),
           (-0.02, -0.35)]
 BC_EDGE = [(-0.0015, 0.0), (0.08, 0.03), (0.16, -0.01), (0.23, 0.02), (0.30, 0.0)]
@@ -299,8 +301,8 @@ def build_cover_frame():
         parts.append(bx(f"SleeveZ{z:+.2f}", (0.03, w, t), (-0.014, 0.0, z), steel))
     for y in (w * 0.5 + t * 0.5, -w * 0.5 - t * 0.5):
         parts.append(bx(f"SleeveY{y:+.2f}", (0.03, t, h), (-0.014, y, 0.0), steel))
-    # 날개의 벽 고정 구멍(5층 벽의 나사 자리와 같은 간격).
-    for y, z in ((-0.20, h * 0.5 + 0.01), (0.20, h * 0.5 + 0.01), (-0.20, -h * 0.5 - 0.01), (0.20, -h * 0.5 - 0.01)):
+    # 날개의 벽 고정 구멍. 5층 덧판 나사 넷이 같은 자리에 박혀 있다(COVER_FIX).
+    for y, z in COVER_FIX:
         parts.append(part(ig.cylinder(f"Fix{y:+.2f}{z:+.2f}", 0.0032, 0.003, location=(0.0025, y, z),
                                       rotation=(0.0, math.pi * 0.5, 0.0), segments=12, material=screw)))
     # 고정쇠가 도는 기둥(모서리 안쪽).
@@ -391,10 +393,11 @@ def build_overlay_board():
     # 원점은 판 가운데 뒷면(벽 면). 앞면 +X. 가로 Y 80, 세로 Z 90.
     board = ig.box("Board", (0.0125, 0.80, 0.90), location=(0.00625, 0.0, 0.0), bevel=0.0015, material=gypsum)
     parts = [part(board)]
-    for y in (-0.37, 0.37):
-        for z in (-0.42, 0.0, 0.42):
-            parts.append(part(ig.cylinder(f"Screw{y:+.2f}{z:+.2f}", 0.0045, 0.0015, location=(0.0133, y, z),
-                                          rotation=(0.0, math.pi * 0.5, 0.0), segments=12, material=screw)))
+    # 나사 여섯. 넷은 떼어 간 덮개 틀이 벽에 박혀 있던 구멍(COVER_FIX)에 그대로 다시 박았고, 양쪽 끝 둘은
+    # 덧판이 넓어 더 박은 것이다. 덮개를 대 보면 날개 구멍 넷이 나사 넷 위에 겹친다.
+    for y, z in COVER_FIX + [(-0.37, 0.0), (0.37, 0.0)]:
+        parts.append(part(ig.cylinder(f"Screw{y:+.2f}{z:+.3f}", 0.0045, 0.0015, location=(0.0133, y, z),
+                                      rotation=(0.0, math.pi * 0.5, 0.0), segments=12, material=screw)))
     # 판 둘레를 실리콘으로 쳐 바르고, 아래 변으로 방수막이 비어져 나왔다.
     parts.append(tube("SiliconeTop", [(0.006, -0.40, 0.452), (0.008, 0.0, 0.455), (0.006, 0.40, 0.451)], 0.006, silicone))
     parts.append(tube("SiliconeL", [(0.006, -0.402, 0.45), (0.008, -0.404, 0.0), (0.006, -0.402, -0.45)], 0.006, silicone))

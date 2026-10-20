@@ -1305,7 +1305,6 @@
  "IGMissingFloor,LeftoverGloves3": "I finish deliveries around four. I’ll get it out on my way in.",
  "IGMissingFloor,LeftoverGlovesPrompt": "Take the glove pouch",
  "IGMissingFloor,LeftoverGlovesThought": "I’ll show this to Jeongwoo later today.",
- "IGMissingFloor,LeftoverHatchDraft": "The air’s getting sucked inside.",
  "IGMissingFloor,LeftoverHeapPrompt": "Look at the pile stuck to the wall",
  "IGMissingFloor,LeftoverHeapThought": "Soundproofing and waterproof sheeting, layer after layer. There’s steel framing stuck in it too.",
  "IGMissingFloor,LeftoverHeldPrompt": "Rotate · Hold to flip",
@@ -1350,8 +1349,7 @@
  "IGMissingFloor,LeftoverReleasedBraced": "Oh, the board’s come loose. I’ll try pushing it.",
  "IGMissingFloor,LeftoverSackPrompt": "Open the sack",
  "IGMissingFloor,LeftoverSackThought": "The last piece, and a metal frame. Same membrane as the pieces from the management office.",
- "IGMissingFloor,LeftoverSiteMatch1": "The screw holes match, and so do the cut edges. This cover used to be right here.",
- "IGMissingFloor,LeftoverSiteMatch2": "The overlay board’s screws went in over the cover’s screw holes. Someone took the cover first, then sealed it up.",
+ "IGMissingFloor,LeftoverSiteMatch1": "The frame’s four holes line up exactly with four of the overlay board’s screws.",
  "IGMissingFloor,LeftoverSitePrompt": "Hold the cover up to the wall",
  "IGMissingFloor,LeftoverSlotPrompt": "Try it in the frame",
  "IGMissingFloor,LeftoverTrappedCall": "Is someone there? I’m stuck behind a board.",
@@ -1364,7 +1362,7 @@
  "IGMissingFloor,LeftoverWakeSwitch": "[a switch clicking on]",
  "IGMissingFloor,LeftoverWakeThought": "He’s awake. I have to hide.",
  "IGMissingFloor,LeftoverWardrobeCaption": "[wardrobe legs scraping across the vinyl floor]",
- "IGMissingFloor,LeftoverWardrobeHatch": "There was an access hatch behind the wardrobe. It’s way bigger than the gap over there.",
+ "IGMissingFloor,LeftoverWardrobeHatch": "There was an access hatch behind the wardrobe.",
  "IGMissingFloor,LeftoverWardrobePrompt": "Push the wardrobe",
  "IGMissingFloor,LeftoverWedgeHeld": "That’s holding. The board won’t slide now.",
  "IGMissingFloor,LeftoverWedgePickPrompt": "Pick up the wooden wedge",
@@ -1505,5 +1503,6 @@
  "IGHUD,SoundCaptionsAll": "All sounds",
  "IGHUD,SoundCaptionsImportant": "Important sounds",
  "IGMissingFloor,N3ReturnHintComing": "There he is. He’s coming this way.",
- "IGMissingFloor,LeftoverBraceReady": "Got it. Pull."
+ "IGMissingFloor,LeftoverBraceReady": "Got it. Pull.",
+ "IGMissingFloor,LeftoverHatchDraftCaption": "[air being sucked into the access hatch]"
 }

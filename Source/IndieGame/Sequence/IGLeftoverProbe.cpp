@@ -557,6 +557,13 @@ AIGLeftoverTarget* AIGLeftoverProbe::Target(const TCHAR* Key) const
 	return Leftover.IsValid() ? Leftover->FindTarget(FName(Key)) : nullptr;
 }
 
+bool AIGLeftoverProbe::CanUse(AActor* Actor) const
+{
+	AIGPlayerCharacter* Character = Player.Get();
+	return Actor && Character && Actor->GetClass()->ImplementsInterface(UIGInteractable::StaticClass())
+		&& IIGInteractable::Execute_CanInteract(Actor, Character);
+}
+
 bool AIGLeftoverProbe::Use(AActor* Actor, const bool bTap)
 {
 	AIGPlayerCharacter* Character = Player.Get();
@@ -1092,6 +1099,16 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		return;
 	case 34:
+		// 판을 밀어 낸 정우는 그 자리에 쪼그려 숨을 고른다(0.7~3.1초). 덧댄 것은 아직 큰 점검구로 가는
+		// 중일 수 있어서 그 길(방 북쪽)에서 먼 문간에 서서 구석을 찍는다.
+		if (!bBreathShot && PhaseSeconds > 1.6f && PhaseSeconds < 2.9f)
+		{
+			bBreathShot = true;
+			const AIGJeongwooFigure* Figure = Director->GetJeongwoo();
+			Check(Figure && !Figure->IsWalking(), TEXT("n3_jeongwoo_stays_to_breathe"));
+			Stand(FVector(-30.0f, -200.0f, 600.0f), FVector(100.0f, 66.0f, 630.0f));
+			Shoot(TEXT("n3_catching_breath"));
+		}
 		if (PhaseSeconds < 3.0f)
 		{
 			return;
@@ -1123,6 +1140,16 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		{
 			return;
 		}
+		// 정우는 판을 밀어 낸 자리에 쪼그려 숨을 고른다. 다 고르고 일어나기 전에는 부를 수 없다.
+		if (!CanUse(Target(TEXT("Storage.DohaPull"))))
+		{
+			if (PhaseSeconds > 12.0f)
+			{
+				Check(false, TEXT("n3_jeongwoo_gets_up_after_breath"));
+				Next(36);
+			}
+			return;
+		}
 		Stand(FVector(50.0f, -105.0f, 600.0f), FVector(105.0f, -100.0f, 640.0f));
 		Check(Use(Target(TEXT("Storage.Sack"))), TEXT("n3_open_sack"));
 		Check(Taken(IGLeftoverProbe::PieceC) && Taken(IGLeftoverProbe::Frame), TEXT("n3_piece_c_and_frame"));
@@ -1133,7 +1160,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		return;
 	case 35:
 		// 처음 받칠 때까지만 기다린다. 그 뒤에는 정우가 판을 놓고 문으로 가는 것까지 단계마다 따로 본다.
-		if (Step == 0 && (Director->GetStorageStage() != FName(TEXT("Bracing")) || (Director->GetJeongwoo() && Director->GetJeongwoo()->IsWalking())))
+		if (Step == 0 && (Director->GetStorageStage() != FName(TEXT("Bracing")) || (Director->GetJeongwoo() && Director->GetJeongwoo()->IsWalking())
+			|| !Director->IsBraceHeld()))
 		{
 			if (PhaseSeconds > 15.0f)
 			{
@@ -1219,7 +1247,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		if (Step == 4)
 		{
-			if (Director->GetStorageStage() != FName(TEXT("Bracing")) || (Director->GetJeongwoo() && Director->GetJeongwoo()->IsWalking()))
+			if (Director->GetStorageStage() != FName(TEXT("Bracing")) || (Director->GetJeongwoo() && Director->GetJeongwoo()->IsWalking())
+				|| !Director->IsBraceHeld())
 			{
 				if (StepSeconds > 20.0f)
 				{
@@ -1233,10 +1262,30 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			StepSeconds = 0.0f;
 			return;
 		}
-		Stand(FVector(25.6f, -40.8f, 600.0f), FVector(56.8f, -10.6f, 617.0f));
-		Use(Target(TEXT("Storage.DohaPull")));
-		Check(!Taken(IGLeftoverProbe::DohaBox), TEXT("n3_box_catches_once"));
-		Check(HasLinesIn(IGLeftoverDialogue::BoxStuck), TEXT("n3_box_stuck_line_queued"));
+		if (Step == 5)
+		{
+			Stand(FVector(25.6f, -40.8f, 600.0f), FVector(56.8f, -10.6f, 617.0f));
+			const UStaticMeshComponent* Box = Director->GetPropForTesting(FName(TEXT("Storage.DohaBox")));
+			BoxBeforePull = Box ? Box->GetComponentLocation() : FVector::ZeroVector;
+			Use(Target(TEXT("Storage.DohaPull")));
+			Check(!Taken(IGLeftoverProbe::DohaBox), TEXT("n3_box_catches_once"));
+			Check(HasLinesIn(IGLeftoverDialogue::BoxStuck), TEXT("n3_box_stuck_line_queued"));
+			Step = 6;
+			StepSeconds = 0.0f;
+			return;
+		}
+		StepSeconds += GetWorld()->GetDeltaSeconds();
+		if (StepSeconds < 0.5f)
+		{
+			return;
+		}
+		{
+			// 걸린 상자는 판 밑에서 한 뼘 끌려 나와 있다.
+			const UStaticMeshComponent* Box = Director->GetPropForTesting(FName(TEXT("Storage.DohaBox")));
+			const float Moved = Box ? FVector::Dist2D(Box->GetComponentLocation(), BoxBeforePull) : 0.0f;
+			UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_BOX_PULL first_moved=%.1f"), Moved);
+			Check(Moved > 5.0f && Moved < 9.0f, TEXT("n3_box_slides_then_catches"));
+		}
 		Use(Target(TEXT("Storage.DohaPull")));
 		Check(Taken(IGLeftoverProbe::DohaBox) && Taken(IGLeftoverProbe::ToolPouch), TEXT("n3_box_and_pouch_out"));
 		// 상자가 빠졌다. 걸렸다는 말과 받치는 동안의 말은 떠 있거나 밀려 있지 않다.
@@ -1392,12 +1441,37 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		{
 			return;
 		}
-		Stand(FVector(170.0f, 492.0f, 1200.0f), FVector(250.0f, 492.0f, 1265.0f));
-		Check(Use(Target(TEXT("Annex.SiteMatch"))), TEXT("site_match_use"));
-		Check(Narrative->GetLeftover().bSiteMatched, TEXT("site_matched"));
-		Check(Narrative->HasWitness(EIGMissingFloorWitness::InspectionCoverMatched), TEXT("site_match_witness"));
-		Shoot(TEXT("site_match"));
-		Next(51);
+		if (Step == 0)
+		{
+			// 조립대에서 떠오른 생각이 다 지나간 뒤에 대 본다. 이어서 하면 그 생각들에 밀려 대 본 말이 늦게 뜬다.
+			if (AIGHorrorHUD::IsPresentingDialogue(this) && PhaseSeconds < 20.0f)
+			{
+				return;
+			}
+			Stand(FVector(170.0f, 492.0f, 1200.0f), FVector(250.0f, 492.0f, 1265.0f));
+			Check(Use(Target(TEXT("Annex.SiteMatch"))), TEXT("site_match_use"));
+			Check(Narrative->GetLeftover().bSiteMatched, TEXT("site_matched"));
+			Check(Narrative->HasWitness(EIGMissingFloorWitness::InspectionCoverMatched), TEXT("site_match_witness"));
+			Shoot(TEXT("site_match"));
+			Step = 1;
+			PhaseSeconds = 1.0f;
+			return;
+		}
+		if (Step == 1 && PhaseSeconds > 4.0f)
+		{
+			// 덧판에 대 본 덮개를 가까이에서 본다. 틀 날개 구멍 넷 뒤로 덧판 나사 넷이 보여야 한다.
+			// 정면에서 가까이 본다. 비스듬히 서면 벽에 기댄 철골 틀 기둥이 덮개 한쪽을 가린다.
+			Stand(FVector(200.0f, 492.0f, 1200.0f), FVector(246.0f, 492.0f, 1262.0f));
+			Shoot(TEXT("site_match_held"));
+			Step = 2;
+			return;
+		}
+		if (Step == 2 && PhaseSeconds > 9.0f)
+		{
+			// 몇 초 대 본 뒤에는 벽 밑에 기대 둔다.
+			Shoot(TEXT("site_match_leaned"));
+			Next(51);
+		}
 		return;
 	case 51:
 	{
@@ -2888,7 +2962,8 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_aim_box"));
 	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_ask_brace"));
 	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Bracing"))
-		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking(); }, 25.0f, TEXT("input_jeongwoo_braces"));
+		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking() && WeakDirector->IsBraceHeld(); },
+		25.0f, TEXT("input_jeongwoo_braces"));
 	// 받치는 동안 302호를 잠깐 나갔다 온다. 정우는 판을 놓고 문을 잡으러 가고, 돌아와 다시 부탁하면 다시 받친다.
 	// 받치는 정우가 등 뒤(동쪽)에 있다. 서쪽으로 돌아 나간다.
 	Walk(FVector(25.0f, -58.0f, 690.0f), 18.0f, TEXT("input_back_off_from_box"));
@@ -2906,7 +2981,8 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_aim_box_after_return"));
 	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_ask_brace_again"));
 	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Bracing"))
-		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking(); }, 25.0f, TEXT("input_jeongwoo_braces_again"));
+		&& WeakDirector->GetJeongwoo() && !WeakDirector->GetJeongwoo()->IsWalking() && WeakDirector->IsBraceHeld(); },
+		25.0f, TEXT("input_jeongwoo_braces_again"));
 	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_aim_box_again"));
 	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_pull_box_1"));
 	Wait(0.6f);

@@ -952,12 +952,14 @@ void AIGMissingFloorLeftoverDirector::HandleHatchOpened(AIGAccessHatch* Hatch)
 	{
 		Lining->NotifyGapsChanged();
 	}
-	// 처음 연 점검구에서 바람이 빨려 든다. 정체는 말하지 않는다.
+	// 처음 연 점검구에서 바람이 빨려 든다. 낮게 우는 바람 소리와 안으로 끌려가는 먼지로만 알리고, 그녀는
+	// 아무 말도 하지 않는다. 소리 설명을 켠 사람에게는 그 소리를 글로 띄운다.
 	if (Id == IGLeftover::GapInnerSmall || Id == IGLeftover::GapInnerLarge)
 	{
-		if (PlayBeat(FName(TEXT("Leftover.N2.HatchDraft"))))
+		if (PlayBeat(FName(TEXT("Leftover.N2.HatchDraft"))) && Hatch)
 		{
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverHatchDraft", "바람이 안으로 빨려 들어가."), 2.6f);
+			Caption(NSLOCTEXT("IGMissingFloor", "LeftoverHatchDraftCaption", "[점검구 안으로 바람이 빨려 드는 소리]"),
+				Hatch->GetActorLocation(), 2.6f);
 		}
 	}
 }
@@ -1782,19 +1784,12 @@ void AIGMissingFloorLeftoverDirector::HandleJeongwooArrived()
 		Jeongwoo->FaceTowards(GetPlayerFeet());
 		return;
 	case EStorage::Bracing:
-		// 밀려난 판(25도 돈 셋째 자세)의 방 쪽 면을 본다. 두 손이 그 면에 닿는다.
+		// 밀려난 판(25도 돈 셋째 자세)의 방 쪽 면을 본다. 두 손이 그 면에 닿는다. 발을 디디고 손에 힘을
+		// 실을 때까지 기다렸다가 당기라고 한다(JeongwooTakeHold). 그 전에는 상자를 당길 수 없다.
 		Jeongwoo->SetPose(AIGJeongwooFigure::EPose::Brace);
 		Jeongwoo->FaceYaw(70.0f);
-		// 다시 불려 온 길이면 오면서 이미 「판 잡을게요」라고 했다. 같은 부탁을 처음처럼 되풀이하지 않는다.
-		if (bBraceAgainSpoken)
-		{
-			bBraceAgainSpoken = false;
-			SayIn(IGLeftoverDialogue::Brace, IGLeftover::JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceReady", "잡았어요. 당겨요."));
-		}
-		else
-		{
-			SayIn(IGLeftoverDialogue::Brace, IGLeftover::JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceLine", "제가 받칠게요. 상자부터 당겨요."));
-		}
+		bBraceHeld = false;
+		GetWorldTimerManager().SetTimer(BraceTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooTakeHold, 0.8f, false);
 		RefreshStorage();
 		return;
 	case EStorage::Leaving:
