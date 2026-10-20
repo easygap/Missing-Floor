@@ -138,8 +138,7 @@ if ($knock[0].Groups['keyboard'].Value -eq $interact[0].Groups['keyboard'].Value
 Assert-ContainsAll $bindingHeader @(
 	'bool TryRebind(',
 	'void ResetToDefaults();',
-	'static bool IsReservedKey(const FKey& Key);',
-	'bool HasAnyOverride() const'
+	'static bool IsReservedKey(const FKey& Key);'
 ) '재설정 API'
 
 # 거절할 때는 왜인지 말한다. 「안 됩니다」만 말하는 화면은 고장과 구분되지 않는다.

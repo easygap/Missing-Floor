@@ -104,10 +104,6 @@ public:
 	bool TryJeongwooTalk(bool bKnown, bool bGuestTalkDone,
 		const TFunction<void(const FText&, const FText&)>& SayLine = nullptr);
 
-	/** 신고 문자와 경찰 현장 확인에 덧붙일 것. */
-	bool HasCoverEvidence() const;
-	bool WasJeongwooRescuedTogether() const;
-
 	/** 지금 정우나 관리인 장면이 돌고 있다. 그동안 다른 괴이는 오지 않는다. */
 	bool IsSceneActive() const;
 	static bool IsAnySceneActive(const UWorld* World);
@@ -176,8 +172,6 @@ public:
 	bool SkipNightTwoInnerRoomForTesting();
 	/** 검사용: 낮1 짐 장면을 곧바로 시작한다(계단 3층 아래 참에 정우를 세운다). */
 	void StartDayOneBoxesForTesting();
-	/** 검사용: 밤3 302호 장면을 곧바로 세운다(정우가 갇히고 덧댄 것이 틈을 누른다). */
-	void StageStorageTrapForTesting();
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -270,7 +264,7 @@ private:
 	void BuildStorage();
 	void RefreshStorage();
 	void PollStorage();
-	void BeginStorageTrap(bool bAnnounce);
+	void BeginStorageTrap();
 	void HandleStorageTarget(AIGLeftoverTarget* Target);
 	void HandleStorageTap(AIGLeftoverTarget* Target);
 	void SetBoardPose(int32 Pose, bool bAnimate);
@@ -330,7 +324,6 @@ private:
 	/** 정우가 빼다 403호 문 앞에 둔 오빠 상자(셋째 밤에 같이 못 뺐을 때). */
 	void RefreshDeliveredBox();
 	void HandleDeliveredBox(AIGLeftoverTarget* Target);
-	FTransform PieceSlotTransform(int32 Piece) const;
 	FTransform PieceHoverTransform(int32 Piece) const;
 	void HandleSiteMatch(AIGLeftoverTarget* Target);
 

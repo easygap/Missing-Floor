@@ -18,6 +18,9 @@ foreach ($name in $names) {
 }
 $scriptPath = Join-Path $importRoot 'Scripts/generate_surface_textures.py'
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'generate_surface_textures.py') -Destination $scriptPath -Force
+foreach ($dependency in @('texture_atlas_contract.py', 'surface_texture_import_contract.py')) {
+	Copy-Item -LiteralPath (Join-Path $PSScriptRoot $dependency) -Destination (Split-Path -Parent $scriptPath) -Force
+}
 $logPath = Join-Path $importRoot 'Saved/Logs/EndingStillsImport.log'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $env:IG_FRONTEND_UI_ONLY = '1'

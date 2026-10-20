@@ -1357,7 +1357,7 @@ void AIGHorrorHUD::InterruptTalk(const FName Context)
 	TArray<FIGDialogueMessage> Merged;
 	for (FIGDialogueMessage& Message : Taken)
 	{
-		if (Message.bContinuation && Merged.Num() > 0 && Merged.Last().FullLine.EqualTo(Message.FullLine))
+		if (Message.bContinuation && Merged.Num() > 0 && Merged.Last().MessageSerial == Message.MessageSerial)
 		{
 			if (Message.Scope.OnEnded)
 			{
@@ -1524,6 +1524,7 @@ void AIGHorrorHUD::ShowDialogueScoped(
 	}
 
 	FIGDialogueMessage Message;
+	Message.MessageSerial = ++NextDialogueMessageSerial;
 	Message.Speaker = Speaker;
 	Message.Line = Line;
 	Message.Channel = Channel;
@@ -1633,7 +1634,12 @@ void AIGHorrorHUD::ActivateDialogue(
 {
 	CurrentDialogue = MoveTemp(Message);
 	bHasCurrentDialogue = true;
-	bCurrentDialogueHasContinuation = false;
+	// 긴급 대사 뒤에 앞쪽을 다시 띄워도 남은 쪽은 그대로 줄 서 있다.
+	// 이 상태를 잃으면 첫 쪽만 읽고도 원문 전체가 「들은 말」에 남았다.
+	bCurrentDialogueHasContinuation = DialogueQueue.ContainsByPredicate([this](const FIGDialogueMessage& Queued)
+	{
+		return Queued.bContinuation && Queued.MessageSerial == CurrentDialogue.MessageSerial;
+	});
 	CurrentDialogueLines.Reset();
 	DialogueLayoutScale = -1.0f;
 	DialogueLayoutWidth = -1.0f;
@@ -1739,7 +1745,11 @@ void AIGHorrorHUD::EnqueueDialogue(
 		// 녹음된 말은 소리가 계속 나가므로 자막만 뒤로 미루지 않는다. 버리는 줄도 다시 세우지 않는다.
 		if (CurrentDialogue.bVoiced || CurrentDialogue.Scope.Interruption == EIGDialogueInterruption::Drop)
 		{
-			EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Cancelled);
+			const uint64 CancelledSerial = CurrentDialogue.MessageSerial;
+			CancelDialogueWhere([CancelledSerial](const FIGDialogueMessage& Queued)
+			{
+				return Queued.MessageSerial == CancelledSerial;
+			}, EIGDialogueEndReason::Cancelled);
 		}
 		else
 		{
@@ -1748,12 +1758,9 @@ void AIGHorrorHUD::EnqueueDialogue(
 				? CurrentDialogue.MinimumDurationSeconds
 				: FMath::Max(0.8f, static_cast<float>(DialogueEndTime - CurrentTime));
 			CurrentDialogue.QueuedAt = CurrentTime;
+			// 떠 있던 줄을 잠깐 뒤로 보내는 것은 새 대사가 아니다. 줄 수 제한을 다시
+			// 적용하면 이미 받아 둔 장면의 마지막 대사가 긴급 반응 하나 때문에 사라진다.
 			DialogueQueue.Insert(MoveTemp(CurrentDialogue), 0);
-			if (DialogueQueue.Num() > IGHorrorHUD::MaximumDialogueQueueDepth)
-			{
-				EndDialogueMessage(DialogueQueue.Last(), EIGDialogueEndReason::Expired);
-				DialogueQueue.RemoveAt(DialogueQueue.Num() - 1);
-			}
 		}
 		ActivateDialogue(MoveTemp(Message), CurrentTime);
 		return;
@@ -1847,14 +1854,10 @@ void AIGHorrorHUD::ValidateCurrentDialogue(const double CurrentTime)
 	{
 		// 소리가 제 길이보다 먼저 멎었다(밖에서 멈췄다). 끝까지 들은 것으로 치지 않고,
 		// 그 끝 알림으로 다음 말이 이어지지도 않는다. 나눈 줄의 남은 쪽도 같이 거둔다.
-		const FText Interrupted = CurrentDialogue.FullLine;
-		EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Cancelled);
-		bHasCurrentDialogue = false;
-		CurrentDialogueLines.Reset();
-		DialogueEndTime = -1.0;
-		CancelDialogueWhere([&Interrupted](const FIGDialogueMessage& Message)
+		const uint64 InterruptedSerial = CurrentDialogue.MessageSerial;
+		CancelDialogueWhere([InterruptedSerial](const FIGDialogueMessage& Message)
 		{
-			return Message.bContinuation && Message.FullLine.EqualTo(Interrupted);
+			return Message.MessageSerial == InterruptedSerial;
 		}, EIGDialogueEndReason::Cancelled);
 		return;
 	}
@@ -1980,10 +1983,11 @@ void AIGHorrorHUD::ResumeDialoguePresentation(const double CurrentTime)
 		if (bStale)
 		{
 			// 화면을 닫았을 때 이미 지난 상황의 말을 다시 보이지 않는다.
-			EndDialogueMessage(CurrentDialogue, EIGDialogueEndReason::Cancelled);
-			bHasCurrentDialogue = false;
-			CurrentDialogueLines.Reset();
-			DialogueEndTime = -1.0;
+			const uint64 CancelledSerial = CurrentDialogue.MessageSerial;
+			CancelDialogueWhere([CancelledSerial](const FIGDialogueMessage& Message)
+			{
+				return Message.MessageSerial == CancelledSerial;
+			}, EIGDialogueEndReason::Cancelled);
 		}
 		else if (CurrentDialogue.bVoiced)
 		{
@@ -4024,12 +4028,9 @@ void AIGHorrorHUD::PrepareDialoguePage(
 		// 사건 이름·주인·조건은 그대로 따라가고, 끝 알림은 마지막 쪽이 끝날 때 한 번만 부른다.
 		Continuation.Scope.OnEnded = MoveTemp(CurrentDialogue.Scope.OnEnded);
 		CurrentDialogue.Scope.OnEnded = nullptr;
+		// 화면 폭 때문에 나눈 쪽은 같은 대사의 나머지다. 새 대사 제한을 적용하면
+		// 글자 크기를 키운 것만으로 뒤에 기다리던 이야기 줄이 빠진다.
 		DialogueQueue.Insert(MoveTemp(Continuation), 0);
-		if (DialogueQueue.Num() > IGHorrorHUD::MaximumDialogueQueueDepth)
-		{
-			EndDialogueMessage(DialogueQueue.Last(), EIGDialogueEndReason::Expired);
-			DialogueQueue.RemoveAt(DialogueQueue.Num() - 1);
-		}
 
 		CurrentDialogue.Line = FText::FromString(FString::Join(Lines, TEXT("\n")));
 		bCurrentDialogueHasContinuation = true;
@@ -4284,12 +4285,27 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 	// 긴 줄은 폭에서 바꾸고, 같은 문장 안의 줄은 조금 좁게 붙인다.
 	UFont* EpilogueBodyFont = GetFontForRole(EIGHudTextRole::Dialogue);
 	TArray<TArray<FString>> WrappedBody;
+	TArray<FString> WrappedHeading;
+	TArray<FString> WrappedFootnote;
+	const auto WrapEpilogueLine = [&](const FText& Text, UFont* Font, const float TextScale,
+		TArray<FString>& Wrapped)
+	{
+		FString Remainder;
+		// 에필로그는 다음 쪽으로 넘어가는 자막이 아니다. 원문을 전부 나눈 뒤 높이를 잰다.
+		WrapHudText(Text.ToString(), Font, TextScale, ContentWidth, MAX_int32, Wrapped, Remainder);
+		if (Wrapped.IsEmpty() && !Text.IsEmpty())
+		{
+			Wrapped.Add(Text.ToString());
+		}
+	};
 	const auto MeasureEpilogueText = [&](const float BodyScale)
 	{
 		const float Stride = 42.0f * FMath::Max(Scale, BodyScale * 0.74f);
-		float Height = MissingFloorEpilogueHeading.IsEmpty()
-			? 0.0f
-			: 40.0f * FMath::Max(Scale, BodyScale * 0.72f);
+		WrapEpilogueLine(MissingFloorEpilogueHeading, GetFontForRole(EIGHudTextRole::Speaker),
+			0.76f * BodyScale, WrappedHeading);
+		WrapEpilogueLine(MissingFloorEpilogueFootnote, GetFontForRole(EIGHudTextRole::Hint),
+			0.74f * BodyScale, WrappedFootnote);
+		float Height = WrappedHeading.Num() * 40.0f * FMath::Max(Scale, BodyScale * 0.72f);
 		WrappedBody.Reset();
 		for (const FText& Line : MissingFloorEpilogueBodyLines)
 		{
@@ -4299,24 +4315,13 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 				Height += Stride * 0.55f;
 				continue;
 			}
-			FString Remainder;
-			WrapHudText(
-				Line.ToString(),
-				EpilogueBodyFont,
-				0.90f * BodyScale,
-				ContentWidth,
-				3,
-				Wrapped,
-				Remainder);
-			if (Wrapped.IsEmpty())
-			{
-				Wrapped.Add(Line.ToString());
-			}
+			WrapEpilogueLine(Line, EpilogueBodyFont, 0.90f * BodyScale, Wrapped);
 			Height += Stride * (1.0f + 0.78f * static_cast<float>(Wrapped.Num() - 1));
 		}
-		if (!MissingFloorEpilogueFootnote.IsEmpty())
+		if (!WrappedFootnote.IsEmpty())
 		{
-			Height += 12.0f * Scale + 34.0f * FMath::Max(Scale, BodyScale * 0.70f);
+			Height += 12.0f * Scale
+				+ WrappedFootnote.Num() * 34.0f * FMath::Max(Scale, BodyScale * 0.70f);
 		}
 		return Height;
 	};
@@ -4324,8 +4329,27 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 	float TextHeight = MeasureEpilogueText(BodyScale);
 	if (TextHeight > BottomY - TopY)
 	{
-		// 사진을 빼도 넘치는 드문 경우(가장 큰 글자 + 가장 긴 번역)만 글자를 줄인다.
-		BodyScale = FMath::Max(TypeScale * (BottomY - TopY) / TextHeight, TypeScale * 0.72f);
+		// 줄이 줄어들면 높이도 계단식으로 바뀐다. 사진 없이 들어가는 가장 큰 크기를
+		// 다시 찾아, 단순 비례 계산 때문에 글자가 필요 이상 작아지는 것을 막는다.
+		float Low = TypeScale * 0.72f;
+		float High = TypeScale;
+		BodyScale = Low;
+		if (MeasureEpilogueText(Low) <= BottomY - TopY)
+		{
+			for (int32 Pass = 0; Pass < 10; ++Pass)
+			{
+				const float Candidate = (Low + High) * 0.5f;
+				if (MeasureEpilogueText(Candidate) <= BottomY - TopY)
+				{
+					Low = Candidate;
+				}
+				else
+				{
+					High = Candidate;
+				}
+			}
+			BodyScale = Low;
+		}
 		TextHeight = MeasureEpilogueText(BodyScale);
 	}
 	const float LineStride = 42.0f * FMath::Max(Scale, BodyScale * 0.74f);
@@ -4398,20 +4422,18 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 		PenY += PlateHeight + 40.0f * Scale;
 	}
 	const float TextTop = PenY;
+	PushTextAuditContainer(
+		FVector2D(ContentLeft, TextTop),
+		FVector2D(ContentLeft + ContentWidth, BottomY));
 
-	if (!MissingFloorEpilogueHeading.IsEmpty())
+	for (const FString& HeadingLine : WrappedHeading)
 	{
 		DrawLeftAlignedText(
-			MissingFloorEpilogueHeading,
+			FText::FromString(HeadingLine),
 			FVector2D(ContentLeft, PenY),
 			FLinearColor(0.56f, 0.55f, 0.51f, 0.92f * Entrance),
 			EIGHudTextRole::Speaker,
-			GetFittedTextScale(
-				MissingFloorEpilogueHeading,
-				EIGHudTextRole::Speaker,
-				0.76f * BodyScale,
-				ContentWidth,
-				0.76f * BodyScale * 0.7f));
+			0.76f * BodyScale);
 		PenY += 40.0f * FMath::Max(Scale, BodyScale * 0.72f);
 	}
 
@@ -4434,22 +4456,21 @@ bool AIGHorrorHUD::DrawMissingFloorEpilogue(const double CurrentTime)
 		}
 	}
 
-	if (!MissingFloorEpilogueFootnote.IsEmpty())
+	if (!WrappedFootnote.IsEmpty())
 	{
 		PenY += 12.0f * Scale;
-		DrawLeftAlignedText(
-			MissingFloorEpilogueFootnote,
-			FVector2D(ContentLeft, PenY),
-			FLinearColor(0.62f, 0.61f, 0.57f, 0.90f * Entrance),
-			EIGHudTextRole::Hint,
-			GetFittedTextScale(
-				MissingFloorEpilogueFootnote,
+		for (const FString& FootnoteLine : WrappedFootnote)
+		{
+			DrawLeftAlignedText(
+				FText::FromString(FootnoteLine),
+				FVector2D(ContentLeft, PenY),
+				FLinearColor(0.62f, 0.61f, 0.57f, 0.90f * Entrance),
 				EIGHudTextRole::Hint,
-				0.74f * BodyScale,
-				ContentWidth,
-				0.74f * BodyScale * 0.7f));
-		PenY += 34.0f * FMath::Max(Scale, BodyScale * 0.70f);
+				0.74f * BodyScale);
+			PenY += 34.0f * FMath::Max(Scale, BodyScale * 0.70f);
+		}
 	}
+	PopTextAuditContainer();
 
 	// 넘치면 검사에 걸리도록 잘라 내지 않고 실제 끝을 남긴다.
 	RecordLayoutValidationRect(
@@ -4787,16 +4808,16 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 	const float TextScale = GetResolutionTextScale(Settings.CaptionSizeScale);
 	const float SafeAreaScale = Settings.CaptionSafeAreaScale;
 	const float SafeWidth = Canvas->ClipX * SafeAreaScale;
-	const float PanelWidth = FMath::Min(
+	const float MaximumPanelWidth = FMath::Min(
 		FMath::Clamp(
 			Canvas->ClipX * 0.56f,
 			520.0f * ResolutionScale,
 			840.0f * ResolutionScale),
 		FMath::Max(280.0f, SafeWidth - 48.0f * ResolutionScale));
-	const float HorizontalPadding = 30.0f * ResolutionScale;
+	const float HorizontalPadding = 28.0f * ResolutionScale;
 	const float MaximumTextWidth = FMath::Max(
 		220.0f,
-		PanelWidth - HorizontalPadding * 2.0f);
+		MaximumPanelWidth - HorizontalPadding * 2.0f);
 	const int32 MaximumLines = Settings.CaptionSizeScale > 1.25f ? 3 : 2;
 	PrepareDialoguePage(
 		TextScale,
@@ -4831,15 +4852,40 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 	const float LineStep = BodyHeight * (
 		CurrentDialogueLines.Num() >= 3 ? 1.36f : 1.32f);
 	const bool bHasSpeaker = !CurrentDialogue.Speaker.IsEmpty();
-	const float SpeakerScale = TextScale * 0.78f;
-	const float SpeakerHeight = bHasSpeaker
+	// 긴 화자명도 본문과 같은 폭 안에 둔다. 녹음 표시가 들어갈 자리도 먼저 비워 둔다.
+	const float VoiceLaneWidth = CurrentDialogue.bVoiced ? 36.0f * ResolutionScale : 0.0f;
+	const float SpeakerScale = FMath::Max(0.5f, bHasSpeaker
+		? FMath::Min(TextScale * 0.78f,
+			(MaximumTextWidth - VoiceLaneWidth) / FMath::Max(1.0f,
+				MeasureTextWidth(CurrentDialogue.Speaker.ToString(), SpeakerFont, 1.0f)))
+		: TextScale * 0.78f);
+	TArray<FString> SpeakerLines;
+	if (bHasSpeaker)
+	{
+		FString SpeakerRemainder;
+		WrapHudText(CurrentDialogue.Speaker.ToString(), SpeakerFont, SpeakerScale,
+			MaximumTextWidth - VoiceLaneWidth, MAX_int32, SpeakerLines, SpeakerRemainder);
+	}
+	const float SpeakerLineHeight = bHasSpeaker
 		? FMath::Max(11.0f, SpeakerRawHeight * SpeakerScale)
 		: 0.0f;
-	const float SpeakerChipHeight = bHasSpeaker
-		? FMath::Max(24.0f * ResolutionScale, SpeakerHeight + 10.0f * ResolutionScale)
-		: 0.0f;
+	const float SpeakerHeight = SpeakerLineHeight * (1.0f
+		+ 1.2f * FMath::Max(0, SpeakerLines.Num() - 1));
+	float ContentWidth = 0.0f;
+	for (const FString& Line : SpeakerLines)
+	{
+		ContentWidth = FMath::Max(ContentWidth,
+			MeasureTextWidth(Line, SpeakerFont, SpeakerScale) + VoiceLaneWidth);
+	}
+	for (const FString& Line : CurrentDialogueLines)
+	{
+		ContentWidth = FMath::Max(ContentWidth, MeasureTextWidth(Line, BodyFont, TextScale));
+	}
+	// 짧은 속말에도 빈 상자가 화면을 넓게 가리지 않게 실제 글자 폭에 맞춘다.
+	const float PanelWidth = FMath::Min(MaximumPanelWidth,
+		FMath::Max(520.0f * ResolutionScale, ContentWidth + HorizontalPadding * 2.0f));
 	const float HeaderGap = bHasSpeaker ? 10.0f * ResolutionScale : 0.0f;
-	const float TopPadding = 14.0f * ResolutionScale;
+	const float TopPadding = 16.0f * ResolutionScale;
 	// 「이어짐」은 마지막 줄 아래 오른쪽 구석에 선다. 자막을 키우면 이 표시도
 	// 같이 커지는데 아래 여백은 26px로 고정이어서, 자막 크기 200%에서 표시가
 	// 꽉 찬 마지막 줄의 끝 글자를 덮었다. 여백을 표시의 실제 높이로 잡는다.
@@ -4864,10 +4910,10 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 		? FMath::Max(
 			26.0f * ResolutionScale,
 			ContinuationHeight + 13.0f * ResolutionScale)
-		: 19.0f * ResolutionScale;
+		: 16.0f * ResolutionScale;
 	const float LinesHeight = BodyHeight
 		+ LineStep * FMath::Max(0, CurrentDialogueLines.Num() - 1);
-	const float PanelHeight = TopPadding + SpeakerChipHeight + HeaderGap
+	const float PanelHeight = TopPadding + SpeakerHeight + HeaderGap
 		+ LinesHeight + BottomPadding;
 	const float SafeHorizontalInset = Canvas->ClipX * (1.0f - SafeAreaScale) * 0.5f;
 	const float SafeVerticalInset = Canvas->ClipY * (1.0f - SafeAreaScale) * 0.5f;
@@ -4908,14 +4954,9 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 	}
 	Accent.A = Alpha;
 	const float SurfaceAlpha = Settings.CaptionBackgroundOpacity * Alpha;
-	const float CornerRadius = 10.0f * ResolutionScale;
+	const float CornerRadius = 8.0f * ResolutionScale;
 	if (SurfaceAlpha > 0.001f)
 	{
-		DrawRoundedHudSurface(
-			FVector2D(PanelX, PanelY + 8.0f * ResolutionScale),
-			FVector2D(PanelWidth, PanelHeight),
-			CornerRadius + 2.0f * ResolutionScale,
-			FLinearColor(0.0f, 0.0f, 0.0f, SurfaceAlpha * 0.23f));
 		DrawRoundedHudSurface(
 			FVector2D(PanelX, PanelY + 3.0f * ResolutionScale),
 			FVector2D(PanelWidth, PanelHeight),
@@ -4938,60 +4979,36 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 			FLinearColor(0.012f, 0.017f, 0.016f, SurfaceAlpha));
 		// 바탕은 단색으로 둔다. 필름 스캔 무늬를 얹었더니 글자 뒤가 자글거렸다.
 	}
-	FLinearColor KeylineColor = Accent;
-	KeylineColor.A = Alpha * 0.52f;
-	FCanvasTileItem Keyline(
-		FVector2D(PanelX + HorizontalPadding, PanelY),
-		FVector2D(56.0f * ResolutionScale, FMath::Max(1.0f, ResolutionScale)),
-		KeylineColor);
-	Keyline.BlendMode = SE_BLEND_Translucent;
-	Canvas->DrawItem(Keyline);
 	RecordLayoutValidationRect(
 		FVector2D(PanelX, PanelY),
 		FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));
+	PushTextAuditContainer(
+		FVector2D(PanelX + HorizontalPadding, PanelY + TopPadding),
+		FVector2D(PanelX + PanelWidth - HorizontalPadding, PanelY + PanelHeight));
 
 	float PenY = PanelY + TopPadding;
 	const bool bUseTextOutline = Settings.CaptionBackgroundOpacity < 0.42f;
 	if (bHasSpeaker)
 	{
-		const float SpeakerTextWidth = MeasureTextWidth(
-			CurrentDialogue.Speaker.ToString(),
-			SpeakerFont,
-			SpeakerScale);
-		const float SpeakerChipWidth = FMath::Min(
-			PanelWidth - HorizontalPadding * 2.0f,
-			SpeakerTextWidth + 20.0f * ResolutionScale);
-		FLinearColor SpeakerChipColor = Accent;
-		SpeakerChipColor.R *= 0.24f;
-		SpeakerChipColor.G *= 0.24f;
-		SpeakerChipColor.B *= 0.24f;
-		SpeakerChipColor.A = Alpha
-			* Settings.CaptionBackgroundOpacity
-			* 0.34f;
-		DrawRoundedHudSurface(
-			FVector2D(PanelX + HorizontalPadding, PenY),
-			FVector2D(SpeakerChipWidth, SpeakerChipHeight),
-			SpeakerChipHeight * 0.5f,
-			SpeakerChipColor);
 		FLinearColor SpeakerColor = Accent;
 		SpeakerColor.A = Alpha * 0.96f;
-		DrawLeftAlignedText(
-			CurrentDialogue.Speaker,
-			FVector2D(
-				PanelX + HorizontalPadding + 10.0f * ResolutionScale,
-				PenY + (SpeakerChipHeight - SpeakerHeight) * 0.5f),
-			SpeakerColor,
-			EIGHudTextRole::Speaker,
-			SpeakerScale,
-			bUseTextOutline);
+		for (int32 Index = 0; Index < SpeakerLines.Num(); ++Index)
+		{
+			DrawLeftAlignedText(
+				FText::FromString(SpeakerLines[Index]),
+				FVector2D(PanelX + HorizontalPadding, PenY + Index * SpeakerLineHeight * 1.2f),
+				SpeakerColor, EIGHudTextRole::Speaker, SpeakerScale, bUseTextOutline);
+		}
 		// 누가 말하는지 이름이 알리고, 목소리가 실제로 나는 동안에만 그 옆에 소리 크기가 선다.
+		const float SpeakerTextWidth = SpeakerLines.IsEmpty() ? 0.0f
+			: MeasureTextWidth(SpeakerLines.Last(), SpeakerFont, SpeakerScale);
 		DrawDialogueVoiceLevel(
 			FVector2D(
-				PanelX + HorizontalPadding + SpeakerChipWidth + 9.0f * ResolutionScale,
-				PenY + SpeakerChipHeight * 0.2f),
-			SpeakerChipHeight * 0.6f,
+				PanelX + HorizontalPadding + SpeakerTextWidth + 9.0f * ResolutionScale,
+				PenY + SpeakerHeight - SpeakerLineHeight * 0.8f),
+			SpeakerLineHeight * 0.6f,
 			Alpha);
-		PenY += SpeakerChipHeight + HeaderGap;
+		PenY += SpeakerHeight + HeaderGap;
 	}
 	FLinearColor BodyColor = CurrentDialogue.Channel == EIGDialogueChannel::InnerVoice
 		? IGHorrorHUD::ThoughtBlue
@@ -5048,6 +5065,7 @@ bool AIGHorrorHUD::DrawDialoguePanel(
 			bUseTextOutline);
 	}
 
+	PopTextAuditContainer();
 	DialogueLastPanelMinimum = FVector2D(PanelX, PanelY);
 	DialogueLastPanelMaximum = FVector2D(PanelX + PanelWidth, PanelY + PanelHeight);
 	DialogueLastCanvasSize = FVector2D(Canvas->ClipX, Canvas->ClipY);

@@ -243,7 +243,7 @@ Require-All $channel @(
 # --- 베이크된 에셋이 실제로 있는지 ------------------------------------------
 foreach ($asset in @(
 	'Content/SourceArt/T_SignAux5MonitorOnly_D.png',
-	'Content/Prototype/Textures/T_SignAux5MonitorOnly_D.uasset',
+	'Content/Prototype/Textures/T_PrintAtlas1_D.uasset',
 	'Content/Prototype/Materials/M_SignAux5MonitorOnly.uasset',
 	'Content/Prototype/Materials/M_CctvChannelFive.uasset')) {
 	if (-not (Test-Path -LiteralPath (Join-Path $projectRoot $asset) -PathType Leaf)) {
@@ -255,10 +255,10 @@ Require-All $textures @(
 	'"T_SignAux5MonitorOnly_D",'
 ) 'texture import registry'
 Require-All $artBuild @(
-	'Content\Prototype\Textures\T_SignAux5MonitorOnly_D.uasset',
+	'Content\Prototype\Textures\T_PrintAtlas1_D.uasset',
 	'Content\Prototype\Materials\M_SignAux5MonitorOnly.uasset',
 	'Content\Prototype\Materials\M_CctvChannelFive.uasset',
-	"'\[IndieGame\] Imported 6 textures'"
+	"'\[IndieGame\] Imported \d+ textures'"
 ) 'targeted bake manifest'
 
 # --- 검증 경로 -------------------------------------------------------------

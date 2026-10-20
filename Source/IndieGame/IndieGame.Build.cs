@@ -37,6 +37,8 @@ public class IndieGame : ModuleRules
 		PrivateDependencyModuleNames.Add("RHI");
 		PrivateDependencyModuleNames.Add("RenderCore");
 		PrivateDependencyModuleNames.Add("Json");
+		// 소품 접지 검사에서 복잡 충돌이 실제 삼각형을 사용하는지 확인한다.
+		PrivateDependencyModuleNames.Add("PhysicsCore");
 
 		// Bundle UI typefaces with every target. Loading from the project
 		// directory keeps glyph metrics identical in Editor and packaged builds.

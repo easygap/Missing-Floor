@@ -1,9 +1,10 @@
 ﻿[CmdletBinding()]
 param([ValidateSet(30, 60)][int]$FrameRate = 60)
 
-# 신고 다음 날 아침의 현장 확인을 두 번 겪는다. 한 번은 옥상에서 두 사람이 올라오는 걸 보고
+# 신고 다음 날 아침의 현장 확인을 세 번 겪는다. 한 번은 옥상에서 두 사람이 올라오는 걸 보고
 # 5층 안에서 경찰관이 벽을 두드리고 말하는 걸 듣는다. 한 번은 문 닫은 403호에 있다가 2분 뒤
-# 두 사람끼리 두드린 결과를 문자로 받는다. 둘 다 끝나면 두 사람이 사라지고 철문이 닫혀야 한다.
+# 두 사람끼리 두드린 결과를 문자로 받는다. 마지막에는 대화 중 내려와 남은 자막이 따라오지 않는지 본다.
+# 모두 끝나면 두 사람이 사라지고 철문이 닫혀야 한다.
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -14,12 +15,13 @@ try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
-foreach ($scenario in @('Witness', 'Away')) {
+foreach ($scenario in @('Witness', 'Away', 'LeaveDuringTalk')) {
 	$logPath = Join-Path $projectRoot "Saved/Logs/SiteCheck-$scenario-$FrameRate.log"
 	$probeUser = Join-Path $projectRoot ("Saved/Validation/SiteCheck-$scenario-" + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
 	Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
 	$extra = @()
 	if ($scenario -eq 'Away') { $extra += '-IGSiteCheckAway' }
+	if ($scenario -eq 'LeaveDuringTalk') { $extra += '-IGSiteCheckLeaveDuringTalk' }
 	& $editor $projectPath -game -unattended -nosplash -nullrhi -nosound -NoLoadingScreen -RenderOffscreen `
 		-IGListenerGreybox -IGSiteCheckProbe -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
 		"-UserDir=$probeUser" "-abslog=$logPath" @extra | Out-Null

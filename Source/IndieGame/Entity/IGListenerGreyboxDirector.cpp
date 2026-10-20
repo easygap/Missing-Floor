@@ -1642,7 +1642,7 @@ bool AIGListenerGreyboxDirector::SetupStage()
 			AIGReadableNote::StaticClass(),
 			FTransform(
 				FRotator(0.0f, -12.0f, 0.0f),
-				FVector(-64.0f, -180.0f, 974.8f)),
+				FVector(-64.0f, -180.0f, WorldScene->GetDeskSurfaceWorldZ() + 0.8f)),
 			ListingParameters);
 		if (UsedListingNote)
 		{
@@ -2944,7 +2944,7 @@ bool AIGListenerGreyboxDirector::TalkAtStoreCounter()
 	IGVoice::Say(this,
 		NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
 		bDeliveryQuestion
-			? NSLOCTEXT("IGMissingFloor", "NarinDeliveryQuestion", "뒤에 붙은 택배 안내문 보고 왔는데요. 백도하 앞으로 온 택배도 여기 맡긴 적 있어요?")
+			? NSLOCTEXT("IGMissingFloor", "NarinDeliveryQuestion", "빌라 뒤에 붙은 택배 안내문 보고 왔는데요. 백도하 앞으로 온 택배도 여기 맡긴 적 있어요?")
 			: bReceiptQuestion
 			? NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 남아 있어요?")
 			: bRoofQuestion
@@ -3080,7 +3080,7 @@ void AIGListenerGreyboxDirector::HandleArrivalEvidence(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ArrivalToolBoxMemory",
-				"이거 들 때마다 오빠가 밑에 받치라고 했는데. 손잡이 끊어진다고."),
+				"이거 들 때마다 오빠가 밑을 받치라고 했는데. 손잡이 끊어진다고."),
 			3.6f);
 	}
 	// 402호 메모. 빈집이라는 말을 나린에게 들었거나 문 안의 정적을 들었다면 한
@@ -10075,7 +10075,8 @@ void AIGListenerGreyboxDirector::StartArrivalCapture()
 	}
 	// 근접 사진은 입주 자막과 시작 위치 보정이 끝난 뒤 찍는다.
 	const bool bDetailScreens = (FParse::Param(FCommandLine::Get(), TEXT("IGReadingReview")) ||
-		FParse::Param(FCommandLine::Get(), TEXT("IGReadmeCapture"))) && !bCaptureMetricsOnly;
+		FParse::Param(FCommandLine::Get(), TEXT("IGReadmeCapture")) ||
+		FParse::Param(FCommandLine::Get(), TEXT("IGApartmentPlacementReview"))) && !bCaptureMetricsOnly;
 	if (!bDetailScreens) AdvanceArrivalCapture();
 	GetWorldTimerManager().SetTimer(
 		ArrivalCaptureTimer,
@@ -10440,6 +10441,65 @@ void AIGListenerGreyboxDirector::AdvanceReadingReview()
 
 void AIGListenerGreyboxDirector::AdvanceArrivalCapture()
 {
+	if (FParse::Param(FCommandLine::Get(), TEXT("IGApartmentPlacementReview")))
+	{
+		// 실제 방 등을 켜고 앞·옆에서 본다. 자막에 가린 소품이나 어둠 속 접점을 놓치지 않는다.
+		struct FApartmentView { const TCHAR* Name; FVector Position; float Yaw; float Pitch; };
+		const FApartmentView Views[] = {
+			{TEXT("apartment-wide"), {65,20,998}, -145,-24},
+			{TEXT("bedside-front"), {-85,35,998}, -137,-40},
+			{TEXT("bedside-side"), {-105,-65,998}, 151,-56},
+			{TEXT("desk-front"), {-70,-75,998}, -107,-40},
+			{TEXT("desk-side"), {0,-115,998}, -147,-35},
+			{TEXT("kitchen"), {55,145,998}, -5,-35},
+		};
+		const int32 Step = ArrivalCaptureStep++;
+		if (Step == 0)
+		{
+			if (!WorldScene.IsValid() || !WorldScene->AuditApartmentPlacement())
+			{
+				UE_LOG(LogTemp, Error, TEXT("APARTMENT_PLACEMENT_REVIEW FAIL geometry=0"));
+				GetWorldTimerManager().ClearTimer(ArrivalCaptureTimer);
+				RequestExit(true);
+				return;
+			}
+			if (UIGStoryStateSubsystem* Story = GetGameInstance()->GetSubsystem<UIGStoryStateSubsystem>())
+			{
+				Story->AddState(FGameplayTag::RequestGameplayTag(TEXT("State.MissingFloor.HomeLightOn")));
+			}
+			if (Entity) Entity->SetDormant(true);
+			if (UIGFlashlightComponent* Torch = Player->GetFlashlight()) Torch->SetOn(false);
+		}
+		const int32 Index = Step / 6;
+		if (Index >= UE_ARRAY_COUNT(Views))
+		{
+			GetWorldTimerManager().ClearTimer(ArrivalCaptureTimer);
+			UE_LOG(LogTemp, Display, TEXT("APARTMENT_PLACEMENT_REVIEW PASS shots=6 geometry=1"));
+			RequestExit(false);
+			return;
+		}
+		const FApartmentView& View = Views[Index];
+		if (Step % 6 == 0)
+		{
+			CaptureTeleportPlayer(View.Position, View.Yaw, View.Pitch);
+		}
+		if (Step % 6 == 5)
+		{
+			FAssetCompilingManager::Get().FinishAllCompilation();
+			if (GShaderCompilingManager) GShaderCompilingManager->FinishAllCompilation();
+			const FString Directory = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("ApartmentPlacementReview"));
+			IFileManager::Get().MakeDirectory(*Directory, true);
+			const FString Path = FPaths::ConvertRelativePathToFull(
+				FPaths::Combine(Directory, FString(View.Name) + TEXT(".png")));
+			FScreenshotRequest::RequestScreenshot(Path, false, false);
+			FVector Eye;
+			FRotator Rotation;
+			GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(Eye, Rotation);
+			UE_LOG(LogTemp, Display, TEXT("APARTMENT_PLACEMENT_VIEW %s eye=%s rotation=%s"),
+				View.Name, *Eye.ToString(), *Rotation.ToString());
+		}
+		return;
+	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("IGReadmeCapture")))
 	{
 		// 배포 소개에 쓰는 장면은 실제 입주 경로와 야간 조명으로 다시 찍는다.
@@ -12455,7 +12515,7 @@ void AIGListenerGreyboxDirector::HandleJeongwooTalk(AIGMissingFloorEvidence* Evi
 			"JeongwooGuest1",
 			"새벽에 콜 받고 나가려는데, 누가 문을 두드리면서 제 이름을 부르더라고요. 엄마 목소리로요."));
 		Say(Rider, NSLOCTEXT("IGMissingFloor", "JeongwooGuest2", "저희 엄마 대구 계시거든요. 안 열었어요."));
-		Say(Rider, NSLOCTEXT("IGMissingFloor", "JeongwooGuest3", "동네장터에도 올렸어요. 403호도 걸쇠 꼭 거세요."));
+		Say(Rider, NSLOCTEXT("IGMissingFloor", "JeongwooGuest3", "동네장터에도 올렸어요. 문에 걸쇠 꼭 걸어 두세요."));
 	}
 	else if (Night == 2 && Leftover
 		&& Leftover->TryJeongwooTalk(bKnown, Narrative->HasBeatPlayed(IGListenerGreybox::JeongwooGuestBeat), Say))

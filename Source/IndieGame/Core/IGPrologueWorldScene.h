@@ -98,6 +98,9 @@ public:
 	/** 실제 배치된 벽과 문에 플레이어 캡슐을 통과시킨다. 시작 구간 검사에서 사용한다. */
 	bool AuditPlayerClearance(APawn* Pawn, AIGSwingDoor* BoothDoor);
 
+	/** 검수 실행에서만 호출한다. 403호 가구와 소품의 접점을 실제 지지 메시 면에 대조한다. */
+	bool AuditApartmentPlacement();
+
 	/** 403호 현관문. 그가 문 앞에서 두드리려면 문이 닫혀 있는지 알아야 한다. */
 	AIGSwingDoor* GetHomeDoor() const { return HomeDoor; }
 	AIGNeighborhoodLifeDirector* GetNeighborhoodLifeDirector() const { return NeighborhoodLifeDirector; }
@@ -845,6 +848,14 @@ private:
 
 	/** Measured desk support plane. */
 	float DeskSurfaceWorldZ = 0.0f;
+
+	/** 배치 검사는 생성된 컴포넌트를 재사용하며, 평소에는 추적 검사를 실행하지 않는다. */
+	TWeakObjectPtr<UStaticMeshComponent> ApartmentPlacementFloor;
+	TWeakObjectPtr<UStaticMeshComponent> ApartmentPlacementBedside;
+	TWeakObjectPtr<UStaticMeshComponent> ApartmentPlacementDesk;
+	TWeakObjectPtr<UStaticMeshComponent> ApartmentPlacementLamp;
+	TWeakObjectPtr<UStaticMeshComponent> ApartmentPlacementPencilCup;
+	TArray<TWeakObjectPtr<UStaticMeshComponent>> ApartmentPlacementDeskFeet;
 
 	FTimerHandle CorridorFlickerHandle;
 	/**

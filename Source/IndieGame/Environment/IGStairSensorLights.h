@@ -57,7 +57,6 @@ public:
 	/** 이 자리가 켜진 센서등 불빛 안인가. 어둑시니는 여기서 견디지 못한다. */
 	bool IsLitAt(const FVector& Location) const;
 	FVector GetLampLocation(int32 Index) const;
-	float GetLampFloorZ(int32 Index) const;
 	/** 검사용. 이 등이 지금까지 켜진 횟수. */
 	int32 GetSwitchOnCount(int32 Index) const;
 	/** 검사용. 지금 등의 세기. */

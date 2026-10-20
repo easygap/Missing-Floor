@@ -885,8 +885,12 @@ def targeted_pre_atlas_graph(audit: CookAudit, materials: dict[str, str],
     for material, stem in materials.items():
         if material in before.references:
             # 공용 페이지를 쓰는 현재 그래프에서는 옛 텍스처가 이미 빠져 있다.
-            # 이 재현용 간선만 되돌리고, 다른 패키지가 잡은 참조는 보존한다.
-            before.references[material].add(resolved_print_texture(audit, stem))
+            # 파일까지 정리됐으면 노드도 복원해야 _close가 옛 간선을 따라간다.
+            # 복제 그래프에만 넣고, 다른 패키지가 잡은 참조는 보존한다.
+            texture = resolved_print_texture(audit, stem)
+            before.packages.setdefault(texture, "<pre-atlas texture fixture>")
+            before.references.setdefault(texture, set())
+            before.references[material].add(texture)
     _seed_roots(before)
     _close(before)
     return before
@@ -1458,17 +1462,10 @@ def exposed_passes(entries=PRINT_ATLAS_ENTRIES) -> list:
 
 
 def command_simulate_targeted(audit: CookAudit) -> int:
-    """Run every exposed in-place pass over the pre-atlas graph, both ways.
+    """현재 재질에 교체 전 샘플러를 복원해 부분 갱신의 정상·결함 경로를 비교한다.
 
-    The order that hurts is the one this repository is in right now: the
-    committed materials still sample their own textures, so a targeted pass
-    is the *first* thing to give one an atlas graph. It appends the page and
-    reconnects the outputs, and the pre-atlas sampler is still sitting there
-    holding the texture unless something retires it.
-
-    Reported as a pair, because a fix nobody can see failing is not a fix:
-    with retirement every texture the pass touches has to leave the cook, and
-    without it at least one has to stay.
+    옛 텍스처 파일을 정리한 뒤에도 같은 조건을 재현한다. 샘플러를 해제하면
+    해당 텍스처가 쿠크에서 빠져야 하고, 해제하지 않으면 남아 있어야 한다.
     """
     blind = blind_spots(audit)
     if blind:
@@ -1921,6 +1918,34 @@ def command_self_test() -> int:
         assert migrated_fixed["dropped"] == [print_texture]
         assert migrated_broken["kept"] == [print_texture]
         assert not migrated_fixed["stale"] and migrated_broken["stale"]
+
+        # 옛 파일을 지운 저장소에서도 노드와 간선을 함께 되돌려 결함을 재현한다.
+        cleaned = _replay(fixed["after"], {})
+        cleaned.packages.pop(print_texture)
+        cleaned.references.pop(print_texture)
+        _seed_roots(cleaned)
+        _close(cleaned)
+        restored = targeted_pre_atlas_graph(cleaned, live, entries)
+        cleaned_fixed = simulate_targeted_pass(restored, live, True, entries)
+        cleaned_broken = simulate_targeted_pass(restored, live, False, entries)
+        assert print_texture not in cleaned.packages and print_texture not in cleaned.references, \
+            "재현용 텍스처가 실제 감사 그래프에 추가됐다"
+        assert print_texture in restored.cooked, \
+            "삭제된 텍스처의 교체 전 샘플러를 재현하지 못했다"
+        assert cleaned_fixed["dropped"] == [print_texture] and not cleaned_fixed["kept"], \
+            "옛 파일을 지운 뒤 정상 샘플러 해제를 오판했다"
+        assert cleaned_broken["kept"] == [print_texture] and cleaned_broken["stale"], \
+            "옛 파일을 지운 뒤 샘플러 해제 누락을 놓쳤다"
+        assert gate(cleaned_broken["after"], entries=entries)[0] == 1, \
+            "삭제된 옛 텍스처를 되살린 샘플러가 검사를 통과했다"
+
+        # 재질 밖의 참조는 그대로 남아야 한다. 파일 부재를 성공으로 간주하면 안 된다.
+        held_elsewhere = _replay(cleaned, {})
+        held_elsewhere.references["/Game/Meshes/SM_Placed"].add(print_texture)
+        held_before = targeted_pre_atlas_graph(held_elsewhere, live, entries)
+        held_fixed = simulate_targeted_pass(held_before, live, True, entries)
+        assert held_fixed["kept"] == [print_texture] and not held_fixed["dropped"], \
+            "다른 패키지가 잡은 옛 텍스처 참조를 재현 과정에서 없앴다"
 
         # 2e-bis. The same pass, on a texture that has a photo capture. The
         #     material never names the contracted texture at all -- it names

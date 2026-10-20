@@ -66,6 +66,7 @@ private:
 	float TotalSeconds = 0.0f;
 	bool bShots = false;
 	bool bAway = false;
+	bool bLeaveDuringTalk = false;
 	bool bActed = false;
 	bool bShotTaken = false;
 	bool bDoorShotTaken = false;

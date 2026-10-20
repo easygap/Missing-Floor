@@ -504,12 +504,6 @@ void AIGLiningEntity::UnsealGap(const FName Id)
 	NotifyGapsChanged();
 }
 
-bool AIGLiningEntity::IsGapSealed(const FName Id) const
-{
-	const FIGLiningGap* Gap = FindGap(Id);
-	return Gap && Gap->bSealed;
-}
-
 bool AIGLiningEntity::IsGapOpen(const FName Id) const
 {
 	const FIGLiningGap* Gap = FindGap(Id);
@@ -523,17 +517,6 @@ bool AIGLiningEntity::IsGapOpen(const FName Id) const
 	}
 	const AIGAccessHatch* Hatch = Gap->Hatch.Get();
 	return Hatch && Hatch->IsGapOpen();
-}
-
-bool AIGLiningEntity::IsObstructingGap(const FName Id) const
-{
-	if (Id.IsNone())
-	{
-		return false;
-	}
-	const bool bAtGap = (Id == HeldGap && State == EIGLiningState::Holding)
-		|| (Id == TargetGap && (State == EIGLiningState::Bracing || State == EIGLiningState::Pressing));
-	return bAtGap;
 }
 
 bool AIGLiningEntity::IsAnyBusy(const UWorld* World)

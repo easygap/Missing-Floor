@@ -9,9 +9,17 @@ Scripts/Create-SignTextures.ps1 into Content/SourceArt and imported here too.
 import math
 import os
 import struct
+import sys
 import zlib
 
 import unreal
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
+
+import texture_atlas_contract
+from surface_texture_import_contract import skip_import_reason
 
 
 PROJECT_DIR = unreal.SystemLibrary.get_project_directory()
@@ -556,6 +564,20 @@ def import_textures():
     )
     if not png_files:
         raise RuntimeError(f"No PNG files found in {SOURCE_ART_DIR}")
+
+    atlas_manifest = texture_atlas_contract.try_load_manifest()
+    selected_files = []
+    for png_file in png_files:
+        asset_name = os.path.splitext(os.path.basename(png_file))[0]
+        reason = skip_import_reason(asset_name, atlas_manifest, asset_subsystem.does_asset_exist)
+        if reason:
+            unreal.log(f"[IndieGame] Texture source retained without duplicate import: {asset_name} ({reason})")
+        else:
+            selected_files.append(png_file)
+    png_files = selected_files
+    if not png_files:
+        unreal.log("[IndieGame] Imported 0 textures (existing replacements cover this pass)")
+        return
 
     tasks = []
     for png_file in png_files:

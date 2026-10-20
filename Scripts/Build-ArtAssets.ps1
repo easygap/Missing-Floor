@@ -15,6 +15,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+. (Join-Path $PSScriptRoot 'Resolve-AsciiWorkspace.ps1')
 $igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Build-ArtAssets.ps1' -Parameters $PSBoundParameters
 $igArtifactSucceeded = $false
 try {
@@ -38,77 +39,6 @@ if ($usingPowerShellCore) {
 	}
 	$resolverShell = $windowsPowerShell.Source
 	Write-Host 'ART_BUILD pwsh 없음 — Windows PowerShell로 리졸버 실행(UTF-8 고정)'
-}
-
-function Invoke-ArtRobocopy {
-	param(
-		[Parameter(Mandatory = $true)]
-		[string]$Source,
-		[Parameter(Mandatory = $true)]
-		[string]$Destination,
-		[switch]$Mirror
-	)
-
-	New-Item -ItemType Directory -Force -Path $Destination | Out-Null
-	$arguments = @($Source, $Destination)
-	$arguments += if ($Mirror) { '/MIR' } else { '/E' }
-	$arguments += @(
-		'/COPY:DAT',
-		'/DCOPY:DAT',
-		'/R:2',
-		'/W:1',
-		'/XJ',
-		'/NFL',
-		'/NDL',
-		'/NP',
-		'/NJH',
-		'/NJS'
-	)
-	if ($Mirror) {
-		$arguments += @(
-			'/XD',
-			'.git',
-			'Saved',
-			'Intermediate',
-			'Binaries',
-			'DerivedDataCache',
-			'.vs'
-		)
-	}
-
-	& robocopy.exe @arguments
-	$robocopyExit = $LASTEXITCODE
-	if ($robocopyExit -ge 8) {
-		throw "Art build file sync failed ($robocopyExit): $Source -> $Destination"
-	}
-}
-
-function Get-AsciiArtBuildRoot {
-	param(
-		[Parameter(Mandatory = $true)]
-		[string]$SourceRoot
-	)
-
-	$hashAlgorithm = [Security.Cryptography.SHA256]::Create()
-	try {
-		$pathBytes = [Text.Encoding]::UTF8.GetBytes(
-			$SourceRoot.ToLowerInvariant())
-		$hashBytes = $hashAlgorithm.ComputeHash($pathBytes)
-	}
-	finally {
-		$hashAlgorithm.Dispose()
-	}
-	$shortHash = -join ($hashBytes[0..3] | ForEach-Object {
-		$_.ToString('x2')
-	})
-	$mirrorBase = Join-Path $env:LOCALAPPDATA 'IndieGame\AsciiBuild'
-	$mirrorRoot = Join-Path $mirrorBase "Art_$shortHash"
-	if (-not $mirrorRoot.StartsWith(
-			$mirrorBase,
-			[StringComparison]::OrdinalIgnoreCase)) {
-		throw "Unsafe art build mirror path: $mirrorRoot"
-	}
-	return $mirrorRoot
 }
 
 $modeCount = @(
@@ -271,11 +201,18 @@ if ($SourceOnly) {
 		throw "Art source contract failed ($LASTEXITCODE)"
 	}
 	Write-Host 'ART_SOURCE_BUILD PASS no_unreal_process=true'
+	$igArtifactSucceeded = $true
 	return
 }
 
 if ($CorridorSignageOnly) {
 	& (Join-Path $PSScriptRoot 'Create-SignTextures.ps1') -CorridorEntranceOnly
+	# 갱신한 인쇄 원본을 공유 텍스처에 반영한 다음 엔진에서 읽는다.
+	$python = Get-Command python -ErrorAction Stop
+	& $python.Source (Join-Path $PSScriptRoot 'build_texture_atlas.py')
+	if ($LASTEXITCODE -ne 0) {
+		throw "복도 인쇄 텍스처 묶음을 만들지 못했습니다 ($LASTEXITCODE)."
+	}
 }
 
 $editorOutput = @(
@@ -302,16 +239,8 @@ if (-not $editorCommand.EndsWith(
 	throw "Headless art build requires UnrealEditor-Cmd.exe: $editorCommand"
 }
 
-$unrealProjectRoot = $projectRoot
-$usingAsciiMirror = $projectRoot -match '[^\x00-\x7F]'
-if ($usingAsciiMirror) {
-	$unrealProjectRoot = Get-AsciiArtBuildRoot -SourceRoot $projectRoot
-	Write-Host "ART_BUILD syncing ASCII workspace: $unrealProjectRoot"
-	Invoke-ArtRobocopy `
-		-Source $projectRoot `
-		-Destination $unrealProjectRoot `
-		-Mirror
-}
+$unrealProjectRoot = Resolve-IGAsciiWorkspace -ProjectRoot $projectRoot
+Write-Host "ART_BUILD using workspace: $unrealProjectRoot"
 $unrealProjectFile = Join-Path $unrealProjectRoot 'IndieGame.uproject'
 $unrealScriptsRoot = Join-Path $unrealProjectRoot 'Scripts'
 
@@ -338,17 +267,11 @@ if (-not (Test-Path -LiteralPath $moduleBinary -PathType Leaf)) {
 	throw "IndieGameEditor build did not produce the runtime module: $moduleBinary"
 }
 
-# Every targeted pass can compile runtime bindings as well as assets. Keeping
-# the newer DLL only inside the ASCII mirror makes the following visual run
-# silently execute stale code even though the UAssets were copied correctly.
-if ($usingAsciiMirror) {
-	Invoke-ArtRobocopy `
-		-Source (Join-Path $unrealProjectRoot 'Binaries\Win64') `
-		-Destination (Join-Path $projectRoot 'Binaries\Win64')
-}
+# ASCII 경로도 원본과 같은 Binaries와 Content를 가리키므로 결과 회수가 필요 없다.
 
 if ($CodeOnly) {
 	Write-Host 'ART_CODE_BUILD PASS target=IndieGameEditor platform=Win64 configuration=Development'
+	$igArtifactSucceeded = $true
 	return
 }
 
@@ -527,12 +450,8 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 	elseif ($CorridorSignageOnly) {
 		@(
 			'Content\Meshes\SM_CaptureMercyNote.uasset',
-			'Content\Prototype\Textures\T_CaptureMercyNote_D.uasset',
-			'Content\Prototype\Textures\T_MercyNoteUnderDoor_D.uasset',
-			'Content\Prototype\Textures\T_Plate401_D.uasset',
-			'Content\Prototype\Textures\T_Plate402_D.uasset',
-			'Content\Prototype\Textures\T_Plate403_D.uasset',
-			'Content\Prototype\Textures\T_SignAux5MonitorOnly_D.uasset',
+			'Content\Prototype\Textures\T_PrintAtlas1_D.uasset',
+			'Content\Prototype\Textures\T_PrintAtlas0_D.uasset',
 			'Content\Prototype\Materials\M_CaptureMercyNote.uasset',
 			'Content\Prototype\Materials\M_MercyNoteUnderDoor.uasset',
 			'Content\Prototype\Materials\M_SignAux5MonitorOnly.uasset',
@@ -728,8 +647,13 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 				TargetEnvironment = $true
 			},
 			@{
+				Script = 'import_texture_atlas.py'
+				SuccessPattern = 'PRINT_ATLAS_IMPORT PASS'
+				TargetEnvironment = $false
+			},
+			@{
 				Script = 'generate_surface_textures.py'
-				SuccessPattern = '\[IndieGame\] Imported 6 textures'
+				SuccessPattern = '\[IndieGame\] Imported \d+ textures'
 				TargetEnvironment = $true
 			},
 			@{
@@ -840,25 +764,7 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 			$previousTargetMode,
 			'Process')
 	}
-	if ($usingAsciiMirror) {
-		# 회수는 폴더째 한다. 목록에 적힌 파일만 복사하면 이번 패스가 처음
-		# 만든 에셋이 미러에 갇힌 채로 PASS가 찍힌다. e901de5의 재질 여섯과
-		# 텍스처 스물넷이 그렇게 새어 나갔고, 씬은 폴백으로 그리면서 아무
-		# 소리도 내지 않았다.
-		foreach ($relativeFolder in @(
-			'Content\Meshes',
-			'Content\Photo\Props',
-			'Content\UI\Textures',
-			'Content\Prototype\Textures',
-			'Content\Prototype\Materials'
-		)) {
-			Invoke-ArtRobocopy `
-				-Source (Join-Path $unrealProjectRoot $relativeFolder) `
-				-Destination (Join-Path $projectRoot $relativeFolder)
-		}
-	}
-	# 목록은 이제 운반 수단이 아니라 계약이다. 패스가 만들기로 한 것이 실제로
-	# 프로젝트에 도착했는지 확인하고 나서 PASS를 찍는다.
+	# 생성하기로 한 에셋이 같은 작업 폴더에 실제로 생겼는지 확인한다.
 	$undeliveredAssets = @($targetRelativeAssets | Where-Object {
 		-not (Test-Path -LiteralPath (Join-Path $projectRoot $_) -PathType Leaf)
 	})
@@ -869,6 +775,7 @@ if ($HudUiOnly -or $ApartmentVisualOnly -or $SurfaceResponseOnly -or
 	}
 	$targetAudit = if ($HudUiOnly) { 0 } else { 1 }
 	Write-Host "ART_TARGETED_BUILD PASS target=$targetName assets=$(@($targetRelativeAssets).Count) uasset_audit=$targetAudit no_visible_window=true"
+	$igArtifactSucceeded = $true
 	return
 }
 
@@ -878,12 +785,12 @@ $pythonStages = @(
 		SuccessPattern = '\[MESHGEN\] complete: \d+/\d+ meshes'
 	},
 	@{
-		Script = 'generate_surface_textures.py'
-		SuccessPattern = '\[IndieGame\] Imported \d+ textures'
-	},
-	@{
 		Script = 'import_texture_atlas.py'
 		SuccessPattern = 'PRINT_ATLAS_IMPORT PASS'
+	},
+	@{
+		Script = 'generate_surface_textures.py'
+		SuccessPattern = '\[IndieGame\] Imported \d+ textures'
 	},
 	@{
 		Script = 'create_textured_materials.py'
@@ -949,34 +856,6 @@ foreach ($stage in $pythonStages) {
 	}
 }
 
-if ($usingAsciiMirror) {
-	# 한글 경로를 피해 빌드한 최신 모듈도 실제 프로젝트로 돌려보낸다.
-	# 그렇지 않으면 UAsset은 최신인데 런타임은 이전 DLL을 읽을 수 있다.
-	Invoke-ArtRobocopy `
-		-Source (Join-Path $unrealProjectRoot 'Binaries\Win64') `
-		-Destination (Join-Path $projectRoot 'Binaries\Win64')
-		foreach ($relativeFolder in @(
-			'Content\Meshes',
-			'Content\Photo\Props',
-			'Content\UI\Textures',
-			'Content\Prototype\Textures',
-			'Content\Prototype\Materials'
-	)) {
-		Invoke-ArtRobocopy `
-			-Source (Join-Path $unrealProjectRoot $relativeFolder) `
-			-Destination (Join-Path $projectRoot $relativeFolder)
-	}
-	# 에디터가 쓴 파일은 콘텐츠 폴더 밖에도 있다. 메시 바운드는 Docs에
-	# 떨어지므로 폴더 회수만으로는 미러에 남는다.
-	$boundsRelative = 'Docs\mesh_bounds.json'
-	$boundsSource = Join-Path $unrealProjectRoot $boundsRelative
-	if (Test-Path -LiteralPath $boundsSource -PathType Leaf) {
-		Copy-Item `
-			-LiteralPath $boundsSource `
-			-Destination (Join-Path $projectRoot $boundsRelative) `
-			-Force
-	}
-}
 
 $requiredAssets = @(
 	'Content\Meshes\SM_CrackedPhone.uasset',
@@ -1080,8 +959,8 @@ $requiredAssets = @(
 	'Content\Prototype\Materials\M_SpriteListenerCrawl3.uasset',
 	'Content\Prototype\Materials\M_SpriteFinalCavity.uasset',
 	'Content\Prototype\Materials\M_SpriteMokFinalUpper.uasset',
-	'Content\Prototype\Textures\T_NoteFridge_D.uasset',
-	'Content\Prototype\Textures\T_LabelWater_D.uasset',
+	'Content\Prototype\Textures\T_PrintAtlas0_D.uasset',
+	'Content\Prototype\Textures\T_PrintAtlas2_D.uasset',
 	'Content\Prototype\Materials\M_NoteFridge.uasset',
 	'Content\Prototype\Materials\M_LabelWater.uasset'
 )

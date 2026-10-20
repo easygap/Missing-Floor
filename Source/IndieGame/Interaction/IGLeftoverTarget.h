@@ -34,8 +34,6 @@ public:
 	/** 보이는 메시. Relative는 액터 기준. 충돌은 없다. */
 	UStaticMeshComponent* SetVisual(UStaticMesh* Mesh, const FTransform& Relative, UMaterialInterface* Material = nullptr);
 	UStaticMeshComponent* GetVisual() const { return Visual; }
-	/** 조준 상자의 자리(액터 기준). */
-	void SetFocusOffset(const FVector& Offset);
 	/** 끝났을 때 생각 한 줄(비우면 없다). */
 	void SetThought(const FText& InThought) { Thought = InThought; }
 	/** 이름표. 감독이 어떤 자리인지 가른다. */

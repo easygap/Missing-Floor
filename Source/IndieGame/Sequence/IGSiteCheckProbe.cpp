@@ -63,6 +63,7 @@ void AIGSiteCheckProbe::Configure(
 	Director = InDirector;
 	bShots = FParse::Param(FCommandLine::Get(), TEXT("IGSiteCheckShots"));
 	bAway = FParse::Param(FCommandLine::Get(), TEXT("IGSiteCheckAway"));
+	bLeaveDuringTalk = FParse::Param(FCommandLine::Get(), TEXT("IGSiteCheckLeaveDuringTalk"));
 }
 
 void AIGSiteCheckProbe::Check(const bool bCondition, const TCHAR* Name)
@@ -376,6 +377,14 @@ void AIGSiteCheckProbe::Tick(const float DeltaSeconds)
 		break;
 
 	case 3:
+		if (bLeaveDuringTalk && People->GetSpokenLineCount() >= 1)
+		{
+			Check(AIGHorrorHUD::HasDialogueInContext(this, TEXT("SiteCheck.Visit")),
+				TEXT("site_dialogue_is_present_before_leaving"));
+			Stand(CorridorFeet + Floor4, FVector(400.0f, -318.0f, 1000.0f));
+			Next(5);
+			break;
+		}
 		// 말을 나눈다. 다섯 줄과 유담의 속말 하나.
 		Look(People->GetOfficerFeet() + FVector(0.0f, 0.0f, 150.0f));
 		if (!bShotTaken && PhaseSeconds >= 2.0f)
@@ -439,6 +448,8 @@ void AIGSiteCheckProbe::Tick(const float DeltaSeconds)
 		Check(People->IsHidden(), TEXT("visit_hidden"));
 		Check(!RoofDoor->IsOpen() && !FifthDoor->IsOpen(), TEXT("gates_closed_again"));
 		Check(!People->IsActorTickEnabled(), TEXT("visit_stops_ticking"));
+		Check(!AIGHorrorHUD::HasDialogueInContext(this, TEXT("SiteCheck.Visit")),
+			TEXT("site_dialogue_does_not_follow_her_downstairs"));
 		Finish();
 		break;
 

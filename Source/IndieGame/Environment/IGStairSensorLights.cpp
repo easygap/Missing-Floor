@@ -122,11 +122,6 @@ FVector AIGStairSensorLights::GetLampLocation(const int32 Index) const
 	return Light ? Light->GetComponentLocation() : FVector::ZeroVector;
 }
 
-float AIGStairSensorLights::GetLampFloorZ(const int32 Index) const
-{
-	return FloorZ.IsValidIndex(Index) ? FloorZ[Index] : 0.0f;
-}
-
 int32 AIGStairSensorLights::GetSwitchOnCount(const int32 Index) const
 {
 	return SwitchOnCounts.IsValidIndex(Index) ? SwitchOnCounts[Index] : 0;

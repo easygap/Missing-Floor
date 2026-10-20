@@ -537,16 +537,7 @@ void AIGMissingFloorLeftoverDirector::RefreshStorage()
 	}
 }
 
-void AIGMissingFloorLeftoverDirector::StageStorageTrapForTesting()
-{
-	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
-	{
-		Narrative->MarkBeatPlayed(BeatText);
-	}
-	BeginStorageTrap(false);
-}
-
-void AIGMissingFloorLeftoverDirector::BeginStorageTrap(const bool bAnnounce)
+void AIGMissingFloorLeftoverDirector::BeginStorageTrap()
 {
 	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 	if (!Narrative || !Jeongwoo)
@@ -614,13 +605,13 @@ void AIGMissingFloorLeftoverDirector::PollStorage()
 					EIGDialogueChannel::Device, 0.0f, EIGDialoguePriority::Story);
 			}), 9.0f, false);
 		}
-		BeginStorageTrap(false);
+		BeginStorageTrap();
 		return;
 	}
 	if (State.JeongwooState == Trapped && StorageStage == EStorage::Idle)
 	{
 		// 불러온 밤. 갇힌 채 저장됐다.
-		BeginStorageTrap(false);
+		BeginStorageTrap();
 	}
 	// 3층에 내려서면 판 너머에서 정우가 부른다.
 	if (State.JeongwooState == Trapped && StorageStage == EStorage::Trapped
@@ -673,8 +664,8 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 	if (Key == FName(TEXT("Storage.Jeongwoo")))
 	{
 		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), StorageStage == EStorage::Fallen
-			? NSLOCTEXT("IGMissingFloor", "LeftoverTrappedFallen", "판이 더 내려왔어요. 밑동이 자꾸 밀려요.")
-			: NSLOCTEXT("IGMissingFloor", "LeftoverTrappedTalk", "상자 빼다가 판이 넘어왔어요. 벽에 붙은 게 밀어요."));
+			? NSLOCTEXT("IGMissingFloor", "LeftoverTrappedFallen", "판이 더 내려왔어요. 몸을 뺄 틈이 없어요.")
+			: NSLOCTEXT("IGMissingFloor", "LeftoverTrappedTalk", "상자 빼다가 판이 넘어왔어요. 벽에 붙은 게 계속 판을 밀어요."));
 		return;
 	}
 	if (Key == FName(TEXT("Storage.WedgePick")))
@@ -717,7 +708,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 		if (PlayBeat(BeatLabel303Peeled))
 		{
 			PlaySound(UIGToneSequenceSoundWave::CreatePackingTapeRip(this), FVector(-146.3f, -170.7f, StorageZ + 52.9f), 0.3f, 1.3f);
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Thought", "딱지 밑에 303호가 써 붙인 게 있어. 겨울까지만 맡긴다고."), 3.6f);
+			Think(NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Thought", "303호에서 맡긴 짐이네. 겨울까지만 보관해 달라고 적혀 있어."), 3.6f);
 		}
 		RefreshStorage();
 		return;
@@ -912,7 +903,7 @@ void AIGMissingFloorLeftoverDirector::ReleaseBoard()
 		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverFallenLine", "괜찮아요! 근데 판이 더 내려왔어요."));
 		GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			ThinkIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverFallenThought", "밑동이 쭉 미끄러졌어. 판이 더 누웠어."), 3.4f);
+			ThinkIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverFallenThought", "아래가 밀리면서 판이 내려앉았어."), 3.4f);
 		}), 2.6f, false);
 	}
 	RefreshStorage();
@@ -1428,11 +1419,6 @@ void AIGMissingFloorLeftoverDirector::BuildAssembly()
 	SpawnProp(FName(TEXT("Annex.CoverLeanC")), Mesh(TEXT("SM_CoverPieceC")), SiteLean, false);
 }
 
-FTransform AIGMissingFloorLeftoverDirector::PieceSlotTransform(const int32 Piece) const
-{
-	return FrameRoot ? FrameRoot->GetComponentTransform() : FTransform::Identity;
-}
-
 FTransform AIGMissingFloorLeftoverDirector::PieceHoverTransform(const int32 Piece) const
 {
 	const FQuat Base = FrameLyingQuat();
@@ -1713,7 +1699,7 @@ void AIGMissingFloorLeftoverDirector::TryFit(const int32 Slot)
 	const FText Hint = Piece != Slot
 		? NSLOCTEXT("IGMissingFloor", "LeftoverFitWrongSlot", "잘린 면이 바깥으로 나와.")
 		: bHeldFlipped
-			? NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막에 미끄러져.")
+			? NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막 위에서 미끄러져.")
 			: NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "자리는 맞는데 구멍 위치가 어긋나.");
 	ThinkIn(IGLeftoverDialogue::Fit, Hint, 3.0f);
 	if (WrongFits >= 3)

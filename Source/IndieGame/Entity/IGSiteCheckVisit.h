@@ -142,6 +142,7 @@ private:
 	void PlayWallKnock(int32 Index);
 	/** 벽 앞의 말 한 줄을 띄우고, 그 줄이 화면에 머물 시간을 돌려준다. */
 	float PushLine(int32 Index);
+	float PushVisitLine(const FText& Speaker, const FText& Line);
 	/** 이 확인에서 할 말 수. 덮개를 가져온 회차는 두 줄이 더 있다. */
 	int32 GetLineCount() const;
 	/** 5층 남쪽 점검구에서 떼어 간 덮개를 맞춰 보고 들고 있다. */

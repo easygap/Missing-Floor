@@ -2188,7 +2188,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverFitWrongSlot", "잘린 면이 바깥으로 나와."), TEXT("LeftoverFitWrongSlot")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막에 미끄러져."), TEXT("LeftoverFitFlipped")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막 위에서 미끄러져."), TEXT("LeftoverFitFlipped")},
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "자리는 맞는데 구멍 위치가 어긋나."), TEXT("LeftoverFitRotated")},
 			{TEXT('T'), FText::GetEmpty(),

@@ -10,6 +10,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+. (Join-Path $PSScriptRoot 'Resolve-AsciiWorkspace.ps1')
 $igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Package-Windows.ps1' -Parameters $PSBoundParameters
 $igArtifactSucceeded = $false
 $zenProcess = $null
@@ -33,18 +34,9 @@ if ((Test-Path -LiteralPath $ArchiveDirectory) -and
 
 Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $ArchiveDirectory
 
-# 한글 경로의 빌드 복사는 기존 스크립트 한 곳에서 관리한다.
+# 코드 빌드와 쿠크가 검증한 ASCII 경로로 같은 작업 폴더를 사용한다.
 & (Join-Path $PSScriptRoot 'Build-ArtAssets.ps1') -CodeOnly
-$buildRoot = $projectRoot
-if ($projectRoot -match '[^\x00-\x7F]') {
-    # Build-ArtAssets.ps1의 Get-AsciiArtBuildRoot와 같은 계산이다. Windows PowerShell 5.1에는
-    # [Convert]::ToHexString과 SHA256.HashData가 없어서 ComputeHash로 쓴다.
-    $bytes = [Text.Encoding]::UTF8.GetBytes($projectRoot.ToLowerInvariant())
-    $sha = [Security.Cryptography.SHA256]::Create()
-    try { $hashBytes = $sha.ComputeHash($bytes) } finally { $sha.Dispose() }
-    $hash = -join ($hashBytes[0..3] | ForEach-Object { $_.ToString('x2') })
-    $buildRoot = Join-Path $env:LOCALAPPDATA "IndieGame/AsciiBuild/Art_$hash"
-}
+$buildRoot = Resolve-IGAsciiWorkspace -ProjectRoot $projectRoot
 $buildProject = Join-Path $buildRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $engineRoot = Split-Path (Split-Path (Split-Path $editor -Parent) -Parent) -Parent

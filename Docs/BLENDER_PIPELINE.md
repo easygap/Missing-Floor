@@ -11,6 +11,10 @@
 
 둘 다 `Content/SourceArt/Blender/<SM_Name>/`에 FBX·텍스처·미리보기·manifest를
 남기고, `Import-BlenderAssets.ps1`이 UE 에셋으로 만들어 `Content/`에 넣는다.
+미리보기는 기본 조명 한 장과 별도로 참조하는 포즈 검수본을 보관한다. 손전등 조명의
+`_preview_torch.png`는 반입 입력이 아니므로 검수가 끝나면 정리한다.
+2026-10-20에는 손전등 미리보기 213장과 현재 `.blend` 원본에 해시까지 같은
+`.blend1` 백업 25개를 정리했다. 기본 미리보기와 내용이 다른 백업은 보존했다.
 
 ## 왜 에디터가 아닌가
 

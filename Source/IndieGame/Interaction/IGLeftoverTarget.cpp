@@ -60,17 +60,6 @@ UStaticMeshComponent* AIGLeftoverTarget::SetVisual(
 	return Visual;
 }
 
-void AIGLeftoverTarget::SetFocusOffset(const FVector& Offset)
-{
-	// 루트가 조준 상자라 상자를 옮기면 액터가 옮겨진다. 보이는 메시를 거꾸로 옮겨 둔다.
-	const FVector Old = Focus->GetComponentLocation();
-	SetActorLocation(GetActorLocation() + GetActorRotation().RotateVector(Offset));
-	if (Visual)
-	{
-		Visual->SetWorldLocation(Visual->GetComponentLocation() - (Focus->GetComponentLocation() - Old));
-	}
-}
-
 float AIGLeftoverTarget::GetInteractionHoldDuration_Implementation(AActor* Interactor) const
 {
 	return FMath::Max(0.0f, InteractionHoldDuration);

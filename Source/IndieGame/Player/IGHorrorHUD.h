@@ -150,6 +150,8 @@ struct FIGDialogueScope
 /** Small value object kept outside UObject reflection to avoid per-line allocation churn. */
 struct FIGDialogueMessage
 {
+	/** 나눈 쪽들이 공유하는 대사 번호. 같은 문장을 다른 장면에서 말해도 서로 거두지 않는다. */
+	uint64 MessageSerial = 0;
 	FText Speaker;
 	FText Line;
 	EIGDialogueChannel Channel = EIGDialogueChannel::InnerVoice;
@@ -653,6 +655,8 @@ public:
 	}
 	/** 검사용. 화면 없이 대사 큐를 그 시각으로 넘긴다(그리는 프레임이 하는 일과 같다). */
 	void AdvanceDialogueForTesting(const double Time) { AdvanceDialogueQueue(Time); }
+	/** 검사용. 명시적으로 줄을 나눈 대사를 한 쪽에 한 줄씩 넘긴다. 화면 렌더링은 하지 않는다. */
+	void PrepareDialoguePageForTesting(const double Time) { PrepareDialoguePage(1.0f, 10000.0f, 1, Time); }
 	/** 검사용. 메뉴·기록에 가려졌다가 다시 보이는 것을 흉내 낸다. */
 	void SuspendDialogueForTesting(const double Time) { SuspendDialoguePresentation(Time); }
 	void ResumeDialogueForTesting(const double Time) { ResumeDialoguePresentation(Time); }
@@ -1117,6 +1121,7 @@ private:
 	TMap<FName, TArray<FIGDialogueMessage>> InterruptedTalks;
 	/** 장면이 바뀔 때마다 하나씩 오른다. MakeSceneGuard가 이것을 들고 간다. */
 	int32 DialogueSceneSerial = 0;
+	uint64 NextDialogueMessageSerial = 0;
 	/** 마지막으로 그린 「들은 말」 쪽 수. 글자 크기와 화면 폭에 따라 달라서 그릴 때 센다. */
 	mutable int32 JournalHeardPageCount = 0;
 	TArray<FString> CurrentDialogueLines;

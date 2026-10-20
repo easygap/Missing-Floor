@@ -35,6 +35,7 @@ if ($TextScale -gt 1) { $extra += ('-IGCaptionScale=' + $TextScale) }
 try {
 	& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen -d3d12 -nosound `
 		-Windowed "-ResX=$Width" "-ResY=$Height" -ForceRes -IGListenerGreybox "-IGEpiloguePreview=$Ending" -IGSkipFrontend `
+		-IGTextAudit `
 		'-ExecCmds=Scalability 2,sg.ResolutionQuality 100,r.ScreenPercentage 100' `
 		"-UserDir=$probeUser" "-abslog=$logPath" @extra | Out-Null
 } finally {
@@ -42,6 +43,12 @@ try {
 	elseif (Test-Path -LiteralPath $settingsPath) { Remove-Item -LiteralPath $settingsPath }
 }
 Select-String -LiteralPath $logPath -Pattern 'EPILOGUE_PREVIEW|Failed to compile Material' | ForEach-Object { Write-Host $_.Line }
+if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'EPILOGUE_PREVIEW PASS')) {
+	throw "에필로그 검사에 실패했습니다: $logPath"
+}
+if (Select-String -LiteralPath $logPath -Pattern 'TEXT_AUDIT (OFFSCREEN|OUTSIDE_PANEL|OVERLAP)') {
+	throw "에필로그 글자가 화면을 벗어나거나 겹칩니다: $logPath"
+}
 
 $igArtifactSucceeded = $true
 }

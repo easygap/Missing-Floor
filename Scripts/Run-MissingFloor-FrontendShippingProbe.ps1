@@ -76,6 +76,66 @@ function Get-PngDimensions {
 	return [pscustomobject]@{ width = $width; height = $height }
 }
 
+function Remove-FrontendSettingsRowCaptures {
+	param([string]$EvidenceRoot, [object[]]$Cases)
+
+	# 모든 해상도의 검사와 대표 화면이 통과한 뒤 행별 중간 캡처만 정리한다.
+	$plans = @(foreach ($case in $Cases) {
+		if ($case.resolution -notmatch '^(\d+)x(\d+)$') { throw '화면 크기를 확인하지 못했습니다.' }
+		$width, $height = [int]$Matches[1], [int]$Matches[2]
+		$caseRoot = [IO.Path]::GetFullPath((Join-Path $EvidenceRoot $case.resolution))
+		if (-not (Test-IGArtifactPath $caseRoot $EvidenceRoot)) { throw '화면 검사 폴더의 경로가 바뀌었습니다.' }
+		foreach ($name in @('settings-accessibility.png', 'settings-display.png', 'title-first-run.png',
+			'dialogue-default.png', 'dialogue.png', 'notice.png', 'audio-brightness.png',
+			'night-difficulty.png', 'key-settings.png')) {
+			$file = Get-Item -LiteralPath (Join-Path $caseRoot $name)
+			if ($file.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw '대표 화면이 연결 파일로 바뀌었습니다.' }
+			$size = Get-PngDimensions -Path $file.FullName
+			if ($size.width -ne $width -or $size.height -ne $height) { throw "대표 화면 크기가 다릅니다: $name" }
+		}
+		$rows = @(foreach ($index in 0..78) {
+			$file = Get-Item -LiteralPath (Join-Path $caseRoot ('settings-row-{0:D2}.png' -f $index))
+			if ($file.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw '행별 캡처가 연결 파일로 바뀌었습니다.' }
+			$size = Get-PngDimensions -Path $file.FullName
+			if ($size.width -ne $width -or $size.height -ne $height) { throw "행별 캡처 크기가 다릅니다: $($file.Name)" }
+			[pscustomobject]@{ path = $file.FullName; bytes = $file.Length; ticks = $file.LastWriteTimeUtc.Ticks;
+				sha256 = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash }
+		})
+		[pscustomobject]@{ result = $case; directory = $caseRoot; rows = $rows }
+	})
+	foreach ($plan in $plans) {
+		$cleanup = [ordered]@{ verifiedFiles = $plan.rows.Count; deletedFiles = 0; deletedBytes = [long]0; retainedFiles = 0 }
+		$plan.result | Add-Member -NotePropertyName intermediateCaptureCleanup -NotePropertyValue $cleanup
+		if (-not (Test-IGArtifactPath $plan.directory $EvidenceRoot)) { throw '정리할 화면 검사 폴더의 경로가 바뀌었습니다.' }
+		foreach ($row in $plan.rows) {
+			$stream = $null
+			$sha = $null
+			try {
+				$file = Get-Item -LiteralPath $row.path
+				if (($file.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
+					$file.Length -ne $row.bytes -or $file.LastWriteTimeUtc.Ticks -ne $row.ticks) {
+					throw '검사 후 행별 캡처가 변경됐습니다.'
+				}
+				$stream = [IO.File]::Open($row.path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Delete)
+				$sha = [Security.Cryptography.SHA256]::Create()
+				if ([BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-', '') -cne $row.sha256) {
+					throw '검사 후 행별 캡처의 내용이 변경됐습니다.'
+				}
+				Remove-Item -LiteralPath $row.path -ErrorAction Stop
+				$stream.Dispose(); $stream = $null
+				if (Test-Path -LiteralPath $row.path) { throw '중간 캡처의 삭제 결과를 확인하지 못했습니다.' }
+				$cleanup.deletedFiles++
+				$cleanup.deletedBytes += $row.bytes
+			}
+			catch {
+				$cleanup.retainedFiles++
+				Write-Warning "행별 캡처를 보존했습니다: $($row.path): $($_.Exception.Message)"
+			}
+			finally { if ($sha) { $sha.Dispose() }; if ($stream) { $stream.Dispose() } }
+		}
+	}
+}
+
 function Get-ArchiveManifest {
 	param([Parameter(Mandatory = $true)][string]$Root)
 
@@ -352,6 +412,7 @@ $results = @(
 	}
 )
 Assert-ArchiveUnchanged -Root $archiveRoot -Before $archiveManifestBefore
+Remove-FrontendSettingsRowCaptures -EvidenceRoot $evidenceRoot -Cases $results
 
 $summaryPath = Join-Path $evidenceRoot 'summary.json'
 [pscustomobject]@{

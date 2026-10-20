@@ -130,8 +130,11 @@ Assert-ContainsAll $hudSource @(
 	'DrawAudioCaptionBearingGlyph(',
 	'const FString Inner = DisplayCaption.Mid(1, DisplayCaption.Len() - 2);',
 	'DisplayCaption = Inner.TrimStartAndEnd();',
-	'SpeakerChipHeight * 0.5f'
-) '2026 하단 글래스 표면·화자 칩·효과음 캡슐'
+	'ContentWidth + HorizontalPadding * 2.0f',
+	'MaximumTextWidth - VoiceLaneWidth'
+) '내용 폭에 맞는 대화창·화자명·효과음 캡슐'
+Assert-True (-not ($hudSource.Contains('SpeakerChipColor') -or $hudSource.Contains('FCanvasTileItem Keyline('))) (
+	'대화창에 화자 배지나 장식선을 다시 얹었다')
 Assert-True (-not $hudSource.Contains('FVector2D(3.0f * ResolutionScale, PanelHeight)')) (
 	'구형 디버그형 왼쪽 강조 막대가 남아 있다')
 # 자막 바탕에 필름 질감을 얹으면 글자 뒤가 자글거린다. 바탕은 단색으로 둔다.
@@ -247,12 +250,12 @@ foreach ($profile in @(
 	$lineStep = $bodyHeight * 1.36
 	$speakerScale = $textScale * 0.78
 	$speakerHeight = [Math]::Max(11.0, 14.0 * $speakerScale)
-	$speakerChipHeight = [Math]::Max(
-		24.0 * $resolutionScale,
-		$speakerHeight + 10.0 * $resolutionScale)
-	$panelHeight = 14.0 * $resolutionScale + $speakerChipHeight +
+	$continuationHeight = 14.0 * $textScale * 0.72
+	$bottomPadding = [Math]::Max(26.0 * $resolutionScale,
+		$continuationHeight + 13.0 * $resolutionScale)
+	$panelHeight = 16.0 * $resolutionScale + $speakerHeight +
 		10.0 * $resolutionScale + $bodyHeight + 2.0 * $lineStep +
-		26.0 * $resolutionScale
+		$bottomPadding
 	$safeY = $profile.Height * (1.0 - $safeArea) * 0.5
 	$panelYRaw = $profile.Height - $safeY - $panelHeight - 42.0 * $resolutionScale
 	$panelYMinimum = $safeY + 24.0 * $resolutionScale

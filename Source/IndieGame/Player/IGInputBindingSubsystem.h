@@ -73,8 +73,6 @@ public:
 	/** 지금 묶여 있는 키. 저장된 것이 없으면 기본값을 돌려준다. */
 	FKey GetBoundKey(int32 ActionIndex, bool bGamepad) const;
 	bool IsDefaultBinding(int32 ActionIndex, bool bGamepad) const;
-	/** 하나라도 기본값과 다른가. 화면의 「기본값으로」 행이 이걸 읽는다. */
-	bool HasAnyOverride() const;
 
 	/**
 	 * 새 키를 받아 본다. 거절하면 false와 함께 **왜** 거절했는지를 돌려준다 —
@@ -118,9 +116,6 @@ public:
 	void AdjustGamepadSensitivity(int32 Direction);
 	void ToggleInvertLookY();
 	void AdjustVerticalLookScale(int32 Direction);
-
-	/** 시점 값도 기본값과 다른가. 화면의 `*` 표시가 이걸 읽는다. */
-	bool IsDefaultLookSettings() const;
 
 	/** 이 키는 어떤 경우에도 다시 묶을 수 없다. */
 	static bool IsReservedKey(const FKey& Key);

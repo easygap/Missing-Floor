@@ -20,8 +20,6 @@ $requiredRaw = @(
 	'AI\TextureP3CabinetPaintedSteel.png',
 	'AI\TextureCarrierBagFilm.png',
 	'AI\TextureAlleyCatTabby.png',
-	'AI\DialogueHUDConcept_v1.png',
-	'AI\TextureHudDialogueFilm.png',
 	'AI\ApartmentVisualTarget_v1.png',
 	'AI\TextureApartmentWallpaperVintage.png',
 	'AI\MaskApartmentWallPatina.png',
@@ -687,7 +685,7 @@ foreach ($token in @(
 	'IG_HUD_UI_ONLY',
 	'IG_CORRIDOR_SIGNAGE_ONLY',
 	'SM_CaptureMercyNote.uasset',
-	'T_CaptureMercyNote_D.uasset',
+	'T_PrintAtlas1_D.uasset',
 	'M_CaptureMercyNote.uasset',
 	'T_AudioCalibrationWall_D.uasset',
 	'T_MissingFloorJournalPaper_D.uasset',
@@ -705,16 +703,14 @@ foreach ($token in @(
 	'ART_CODE_BUILD PASS',
 	'ART_BUILD compiling IndieGameEditor Win64 Development',
 	'UnrealEditor-IndieGame.dll',
-	"Join-Path `$unrealProjectRoot 'Binaries\Win64'",
-	"Join-Path `$projectRoot 'Binaries\Win64'",
+	"Join-Path `$unrealProjectRoot 'Binaries\Win64\UnrealEditor-IndieGame.dll'",
 	'generate_meshes.py',
 	'generate_surface_textures.py',
 	'create_textured_materials.py',
 	'apply_photo_prop_lods.py',
-	'Content\Photo\Props',
 	'validate_baked_art_assets.py',
-	'Get-AsciiArtBuildRoot',
-	'Invoke-ArtRobocopy',
+	'Resolve-AsciiWorkspace.ps1',
+	'Resolve-IGAsciiWorkspace -ProjectRoot $projectRoot',
 	'ART_UASSET_AUDIT PASS',
 	'-abslog=',
 	'ART_BUILD PASS'
@@ -798,28 +794,19 @@ foreach ($token in @(
 		throw "Missing-floor material pipeline is missing: $token"
 	}
 }
-foreach ($token in @(
-	'Every targeted pass can compile runtime bindings',
-	"-Source (Join-Path `$unrealProjectRoot 'Binaries\Win64')",
-	"-Destination (Join-Path `$projectRoot 'Binaries\Win64')"
-)) {
-	if (-not $buildScript.Contains($token)) {
-		throw "ASCII targeted-build binary sync is missing: $token"
-	}
+if ($buildScript -match 'Invoke-ArtRobocopy|usingAsciiMirror|Get-AsciiArtBuildRoot|robocopy|/MIR') {
+	throw '아트 빌드에 같은 작업 폴더를 복사하는 옛 미러 경로가 남아 있습니다.'
 }
-# 타깃 패스의 에셋 회수. 목록에 적힌 파일만 복사하던 시절에는 그 패스가
-# 처음 만든 에셋이 미러에 갇힌 채 PASS가 찍혔다. 폴더째 회수와 도착 확인이
-# 둘 다 있어야 그 침묵이 다시 생기지 않는다.
+# 대상 패스가 같은 작업 폴더에 만들기로 한 에셋을 실제로 생성했는지 확인한다.
 foreach ($token in @(
 	'$undeliveredAssets = @($targetRelativeAssets | Where-Object {',
 	'-not (Test-Path -LiteralPath (Join-Path $projectRoot $_) -PathType Leaf)',
-	"-Destination (Join-Path `$projectRoot `$relativeFolder)",
 	'Content\Prototype\Materials\M_MissingFloorSteelStair.uasset',
 	'Content\Prototype\Materials\M_RooftopWaterproofing_XY.uasset',
 	'Content\Prototype\Materials\M_UnitDoorPaintedSteel.uasset'
 )) {
 	if (-not $buildScript.Contains($token)) {
-		throw "ASCII targeted-build asset delivery is missing: $token"
+		throw "아트 생성 결과 검사가 빠졌습니다: $token"
 	}
 }
 foreach ($token in @(

@@ -169,11 +169,6 @@ bool UIGInputBindingSubsystem::IsDefaultBinding(
 	return !Overrides.Contains(MakeOverrideKeyName(ActionIndex, bGamepad));
 }
 
-bool UIGInputBindingSubsystem::HasAnyOverride() const
-{
-	return Overrides.Num() > 0;
-}
-
 bool UIGInputBindingSubsystem::TryRebind(
 	const int32 ActionIndex,
 	const bool bGamepad,
@@ -289,14 +284,6 @@ void UIGInputBindingSubsystem::ToggleInvertLookY()
 {
 	bInvertLookY = !bInvertLookY;
 	SaveLookSettings();
-}
-
-bool UIGInputBindingSubsystem::IsDefaultLookSettings() const
-{
-	return FMath::IsNearlyEqual(MouseSensitivity, 1.0f)
-		&& FMath::IsNearlyEqual(GamepadSensitivity, 1.0f)
-		&& FMath::IsNearlyEqual(VerticalLookScale, 1.0f)
-		&& !bInvertLookY;
 }
 
 void UIGInputBindingSubsystem::LoadLookSettings()

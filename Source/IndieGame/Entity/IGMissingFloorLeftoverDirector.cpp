@@ -588,18 +588,6 @@ bool AIGMissingFloorLeftoverDirector::IsHoldingDawn(const UWorld* World)
 	return false;
 }
 
-bool AIGMissingFloorLeftoverDirector::HasCoverEvidence() const
-{
-	return HasTaken(IGLeftover::PieceA) || HasTaken(IGLeftover::PieceB) || HasTaken(IGLeftover::PieceC)
-		|| HasTaken(IGLeftover::Cover);
-}
-
-bool AIGMissingFloorLeftoverDirector::WasJeongwooRescuedTogether() const
-{
-	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-	return Narrative && Narrative->GetLeftover().JeongwooState == IGLeftover::JeongwooLeftTogether;
-}
-
 bool AIGMissingFloorLeftoverDirector::IsInnerRoomErrandRunning() const
 {
 	return NightTwoStage == ENightTwo::Waking || NightTwoStage == ENightTwo::Errand;

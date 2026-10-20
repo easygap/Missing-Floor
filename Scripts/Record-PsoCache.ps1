@@ -35,6 +35,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+. (Join-Path $PSScriptRoot 'Resolve-AsciiWorkspace.ps1')
 $igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Record-PsoCache.ps1' -Parameters $PSBoundParameters
 $igArtifactSucceeded = $false
 try {
@@ -44,16 +45,9 @@ $workRoot = Join-Path $projectRoot "Saved/PsoRecord/$stamp"
 New-Item -ItemType Directory -Force -Path $workRoot | Out-Null
 Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $workRoot
 
-# 한글 경로에서는 Build-ArtAssets.ps1이 만든 ASCII 사본에서 쿠크한다(Package-Windows.ps1과 같은 계산).
+# 코드 빌드와 쿠크가 검증한 ASCII 경로로 같은 작업 폴더를 사용한다.
 & (Join-Path $PSScriptRoot 'Build-ArtAssets.ps1') -CodeOnly
-$buildRoot = $projectRoot
-if ($projectRoot -match '[^\x00-\x7F]') {
-	$bytes = [Text.Encoding]::UTF8.GetBytes($projectRoot.ToLowerInvariant())
-	$sha = [Security.Cryptography.SHA256]::Create()
-	try { $hashBytes = $sha.ComputeHash($bytes) } finally { $sha.Dispose() }
-	$hash = -join ($hashBytes[0..3] | ForEach-Object { $_.ToString('x2') })
-	$buildRoot = Join-Path $env:LOCALAPPDATA "IndieGame/AsciiBuild/Art_$hash"
-}
+$buildRoot = Resolve-IGAsciiWorkspace -ProjectRoot $projectRoot
 $buildProject = Join-Path $buildRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $engineRoot = Split-Path (Split-Path (Split-Path $editor -Parent) -Parent) -Parent

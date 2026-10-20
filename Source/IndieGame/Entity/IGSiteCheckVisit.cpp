@@ -25,6 +25,7 @@
 
 namespace IGSiteCheckVisit
 {
+	const FName DialogueContext(TEXT("SiteCheck.Visit"));
 	// 걸음. 옥상 계단은 디딤판 22 cm, 단 17 cm라 가파르다. 둘 다 천천히 오른다.
 	constexpr float FlatSpeed = 85.0f;
 	/** 수평 1 cm에 이보다 많이 오르내리는 구간은 계단이다. 옥상 계단은 0.77, 아래 네 단은 0.82다. */
@@ -486,6 +487,7 @@ void AIGSiteCheckVisit::Hurry()
 
 void AIGSiteCheckVisit::Vanish()
 {
+	AIGHorrorHUD::CancelDialogue(this, IGSiteCheckVisit::DialogueContext);
 	if (Stage == EStage::Hidden)
 	{
 		return;
@@ -515,6 +517,7 @@ void AIGSiteCheckVisit::Vanish()
 
 void AIGSiteCheckVisit::Withdraw()
 {
+	AIGHorrorHUD::CancelDialogue(this, IGSiteCheckVisit::DialogueContext);
 	Show(Officer, false);
 	Show(Manager, false);
 	Stage = EStage::Gone;
@@ -897,13 +900,9 @@ void AIGSiteCheckVisit::TickKnocking(const float DeltaSeconds, const double Now)
 	}
 	if (Elapsed >= AskAt && Before < AskAt && IsPlayerWithThem())
 	{
-		AIGHorrorHUD::PushDialogue(
-			this,
+		PushVisitLine(
 			NSLOCTEXT("IGMissingFloor", "PoliceOfficerSpeaker", "경찰관"),
-			NSLOCTEXT("IGMissingFloor", "SiteCheckAsk", "계세요? 안에 누구 있어요?"),
-			EIGDialogueChannel::Conversation,
-			0.0f,
-			EIGDialoguePriority::Story);
+			NSLOCTEXT("IGMissingFloor", "SiteCheckAsk", "계세요? 안에 누구 있어요?"));
 	}
 	if (Elapsed >= ListenAt && Before < ListenAt)
 	{
@@ -975,15 +974,13 @@ float AIGSiteCheckVisit::PushLine(int32 Index)
 		{
 			Speaker = Yudam;
 			Line = NSLOCTEXT("IGMissingFloor", "SiteCheckYudamCover", "저 구석 덧판 밑이 원래 점검구예요. 떼어 간 덮개를 제가 맞춰 봤어요.");
-			AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
-			return AIGHorrorHUD::EstimateDialogueSeconds(Line);
+			return PushVisitLine(Speaker, Line);
 		}
 		if (Index == 4)
 		{
 			Speaker = OfficerName;
 			Line = NSLOCTEXT("IGMissingFloor", "SiteCheckOfficerCover", "그 덮개도 찍어 둘게요. 버리지 말고 갖고 계세요.");
-			AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
-			return AIGHorrorHUD::EstimateDialogueSeconds(Line);
+			return PushVisitLine(Speaker, Line);
 		}
 		if (Index > 4)
 		{
@@ -1015,7 +1012,21 @@ float AIGSiteCheckVisit::PushLine(int32 Index)
 	default:
 		return 0.0f;
 	}
-	AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story);
+	return PushVisitLine(Speaker, Line);
+}
+
+float AIGSiteCheckVisit::PushVisitLine(const FText& Speaker, const FText& Line)
+{
+	FIGDialogueScope Scope;
+	Scope.Context = IGSiteCheckVisit::DialogueContext;
+	Scope.Owner = this;
+	const TWeakObjectPtr<AIGSiteCheckVisit> WeakThis(this);
+	Scope.StillValid = [WeakThis]()
+	{
+		return WeakThis.IsValid() && WeakThis->IsOut() && WeakThis->IsPlayerOnRoof();
+	};
+	AIGHorrorHUD::PushDialogueScoped(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f,
+		EIGDialoguePriority::Story, MoveTemp(Scope));
 	// 다음 줄은 이 줄이 화면에서 내려가면 민다. 자막을 오래 두는 설정이면 그만큼 늦다.
 	float CaptionScale = 1.0f;
 	if (const UGameInstance* GameInstance = GetGameInstance())
@@ -1035,6 +1046,7 @@ void AIGSiteCheckVisit::TickTalking(const float DeltaSeconds, const double Now)
 	if (!IsPlayerOnRoof())
 	{
 		// 말하는 중에 내려갔다. 남은 말은 접는다.
+		AIGHorrorHUD::CancelDialogue(this, IGSiteCheckVisit::DialogueContext);
 		Stage = EStage::Lingering;
 		StageStartedAt = Now;
 		return;
@@ -1069,10 +1081,19 @@ void AIGSiteCheckVisit::TickTalking(const float DeltaSeconds, const double Now)
 	if (!bThoughtPushed && bLaneReady)
 	{
 		bThoughtPushed = true;
-		AIGHorrorHUD::PushThought(
+		FIGDialogueScope Scope;
+		Scope.Context = IGSiteCheckVisit::DialogueContext;
+		Scope.Owner = this;
+		const TWeakObjectPtr<AIGSiteCheckVisit> WeakThis(this);
+		Scope.StillValid = [WeakThis]()
+		{
+			return WeakThis.IsValid() && WeakThis->IsOut() && WeakThis->IsPlayerOnRoof();
+		};
+		AIGHorrorHUD::PushThoughtScoped(
 			this,
 			NSLOCTEXT("IGMissingFloor", "SiteCheckMokThought", "아저씨는 벽 쪽은 쳐다보지도 않네."),
-			3.2f);
+			3.2f,
+			MoveTemp(Scope));
 		Stage = EStage::Lingering;
 		StageStartedAt = Now;
 		ShutterCount = 0;

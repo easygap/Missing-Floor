@@ -55,9 +55,9 @@ namespace
 		{
 		case 0:
 			Out = Make(TEXT("Hint.Leftover.Assembly"), {
-				NSLOCTEXT("IGHint", "AssemblyFit1", "틀은 뒷면이 위로 누워 있어. 귀퉁이 고정쇠부터 보자."),
+				NSLOCTEXT("IGHint", "AssemblyFit1", "틀 귀퉁이에 고정쇠가 있네. 조각을 여기에 거는 건가."),
 				NSLOCTEXT("IGHint", "AssemblyFit2", "조각 뒷면에도 구멍이 있어. 고정쇠가 그 구멍에 물려야 해."),
-				NSLOCTEXT("IGHint", "AssemblyFit3", "조각을 뒤집어 구멍 쪽이 위로 오게 하고, 구멍이 고정쇠 앞에 오도록 돌려서 대 보자. 긴 조각은 긴 칸이야.") });
+				NSLOCTEXT("IGHint", "AssemblyFit3", "구멍이 위로 오게 조각을 뒤집고, 고정쇠에 맞춰 돌려 보자. 긴 조각은 긴 칸에.") });
 			return true;
 		case 1:
 			Out = Make(TEXT("Hint.Leftover.AssemblyFlip"), {
@@ -71,14 +71,14 @@ namespace
 			return true;
 		case 3:
 			Out = Make(TEXT("Hint.Leftover.AssemblyTake"), {
-				NSLOCTEXT("IGHint", "AssemblyTake1", "다 봤어. 덮개를 챙기자.") });
+				NSLOCTEXT("IGHint", "AssemblyTake1", "덮개를 챙겨서 어디에 붙어 있던 건지 찾아보자.") });
 			return true;
 		default:
 			return false;
 		}
 	}
 
-	/** 셋째 밤 302호 구출(P7). 302호 곁에 있거나 밤의 일을 마친 뒤에만 꺼낸다. */
+	/** 셋째 밤 302호 구출(P7). 멀리서는 도움 요청을 들었고 밤의 일을 마친 뒤에만 떠올린다. */
 	bool ResolveStorageRescue(const UObject* WorldContext, const UIGMissingFloorNarrativeSubsystem* N, FIGHintStep& Out)
 	{
 		const FIGLeftoverState& Leftover = N->GetLeftover();
@@ -88,24 +88,26 @@ namespace
 		}
 		const AIGMissingFloorLeftoverDirector* Director = FindLeftover(WorldContext);
 		const bool bNear = Director && Director->IsPlayerNearStorage();
-		if (!bNear && !Beat(N, TEXT("Night3.Goal")))
+		if (!bNear && (!Beat(N, TEXT("Night3.Goal")) || !Beat(N, TEXT("Leftover.N3.Voice"))))
 		{
 			return false;
 		}
 		const bool bFallen = Director && Director->GetStorageStage() == FName(TEXT("Fallen"));
 		const FText Last = Leftover.WedgeSocket != FName(TEXT("Brace"))
-			? NSLOCTEXT("IGHint", "NightThreeStorage3Wedge", "판 밑동이 바닥에 걸리는 자리에 쐐기를 끼우자.")
+			? NSLOCTEXT("IGHint", "NightThreeStorage3Wedge", "판이 바닥에 걸리는 곳에 쐐기를 끼워 받치자.")
 			: bFallen
-			? NSLOCTEXT("IGHint", "NightThreeStorage3Lift", "쐐기를 물렸으니 넘어진 판을 다시 세워 받치자.")
+			? NSLOCTEXT("IGHint", "NightThreeStorage3Lift", "쐐기를 끼웠으니 판을 다시 들어 올려 보자.")
 			: (!Leftover.bWardrobeMoved
-				? NSLOCTEXT("IGHint", "NightThreeStorage3Wardrobe", "장롱을 밀면 뒤에 큰 점검구가 있어. 그걸 열자.")
-				: NSLOCTEXT("IGHint", "NightThreeStorage3Hatch", "장롱 뒤 점검구를 열자. 저게 그리로 옮겨 가면 판이 풀려."));
-		// 2단계는 생각할 관계까지만. 관리실에서 큰 점검구로 옮겨 가는 것을 봤으면 그걸 떠올린다.
+				? NSLOCTEXT("IGHint", "NightThreeStorage3Wardrobe", "장롱을 밀어서 뒤쪽 벽을 살펴보자.")
+				: NSLOCTEXT("IGHint", "NightThreeStorage3Hatch", "장롱 뒤 점검구를 열자. 저게 옮겨 가면 판을 밀 수 있겠어."));
+		// 2단계는 다른 곳으로 보낼 수 있을지 생각한다. 움직임을 목격한 장소나 원인은 단정하지 않는다.
 		Out = Make(TEXT("Hint.Night3.Storage"), {
-			NSLOCTEXT("IGHint", "NightThreeStorage1", "302호에 판이 넘어와서 정우 씨가 못 나오고 있어."),
+			Beat(N, TEXT("Day.Jeongwoo.Intro"))
+				? NSLOCTEXT("IGHint", "NightThreeStorage1", "302호에 판이 넘어와서 정우 씨가 못 나오고 있어.")
+				: NSLOCTEXT("IGHint", "NightThreeStorage1Unknown", "302호 안에 사람이 갇혔어. 판 때문에 못 나오고 있어."),
 			Beat(N, TEXT("Leftover.SeenMove"))
-				? NSLOCTEXT("IGHint", "NightThreeStorage2Seen", "판은 밑동에서 밀려 나와. 관리실에선 큰 점검구를 열자 저게 그리로 옮겨 갔지.")
-				: NSLOCTEXT("IGHint", "NightThreeStorage2", "판은 밑동에서 밀려 나와. 누르는 걸 다른 데로 돌릴 수는 없을까."),
+				? NSLOCTEXT("IGHint", "NightThreeStorage2Seen", "저게 움직이는 걸 봤어. 다른 쪽으로 보낼 수 없을까.")
+				: NSLOCTEXT("IGHint", "NightThreeStorage2", "저걸 다른 쪽으로 보낼 수 없을까."),
 			Last });
 		return true;
 	}
@@ -163,7 +165,7 @@ namespace
 		const FText Last = !bBothStates
 			? NSLOCTEXT("IGHint", "NightOne3Dial", "복도등을 끄고, 이름표 없는 차단기를 내렸다 올리면서 다섯 번째 원판을 보자.")
 			: (!bSheet
-				? NSLOCTEXT("IGHint", "NightOne3Sheet", "검침 기록지도 읽어 봐야 해. 마지막 칸이 이상했어.")
+				? NSLOCTEXT("IGHint", "NightOne3Sheet", "검침 기록지에 계량기 다섯 개가 다 적혀 있는지 보자.")
 				: NSLOCTEXT("IGHint", "NightOne3Breaker", "이름표 없는 차단기를 올려 둔 채로 원판을 한 번 더 보자."));
 		return Make(TEXT("Hint.Night1.P1"), {
 			NSLOCTEXT("IGHint", "NightOne1", "위에 누가 있으면 전기를 쓰겠지. 1층 계량기함을 봐야겠다."),
@@ -239,7 +241,7 @@ namespace
 				NSLOCTEXT("IGHint", "NightThreeRhythm1", "오빠가 문 두드리던 박자가 있었는데."),
 				NSLOCTEXT("IGHint", "NightThreeRhythm2", "음성 메시지에서 그랬잖아. “문 두드리면 알지? 둘, 하나.”"),
 				RhythmSources < 2
-					? NSLOCTEXT("IGHint", "NightThreeRhythm3Notebook", "조율 수첩에도 그 박자가 적혀 있었을 거야. 수첩부터 다시 보자.")
+					? NSLOCTEXT("IGHint", "NightThreeRhythm3Notebook", "조율 수첩에서 그 박자를 찾아보자.")
 					: NSLOCTEXT("IGHint", "NightThreeRhythm3", "둘, 쉬고, 하나. 그 박자로 비어 있는 벽을 두드려 보자.") });
 		}
 		const bool bHasKey = IGStory::HasState(
@@ -266,7 +268,7 @@ namespace
 			NSLOCTEXT("IGHint", "NightThreeWall1", "벽마다 소리가 다른지 들어 보자."),
 			N->HasSource(ETruth::SomeoneInTheWall, ESource::PipeAuditionCriterion)
 				? NSLOCTEXT("IGHint", "NightThreeWall2Criterion", "수첩에 적혀 있었지. 빈 곳은 낮게 울리고 소리가 오래 간다고.")
-				: NSLOCTEXT("IGHint", "NightThreeWall2Notebook", "조율 수첩에 벽 얘기가 있었을 거야. 그것부터 읽자."),
+				: NSLOCTEXT("IGHint", "NightThreeWall2Notebook", "조율 수첩을 읽어 보자. 오빠도 이 벽을 살펴봤을까."),
 			NSLOCTEXT("IGHint", "NightThreeWall3", "배관 밸브를 열고 벽마다 귀를 대 보자. 아니면 하나씩 두드려서 어디가 오래 울리는지 들어 보자.") });
 	}
 
@@ -306,7 +308,7 @@ namespace
 			case 2:
 				return Leftover.bFramePlaced
 					? Make(TEXT("Hint.Night4.Wall2Braced"), {
-						NSLOCTEXT("IGHint", "NightFourWall2Ba", "이제 못 접어."),
+						NSLOCTEXT("IGHint", "NightFourWall2Ba", "틀에 걸려서 몸을 못 접네."),
 						NSLOCTEXT("IGHint", "NightFourWall2Bb", "이음매 위로 나사가 드러나 있었지."),
 						NSLOCTEXT("IGHint", "NightFourWall2Bc", "드러난 덧판 나사를 망치로 쳐 내자.") })
 					: Make(TEXT("Hint.Night4.Wall2"), {
@@ -323,7 +325,7 @@ namespace
 						NSLOCTEXT("IGHint", "NightFourWall3c", "밀린 틀을 다시 세우자.") })
 					: Make(TEXT("Hint.Night4.Wall3Inner"), {
 						NSLOCTEXT("IGHint", "NightFourWall3Ia", "덧판은 떼어 냈어. 안쪽 판이 남았어."),
-						NSLOCTEXT("IGHint", "NightFourWall3Ib", "안쪽 판은 기둥을 따라 나사로 박았어."),
+						NSLOCTEXT("IGHint", "NightFourWall3Ib", "기둥을 따라 안쪽 판에도 나사가 박혀 있어."),
 						NSLOCTEXT("IGHint", "NightFourWall3Ic", "양쪽 기둥 자리의 나사를 쳐 내자.") });
 			default:
 				return Make(TEXT("Hint.Night4.Wall4"), {
@@ -362,7 +364,7 @@ namespace
 					NSLOCTEXT("IGHint", "DayOne2", "401호 문을 두드려서 여쭤보자."),
 					NSLOCTEXT("IGHint", "DayOne3", "밤에는 1층 관리실. 민원 대장부터 보자.") })
 				: Make(TEXT("Hint.Day1.Missed"), {
-					NSLOCTEXT("IGHint", "DayOneMissed1", "어젯밤엔 아무것도 못 알아냈어."),
+					NSLOCTEXT("IGHint", "DayOneMissed1", "어젯밤에 계량기함을 끝까지 못 봤어."),
 					NSLOCTEXT("IGHint", "DayOneMissed2", "401호 할머니께 여쭤보자."),
 					NSLOCTEXT("IGHint", "DayOneMissed3", "밤이 오면 1층 계량기함부터 보자.") });
 		case 2:
@@ -372,7 +374,7 @@ namespace
 					NSLOCTEXT("IGHint", "DayTwo2", "401호 문을 두드려 보자."),
 					NSLOCTEXT("IGHint", "DayTwo3", "관리실 책상 위에 열쇠 꾸러미가 있었어. 그걸로 옥상 문을 열 수 있겠다.") })
 				: Make(TEXT("Hint.Day2.Missed"), {
-					NSLOCTEXT("IGHint", "DayTwoMissed1", "어젯밤엔 403호까지 못 돌아왔어."),
+					NSLOCTEXT("IGHint", "DayTwoMissed1", "어젯밤에 놓친 게 있어. 다시 가 봐야겠어."),
 					NSLOCTEXT("IGHint", "DayTwoMissed2", "401호 할머니께 여쭤보자."),
 					NSLOCTEXT("IGHint", "DayTwoMissed3", "밤이 되면 관리실에 들렀다가 403호로 돌아오자.") });
 		case 3:
@@ -393,7 +395,7 @@ namespace
 				? Make(TEXT("Hint.Day3"), {
 					NSLOCTEXT("IGHint", "DayThree1", "할머니께 말씀드려야겠어."),
 					NSLOCTEXT("IGHint", "DayThree2", "401호 문을 두드려 보자."),
-					NSLOCTEXT("IGHint", "DayThree3", "할 일을 다 했으면 403호에 가서 자자.") })
+					NSLOCTEXT("IGHint", "DayThree3", "볼일을 마치면 403호에서 좀 쉬자. 밤에 다시 올라가야 해.") })
 				: Make(TEXT("Hint.Day3.Missed"), {
 					NSLOCTEXT("IGHint", "DayThreeMissed1", "어젯밤엔 끝까지 못 갔어."),
 					NSLOCTEXT("IGHint", "DayThreeMissed2", "401호 할머니께 여쭤보자."),
@@ -446,7 +448,7 @@ FIGHintStep IGMissingFloorHints::Resolve(const UObject* WorldContext)
 				NSLOCTEXT("IGHint", "NightOneAfter3", "4층 복도 천장 밑에서 소리를 들어 보자. 그다음엔 403호 침대에서 쉬어도 돼.") });
 		}
 		return Make(TEXT("Hint.Night.Rest"), {
-			NSLOCTEXT("IGHint", "NightRest1", "오늘 밤 할 일은 끝났어."),
+			NSLOCTEXT("IGHint", "NightRest1", "오늘은 여기까지 보자."),
 			NSLOCTEXT("IGHint", "NightRest2", "더 볼 데가 있으면 보고, 아니면 403호로 돌아가자."),
 			NSLOCTEXT("IGHint", "NightRest3", "403호 침대에서 아침까지 쉬자. 밖이 조용할 때.") });
 	}

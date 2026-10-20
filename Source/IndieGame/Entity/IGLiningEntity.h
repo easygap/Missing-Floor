@@ -121,10 +121,7 @@ public:
 	void NotifyGapsChanged();
 	/** 막힌 틈을 다시 뜯었다(덮개 쪽이 부른다). */
 	void UnsealGap(FName Id);
-	bool IsGapSealed(FName Id) const;
 	bool IsGapOpen(FName Id) const;
-	/** 몸이나 다리가 이 틈의 덮개 자리에 걸려 있다. */
-	bool IsObstructingGap(FName Id) const;
 
 	EIGLiningState GetState() const { return State; }
 	/** 떨어지기·걷기·짚기·누르기·펴기·물러나기 중이다. */

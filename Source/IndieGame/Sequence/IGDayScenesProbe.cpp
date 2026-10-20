@@ -416,7 +416,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			Stand(CurbFeet, CurbRiderFace);
 			JeongwooTalk->OnExamined.Broadcast(JeongwooTalk.Get());
 			Check(Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Guest")))
-				&& SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooGuest3", "동네장터에도 올렸어요. 403호도 걸쇠 꼭 거세요.")),
+				&& SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooGuest3", "동네장터에도 올렸어요. 문에 걸쇠 꼭 걸어 두세요.")),
 				TEXT("jeongwoo_tells_mother_voice_day2"));
 			if (!bShots)
 			{
@@ -966,6 +966,89 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 				[]() { return true; }, EIGSoundCaptionWeight::Background);
 			Check(bHiddenWhenImportant && Hud->HasPendingAudioCaption(), TEXT("life_sounds_only_with_all_sounds"));
 			Hud->ClearDialogueForTesting();
+		}
+		// 13. 받아 둔 이야기 여덟 줄은 쪽 나눔과 긴급 대사를 거쳐도 빠지지 않는다.
+		//     다시 뜬 첫 쪽을 다 읽어도 마지막 쪽 전에는 들은 기록과 끝 알림이 생기지 않는다.
+		{
+			Hud->ClearDialogueForTesting();
+			const FText PagedLine = FText::FromString(TEXT("규칙 검사 첫 쪽.\n규칙 검사 마지막 쪽."));
+			int32 PagedEnded = 0;
+			EIGDialogueEndReason PagedReason = EIGDialogueEndReason::Expired;
+			FIGDialogueScope FirstScope = Scoped(TEXT("Rule.Pages"), EIGDialogueLifetime::Story);
+			FirstScope.OnEnded = [&PagedEnded, &PagedReason](const EIGDialogueEndReason Reason)
+			{
+				++PagedEnded;
+				PagedReason = Reason;
+			};
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, PagedLine, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, MoveTemp(FirstScope));
+			for (int32 Index = 0; Index < 7; ++Index)
+			{
+				AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+					EIGDialoguePriority::Story,
+					Scoped(FName(*FString::Printf(TEXT("Rule.Waiting.%d"), Index)), EIGDialogueLifetime::Story));
+			}
+			Check(Hud->GetQueuedDialogueCountForTesting() == 8, TEXT("scoped_story_queue_accepts_eight_lines"));
+			Hud->PrepareDialoguePageForTesting(T0);
+			Check(Hud->GetQueuedDialogueCountForTesting() == 9
+				&& Hud->HasDialogueInContextForTesting(TEXT("Rule.Waiting.6")),
+				TEXT("pagination_keeps_waiting_story_lines"));
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Critical, Scoped(TEXT("Rule.Urgent"), EIGDialogueLifetime::Reaction));
+			Check(Hud->GetQueuedDialogueCountForTesting() == 10
+				&& Hud->HasDialogueInContextForTesting(TEXT("Rule.Waiting.6")),
+				TEXT("urgent_line_keeps_waiting_story_lines"));
+			Hud->AdvanceDialogueForTesting(Hud->GetDialogueEndTimeForTesting() + 0.01);
+			Hud->AdvanceDialogueForTesting(Hud->GetDialogueEndTimeForTesting() + 0.01);
+			const auto IsPagedLineRecorded = [&]()
+			{
+				return Narrative->GetHeardLines().ContainsByPredicate([&](const FIGHeardLine& Entry)
+				{
+					return Entry.Line.EqualTo(PagedLine);
+				});
+			};
+			Check(PagedEnded == 0 && !IsPagedLineRecorded()
+				&& Hud->GetActiveDialogueLineForTesting().ToString() == TEXT("규칙 검사 마지막 쪽."),
+				TEXT("resumed_first_page_waits_for_last_page"));
+			Hud->AdvanceDialogueForTesting(Hud->GetDialogueEndTimeForTesting() + 0.01);
+			Check(PagedEnded == 1 && PagedReason == EIGDialogueEndReason::Completed && IsPagedLineRecorded(),
+				TEXT("paged_line_completes_and_records_once"));
+			Hud->ClearDialogueForTesting();
+		}
+
+		// 14. 버리기로 한 대사는 다음 쪽까지 함께 거둔다. 다른 장면의 같은 문장은 남긴다.
+		{
+			const FText PagedLine = FText::FromString(TEXT("규칙 검사 끊길 첫 쪽.\n규칙 검사 남은 쪽."));
+			int32 DroppedEnded = 0;
+			EIGDialogueEndReason DroppedReason = EIGDialogueEndReason::Completed;
+			FIGDialogueScope DropScope = Scoped(TEXT("Rule.DropPages"), EIGDialogueLifetime::Story);
+			DropScope.Interruption = EIGDialogueInterruption::Drop;
+			DropScope.OnEnded = [&DroppedEnded, &DroppedReason](const EIGDialogueEndReason Reason)
+			{
+				++DroppedEnded;
+				DroppedReason = Reason;
+			};
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, PagedLine, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, MoveTemp(DropScope));
+			Hud->PrepareDialoguePageForTesting(T0);
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, PagedLine, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, Scoped(TEXT("Rule.OtherPages"), EIGDialogueLifetime::Story));
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Critical, Scoped(TEXT("Rule.Urgent"), EIGDialogueLifetime::Reaction));
+			Check(DroppedEnded == 1 && DroppedReason == EIGDialogueEndReason::Cancelled
+				&& !Hud->HasDialogueInContextForTesting(TEXT("Rule.DropPages"))
+				&& Hud->HasDialogueInContextForTesting(TEXT("Rule.OtherPages"))
+				&& Hud->GetQueuedDialogueCountForTesting() == 2,
+				TEXT("interrupted_pages_cancel_without_touching_other_scene"));
+			Hud->ClearDialogueForTesting();
+
+			FIGDialogueScope StaleScope = Scoped(TEXT("Rule.StalePages"), EIGDialogueLifetime::Reaction);
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, PagedLine, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, MoveTemp(StaleScope));
+			Hud->PrepareDialoguePageForTesting(T0);
+			Hud->SuspendDialogueForTesting(T0 + 0.1);
+			Hud->ResumeDialogueForTesting(T0 + 10.0);
+			Check(Hud->GetQueuedDialogueCountForTesting() == 0, TEXT("stale_reaction_cancels_all_pages_after_menu"));
 		}
 		ChooseSoundCaptions(false, false);
 		Finish();

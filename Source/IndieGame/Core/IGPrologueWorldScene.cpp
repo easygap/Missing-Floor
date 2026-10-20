@@ -69,6 +69,7 @@
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Narrative/IGStoryHelpers.h"
 #include "Narrative/IGStoryStateSubsystem.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -416,6 +417,193 @@ void AIGPrologueWorldScene::BeginPlay()
 {
 	Super::BeginPlay();
 	InitializePrologue();
+}
+
+bool AIGPrologueWorldScene::AuditApartmentPlacement()
+{
+	int32 Checks = 0;
+	int32 Failures = 0;
+	const auto Missing = [&](const TCHAR* Name, const TCHAR* Reason)
+	{
+		++Checks;
+		++Failures;
+		UE_LOG(LogIndieGame, Error, TEXT("IG_APARTMENT_PLACEMENT FAIL item=%s reason=%s"),
+			Name, Reason);
+	};
+	// 전체 바운드는 추적 구간만 정한다. 상판 높이는 접점 바로 아래의 삼각형에서 잰다.
+	// 단순 충돌 상자가 복잡 충돌을 대신하는 에셋은 실측 성공으로 세지 않는다.
+	const auto Contact = [&](const TCHAR* Name, const FVector& Point,
+		UStaticMeshComponent* Support, const float Tolerance)
+	{
+		const UBodySetup* Body = Support && Support->GetStaticMesh()
+			? Support->GetStaticMesh()->GetBodySetup() : nullptr;
+		if (!Support || !Body)
+		{
+			Missing(Name, TEXT("support_missing"));
+			return;
+		}
+		if (Body->GetCollisionTraceFlag() == CTF_UseSimpleAsComplex)
+		{
+			Missing(Name, TEXT("support_has_no_triangle_query"));
+			return;
+		}
+		const FBoxSphereBounds Bounds = Support->CalcBounds(Support->GetComponentTransform());
+		const FVector From(Point.X, Point.Y, Bounds.Origin.Z + Bounds.BoxExtent.Z + 20.0);
+		const FVector To(Point.X, Point.Y, Bounds.Origin.Z - Bounds.BoxExtent.Z - 20.0);
+		FCollisionQueryParams Query(SCENE_QUERY_STAT(ApartmentPlacement), true);
+		FHitResult Hit;
+		const bool bHit = Support->LineTraceComponent(Hit, From, To, Query);
+		const double Gap = bHit ? Point.Z - Hit.ImpactPoint.Z : 0.0;
+		const bool bPass = bHit && Hit.ImpactNormal.Z > 0.75
+			&& FMath::Abs(Gap) <= Tolerance;
+		++Checks;
+		Failures += bPass ? 0 : 1;
+		UE_LOG(LogIndieGame, Display,
+			TEXT("IG_APARTMENT_PLACEMENT %s item=%s support=%s triangleHit=%d contactCm=(%.3f,%.3f,%.3f) surfaceZCm=%.3f gapCm=%.3f normalZ=%.3f toleranceCm=%.3f"),
+			bPass ? TEXT("PASS") : TEXT("FAIL"), Name,
+			*Support->GetStaticMesh()->GetName(), bHit ? 1 : 0,
+			Point.X, Point.Y, Point.Z, bHit ? Hit.ImpactPoint.Z : 0.0,
+			Gap, bHit ? Hit.ImpactNormal.Z : 0.0, Tolerance);
+	};
+	const auto Bottom = [&](const TCHAR* Name, UStaticMeshComponent* Prop,
+		UStaticMeshComponent* Support, const float Tolerance, const bool bCheckCorners)
+	{
+		if (!Prop || !Prop->GetStaticMesh())
+		{
+			Missing(Name, TEXT("prop_missing"));
+			return;
+		}
+		const FBox LocalBounds = Prop->GetStaticMesh()->GetBoundingBox();
+		const FVector Center = LocalBounds.GetCenter();
+		const FVector Extent = LocalBounds.GetExtent();
+		const FTransform Transform = Prop->GetComponentTransform();
+		Contact(Name, Transform.TransformPosition(FVector(Center.X, Center.Y, LocalBounds.Min.Z)),
+			Support, Tolerance);
+		if (bCheckCorners)
+		{
+			// 종이와 폰은 넓은 밑면을 갖는다. 가운데만 걸친 물건도 찾도록 네 귀퉁이를 잰다.
+			// 회전한 월드 AABB의 귀퉁이는 실제 소품 밖일 수 있으므로 로컬 밑면을 변환한다.
+			int32 Index = 0;
+			for (const double SignX : {-1.0, 1.0})
+			{
+				for (const double SignY : {-1.0, 1.0})
+				{
+					const FString CornerName = FString::Printf(TEXT("%s.corner%d"), Name, ++Index);
+					Contact(*CornerName, Transform.TransformPosition(FVector(
+						Center.X + Extent.X * SignX * 0.9,
+						Center.Y + Extent.Y * SignY * 0.9, LocalBounds.Min.Z)),
+						Support, Tolerance);
+				}
+			}
+		}
+	};
+
+	Bottom(TEXT("bedside.floor"), ApartmentPlacementBedside.Get(),
+		ApartmentPlacementFloor.Get(), 0.5f, false);
+	if (ApartmentPlacementDeskFeet.IsEmpty())
+	{
+		Missing(TEXT("desk.floor"), TEXT("desk_feet_missing"));
+	}
+	for (int32 Index = 0; Index < ApartmentPlacementDeskFeet.Num(); ++Index)
+	{
+		const FString Name = FString::Printf(TEXT("desk.floor%d"), Index);
+		Bottom(*Name, ApartmentPlacementDeskFeet[Index].Get(),
+			ApartmentPlacementFloor.Get(), 0.5f, false);
+	}
+	if (UStaticMeshComponent* Lamp = ApartmentPlacementLamp.Get())
+	{
+		// 집게의 가장 아래 나사는 탁자 밑으로 내려간다. 저작된 집게 입구를 접점으로 쓴다.
+		Contact(TEXT("lamp.clamp"),
+			Lamp->GetComponentTransform().TransformPosition(FVector(0, 0, -1)),
+			ApartmentPlacementBedside.Get(), 0.5f);
+	}
+	else
+	{
+		Missing(TEXT("lamp.clamp"), TEXT("lamp_missing"));
+	}
+	UStaticMeshComponent* BedFrame = nullptr;
+	UStaticMeshComponent* Wardrobe = nullptr;
+	for (UStaticMeshComponent* Component : GeometryComponents)
+	{
+		if (!Component || !Component->GetStaticMesh() || Component->GetAttachParent() != UpperFloorRoot)
+		{
+			continue;
+		}
+		const FString MeshName = Component->GetStaticMesh()->GetName();
+		if (MeshName == TEXT("old_bed_frame_1k"))
+		{
+			BedFrame = Component;
+		}
+		else if (MeshName == TEXT("SM_Wardrobe"))
+		{
+			Wardrobe = Component;
+		}
+	}
+	const auto LampClearance = [&](const TCHAR* Name, UStaticMeshComponent* Furniture)
+	{
+		UStaticMeshComponent* Lamp = ApartmentPlacementLamp.Get();
+		if (!Lamp || !Furniture)
+		{
+			Missing(Name, TEXT("clearance_mesh_missing"));
+			return;
+		}
+		const FBox LampBox = Lamp->CalcBounds(Lamp->GetComponentTransform()).GetBox();
+		const FBox FurnitureBox = Furniture->CalcBounds(Furniture->GetComponentTransform()).GetBox();
+		FVector AxisGap;
+		for (int32 Axis = 0; Axis < 3; ++Axis)
+		{
+			AxisGap[Axis] = FMath::Max(0.0, FMath::Max(
+				FurnitureBox.Min[Axis] - LampBox.Max[Axis],
+				LampBox.Min[Axis] - FurnitureBox.Max[Axis]));
+		}
+		// 바운드가 떨어져 있으면 그 안의 메시도 반드시 떨어져 있다. 겹치는 경우에는
+		// 관통으로 단정하지 않고 추가 형상 검토가 필요한 실패로 남긴다.
+		const bool bPass = AxisGap.Size() >= 0.5;
+		++Checks;
+		Failures += bPass ? 0 : 1;
+		UE_LOG(LogIndieGame, Display,
+			TEXT("IG_APARTMENT_PLACEMENT %s item=%s clearanceLowerBoundCm=%.3f axisGapCm=(%.3f,%.3f,%.3f) boundsOverlap=%d shapeReviewRequired=%d"),
+			bPass ? TEXT("PASS") : TEXT("FAIL"), Name, AxisGap.Size(),
+			AxisGap.X, AxisGap.Y, AxisGap.Z, LampBox.Intersect(FurnitureBox) ? 1 : 0,
+			bPass ? 0 : 1);
+	};
+	LampClearance(TEXT("lamp.bed_clearance"), BedFrame);
+	LampClearance(TEXT("lamp.wardrobe_clearance"), Wardrobe);
+	if (UStaticMeshComponent* PencilCup = ApartmentPlacementPencilCup.Get())
+	{
+		// 기울어진 연필 때문에 전체 바운드 중심은 컵 바닥 중심과 다르다.
+		Contact(TEXT("pencil_cup.base"),
+			PencilCup->GetComponentTransform().TransformPosition(FVector::ZeroVector),
+			ApartmentPlacementDesk.Get(), 0.5f);
+	}
+	else
+	{
+		Missing(TEXT("pencil_cup.base"), TEXT("pencil_cup_missing"));
+	}
+
+	// 디렉터가 생성한 실제 화면 메시를 찾는다. 상호작용용 상자나 액터 원점은 밑면이 아니다.
+	UStaticMeshComponent* Contract = nullptr;
+	UStaticMeshComponent* Phone = nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			const FString Name = It->GetName();
+			if (Name == TEXT("MissingFloorArrivalContract"))
+			{
+				Contract = Cast<UStaticMeshComponent>(It->GetRootComponent());
+			}
+			else if (Name == TEXT("MissingFloorUsedListingNote"))
+			{
+				Phone = Cast<UStaticMeshComponent>(It->GetRootComponent());
+			}
+		}
+	}
+	Bottom(TEXT("contract.bottom"), Contract, ApartmentPlacementDesk.Get(), 0.5f, true);
+	Bottom(TEXT("phone.bottom"), Phone, ApartmentPlacementDesk.Get(), 0.5f, true);
+	UE_LOG(LogIndieGame, Display, TEXT("IG_APARTMENT_PLACEMENT %s checks=%d failures=%d"),
+		Failures == 0 ? TEXT("PASS") : TEXT("FAIL"), Checks, Failures);
+	return Failures == 0;
 }
 
 bool AIGPrologueWorldScene::AuditPlayerClearance(APawn* Pawn, AIGSwingDoor* BoothDoor)
@@ -1727,8 +1915,9 @@ void AIGPrologueWorldScene::BuildApartment()
 	UMaterialInterface* CorridorPaint = TexMat(TEXT("M_Stucco_X"), WallMaterial);
 
 	// Shell: interior 380 x 430 cm (about 5 pyeong), 230 cm ceiling.
+	ApartmentPlacementFloor = CreateBlock(FVector(0, 10, -10), FVector(440, 470, 20), Jangpan);
 	IGPrologueWorld::TagFootstepSurface(
-		CreateBlock(FVector(0, 10, -10), FVector(440, 470, 20), Jangpan),
+		ApartmentPlacementFloor.Get(),
 		IGPrologueWorld::FootstepVinylTag);
 	CreateBlock(FVector(0, 0, 240), FVector(440, 490, 20), CeilHome);
 	CreateBlock(FVector(-200, 0, 115), FVector(20, 490, 230), WallY);
@@ -1899,6 +2088,7 @@ void AIGPrologueWorldScene::BuildApartment()
 			FVector(55, 55, IGPrologueWorld::BedsideTableTopZ),
 			Furniture);
 	}
+	ApartmentPlacementBedside = BedsideTable;
 	float BedsideSurfaceLocalZ = IGPrologueWorld::BedsideTableTopZ;
 	if (BedsideTable)
 	{
@@ -1915,19 +2105,19 @@ void AIGPrologueWorldScene::BuildApartment()
 		TEXT("desk_lamp_arm_01"),
 		FVector(-172, -52, BedsideSurfaceLocalZ),
 		FVector(30, 30, 48),
-		0.0f,
+		-90.0f,
 		false);
 	FVector BedsideEmitterLocal(-164, -45, 101);
 	if (DeskLampFixture && BedsideTable)
 	{
 		const FBoxSphereBounds TableBounds = BedsideTable->CalcBounds(BedsideTable->GetComponentTransform());
-		const FVector TableFrontWorld(TableBounds.Origin.X, TableBounds.Origin.Y + TableBounds.BoxExtent.Y,
+		const FVector TableSideWorld(TableBounds.Origin.X + TableBounds.BoxExtent.X - .6f, TableBounds.Origin.Y,
 			TableBounds.Origin.Z + TableBounds.BoxExtent.Z);
-		const FVector TableFrontLocal = DeskLampFixture->GetAttachParent()->GetComponentTransform()
-			.InverseTransformPosition(TableFrontWorld);
-		// 스캔 원본의 집게 입구(0, 0, -1cm)를 협탁 앞 모서리에 물린다.
+		const FVector ClampTarget = DeskLampFixture->GetAttachParent()->GetComponentTransform()
+			.InverseTransformPosition(TableSideWorld);
+		// 침대 쪽에 물리면 접힌 팔이 발치 프레임을 관통한다. 방 쪽 옆면에 물려
+		// 팔은 빈 공간으로 접히고, 갓은 협탁 위로 향하게 한다.
 		const FVector ClampBefore = DeskLampFixture->GetRelativeTransform().TransformPosition(FVector(0, 0, -1));
-		const FVector ClampTarget(-172, TableFrontLocal.Y - .6f, BedsideSurfaceLocalZ);
 		// 고정 소품은 등록된 채로 옮길 수 없다. 집게 위치를 맞춘 뒤 다시 등록한다.
 		DeskLampFixture->UnregisterComponent();
 		DeskLampFixture->SetRelativeLocation(DeskLampFixture->GetRelativeLocation() + ClampTarget - ClampBefore);
@@ -1935,6 +2125,7 @@ void AIGPrologueWorldScene::BuildApartment()
 		// 원본 갓 안쪽에서 잰 전구 중심. 회전·크기가 바뀌어도 갓과 같이 이동한다.
 		BedsideEmitterLocal = DeskLampFixture->GetRelativeTransform().TransformPosition(FVector(-.15f, -17.1f, 68.8f));
 	}
+	ApartmentPlacementLamp = DeskLampFixture;
 	// Furniture is dimensioned around a seated adult: 74 cm work surface and a
 	// roughly 43 cm chair seat. The source desk is two metres wide, so the usual
 	// aspect-preserving fit would shrink its height to about 41 cm.
@@ -1943,6 +2134,7 @@ void AIGPrologueWorldScene::BuildApartment()
 		FVector(-100, -179, 0),
 		FVector(145, 68, IGPrologueWorld::DeskWorkSurfaceHeight),
 		0.0f);
+	ApartmentPlacementDeskFeet.Reset();
 	if (!Desk)
 	{
 		Desk = CreateBlock(
@@ -1951,10 +2143,16 @@ void AIGPrologueWorldScene::BuildApartment()
 		{
 			for (const float LegY : {-207.0f, -151.0f})
 			{
-				CreateBlock(FVector(LegX, LegY, 36), FVector(4, 4, 72), Metal);
+				ApartmentPlacementDeskFeet.Add(
+					CreateBlock(FVector(LegX, LegY, 36), FVector(4, 4, 72), Metal));
 			}
 		}
 	}
+	else
+	{
+		ApartmentPlacementDeskFeet.Add(Desk);
+	}
+	ApartmentPlacementDesk = Desk;
 	float DeskSurfaceLocalZ = IGPrologueWorld::DeskWorkSurfaceHeight;
 	if (Desk)
 	{
@@ -2030,7 +2228,7 @@ void AIGPrologueWorldScene::BuildApartment()
 	};
 	if (UStaticMesh* PencilCup = PropMesh(TEXT("SM_DeskPencilCup")))
 	{
-		AddApartmentDressing(FVector(-152,-187,DeskSurfaceLocalZ), FVector(100),
+		ApartmentPlacementPencilCup = AddApartmentDressing(FVector(-152,-187,DeskSurfaceLocalZ), FVector(100),
 			nullptr, PencilCup, FRotator::ZeroRotator);
 	}
 	// 없는 층의 계약서는 이 자리에 눕는다. 보관 장면의 공책과 겹치지 않는다.
@@ -2248,8 +2446,8 @@ void AIGPrologueWorldScene::BuildApartment()
 	CreateBlock(FVector(-70, -212.5f, 32), FVector(7, 2, 11), FridgeInteriorMaterial, false);
 	// 7월 말이면 어느 집에나 꽂혀 있는 액체 전자모기향. 침대 머리맡 협탁 위 콘센트에
 	// 꽂혀 있고, 불 끈 방에서 주황 점 하나가 밤새 켜져 있다(§11 V1 ④ 기기 LED).
-	// 본체는 콘센트 판에 붙고 약병이 그 아래로 매달린다. 스탠드 갓이 Y -15~-25에
-	// 걸려 있어 그보다 책상 쪽에 둔다.
+	// 본체는 콘센트 판에 붙고 약병이 그 아래로 매달린다. 협탁 옆면의 스탠드와
+	// 겹치지 않도록 벽 쪽에 둔다.
 	CreateBlock(FVector(-189, -48, 75), FVector(2, 7, 11), FridgeInteriorMaterial, false);
 	CreateBlock(FVector(-185.5f, -48, 77), FVector(5, 5.5f, 7.5f), FridgeInteriorMaterial, false);
 	CreateBlock(FVector(-186, -48, 70.25f), FVector(3.2f, 3.2f, 6), GlassMaterial, false, CylinderMesh);

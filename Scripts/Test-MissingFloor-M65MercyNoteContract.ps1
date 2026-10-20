@@ -190,14 +190,45 @@ Assert-ContainsAll $auditScript @(
 ) 'M6.5 baked-asset audit'
 Assert-ContainsAll $buildScript @(
 	'Content\Meshes\SM_CaptureMercyNote.uasset',
-	'Content\Prototype\Textures\T_CaptureMercyNote_D.uasset',
+	'Content\Prototype\Textures\T_PrintAtlas1_D.uasset',
 	'Content\Prototype\Materials\M_CaptureMercyNote.uasset',
 	"SuccessPattern = '\[MESHGEN\] complete: 1/1 meshes'",
 	# 여섯 장은 401·402·403 문패, 메모 둘, §14 CCTV 채널 5의 AUX 5 라벨이다.
 	# 이 그룹은 세계 안의 작은 글자 데칼을 함께 굽는 자리이며, 라벨만 따로
 	# 굽는 경로를 새로 만들면 그 라벨이 지시하는 화면과 다른 시점에 갱신될 수 있다.
-	"SuccessPattern = '\[IndieGame\] Imported 6 textures'"
+	"SuccessPattern = '\[IndieGame\] Imported \d+ textures'"
 ) 'M6.5 targeted art build'
+
+# 원본만 다시 쓰고 기존 atlas를 그대로 쓰면 부분 빌드 뒤에도 옛 문구가 남는다.
+$parseTokens = $null
+$parseErrors = $null
+$buildAst = [Management.Automation.Language.Parser]::ParseInput(
+	$buildScript, [ref]$parseTokens, [ref]$parseErrors)
+Assert-True ($parseErrors.Count -eq 0) '아트 빌드 스크립트를 읽을 수 없습니다.'
+$signSourceBlock = ''
+$signStageBlock = ''
+foreach ($branch in $buildAst.FindAll({
+	param($node)
+	$node -is [Management.Automation.Language.IfStatementAst]
+}, $true)) {
+	foreach ($clause in $branch.Clauses) {
+		if ($clause.Item1.Extent.Text -ne '$CorridorSignageOnly') { continue }
+		$body = $clause.Item2.Extent.Text
+		if ($body.Contains("'Create-SignTextures.ps1'")) { $signSourceBlock = $body }
+		if ($body.Contains("Script = 'create_textured_materials.py'")) { $signStageBlock = $body }
+	}
+}
+$signSourceIndex = $signSourceBlock.IndexOf("'Create-SignTextures.ps1'")
+$atlasPackIndex = $signSourceBlock.IndexOf("'build_texture_atlas.py'")
+Assert-True ($signSourceIndex -ge 0 -and $atlasPackIndex -gt $signSourceIndex) `
+	'복도 인쇄물의 원본을 작성한 뒤 atlas를 다시 묶어야 합니다.'
+$atlasImportIndex = $signStageBlock.IndexOf("Script = 'import_texture_atlas.py'")
+$standaloneImportIndex = $signStageBlock.IndexOf("Script = 'generate_surface_textures.py'")
+$signMaterialIndex = $signStageBlock.IndexOf("Script = 'create_textured_materials.py'")
+Assert-True ($atlasImportIndex -ge 0 -and $standaloneImportIndex -gt $atlasImportIndex) `
+	'atlas를 먼저 반입해야 개별 인쇄물 텍스처를 중복 생성하지 않습니다.'
+Assert-True ($signMaterialIndex -gt $standaloneImportIndex) `
+	'갱신된 atlas를 반입한 뒤 복도 인쇄물 재질을 만들어야 합니다.'
 
 Assert-ContainsAll $greyboxHeader @(
 	'bMercyNoteProbeRequested = false'

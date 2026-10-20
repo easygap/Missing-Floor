@@ -938,7 +938,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildServiceBayLines() const
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
 		"EpilogueServiceBay1b",
-		"관리실 창은 그날 밤 뒤로 불이 한 번도 안 켜졌다."));
+		"그날 밤 이후로 관리실에는 한 번도 불이 켜지지 않았다."));
 	// §9 B. 현장은 보존 중이라 곁에는 못 간다. 수습 전 두 번의 새벽은 황순금과
 	// 벽 밖에서 대답했다. 각주의 소리 일지가 이 줄에서 받쳐진다.
 	Lines.Add(NSLOCTEXT(

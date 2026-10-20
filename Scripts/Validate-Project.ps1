@@ -12,6 +12,9 @@ $projectFile = Join-Path $projectRoot 'IndieGame.uproject'
 $requiredFiles = @(
     'Scripts/GeneratedArtifactCleanup.ps1',
     'Scripts/Test-GeneratedArtifactCleanup.ps1',
+    'Scripts/Resolve-AsciiWorkspace.ps1',
+    'Scripts/Test-AsciiWorkspace.ps1',
+    'Scripts/surface_texture_import_contract.py',
     'Docs/GENERATED_FILE_CLEANUP.md',
     'IndieGame.uproject',
     'Config/DefaultEngine.ini',
@@ -57,8 +60,6 @@ $requiredFiles = @(
 	'Content/Prototype/Materials/M_SnackBlue.uasset',
 	'Content/SourceArt/AI/SheetPaperNotes_v2.png',
 	'Content/SourceArt/AI/ApplicationIcon_20260930.png',
-	'Content/SourceArt/AI/DialogueHUDConcept_v1.png',
-	'Content/SourceArt/AI/TextureHudDialogueFilm.png',
 	'Content/SourceArt/AI/ApartmentVisualTarget_v1.png',
 	'Content/SourceArt/AI/TextureApartmentWallpaperVintage.png',
 	'Content/SourceArt/AI/TextureMovingBoxCardboard_v1.png',
@@ -92,12 +93,12 @@ $requiredFiles = @(
 	'Content/Prototype/Textures/T_MovingBoxCardboard_R.uasset',
 	'Content/Prototype/Textures/T_MovingBoxCardboard_A.uasset',
 	'Content/Prototype/Materials/M_MovingBoxCardboardUV.uasset',
-	'Content/Prototype/Textures/T_CaptureMercyNote_D.uasset',
+	'Content/Prototype/Textures/T_PrintAtlas1_D.uasset',
 	'Content/Prototype/Materials/M_CaptureMercyNote.uasset',
 	'Content/Meshes/SM_CaptureMercyNote.uasset',
 	'Content/Prototype/Textures/T_SignMain_D.uasset',
-	'Content/Prototype/Textures/T_PosterSale_D.uasset',
-	'Content/Prototype/Textures/T_LabelWater_D.uasset',
+	'Content/Prototype/Textures/T_PrintAtlas0_D.uasset',
+	'Content/Prototype/Textures/T_PrintAtlas2_D.uasset',
 	'Docs/Media/dialogue-hud-default-1080.png',
 	'Docs/Media/dialogue-hud-accessibility-200-1080.png',
 	'Docs/Media/title-menu-first-run-1080.png',
@@ -1456,6 +1457,12 @@ if ($python) {
 		throw "Texture atlas packer self-test failed ($LASTEXITCODE)"
 	}
 
+	$surfaceTextureImport = Join-Path $projectRoot 'Scripts/surface_texture_import_contract.py'
+	& $python.Source $surfaceTextureImport --self-test
+	if ($LASTEXITCODE -ne 0) {
+		throw "표면 텍스처 중복 import 검사 실패 ($LASTEXITCODE)"
+	}
+
 	# What the packaged build will and will not contain. The cooker does not
 	# read C++, so an asset only a LoadObject path names is absent from the pak
 	# and null at runtime -- in the packaged build alone, which is the build
@@ -1724,6 +1731,7 @@ if ($python) {
 # 창을 띄우는 측정이 스위치 없이 시작되지 않는지 본다. 게임은 띄우지 않는다.
 & (Join-Path $PSScriptRoot 'Test-BackgroundLaunch.ps1')
 & (Join-Path $PSScriptRoot 'Test-GeneratedArtifactCleanup.ps1')
+& (Join-Path $PSScriptRoot 'Test-AsciiWorkspace.ps1')
 
 if ($python) {
     & $python.Source (Join-Path $PSScriptRoot 'test_windows_telemetry.py')
