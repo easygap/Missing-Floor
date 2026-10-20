@@ -90,7 +90,8 @@ def low_copy(source, budget, body=False):
     source.data.update()
     np.savez(points, vertices=np.array([v.co[:] for v in source.data.vertices]),
              normals=np.array([v.normal[:] for v in source.data.vertices]))
-    command=[shutil.which('python'), os.path.join(ROOT, 'Scripts/repair_scanned_surface.py'),
+    # PATH에서 먼저 잡히는 python이 이 저장소 것이 아닐 때가 있다(다른 도구의 가상환경). IG_PYTHON으로 정한다.
+    command=[os.environ.get('IG_PYTHON') or shutil.which('python'), os.path.join(ROOT, 'Scripts/repair_scanned_surface.py'),
              points, result, '--budget', str(budget)]
     if body: command.append('--body')
     subprocess.run(command,check=True)
@@ -115,8 +116,14 @@ def low_copy(source, budget, body=False):
     return ob
 
 
+# 몸 원본. 2026-10-19부터 팔을 22도 벌린 입력 그림(Scripts/make_narin_arms_out.py)으로 뽑은 몸을 쓴다.
+# 팔을 내린 그림으로 뽑은 몸(front-v2)은 팔 안쪽과 손이 조끼·바지에 한 면으로 붙어 팔을 움직일 수 없었다.
+BODY_SOURCE = 'Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/pbr_00001_.glb'
+if '--' in sys.argv and '--body' in sys.argv[sys.argv.index('--'):]:
+    BODY_SOURCE = sys.argv[sys.argv.index('--body') + 1]
+
 ig.reset_scene()
-body = load_source('Content/SourceArt/Generated/NarinClerk/front-v2/raw/pbr_00001_.glb', 1.63, 0)
+body = load_source(BODY_SOURCE, 1.63, 0)
 cut(body, 1.36, True)
 head = load_source('Content/SourceArt/Generated/NarinHead/face-closeup-20260914/raw/pbr_00001_.glb', .365, 1.265)
 cut(head, 1.34, False)

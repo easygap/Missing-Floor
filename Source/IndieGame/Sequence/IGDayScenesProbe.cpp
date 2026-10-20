@@ -50,7 +50,7 @@ namespace IGDayScenesProbe
 	const FVector CurbRiderFace(395.0f, -472.0f, 115.0f);
 	// 편의점 계산대 앞 손님 자리에서 프린터 앞에 놓인 영수증을 본다(AIGStoreClerk::GetReceiptRestTransform).
 	const FVector StoreFeet(2640.0f, -296.0f, 6.0f);
-	const FVector StoreReceiptFace(2580.0f, -221.0f, 99.0f);
+	const FVector StoreReceiptFace(2580.0f, -218.0f, 99.0f);
 	constexpr float DawnTimeoutSeconds = 40.0f;
 	/**
 	 * 에필로그 「403호 문」을 찍는 카메라(4층 바닥 기준)와 가로 화각. 플레이어 카메라는 매 틱 화각을

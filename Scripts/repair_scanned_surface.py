@@ -22,10 +22,14 @@ if args.body:
     # 원본 자세의 뼈대에 가까운 축을 골라 각 팔다리 바깥으로 법선을 맞춘다.
     meshes.compute_normal_for_point_clouds(k=24, smoothiter=2)
     normals=meshes.current_mesh().vertex_normal_matrix()
+    # 팔은 22도 벌린 몸(2026-10-19)의 어깨·팔꿈치·손목·손끝을 잇는다. 예전처럼 팔을 내린 자리로 두면
+    # 벌린 팔 둘레의 법선이 몸 쪽으로 뒤집혀 Poisson이 팔과 조끼 사이를 막으로 메웠다.
     segments=[((0,0,.82),(0,0,1.32))]
     for side in (-1,1):
-        segments += [((0,0,1.29),(side*.20,0,1.25)),
-                     ((side*.20,0,1.25),(side*.265,0,.74)),
+        segments += [((0,0,1.29),(side*.19,-.02,1.28)),
+                     ((side*.19,-.02,1.28),(side*.317,.014,1.054)),
+                     ((side*.317,.014,1.054),(side*.369,.072,.836)),
+                     ((side*.369,.072,.836),(side*.404,.11,.69)),
                      ((side*.085,0,.84),(side*.11,0,.08)),
                      ((side*.11,0,.055),(side*.11,.10,.055))]
     distance=np.full(len(points),np.inf); radial=np.zeros_like(points)

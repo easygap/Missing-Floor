@@ -39,6 +39,12 @@ private:
 	void Finish();
 	void Event(const FString& What);
 	void Shoot(const FString& Name);
+	/**
+	 * 나린이 일하는 시각에 맞춰 손님 시점과 옆 세 자리(화면 쪽, 프린터 쪽 어깨 뒤, 손님 쪽 낮게)를 같이
+	 * 찍는다. 손끝이 화면·종이에 닿는지, 팔이 집기를 뚫지 않는지 보는 검수 사진이다.
+	 */
+	void ShootPose(const FString& Name);
+	void WatchClerkPose();
 	void WatchState();
 	bool IsReceiptShown() const;
 	bool IsStoreTalkBusy() const;
@@ -75,6 +81,10 @@ private:
 	bool bShotPrint = false;
 	bool bShotPrinting = false;
 	bool bShotPlaced = false;
+	/** 옆에서 보는 검수 카메라. 나린이 일을 시작하면 매 프레임 찍어 노출을 맞춰 둔다. */
+	UPROPERTY(Transient) TArray<TObjectPtr<class USceneCaptureComponent2D>> PoseCameras;
+	UPROPERTY(Transient) TArray<TObjectPtr<class UTextureRenderTarget2D>> PoseTargets;
+	TSet<FString> PoseShots;
 	/** 소리 설명이 한 번이라도 떴는가. 기본 화면(소리 설명 끔)에서는 아무것도 뜨지 않아야 한다. */
 	bool bAnyCaptionSeen = false;
 	bool bTerminalCaptionSeen = false;

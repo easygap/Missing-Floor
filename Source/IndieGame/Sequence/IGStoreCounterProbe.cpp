@@ -4,6 +4,8 @@
 #include "AudioMixerBlueprintLibrary.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -19,6 +21,7 @@
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
 #include "IndieGame.h"
+#include "Kismet/KismetRenderingLibrary.h"
 #include "Interaction/IGReadableNote.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
@@ -38,6 +41,31 @@ namespace IGStoreCounterProbe
 	const FVector BellAim(2690.0f, -216.0f, 104.0f);
 	/** 나린과 포스·프린터를 한 화면에 담는 자리. */
 	const FVector WorkAim(2595.0f, -185.0f, 118.0f);
+	/** 검수 카메라: 화면 쪽(동쪽) 비스듬히 위, 프린터 쪽(서쪽) 어깨 너머 위, 손님 쪽 눈높이. 자리와 보는 곳. */
+	const FVector PoseCameraSpots[][2] = {
+		{FVector(2700.0f, -140.0f, 150.0f), FVector(2608.0f, -178.0f, 132.0f)},
+		{FVector(2492.0f, -96.0f, 206.0f), FVector(2582.0f, -206.0f, 104.0f)},
+		{FVector(2556.0f, -322.0f, 160.0f), FVector(2586.0f, -200.0f, 108.0f)},
+	};
+	const TCHAR* PoseCameraNames[] = {TEXT("east"), TEXT("west"), TEXT("front")};
+	/** 찍을 일의 시각. 첫 탭과 넷째 탭, 출력 탭, 종이를 기다림, 집음, 뜯어 듦, 옮김, 내려놓음, 손을 뗌. */
+	struct FPoseMoment
+	{
+		EIGClerkTask Task;
+		float At;
+		const TCHAR* Name;
+	};
+	const FPoseMoment PoseMoments[] = {
+		{EIGClerkTask::SearchRecord, 0.43f, TEXT("pose_search_tap1")},
+		{EIGClerkTask::SearchRecord, 1.59f, TEXT("pose_search_tap4")},
+		{EIGClerkTask::PrintReceipt, 0.33f, TEXT("pose_print_tap")},
+		{EIGClerkTask::PrintReceipt, 1.40f, TEXT("pose_print_wait")},
+		{EIGClerkTask::PrintReceipt, 2.25f, TEXT("pose_print_pinch")},
+		{EIGClerkTask::PrintReceipt, 2.48f, TEXT("pose_print_torn")},
+		{EIGClerkTask::PrintReceipt, 2.64f, TEXT("pose_print_carry")},
+		{EIGClerkTask::PrintReceipt, 2.83f, TEXT("pose_print_place")},
+		{EIGClerkTask::PrintReceipt, 3.05f, TEXT("pose_print_release")},
+	};
 	/** 계산대 가운데. 가게 안인지 잴 때 쓴다(감독의 StoreCounterCenter와 같은 자리다). */
 	const FVector CounterMiddle(2600.0f, -229.0f, 100.0f);
 }
@@ -89,6 +117,74 @@ void AIGStoreCounterProbe::Shoot(const FString& Name)
 	IFileManager::Get().MakeDirectory(*Directory, true);
 	FScreenshotRequest::RequestScreenshot(FPaths::Combine(Directory, Name + TEXT(".png")), false, false);
 	Event(FString::Printf(TEXT("shot %s"), *Name));
+}
+
+void AIGStoreCounterProbe::ShootPose(const FString& Name)
+{
+	Shoot(Name);
+	const FString Directory = FPaths::ConvertRelativePathToFull(
+		FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("StoreCounterAV"), Variant));
+	// 매 프레임 찍고 있으니 지금 읽으면 바로 앞 프레임이다(손님 시점보다 1/30초 앞).
+	for (int32 Index = 0; Index < PoseTargets.Num(); ++Index)
+	{
+		UKismetRenderingLibrary::ExportRenderTarget(this, PoseTargets[Index], Directory,
+			FString::Printf(TEXT("%s_%s.png"), *Name, IGStoreCounterProbe::PoseCameraNames[Index]));
+	}
+}
+
+void AIGStoreCounterProbe::WatchClerkPose()
+{
+	if (!bRecord || !Clerk.IsValid())
+	{
+		return;
+	}
+	// 벨을 누르고 나린이 말하는 동안의 서 있는 자세(내린 팔, 손님을 보는 고개)도 한 장 남긴다.
+	const UWorld* World = GetWorld();
+	const bool bIdleShot = FirstBellAt > 0.0 && World && World->GetTimeSeconds() - FirstBellAt > 2.0 && !Clerk->IsBusy();
+	if (PoseCameras.Num() == 0 && (Clerk->IsBusy() || (FirstBellAt > 0.0 && World && World->GetTimeSeconds() - FirstBellAt > 0.5)))
+	{
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(IGStoreCounterProbe::PoseCameraSpots); ++Index)
+		{
+			UTextureRenderTarget2D* Target = NewObject<UTextureRenderTarget2D>(this);
+			Target->RenderTargetFormat = RTF_RGBA8;
+			Target->InitAutoFormat(1280, 720);
+			USceneCaptureComponent2D* Camera = NewObject<USceneCaptureComponent2D>(this);
+			Camera->RegisterComponent();
+			Camera->SetAbsolute(true, true, true);
+			const FVector From = IGStoreCounterProbe::PoseCameraSpots[Index][0];
+			const FVector To = IGStoreCounterProbe::PoseCameraSpots[Index][1];
+			Camera->SetWorldLocationAndRotation(From, (To - From).Rotation());
+			Camera->FOVAngle = 42.0f;
+			Camera->TextureTarget = Target;
+			Camera->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+			Camera->bCaptureEveryFrame = true;
+			Camera->bCaptureOnMovement = false;
+			Camera->bAlwaysPersistRenderingState = true;
+			// 옆 카메라는 손님 시점보다 한 단쯤 어둡게 맞춰졌다. 같은 밝기로 보려고 한 단 올린다.
+			Camera->PostProcessSettings.bOverride_AutoExposureBias = true;
+			Camera->PostProcessSettings.AutoExposureBias = 0.65f;
+			PoseCameras.Add(Camera);
+			PoseTargets.Add(Target);
+		}
+	}
+	if (bIdleShot && PoseCameras.Num() > 0 && !PoseShots.Contains(TEXT("pose_idle")))
+	{
+		PoseShots.Add(TEXT("pose_idle"));
+		ShootPose(TEXT("pose_idle"));
+	}
+	if (!Clerk->IsBusy())
+	{
+		return;
+	}
+	const float Seconds = Clerk->GetTaskSeconds();
+	for (const IGStoreCounterProbe::FPoseMoment& Moment : IGStoreCounterProbe::PoseMoments)
+	{
+		if (Clerk->GetTask() == Moment.Task && Seconds >= Moment.At && !PoseShots.Contains(Moment.Name))
+		{
+			PoseShots.Add(Moment.Name);
+			ShootPose(Moment.Name);
+		}
+	}
 }
 
 void AIGStoreCounterProbe::Finish()
@@ -407,6 +503,7 @@ void AIGStoreCounterProbe::Tick(const float DeltaSeconds)
 		return;
 	}
 	WatchState();
+	WatchClerkPose();
 	// 그때그때 찍는다. 단말기를 누르는 몸, 종이가 나오는 프린터, 손님 앞에 놓인 영수증.
 	if (bRecord && World)
 	{

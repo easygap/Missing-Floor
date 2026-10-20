@@ -1,0 +1,170 @@
+{
+  "name": "NarinClerk",
+  "trial": "arms-out-20261019",
+  "status": "Generated",
+  "source": "Content/SourceArt/Generated/NarinClerk/arms-out-input-20261019.png",
+  "sourceSha256": "3857cd8cf7ea3cb7c46ae226419340f56a5c9492645327e923c5f247f55634ad",
+  "route": "trellis",
+  "resolution": 1024,
+  "seed": 56,
+  "postprocess": "pbr",
+  "decimateFaces": 200000,
+  "textureSize": 2048,
+  "server": {
+    "url": "http://127.0.0.1:8199",
+    "version": "0.34.6",
+    "device": "cuda:0 NVIDIA GeForce RTX 3060 : cudaMallocAsync"
+  },
+  "startedAt": "2026-10-19T08:11:57.876954+00:00",
+  "license": "TRELLIS.2 / Pixal3D weights: Comfy-Org repackage, MIT/permissive; DINOv3, MoGe, BiRefNet: see lunia_z SourceArt/Manifests/ComfyNative.20260908.json",
+  "runtimeReady": false,
+  "promptId": "2ca3ab18-396d-4196-910c-9c60d25f89e8",
+  "elapsedSeconds": 90.8,
+  "finishedAt": "2026-10-19T08:13:28.715909+00:00",
+  "files": [
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/base-color_00001_.png",
+      "bytes": 3287648,
+      "sha256": "ddb2c85755a1c6607fb0453cf1986311a62e2e091c345655de81cda4836ec01e",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/cleaned-colored_00001_.glb",
+      "bytes": 6009476,
+      "sha256": "574b921e3686380512adc5fca48fdcde2a5557d9886b9cbd6311d28733089030",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/colored_00001_.glb",
+      "bytes": 106464648,
+      "sha256": "8f56c6b2a3c17d4a6889edc7c2208b7c65d489ae643f7129a98aeb7a12eaac9c",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/conditioning_00001_.png",
+      "bytes": 362851,
+      "sha256": "7240512f55489e9d486b0ac2f76dac4ee15370afe032fd36e6fb7066a2a65c98",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/conditioning_00002_.png",
+      "bytes": 362851,
+      "sha256": "7240512f55489e9d486b0ac2f76dac4ee15370afe032fd36e6fb7066a2a65c98",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/conditioning_00003_.png",
+      "bytes": 362851,
+      "sha256": "7240512f55489e9d486b0ac2f76dac4ee15370afe032fd36e6fb7066a2a65c98",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/conditioning_00004_.png",
+      "bytes": 362851,
+      "sha256": "7240512f55489e9d486b0ac2f76dac4ee15370afe032fd36e6fb7066a2a65c98",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/metallic_00001_.png",
+      "bytes": 86447,
+      "sha256": "f1f011efb60b78fcfd63b0186a24c539ffb9ad310c6e756b1e2837163b0ec9f7",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/pbr_00001_.glb",
+      "bytes": 9441872,
+      "sha256": "037577eb73f9867fa12badad5baaf5737ffdd193ea19474bd2bf9f41c4a04e67"
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/roughness_00001_.png",
+      "bytes": 1241791,
+      "sha256": "f718df42d13e51689ca21cd575d0d79ee901d1a3c7f3dced1a2955a1e4a00b15",
+      "pruned": true
+    },
+    {
+      "path": "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/shape_00001_.glb",
+      "bytes": 86102152,
+      "sha256": "bbabab46f60f33a748280156a92fe097da4f59288eab8b1d5de6ed0abdf34db0",
+      "pruned": true
+    }
+  ],
+  "outputs": {
+    "5": {
+      "images": [
+        {
+          "filename": "conditioning_00004_.png",
+          "subfolder": "ig3d\\NarinClerk\\arms-out-20261019",
+          "type": "output"
+        }
+      ]
+    },
+    "28": {
+      "3d": [
+        {
+          "filename": "shape_00001_.glb",
+          "subfolder": "ig3d\\NarinClerk\\arms-out-20261019",
+          "type": "output"
+        }
+      ]
+    },
+    "33": {
+      "3d": [
+        {
+          "filename": "colored_00001_.glb",
+          "subfolder": "ig3d\\NarinClerk\\arms-out-20261019",
+          "type": "output"
+        }
+      ]
+    },
+    "38": {
+      "3d": [
+        {
+          "filename": "cleaned-colored_00001_.glb",
+          "subfolder": "ig3d\\NarinClerk\\arms-out-20261019",
+          "type": "output"
+        }
+      ]
+    },
+    "43": {
+      "images": [
+        {
+          "filename": "base-color_00001_.png",
+          "subfolder": "ig3d\\NarinClerk\\arms-out-20261019",
+          "type": "output"
+        }
+      ]
+    },
+    "44": {
+      "images": [
+        {
+          "filename": "metallic_00001_.png",
+          "subfolder": "ig3d\\NarinClerk\\arms-out-20261019",
+          "type": "output"
+        }
+      ]
+    },
+    "45": {
+      "images": [
+        {
+          "filename": "roughness_00001_.png",
+          "subfolder": "ig3d\\NarinClerk\\arms-out-20261019",
+          "type": "output"
+        }
+      ]
+    },
+    "42": {
+      "3d": [
+        {
+          "filename": "pbr_00001_.glb",
+          "subfolder": "ig3d\\NarinClerk\\arms-out-20261019",
+          "type": "output"
+        }
+      ]
+    }
+  },
+  "retainedFiles": [
+    "Content/SourceArt/Generated/NarinClerk/arms-out-20261019/raw/pbr_00001_.glb"
+  ],
+  "archiveNote": "files와 outputs는 생성 당시 기록이다. 재작업에 쓰는 최종 PBR GLB, 입력 그림, 워크플로만 보관한다. 중간 메시와 추출 맵, 앞서 실패한 시도가 같은 이름으로 남긴 conditioning 사본 셋은 지웠다. 시드와 그래프로 다시 뽑을 수 있다.",
+  "runtimeAsset": "Content/Meshes/SK_NarinClerk.uasset"
+}
