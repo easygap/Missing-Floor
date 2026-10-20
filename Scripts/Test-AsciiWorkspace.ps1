@@ -52,6 +52,8 @@ try {
     $workspace = Resolve-IGAsciiWorkspace -ProjectRoot $projectRoot
     Assert-Workspace ($workspace -notmatch '[^\x00-\x7F]') '반환 경로에 비 ASCII 문자가 있습니다.'
     Assert-Workspace ((Get-IGPhysicalPath $workspace) -ieq (Get-IGPhysicalPath $projectRoot)) '다른 실제 작업 폴더입니다.'
+    # 빌드 도구는 별칭 경로로 새 중간 폴더를 만든다. 있는 폴더에 파일을 쓰는 것만으로는 이걸 확인할 수 없었다.
+    Assert-Workspace (Test-IGWorkspaceCreatesFolders -Path $workspace -PhysicalRoot (Get-IGPhysicalPath $projectRoot)) '별칭으로 만든 새 폴더가 작업 폴더에 생기지 않습니다.'
 
     # 링크 자체는 ASCII 이름에 두고, 대상과 원본 파일에는 한글 이름을 사용한다.
     $aliasFixture = Join-Path (Join-Path $workspace $runRelative) 'Fixtures'
@@ -131,7 +133,9 @@ finally {
         if (-not $target.StartsWith($fixtureRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
             throw "검사용 링크가 밖을 가리킵니다: $link"
         }
-        Remove-Item -LiteralPath $link -Force
+        # Windows PowerShell 5.1의 Remove-Item은 별칭 경로 아래 junction에서 NullReferenceException을 냈다.
+        # 재귀 없이 링크 항목만 지운다.
+        [IO.Directory]::Delete($link, $false)
     }
     if ((Test-Path -LiteralPath $fixtureRoot) -and (Test-IGArtifactPath $fixtureRoot $outputRoot)) {
         if (@(Get-ChildItem -LiteralPath $fixtureRoot -Recurse -Force | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }).Count -eq 0) {

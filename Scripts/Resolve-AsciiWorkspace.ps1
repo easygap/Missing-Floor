@@ -98,10 +98,45 @@ function Assert-IGWorkspaceJunction {
     return [IO.Path]::GetFullPath($Path).TrimEnd('\', '/')
 }
 
+function Test-IGWorkspaceCreatesFolders {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$PhysicalRoot
+    )
+    # 2026-10-20 데스크톱 앱 안의 셸에서는 %LOCALAPPDATA%\IndieGame 아래 junction을 거쳐 새 폴더를
+    # 만들면 오류 없이 작업 폴더에 아무것도 생기지 않았다(있는 폴더에 파일을 쓰는 것은 된다). UBT는
+    # 이 경로로 Shipping 중간 폴더를 만들다가 DirectoryNotFoundException으로 죽었다. 그래서 별칭으로
+    # 겹친 폴더를 만들어 보고 실제 경로에서 확인한다.
+    $name = '.ig-link-check-' + [Guid]::NewGuid().ToString('N')
+    $physicalIntermediate = New-IGPhysicalDirectory (Join-Path $PhysicalRoot 'Intermediate')
+    $physicalProbe = Join-Path $physicalIntermediate $name
+    try {
+        [void][IO.Directory]::CreateDirectory((Join-Path $Path "Intermediate\$name\nested"))
+        return (Test-Path -LiteralPath (Join-Path $physicalProbe 'nested') -PathType Container)
+    }
+    catch { return $false }
+    finally {
+        if (Test-Path -LiteralPath $physicalProbe) {
+            Remove-Item -LiteralPath $physicalProbe -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Get-IGDefaultLinkRoots {
+    $roots = [Collections.Generic.List[string]]::new()
+    if (-not [string]::IsNullOrWhiteSpace($env:IG_ASCII_WORKSPACE_ROOT)) { $roots.Add($env:IG_ASCII_WORKSPACE_ROOT) }
+    $roots.Add((Join-Path $env:LOCALAPPDATA 'IndieGame'))
+    # 데스크톱 앱 안에서 돌린 셸은 %LOCALAPPDATA% 아래에 새로 만든 폴더가 다른 실제 경로로 잡혔다.
+    # 사용자 폴더 바로 아래의 점 폴더는 그렇지 않아서 다음 자리로 둔다.
+    $roots.Add((Join-Path $env:USERPROFILE '.indiegame-workspace'))
+    return , $roots.ToArray()
+}
+
 function Resolve-IGAsciiWorkspace {
     param(
         [Parameter(Mandatory = $true)][string]$ProjectRoot,
-        [string]$LinkRoot = (Join-Path $env:LOCALAPPDATA 'IndieGame')
+        # 앞에서부터 쓰되, 별칭으로 만든 새 폴더가 실제 작업 폴더에 생기지 않는 자리는 건너뛴다.
+        [string[]]$LinkRoot = (Get-IGDefaultLinkRoots)
     )
     $physicalRoot = Get-IGPhysicalPath $ProjectRoot
     if (-not (Test-Path -LiteralPath (Join-Path $physicalRoot 'IndieGame.uproject') -PathType Leaf)) {
@@ -109,6 +144,29 @@ function Resolve-IGAsciiWorkspace {
     }
     if ($physicalRoot -notmatch '[^\x00-\x7F]') { return $physicalRoot }
 
+    $refused = [Collections.Generic.List[string]]::new()
+    foreach ($root in $LinkRoot) {
+        try { $link = Resolve-IGWorkspaceLink -PhysicalRoot $physicalRoot -LinkRoot $root }
+        catch {
+            # 자리를 하나만 받았으면 예전처럼 그 이유로 멈춘다. 잘못된 링크를 덮어쓰지 않는 검사가 이것을 본다.
+            if ($LinkRoot.Count -eq 1) { throw }
+            Write-Host "ASCII_WORKSPACE skip $root ($($_.Exception.Message))"
+            $refused.Add($root)
+            continue
+        }
+        if (Test-IGWorkspaceCreatesFolders -Path $link -PhysicalRoot $physicalRoot) { return $link }
+        Write-Host "ASCII_WORKSPACE skip $link (이 경로로 만든 새 폴더가 작업 폴더에 생기지 않습니다)"
+        $refused.Add($link)
+    }
+    throw "ASCII 작업 경로로 새 폴더를 만들 수 없습니다. IG_ASCII_WORKSPACE_ROOT에 다른 ASCII 경로를 지정하세요: $($refused -join ', ')"
+}
+
+function Resolve-IGWorkspaceLink {
+    param(
+        [Parameter(Mandatory = $true)][string]$PhysicalRoot,
+        [Parameter(Mandatory = $true)][string]$LinkRoot
+    )
+    $physicalRoot = $PhysicalRoot
     $base = [IO.Path]::GetFullPath($LinkRoot).TrimEnd('\', '/')
     if ($base -match '[^\x00-\x7F]') { throw "링크를 둘 경로도 ASCII여야 합니다: $base" }
     if (Test-Path -LiteralPath $base) {
