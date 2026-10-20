@@ -66,22 +66,30 @@ Require-All $beat @(
 	'AIGPrologueWorldScene::HomeDoorX',
 	'AIGPrologueWorldScene::HomeDoorY',
 	'AIGPrologueWorldScene::WideDoorLeafWidth * 0.5f',
-	'const FVector FigureShufflePoint = DoorLocation + FVector(8.0f, -51.0f, 0.0f);',
+	'AIGPrologueWorldScene::HomeDoorX + FistFromHinge - FistForwardOfOrigin,',
+	'NorthWallFaceY - AIGListenerEntity::WallListenStandOff,',
 	'const FVector DragDepartPoint(-120.0f, -278.0f, FourthFloorZ)'
 ) '비트 2-1 coordinates'
 
 # 문에서 재는 세 점. 값과 방향을 함께 본다 — 복도는 Y가 작아지는 쪽이므로
-# 노크와 형체는 빼고 문구멍은 더한다. 부호가 뒤집히면 노크는 집 안에서 나고
-# 문구멍은 복도를 본다.
+# 노크는 빼고 문구멍은 더한다. 부호가 뒤집히면 노크는 집 안에서 나고 문구멍은
+# 복도를 본다. 그는 기는 몸(190 cm)이라 문을 보고 엎드리면 문짝을 뚫었다(2026-10-20).
+# 이제 문 옆 북벽에 벽 듣기 자세로 엎드려 주먹이 문짝 경첩 쪽 아래에 닿고, 노크는
+# 그 높이(14 cm)에서 난다. 문을 열면 문짝이 그의 머리에 걸려 27도에서 선다.
 Require-All $beat @(
 	'constexpr float KnockCorridorOffset = 7.0f;',
-	'constexpr float KnockFistHeight = 112.0f;',
-	'DoorLocation + FVector(0.0f, -KnockCorridorOffset, KnockFistHeight)',
+	'constexpr float KnockFistHeight = 14.0f;',
+	'AIGPrologueWorldScene::HomeDoorY - KnockCorridorOffset,',
+	'FourthFloorZ + KnockFistHeight);',
 	'constexpr float PeepholeInsideOffset = 5.0f;',
 	'constexpr float PeepholeEyeHeight = 155.0f;',
 	'DoorLocation + FVector(0.0f, PeepholeInsideOffset, PeepholeEyeHeight)',
-	'constexpr float FigureStandOffset = 47.0f;',
-	'DoorLocation + FVector(0.0f, -FigureStandOffset, 0.0f)'
+	'constexpr float FistFromHinge = 10.0f;',
+	'constexpr float FistForwardOfOrigin = 89.0f;',
+	'constexpr float DoorBlockedYaw = -27.0f;',
+	'Listener->SetWallListenForBeat(true, IGNightTwo::FigureStagePoint, IGNightTwo::FigureStageYaw);',
+	'Door->SetBlockedOpenYaw(IGNightTwo::DoorBlockedYaw);',
+	'Door->SetBlockedOpenYaw(0.0f);'
 ) '문에서 재는 세 점'
 
 # §5.5의 폰은 관리실이 아니라 403호 안에 있다. 처음 넣을 때 슬래브 높이를
@@ -150,7 +158,7 @@ Require-All $beat @(
 # 노크로 시작하므로, 지우지 않으면 그가 문 앞에 한 프레임 서 있다가 자기가 들은
 # 자리로 기어 나간다.
 Require-All $beat @(
-	'Listener->ParkForBeat(IGNightTwo::FigureStagePoint, 90.0f);',
+	'Listener->ParkForBeat(IGNightTwo::FigureStagePoint, IGNightTwo::FigureStageYaw);',
 	'IGNightTwo::FigureStagePoint,',
 	'Listener->SetPatrolPoints(CorridorPatrolPoints);',
 	'Listener->ResetToPatrolStart(/*bRaiseAggression=*/false);'

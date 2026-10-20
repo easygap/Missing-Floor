@@ -10916,7 +10916,7 @@ void AIGListenerGreyboxDirector::StartNightCapture()
 		FCommandLine::Get(),
 		TEXT("IGNightCaptureStartStep="),
 		StartStep);
-	EnterCaptureStep(FMath::Clamp(StartStep, 0, 18));
+	EnterCaptureStep(FMath::Clamp(StartStep, 0, 19));
 	if (StartStep > 0)
 	{
 		// A direct art-review stop still begins while the normal night card is
@@ -11894,6 +11894,14 @@ void AIGListenerGreyboxDirector::EnterCaptureStep(const int32 StepIndex)
 		CaptureTeleportPlayer(FVector(190.f, -305.f, 997.f), 180.f, -12.f);
 		CaptureParkEntity(FVector(20.f, -305.f, 960.f), 0.f);
 		break;
+	case 19:
+		// 밤2 403호 문 앞(§8 2-1). 그는 문 옆 북벽에 옆머리를 대고 엎드려 주먹이 문짝 경첩 쪽 아래에 닿는다.
+		// 복도 동쪽에서 그를 보고, 403호 안에서 문을 밀어 그의 머리에 걸려 서는 것을 본다.
+		if (NightPhase) { NightPhase->RestartTheHour(2); NightPhase->SetHourPaused(true); }
+		if (Entity) { Entity->SetDormant(false); }
+		if (NightTwoBeats) { NightTwoBeats->StageFigureForCapture(); }
+		CaptureTeleportPlayer(FVector(250.f, -312.f, 997.f), 180.f, -14.f);
+		break;
 	default:
 		break;
 	}
@@ -12282,6 +12290,37 @@ void AIGListenerGreyboxDirector::AdvanceNightCapture()
 			RequestExit(!bCaptured);
 		}
 		break;
+	case 19:
+	{
+		AIGSwingDoor* Door = WorldScene.IsValid() ? WorldScene->GetHomeDoor() : nullptr;
+		if (ActionA(2.6f))
+		{
+			UE_LOG(LogTemp, Display, TEXT("N2_DOOR_FIGURE wall_pose=%d at=%s"),
+				Entity && Entity->IsInWallPose() ? 1 : 0, Entity ? *Entity->GetActorLocation().ToCompactString() : TEXT("none"));
+			CaptureShot(TEXT("night2-door-figure"));
+		}
+		if (ActionB(3.2f) && Door)
+		{
+			// 403호 안에서 문을 민 것처럼 연다. 바깥으로 여는 문짝이 그의 머리에 걸려 서야 한다. 복도에서
+			// 경첩 쪽을 내려다본다(안에서 열면 그 소리에 그가 깨어 틈으로 붙잡는다).
+			CaptureTeleportPlayer(FVector(190.f, -330.f, 997.f), 160.f, -38.f);
+			Door->BeginScriptedSwing(true);
+		}
+		if (ActionC(4.1f))
+		{
+			const float Yaw = Door ? Door->GetDoorPivot()->GetRelativeRotation().Yaw : 0.0f;
+			UE_LOG(LogTemp, Display, TEXT("N2_DOOR_BLOCKED yaw=%.1f open=%d"), Yaw, Door && Door->IsOpen() ? 1 : 0);
+			CaptureShot(TEXT("night2-door-blocked"));
+		}
+		if (StepDone(4.8f))
+		{
+			if (NightTwoBeats) { NightTwoBeats->ReleaseFigureForCapture(); }
+			GetWorldTimerManager().ClearTimer(CaptureTimer);
+			UE_LOG(LogTemp, Display, TEXT("MISSINGFLOOR_CAPTURE DONE"));
+			RequestExit(false);
+		}
+		break;
+	}
 	default:
 		break;
 	}

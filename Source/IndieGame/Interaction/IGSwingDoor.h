@@ -89,6 +89,12 @@ public:
 
 	/** Swing direction/extent; negative yaw opens toward local -Y. */
 	void SetOpenYaw(float InOpenYaw) { OpenYaw = InOpenYaw; }
+	/**
+	 * 문 밖에 무엇이 붙어 있어 이 각도까지만 열린다(0이면 막는 것이 없다). 열다 걸리면 문짝이 거기서
+	 * 덜컥 서고 OnOpenBlocked가 온다. 닫는 것은 평소대로다. 밤2 문 앞에 엎드린 그가 쓴다.
+	 */
+	void SetBlockedOpenYaw(float InBlockedYaw) { BlockedOpenYaw = InBlockedYaw; }
+	FSimpleMulticastDelegate OnOpenBlocked;
 
 	/** Rotating leaf pivot; dressing attached here follows the swing. */
 	USceneComponent* GetDoorPivot() const { return DoorPivot; }
@@ -282,6 +288,10 @@ private:
 	void ReportSwingNoise(float Loudness) const;
 
 	FIGDoorAnimation DoorAnimation;
+	/** 막힌 문이 열릴 수 있는 각도(0이면 막는 것이 없다)와, 이번 열기가 거기서 걸려 서는지. */
+	float BlockedOpenYaw = 0.0f;
+	bool bStopsAtBlock = false;
+	float GetReachableOpenYaw() const { return BlockedOpenYaw != 0.0f ? BlockedOpenYaw : OpenYaw; }
 	bool bOpen = false;
 	bool bSuppressNextCloseThud = false;
 	// 조용히 닫았을 때 걸쇠도 같은 힘으로 닫힌다.

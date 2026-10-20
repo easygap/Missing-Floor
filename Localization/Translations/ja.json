@@ -1504,5 +1504,6 @@
  "IGHUD,SoundCaptionsImportant": "重要な音",
  "IGMissingFloor,N3ReturnHintComing": "いた。こっちに来る。",
  "IGMissingFloor,LeftoverBraceReady": "押さえました。引いてください。",
- "IGMissingFloor,LeftoverHatchDraftCaption": "［点検口の中へ風が吸い込まれる音］"
+ "IGMissingFloor,LeftoverHatchDraftCaption": "［点検口の中へ風が吸い込まれる音］",
+ "IGMissingFloor,CaptionDoorBlocked": "［ドアが何かに当たって、がたんと止まる］"
 }

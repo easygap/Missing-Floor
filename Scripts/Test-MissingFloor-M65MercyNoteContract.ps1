@@ -207,7 +207,7 @@ Assert-ContainsAll $greyboxSource @(
 	'NightLoop->PrimeMercyNoteCaptureProbe();',
 	'MISSINGFLOOR_M65_MERCY_NOTE PASS',
 	'capture=5 slide=1 world_note=1 ui=0',
-	'FMath::Clamp(StartStep, 0, 18)',
+	'FMath::Clamp(StartStep, 0, 19)',
 	'CaptureBeginBurst(TEXT("mercy-note"), 2.35f);',
 	'NightLoop->PlayMercyNoteCapturePreview();',
 	'TEXT("r.AntiAliasingMethod 1")',

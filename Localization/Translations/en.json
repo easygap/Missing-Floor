@@ -1504,5 +1504,6 @@
  "IGHUD,SoundCaptionsImportant": "Important sounds",
  "IGMissingFloor,N3ReturnHintComing": "There he is. He’s coming this way.",
  "IGMissingFloor,LeftoverBraceReady": "Got it. Pull.",
- "IGMissingFloor,LeftoverHatchDraftCaption": "[air being sucked into the access hatch]"
+ "IGMissingFloor,LeftoverHatchDraftCaption": "[air being sucked into the access hatch]",
+ "IGMissingFloor,CaptionDoorBlocked": "[the door thuds against something and stops]"
 }

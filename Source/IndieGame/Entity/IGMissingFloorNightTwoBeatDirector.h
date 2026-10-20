@@ -136,6 +136,9 @@ public:
 	bool HasPlayed() const { return bPlayed; }
 	/** True while the figure is standing in the corridor outside 403. */
 	bool IsFigureAtDoor() const { return bFigureStaged; }
+	/** 밤 촬영(-IGNightCapture) 전용. 노크를 기다리지 않고 그를 문 옆 벽에 엎드리게 하고, 끝나면 거둔다. */
+	void StageFigureForCapture() { StageFigure(); }
+	void ReleaseFigureForCapture() { ReleaseFigure(); }
 	AIGMissingFloorEvidence* GetPeephole() const { return Peephole; }
 	int32 GetKnockCount() const { return KnockCount; }
 	/** True when the phone was running when the three knocks landed. */

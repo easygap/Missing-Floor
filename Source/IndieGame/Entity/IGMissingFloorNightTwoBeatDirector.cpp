@@ -10,6 +10,7 @@
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGMissingFloorEvidence.h"
 #include "Entity/IGNoiseSubsystem.h"
+#include "Interaction/IGSwingDoor.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Narrative/IGRecordingSubsystem.h"
 #include "Player/IGHorrorHUD.h"
@@ -31,22 +32,40 @@ namespace IGNightTwo
 	// 아래 셋은 문에서 잰다. 예전에는 절대 좌표를 적고 관계는 주석에만
 	// 두었는데, 그러면 문을 옮겼을 때 노크가 벽에서 나고 문구멍이
 	// 복도를 본다. 복도는 Y가 작아지는 쪽이다.
-	/** 노크는 복도 쪽 문짝에서 난다. 주먹 높이. */
+	/** 403호 문 쪽 북벽 면. 문짝은 이보다 몇 cm 안으로 들어가 있다. */
+	constexpr float NorthWallFaceY = -235.0f;
+	/**
+	 * 그는 문 앞에 서지 않는다. 기는 몸(190 cm)이라 문을 정면으로 보고 엎드리면 140 cm 복도에서 문짝이나
+	 * 남벽을 뚫는다. 벽 듣기 자세로 북벽과 나란히 엎드려(몸 오른쪽을 벽에 대고 옆머리를 붙인다) 머리 앞
+	 * 주먹이 문짝 경첩 쪽 아래, 경첩에서 10 cm에 닿는다. 몸 원점에서 주먹 끝까지 89 cm다.
+	 */
+	constexpr float FistFromHinge = 10.0f;
+	constexpr float FistForwardOfOrigin = 89.0f;
+	/** 노크는 그 주먹이 닿는 문짝 아래에서 난다. 엎드린 몸이 치는 높이다. */
 	constexpr float KnockCorridorOffset = 7.0f;
-	constexpr float KnockFistHeight = 112.0f;
-	const FVector KnockLocation =
-		DoorLocation + FVector(0.0f, -KnockCorridorOffset, KnockFistHeight);
+	constexpr float KnockFistHeight = 14.0f;
+	const FVector KnockLocation(
+		AIGPrologueWorldScene::HomeDoorX + FistFromHinge,
+		AIGPrologueWorldScene::HomeDoorY - KnockCorridorOffset,
+		FourthFloorZ + KnockFistHeight);
 	/** 문구멍은 문 안쪽, 눈높이. */
 	constexpr float PeepholeInsideOffset = 5.0f;
 	constexpr float PeepholeEyeHeight = 155.0f;
 	const FVector PeepholeLocation =
 		DoorLocation + FVector(0.0f, PeepholeInsideOffset, PeepholeEyeHeight);
-	/** 그가 서는 자리 — 문에서 47 cm, 복도 안. */
-	constexpr float FigureStandOffset = 47.0f;
-	const FVector FigureStagePoint =
-		DoorLocation + FVector(0.0f, -FigureStandOffset, 0.0f);
-	/** 두 점 사이를 오가게 둔다. 서 있는 사람이 아니라 기다리는 사람이 된다. */
-	const FVector FigureShufflePoint = DoorLocation + FVector(8.0f, -51.0f, 0.0f);
+	/** 엎드린 몸의 원점(벽에서 WallListenStandOff)과 방향(벽이 몸 오른쪽에 오도록 동쪽을 본다). */
+	const FVector FigureStagePoint(
+		AIGPrologueWorldScene::HomeDoorX + FistFromHinge - FistForwardOfOrigin,
+		NorthWallFaceY - AIGListenerEntity::WallListenStandOff,
+		FourthFloorZ);
+	constexpr float FigureStageYaw = 0.0f;
+	/**
+	 * 바깥으로 여는 문짝이 그의 머리(경첩 쪽 11 cm, 문짝에서 5 cm)에 닿는 각도. 문을 열면 여기서 덜컥
+	 * 걸리고, 열린 틈 아래 경첩 쪽 바닥에 그의 머리와 주먹이 있다.
+	 */
+	constexpr float DoorBlockedYaw = -27.0f;
+	/** 갈라지는 소리는 그가 옆머리를 댄 벽, 문틀 바로 옆 아래에서 난다. */
+	const FVector WallCrackLocation(AIGPrologueWorldScene::HomeDoorX - 8.0f, NorthWallFaceY - 2.0f, FourthFloorZ + 25.0f);
 	/** 끌려가는 소리는 계단코어 쪽으로 멀어진다. */
 	const FVector DragDepartPoint(-120.0f, -278.0f, FourthFloorZ);
 
@@ -705,16 +724,24 @@ void AIGMissingFloorNightTwoBeatDirector::StageFigure()
 		return;
 	}
 	bFigureStaged = true;
-	// 문을 향해 선다. 1-4의 계단 카메오와 같은 장치이고, 같은 이유로 순찰
-	// 두 점을 준다 — 서 있는 것이 아니라 기다리는 것으로 읽혀야 한다.
-	Listener->SetPatrolPoints({
-		IGNightTwo::FigureStagePoint,
-		IGNightTwo::FigureShufflePoint,
-	});
+	// 문 옆 벽에 옆머리를 대고 엎드린다(셋째 밤 복도와 같은 벽 듣기 자세). 한 자리를 지킨다. 숨과,
+	// 귀를 더 붙였다 늦추는 몸이 기다리는 사람으로 읽힌다.
+	Listener->SetPatrolPoints({IGNightTwo::FigureStagePoint});
 	// ParkForBeat clears his reaction to the last sound as well as moving him.
 	// Without that he stands outside 403 for one frame and then crawls off toward
 	// whatever he last heard, which for a beat that opens with a knock is common.
-	Listener->ParkForBeat(IGNightTwo::FigureStagePoint, 90.0f);
+	Listener->ParkForBeat(IGNightTwo::FigureStagePoint, IGNightTwo::FigureStageYaw);
+	Listener->SetWallListenForBeat(true, IGNightTwo::FigureStagePoint, IGNightTwo::FigureStageYaw);
+	// 팔을 몸에 붙인 자세라 어깨 폭만 막는다. 문간 앞 복도는 지나갈 수 있다.
+	Listener->SetBodyRadiusForBeat(26.0f);
+	// 바깥으로 여는 403호 문은 그의 머리에 걸려 한 뼘 남짓에서 선다. 문짝이 몸을 뚫고 돌지 않는다.
+	if (AIGPrologueWorldScene* WorldScene = Scene.Get())
+	{
+		if (AIGSwingDoor* Door = WorldScene->GetHomeDoor())
+		{
+			Door->SetBlockedOpenYaw(IGNightTwo::DoorBlockedYaw);
+		}
+	}
 	// 대본대로 붙든다. 순찰 AI대로 두면 대본 노크 사이에 제 3연을 끼워 넣고,
 	// 문구멍을 보러 장판을 걷는 발소리에 조사로, 두 번째 걸음에 추격으로 넘어갔다.
 	Listener->SetBeatHold(true);
@@ -727,8 +754,17 @@ void AIGMissingFloorNightTwoBeatDirector::ReleaseFigure()
 		return;
 	}
 	bFigureStaged = false;
+	if (AIGPrologueWorldScene* WorldScene = Scene.Get())
+	{
+		if (AIGSwingDoor* Door = WorldScene->GetHomeDoor())
+		{
+			Door->SetBlockedOpenYaw(0.0f);
+		}
+	}
 	if (AIGListenerEntity* Listener = Entity.Get())
 	{
+		Listener->SetWallListenForBeat(false);
+		Listener->SetBodyRadiusForBeat(0.0f);
 		Listener->SetBeatHold(false);
 		Listener->SetPatrolPoints(CorridorPatrolPoints);
 		// 연출이었지 실패가 아니다. 공격 티어는 건드리지 않는다.
@@ -1074,7 +1110,7 @@ void AIGMissingFloorNightTwoBeatDirector::PlayPeepholeAftermath()
 		&& FVector::Dist2D(Listener->GetActorLocation(), IGNightTwo::FigureStagePoint)
 			<= IGNightTwo::PeepholeCrackReach)
 	{
-		const FVector CrackAt = Listener->GetActorLocation() + FVector(0.0f, 0.0f, 20.0f);
+		const FVector CrackAt = IGNightTwo::WallCrackLocation;
 		IGAudio::SpawnOneShotAt(
 			this,
 			UIGToneSequenceSoundWave::CreatePlasterSettle(this),

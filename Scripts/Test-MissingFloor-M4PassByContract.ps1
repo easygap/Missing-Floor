@@ -138,7 +138,7 @@ Require-All $nightThree @(
 	'Listener->ResetToPatrolStart(/*bRaiseAggression=*/false);'
 ) '비트 3-7 borrowed figure'
 Require-All $nightTwoBeat @(
-	'Listener->ParkForBeat(IGNightTwo::FigureStagePoint, 90.0f);'
+	'Listener->ParkForBeat(IGNightTwo::FigureStagePoint, IGNightTwo::FigureStageYaw);'
 ) '비트 2-1 uses the same park'
 
 # --- 강제하지 않는다 -------------------------------------------------------

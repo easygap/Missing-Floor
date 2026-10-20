@@ -1504,5 +1504,6 @@
  "IGHUD,SoundCaptionsImportant": "重要聲音",
  "IGMissingFloor,N3ReturnHintComing": "他在那裡。往這邊過來了。",
  "IGMissingFloor,LeftoverBraceReady": "撐住了，拉吧。",
- "IGMissingFloor,LeftoverHatchDraftCaption": "［風被吸進檢修口的聲音］"
+ "IGMissingFloor,LeftoverHatchDraftCaption": "［風被吸進檢修口的聲音］",
+ "IGMissingFloor,CaptionDoorBlocked": "［門撞上了什麼東西，咚地停住］"
 }

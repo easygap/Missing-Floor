@@ -381,7 +381,7 @@ void AIGSwingDoor::Tick(const float DeltaSeconds)
 			bSuppressNextCloseThud = true;
 			DoorAnimation.Begin(
 				DoorPivot->GetRelativeRotation().Yaw,
-				OpenYaw,
+				GetReachableOpenYaw(),
 				FMath::Max(0.3f, SwingDuration * 0.55f));
 			UpdateLeafCollision();
 			return;
@@ -392,6 +392,26 @@ void AIGSwingDoor::Tick(const float DeltaSeconds)
 	{
 		UpdateLeafCollision();
 		SetActorTickEnabled(false);
+		if (bOpen && bStopsAtBlock)
+		{
+			// 문짝이 밖에 붙은 무언가에 부딪혀 섰다. 철문이 무른 것에 막히는 둔한 소리다.
+			bStopsAtBlock = false;
+			IGAudio::SpawnOneShotFromActorAt(
+				this,
+				IGAudio::SampleOr(
+					TEXT("Door_Steel_Close"),
+					[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateDoorThud(this); }),
+				GetStrikeSoundLocation(),
+				0.35f,
+				GetDoorVoice() * 0.72f);
+			AIGHorrorHUD::PushAudioCaptionAt(
+				this,
+				NSLOCTEXT("IGMissingFloor", "CaptionDoorBlocked", "[문이 무언가에 걸려 덜컥 멈춘다]"),
+				2.2f,
+				GetStrikeSoundLocation());
+			ReportSwingNoise(0.25f);
+			OnOpenBlocked.Broadcast();
+		}
 		if (!bOpen && !bSuppressNextCloseThud)
 		{
 			// 문짝이 문틀에 닿는 자리에서 닫힌다. 조용히 닫으면 걸쇠만 작고 가볍게
@@ -730,10 +750,14 @@ bool AIGSwingDoor::BeginSwing(
 	bOpen = bInOpen;
 	bSuppressNextCloseThud = !bOpen && bSuppressCloseThud;
 	CloseThudVolume = DurationScale > 1.0f ? 0.22f : 0.9f;
+	// 밖에 무엇이 붙어 있으면 거기까지만 연다. 그만큼만 도는 시간이라 덜컥 걸리는 것처럼 짧다.
+	bStopsAtBlock = bOpen && BlockedOpenYaw != 0.0f;
+	const float TargetYaw = bOpen ? GetReachableOpenYaw() : 0.0f;
+	const float Span = OpenYaw != 0.0f ? FMath::Abs(TargetYaw - DoorPivot->GetRelativeRotation().Yaw) / FMath::Abs(OpenYaw) : 1.0f;
 	DoorAnimation.Begin(
 		DoorPivot->GetRelativeRotation().Yaw,
-		bOpen ? OpenYaw : 0.0f,
-		SwingDuration * FMath::Max(DurationScale, 0.05f));
+		TargetYaw,
+		SwingDuration * FMath::Max(DurationScale, 0.05f) * (bStopsAtBlock ? FMath::Clamp(Span, 0.15f, 1.0f) : 1.0f));
 	UpdateLeafCollision();
 	SetActorTickEnabled(true);
 
