@@ -5,6 +5,7 @@
 #include "Core/IGGameInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
@@ -331,16 +332,21 @@ void AIGLeftoverProbe::CheckStorageContact(const bool bBracing, const TCHAR* Pre
 	Check(WorstRest > -0.6f && WorstRest < 1.5f, *Name(TEXT("board_rests_on_box")));
 	Check(Board->Bounds.GetBox().Max.X <= 120.5f && Box->Bounds.GetBox().Max.X <= 120.5f, *Name(TEXT("board_and_box_inside_room")));
 
+	CheckJeongwooInsideRoom(Prefix);
 	if (!bBracing)
 	{
-		// 갇힌 정우는 판 뒤 구석에 있다. 몸 어디도 판 구석 쪽 면을 넘지 않는다.
+		// 갇힌 정우는 판 뒤 구석에 서서 두 손바닥으로 판 뒷면을 짚는다. 몸은 판 구석 쪽 면에서 떨어져 있고,
+		// 손 뼈(손목)는 손바닥 두께만큼 면 뒤에 있다.
 		float Nearest = TNumericLimits<float>::Max();
-		for (const TCHAR* Part : {TEXT("pelvis"), TEXT("spine_03"), TEXT("head"), TEXT("hand_l"), TEXT("hand_r"), TEXT("foot_l"), TEXT("foot_r")})
+		for (const TCHAR* Part : {TEXT("pelvis"), TEXT("spine_03"), TEXT("head"), TEXT("foot_l"), TEXT("foot_r")})
 		{
 			Nearest = FMath::Min(Nearest, OnBoard(Bone(Part)).Y - CornerFace);
 		}
-		UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_CONTACT %s jeongwoo_behind_board=%.1f"), Prefix, Nearest);
+		const float Hands = FMath::Min(OnBoard(Bone(TEXT("hand_l"))).Y, OnBoard(Bone(TEXT("hand_r"))).Y) - CornerFace;
+		UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_CONTACT %s jeongwoo_behind_board=%.1f hands=%.1f"), Prefix, Nearest, Hands);
 		Check(Nearest > 5.0f, *Name(TEXT("jeongwoo_behind_board")));
+		Check(Hands > 1.0f && Hands < 12.0f, *Name(TEXT("jeongwoo_hands_on_board")));
+		CheckPhoneTorchClear(Prefix);
 		return;
 	}
 	// 두 손바닥이 판 방 쪽 면에 닿는다(손 뼈가 면에서 1..8 cm, 판 안쪽 자리).
@@ -380,6 +386,74 @@ void AIGLeftoverProbe::CheckStorageContact(const bool bBracing, const TCHAR* Pre
 		}
 	}
 	Check(bFeet, *Name(TEXT("feet_planted_clear")));
+}
+
+void AIGLeftoverProbe::CheckJeongwooInsideRoom(const TCHAR* Prefix)
+{
+	// 302호 안쪽 북벽(Y 85)과 동벽(X 120). 뼈는 관절 자리라 그 둘레의 몸 두께만큼 벽에서 떨어져야 한다.
+	// 예전 판 뒤 쪼그린 자세는 두 손이 벽 속 28 cm, 골반·허벅지가 벽에 박혀 있었다(10-20).
+	AIGMissingFloorLeftoverDirector* Director = Leftover.Get();
+	const AIGJeongwooFigure* Jeongwoo = Director ? Director->GetJeongwoo() : nullptr;
+	if (!Jeongwoo || !Jeongwoo->GetBody() || !Jeongwoo->IsShown())
+	{
+		return;
+	}
+	struct FPart { const TCHAR* Name; float Radius; };
+	const FPart Parts[] = {
+		{TEXT("pelvis"), 12.0f}, {TEXT("spine_02"), 12.0f}, {TEXT("spine_03"), 12.0f}, {TEXT("head"), 10.0f},
+		{TEXT("upperarm_l"), 5.0f}, {TEXT("upperarm_r"), 5.0f}, {TEXT("lowerarm_l"), 4.5f}, {TEXT("lowerarm_r"), 4.5f},
+		{TEXT("hand_l"), 4.0f}, {TEXT("hand_r"), 4.0f}, {TEXT("thigh_l"), 8.0f}, {TEXT("thigh_r"), 8.0f},
+		{TEXT("calf_l"), 6.0f}, {TEXT("calf_r"), 6.0f}, {TEXT("foot_l"), 5.0f}, {TEXT("foot_r"), 5.0f},
+	};
+	float Worst = TNumericLimits<float>::Max();
+	const TCHAR* WorstPart = TEXT("none");
+	for (const FPart& Part : Parts)
+	{
+		const FVector At = Jeongwoo->GetBody()->GetSocketLocation(FName(Part.Name));
+		const float Clear = FMath::Min(85.0f - At.Y, 120.0f - At.X) - Part.Radius;
+		if (Clear < Worst)
+		{
+			Worst = Clear;
+			WorstPart = Part.Name;
+		}
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_CONTACT %s jeongwoo_wall_clear=%.1f at=%s feet=%s"), Prefix, Worst, WorstPart,
+		*Jeongwoo->GetFeet().ToCompactString());
+	Check(Worst > -1.5f, *FString::Printf(TEXT("%s_jeongwoo_inside_walls"), Prefix));
+}
+
+void AIGLeftoverProbe::CheckPhoneTorchClear(const TCHAR* Prefix)
+{
+	// 엎어 둔 폰 손전등의 가운데(15도)를 정우 몸이 덮지 않는다. 빛이 천장까지 가야 판 너머 구석이 밝다.
+	// 예전 판 뒤 쪼그린 자세는 골반·허벅지·종아리가 폰 바로 위에 있어 빛을 다 막았다.
+	AIGMissingFloorLeftoverDirector* Director = Leftover.Get();
+	const AIGJeongwooFigure* Jeongwoo = Director ? Director->GetJeongwoo() : nullptr;
+	const USpotLightComponent* Torch = Director ? Director->GetPhoneTorchForTesting() : nullptr;
+	if (!Jeongwoo || !Jeongwoo->GetBody() || !Torch)
+	{
+		Check(false, *FString::Printf(TEXT("%s_phone_torch_actors"), Prefix));
+		return;
+	}
+	const FVector Light = Torch->GetComponentLocation();
+	const FVector Up = Torch->GetForwardVector();
+	const USkeletalMeshComponent* Body = Jeongwoo->GetBody();
+	int32 Covering = 0;
+	FString Covered;
+	for (int32 BoneIndex = 0; BoneIndex < Body->GetNumBones(); ++BoneIndex)
+	{
+		const FName BoneName = Body->GetBoneName(BoneIndex);
+		const FVector Offset = Body->GetBoneLocation(BoneName) - Light;
+		if (Offset.Size() < 100.0f && FVector::DotProduct(Offset.GetSafeNormal(), Up) > FMath::Cos(FMath::DegreesToRadians(15.0f)))
+		{
+			++Covering;
+			Covered += BoneName.ToString() + TEXT(" ");
+		}
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_PHONE %s light=%s covering=%d %s"), Prefix, *Light.ToCompactString(), Covering, *Covered);
+	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_PHONE %s visible=%d registered=%d intensity=%.0f units=%d radius=%.0f affects=%d owner_hidden=%d"),
+		Prefix, Torch->IsVisible() ? 1 : 0, Torch->IsRegistered() ? 1 : 0, Torch->Intensity, static_cast<int32>(Torch->IntensityUnits),
+		Torch->AttenuationRadius, Torch->bAffectsWorld ? 1 : 0, Torch->GetOwner() && Torch->GetOwner()->IsHidden() ? 1 : 0);
+	Check(Covering == 0, *FString::Printf(TEXT("%s_phone_torch_clear_of_body"), Prefix));
 }
 
 void AIGLeftoverProbe::LogAnnexGeometry()
@@ -969,9 +1043,11 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		Check(Mok->IsAvoidingStorage(), TEXT("n3_manager_skips_third_floor"));
 		Check(HintIs(TEXT("Hint.Night3.Storage"), TEXT("n3_hint")), TEXT("n3_hint_points_to_storage"));
+		Check(Director->IsPhoneTorchOn(), TEXT("n3_phone_torch_lights_corner"));
 		CheckStorageContact(false, TEXT("n3_trapped"));
-		// 문 안쪽에서 넘어진 판과 그 너머 구석을 본다.
-		Stand(FVector(-40.0f, -190.0f, 600.0f), FVector(80.0f, 40.0f, 690.0f));
+		// 문 안쪽에서 넘어진 판과 그 너머 구석을 본다. 판 윗변 높이를 보고 서서, 판 뒤 폰이 비추는 천장
+		// 구석까지 화면에 든다.
+		Stand(FVector(-40.0f, -190.0f, 600.0f), FVector(80.0f, 40.0f, 740.0f));
 		Shoot(TEXT("n3_trapped"));
 		Step = 0;
 		StepSeconds = 0.0f;
@@ -1000,6 +1076,14 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			StepSeconds = 0.0f;
 		}
 		else if (Step == 2 && StepSeconds >= 0.2f)
+		{
+			// 판 너머 구석 천장. 판 뒤에 엎어 둔 정우의 폰이 비추는 자리다.
+			Stand(FVector(10.0f, -60.0f, 600.0f), FVector(105.0f, 40.0f, 830.0f));
+			Shoot(TEXT("n3_phone_ceiling"));
+			Step = 3;
+			StepSeconds = 0.0f;
+		}
+		else if (Step == 3 && StepSeconds >= 0.2f)
 		{
 			Step = 0;
 			Next(311);
@@ -1099,15 +1183,27 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		return;
 	case 34:
-		// 판을 밀어 낸 정우는 그 자리에 쪼그려 숨을 고른다(0.7~3.1초). 덧댄 것은 아직 큰 점검구로 가는
-		// 중일 수 있어서 그 길(방 북쪽)에서 먼 문간에 서서 구석을 찍는다.
-		if (!bBreathShot && PhaseSeconds > 1.6f && PhaseSeconds < 2.9f)
+		// 판을 밀어 낸 정우는 한 걸음 물러나 바닥의 폰 쪽으로 돌아서서 쪼그려 숨을 고른다(1.7~4.1초쯤).
+		// 쪼그려 앉으면 찍는다. 덧댄 것은 아직 큰 점검구로 가는 중일 수 있어서 그 길(방 북쪽)에서 먼 문간에
+		// 서서 구석을 찍는다.
+		if (!bBreathShot && PhaseSeconds > 1.2f)
 		{
-			bBreathShot = true;
 			const AIGJeongwooFigure* Figure = Director->GetJeongwoo();
-			Check(Figure && !Figure->IsWalking(), TEXT("n3_jeongwoo_stays_to_breathe"));
-			Stand(FVector(-30.0f, -200.0f, 600.0f), FVector(100.0f, 66.0f, 630.0f));
+			const bool bSettled = Figure && !Figure->IsWalking() && Figure->GetPose() == AIGJeongwooFigure::EPose::Crouch;
+			if (!bSettled && PhaseSeconds < 3.6f)
+			{
+				return;
+			}
+			bBreathShot = true;
+			Check(bSettled, TEXT("n3_jeongwoo_crouches_to_breathe"));
+			Check(Director->IsPhoneTorchOn(), TEXT("n3_phone_torch_on_while_breathing"));
+			CheckJeongwooInsideRoom(TEXT("n3_breath"));
+			CheckPhoneTorchClear(TEXT("n3_breath"));
+			UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_BREATH at=%.1f feet=%s yaw=%.1f"), PhaseSeconds,
+				Figure ? *Figure->GetFeet().ToCompactString() : TEXT("none"), Figure ? Figure->GetActorRotation().Yaw : 0.0f);
+			Stand(FVector(-30.0f, -200.0f, 600.0f), FVector(90.0f, 30.0f, 640.0f));
 			Shoot(TEXT("n3_catching_breath"));
+			return;
 		}
 		if (PhaseSeconds < 3.0f)
 		{
@@ -1150,6 +1246,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			}
 			return;
 		}
+		Check(!Director->IsPhoneTorchOn(), TEXT("n3_phone_picked_up_when_up"));
 		Stand(FVector(50.0f, -105.0f, 600.0f), FVector(105.0f, -100.0f, 640.0f));
 		Check(Use(Target(TEXT("Storage.Sack"))), TEXT("n3_open_sack"));
 		Check(Taken(IGLeftoverProbe::PieceC) && Taken(IGLeftoverProbe::Frame), TEXT("n3_piece_c_and_frame"));

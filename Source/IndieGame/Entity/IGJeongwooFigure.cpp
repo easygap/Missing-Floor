@@ -78,7 +78,7 @@ bool AIGJeongwooFigure::LoadBody()
 	const struct { EPose Pose; const TCHAR* Name; } Table[] = {
 		{EPose::Idle, TEXT("Idle")}, {EPose::Walk, TEXT("Walk")}, {EPose::Carry, TEXT("Carry")},
 		{EPose::CarryIdle, TEXT("CarryIdle")}, {EPose::Crouch, TEXT("Crouch")}, {EPose::Brace, TEXT("Brace")},
-		{EPose::HoldDoor, TEXT("HoldDoor")}, {EPose::LookBack, TEXT("LookBack")},
+		{EPose::HoldDoor, TEXT("HoldDoor")}, {EPose::LookBack, TEXT("LookBack")}, {EPose::Hold, TEXT("Hold")},
 	};
 	for (const auto& Entry : Table)
 	{
@@ -123,6 +123,8 @@ void AIGJeongwooFigure::Appear(const FVector& Feet, const float Yaw, const EPose
 		return;
 	}
 	bWalking = false;
+	bTurning = false;
+	TurnToYaw.Reset();
 	Route = FIGWalkerRoute();
 	SetActorLocationAndRotation(Feet, FRotator(0.0f, Yaw, 0.0f));
 	SetActorHiddenInGame(false);
@@ -137,6 +139,8 @@ void AIGJeongwooFigure::Appear(const FVector& Feet, const float Yaw, const EPose
 void AIGJeongwooFigure::Vanish()
 {
 	bWalking = false;
+	bTurning = false;
+	TurnToYaw.Reset();
 	bShown = false;
 	SetActorTickEnabled(false);
 	Body->SetVisibility(false);
@@ -161,7 +165,7 @@ void AIGJeongwooFigure::SetBlocksPlayer(const bool bBlocks)
 void AIGJeongwooFigure::RefreshBlocker()
 {
 	bBlockerDeferred = false;
-	if (!bShown || !bBlocksPlayer || bWalking)
+	if (!bShown || !bBlocksPlayer || bWalking || bTurning)
 	{
 		Blocker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		return;
@@ -193,14 +197,22 @@ void AIGJeongwooFigure::SetCarriedBoxes(const int32 Count)
 	}
 }
 
-void AIGJeongwooFigure::WalkRoute(const TArray<FVector>& Points, const bool bCarry, const EPose EndPose, const float Speed)
+void AIGJeongwooFigure::WalkRoute(const TArray<FVector>& Points, const bool bCarry, const EPose EndPose, const float Speed,
+	const TOptional<float> ArriveYaw)
 {
+	bTurning = false;
+	TurnToYaw = ArriveYaw;
 	if (!bShown || Points.Num() < 2)
 	{
 		if (!Points.IsEmpty() && bShown)
 		{
 			SetActorLocation(Points.Last());
 		}
+		if (ArriveYaw.IsSet())
+		{
+			FaceYaw(*ArriveYaw);
+		}
+		TurnToYaw.Reset();
 		SetPose(EndPose);
 		OnArrived.Broadcast();
 		return;
@@ -267,6 +279,20 @@ void AIGJeongwooFigure::PlayPose(const EPose Pose, const float Rate)
 void AIGJeongwooFigure::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	if (bTurning)
+	{
+		// 다 걸은 자리에서 돌아선다. 발을 옮기며 돌도록 걷기를 느리게 튼다.
+		const float TargetYaw = TurnToYaw.Get(GetActorRotation().Yaw);
+		const float Yaw = IGWalker::TurnYaw(GetActorRotation().Yaw, TargetYaw, DeltaSeconds, 6.0f);
+		SetActorRotation(FRotator(0.0f, Yaw, 0.0f));
+		PlayPose(EPose::Walk, 0.5f);
+		if (FMath::Abs(FMath::FindDeltaAngleDegrees(Yaw, TargetYaw)) < 2.0f)
+		{
+			SetActorRotation(FRotator(0.0f, TargetYaw, 0.0f));
+			FinishArrival();
+		}
+		return;
+	}
 	if (!bWalking)
 	{
 		if (bBlockerDeferred)
@@ -303,11 +329,24 @@ void AIGJeongwooFigure::Tick(const float DeltaSeconds)
 	if (Travelled >= Route.Length() - 0.5f)
 	{
 		bWalking = false;
-		SetActorTickEnabled(false);
-		SetPose(ArrivePose);
-		RefreshBlocker();
-		OnArrived.Broadcast();
+		if (TurnToYaw.IsSet() && FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, *TurnToYaw)) > 2.0f)
+		{
+			bTurning = true;
+			return;
+		}
+		FinishArrival();
 	}
+}
+
+void AIGJeongwooFigure::FinishArrival()
+{
+	bWalking = false;
+	bTurning = false;
+	TurnToYaw.Reset();
+	SetActorTickEnabled(false);
+	SetPose(ArrivePose);
+	RefreshBlocker();
+	OnArrived.Broadcast();
 }
 
 void AIGJeongwooFigure::PlayStep()

@@ -39,6 +39,7 @@ class AIGPrologueWorldScene;
 class AIGReadableNote;
 class AIGSwingDoor;
 class UIGMissingFloorNarrativeSubsystem;
+class USpotLightComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
 enum class EIGCaptureKind : uint8;
@@ -164,6 +165,9 @@ public:
 	FName GetStorageStage() const;
 	/** 검사용: 정우가 판 앞에 서서 두 손에 힘을 실었다(이때부터 상자를 당길 수 있다). */
 	bool IsBraceHeld() const;
+	/** 검사용: 판 뒤에 엎어 둔 정우의 폰 손전등이 켜 있다. */
+	bool IsPhoneTorchOn() const;
+	USpotLightComponent* GetPhoneTorchForTesting() const { return PhoneTorch; }
 	bool IsInnerRoomErrandRunning() const;
 	/**
 	 * 검사용: 깨어나는 안쪽 방 장면을 접고 곧장 귀환 추격을 건다. 비트는 남기지 않는다(겪지 않은
@@ -350,6 +354,11 @@ private:
 	UPROPERTY(Transient) TObjectPtr<AIGReadableNote> CollectionNotice;
 	UPROPERTY(Transient) TObjectPtr<AIGReadableNote> CabinetLedger;
 	UPROPERTY(Transient) TObjectPtr<USceneComponent> PropRoot;
+	/**
+	 * 정우의 폰 손전등. 판 뒤 구석 바닥에 화면을 아래로 엎어 두어 천장을 비춘다. 갇혀 있는 동안과
+	 * 풀려나 숨을 고르는 동안 켜 있고, 일어나며 폰을 집어 든다.
+	 */
+	UPROPERTY(Transient) TObjectPtr<USpotLightComponent> PhoneTorch;
 	/** 덮개 조립대의 틀(누운 채 뒷면이 위)과 고정쇠 넷, 조각 셋. */
 	UPROPERTY(Transient) TObjectPtr<USceneComponent> FrameRoot;
 	UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> Clamps;

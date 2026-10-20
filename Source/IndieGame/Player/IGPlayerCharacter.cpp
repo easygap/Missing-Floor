@@ -443,6 +443,12 @@ float AIGPlayerCharacter::SampleAmbientDarkness(const bool bCountFlashlight) con
 		{
 			continue;
 		}
+		// 남이 들고 온 손전등(302호에 엎어 둔 정우의 폰)도 방의 불빛이 아니다. 천장 구석만 밝히는 빛을
+		// 방 등처럼 세면 그 방만 어둑시니가 오지 않는 자리가 된다.
+		if (Light->ComponentHasTag(IGLightTags::PortableTorch))
+		{
+			continue;
+		}
 
 		const FVector LightLocation = Light->GetComponentLocation();
 		const float Distance = FVector::Dist(EyeLocation, LightLocation);

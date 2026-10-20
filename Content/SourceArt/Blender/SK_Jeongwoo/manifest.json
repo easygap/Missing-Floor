@@ -68,6 +68,11 @@
       "frames": 90,
       "fps": 30,
       "loop": true
+    },
+    "Hold": {
+      "frames": 60,
+      "fps": 30,
+      "loop": true
     }
   },
   "generated_from": "../Generated/Jeongwoo/trellis1024-s56/raw/pbr_00001_.glb"

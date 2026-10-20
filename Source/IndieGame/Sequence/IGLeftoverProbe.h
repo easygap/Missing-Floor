@@ -61,6 +61,10 @@ private:
 	void CheckStorageContact(bool bBracing, const TCHAR* Prefix);
 	/** 5층 벽 칸 둘레의 벽·천장까지 거리와 편 몸의 패드 자리를 남긴다(다리를 놓을 자리를 고를 때). */
 	void LogAnnexGeometry();
+	/** 정우의 뼈가 302호 북벽·동벽에서 몸 두께만큼 떨어져 있는지 본다. */
+	void CheckJeongwooInsideRoom(const TCHAR* Prefix);
+	/** 바닥에 엎어 둔 폰 손전등의 가운데를 정우 몸이 덮지 않는지 본다. */
+	void CheckPhoneTorchClear(const TCHAR* Prefix);
 	void Next(int32 NewPhase);
 	/** 지금 쓸 수 있는가(살아 있는 표적이고 상호작용을 받는가). */
 	bool CanUse(AActor* Actor) const;

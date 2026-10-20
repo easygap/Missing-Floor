@@ -14,7 +14,7 @@ class UStaticMeshComponent;
 /**
  * 202호 정우의 몸(SK_Jeongwoo, rig_walker.py --profile mover). 헬멧을 쓴 채 다니는 배달 기사다.
  *
- * 걷고, 상자를 안고 걷고, 쪼그려 앉고, 판을 받치고, 문을 잡는다. 어디로 가고 무엇을 할지는
+ * 걷고, 상자를 안고 걷고, 쪼그려 앉고, 판을 받치고, 판 뒤에서 판을 짚고, 문을 잡는다. 어디로 가고 무엇을 할지는
  * 짐 줄기 감독(AIGMissingFloorLeftoverDirector)이 정한다. 이 액터는 정해 준 길을 걷고
  * 다 걸었으면 알린다. 길은 점을 이은 것이고, 높이가 30 cm 넘게 바뀌는 구간은 계단이다.
  * 몸은 플레이어만 막는다. 틱은 걷는 동안에만 켠다.
@@ -34,7 +34,9 @@ public:
 		Crouch,
 		Brace,
 		HoldDoor,
-		LookBack
+		LookBack,
+		/** 좁은 구석에 발을 모으고 서서 두 손으로 판 뒷면을 짚는다(302호 판 뒤). */
+		Hold
 	};
 
 	AIGJeongwooFigure();
@@ -48,9 +50,13 @@ public:
 	void Vanish();
 	bool IsShown() const { return bShown; }
 
-	/** 점을 따라 걷는다. bCarry면 상자를 안고 걷는다. 다 걸으면 EndPose로 서고 OnArrived를 알린다. */
-	void WalkRoute(const TArray<FVector>& Points, bool bCarry, EPose EndPose, float Speed = 95.0f);
-	bool IsWalking() const { return bWalking; }
+	/**
+	 * 점을 따라 걷는다. bCarry면 상자를 안고 걷는다. 다 걸으면 EndPose로 서고 OnArrived를 알린다.
+	 * ArriveYaw가 있으면 다 걸은 뒤 제자리에서 그쪽으로 돌아선 다음 EndPose로 선다.
+	 */
+	void WalkRoute(const TArray<FVector>& Points, bool bCarry, EPose EndPose, float Speed = 95.0f, TOptional<float> ArriveYaw = {});
+	/** 걷거나 다 걸은 자리에서 돌아서는 중이다. */
+	bool IsWalking() const { return bWalking || bTurning; }
 	void SetPose(EPose Pose);
 	EPose GetPose() const { return CurrentPose; }
 	void FaceYaw(float Yaw);
@@ -77,6 +83,8 @@ private:
 	void PlayPose(EPose Pose, float Rate);
 	UAnimSequence* AnimFor(EPose Pose) const;
 	void PlayStep();
+	/** 다 걷고(돌아서고) 선다. */
+	void FinishArrival();
 	/**
 	 * 몸막이를 지금 상태에 맞춘다. 걷는 동안은 끈다(밀고 지나가면 그녀가 떠밀려 판 옆에 끼었다).
 	 * 멈춘 자리에 그녀가 겹쳐 서 있으면 켜는 순간 그 안에 갇히므로 비킬 때까지 미룬다.
@@ -105,6 +113,9 @@ private:
 	float Travelled = 0.0f;
 	float WalkSpeed = 95.0f;
 	bool bWalking = false;
+	/** 다 걸은 자리에서 TurnToYaw로 돌아서는 중. */
+	bool bTurning = false;
+	TOptional<float> TurnToYaw;
 	bool bCarryWalk = false;
 	bool bShown = false;
 	bool bBodyLoaded = false;

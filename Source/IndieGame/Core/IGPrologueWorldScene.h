@@ -305,6 +305,11 @@ public:
 	UStaticMeshComponent* GetWardrobe302() const { return Wardrobe302Mesh; }
 	/** 302호 장롱 문틈 숨는 자리. 장롱을 밀면 감독이 같이 옮긴다. */
 	AIGHidingSpot* GetWardrobe302HidingSpot() const { return Wardrobe302Hide; }
+	/**
+	 * 다른 액터가 만든 등을 층 구역에 넣는다. 그 층에 있지 않으면 UpdateLightZones가 숨긴다.
+	 * 켜고 끄는 것은 만든 쪽이 세기로 한다.
+	 */
+	void AddZoneLight(class ULightComponent* Light, EIGLightZone Zone);
 	bool IsMissingFloorCavityOpen() const { return bMissingFloorCavityOpen; }
 
 	/**

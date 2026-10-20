@@ -1781,7 +1781,12 @@ void AIGMissingFloorLeftoverDirector::HandleJeongwooArrived()
 	switch (StorageStage)
 	{
 	case EStorage::Freed:
-		Jeongwoo->FaceTowards(GetPlayerFeet());
+		// 걸어 나와 선 자리에서 그녀를 본다. 판을 밀어 내고 숨 고를 자리에 왔을 때는 바닥의 폰 쪽으로
+		// 돌아서서 쪼그린 그대로 둔다(일어나기 전이다).
+		if (bJeongwooUp)
+		{
+			Jeongwoo->FaceTowards(GetPlayerFeet());
+		}
 		return;
 	case EStorage::Bracing:
 		// 밀려난 판(25도 돈 셋째 자세)의 방 쪽 면을 본다. 두 손이 그 면에 닿는다. 발을 디디고 손에 힘을

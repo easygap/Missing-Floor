@@ -7,6 +7,7 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGToneSequenceSoundWave.h"
 #include "Components/SceneComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/StaticMesh.h"
@@ -58,8 +59,22 @@ namespace IGLeftoverStorage
 	const FName BeatDayTwoTalk(TEXT("Leftover.Day2.Talk"));
 	const FName BeatLabel303Peeled(TEXT("Leftover.Label303Peeled"));
 
-	/** 판 뒤 구석(벽에서 20 cm). 판에서 풀려나면 판 끝이 다 돈 뒤 서쪽 끝을 돌아 나온다. */
-	const FVector JeongwooCorner(100.0f, 66.0f, StorageZ);
+	/**
+	 * 판 뒤 구석에 선 자리. 구석은 판 밑동에서 꼭짓점까지 65 cm인 삼각형이라 쪼그리면 몸이 벽에 들어간다
+	 * (예전 자리 (100, 66)에서 두 손이 북벽·동벽 속으로 28 cm 들어갔다). 발을 모으고 서서 두 손바닥으로
+	 * 판 뒷면을 짚는다(A_Jeongwoo_Hold, 손 뼈가 어깨 앞 30 cm). 벽·판과 5 cm, 덧댄 것 다리와 17 cm 떨어진다.
+	 */
+	const FVector JeongwooTrapSpot(91.5f, 54.5f, StorageZ);
+	constexpr float JeongwooTrapYaw = -137.5f;
+	/** 판이 미끄러져 더 누웠을 때. 밑동이 9 cm 들어와 한 발 물러선다. 손은 판에서 떨어지지만 판 아래로 가린다. */
+	const FVector JeongwooFallenSpot(94.0f, 58.5f, StorageZ);
+	constexpr float JeongwooFallenYaw = -135.0f;
+	/**
+	 * 판을 밀어 낸 뒤 숨을 고르는 자리. 판 뒤 자리에서 18 cm 물러나 바닥의 폰 쪽으로 돌아서서 쪼그린다.
+	 * 폰은 가까운 손에서 12 cm라 일어나며 집어 든다. 벽·밀려난 판과 4 cm 떨어진다.
+	 */
+	const FVector JeongwooBreathSpot(73.8f, 50.5f, StorageZ);
+	constexpr float JeongwooBreathYaw = -30.0f;
 	const FVector JeongwooOutSpot(-5.0f, 0.0f, StorageZ);
 	/**
 	 * 셋째 자세의 판을 상자 바로 위에서 받치는 자리. A_Jeongwoo_Brace는 두 손을 발보다 60.5 cm 앞,
@@ -93,6 +108,15 @@ namespace IGLeftoverStorage
 	const FVector WedgePickup(-40.0f, -165.0f, StorageZ);
 	/** 덮개 조각과 금속 틀을 넣은 마대. 동벽 앞, 덧댄 것이 지나가는 북서쪽 길과 판·상자를 비켰다. */
 	const FVector PartsSack(105.0f, -100.0f, StorageZ);
+	/**
+	 * 정우의 폰. 판 뒤 남쪽 끝 바닥에 화면을 아래로 엎어 두었고 긴 변이 판 밑동과 나란하다. 판이 미끄러져
+	 * 밑동이 9 cm 들어와도 닿지 않는 자리다(동벽에서 2 cm). 메시는 뒷면이 +Z이고 카메라 단이 위로 온다.
+	 * 플래시는 카메라 단 위에 있다. 판 뒤에 선 정우 몸이 빛의 가운데 절반쯤을 가려 천장에 그림자가 진다.
+	 */
+	const FTransform PhoneOnFloor(FRotator(0.0f, 45.0f, 0.0f), FVector(110.0f, 23.0f, StorageZ));
+	const FVector PhoneFlashLocal(-1.55f, 4.85f, 1.21f);
+	/** 폰 손전등의 세기. 손전등(빔 7600, 34도)보다 넓고 어둡다. 천장 구석이 밝고 방에는 되비친 빛만 든다. */
+	constexpr float PhoneTorchIntensity = 2400.0f;
 	/**
 	 * 오빠 상자: 방 쪽으로 기운 판 밑, 판 동쪽 절반. 판 방 쪽 면이 상자 위 모서리에 얹혔다(틈 2.5 mm).
 	 * 이름표 면이 방을 본다.
@@ -218,6 +242,42 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 	SpawnProp(FName(TEXT("Storage.Table2")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 90.0f, 0.0f), FVector(53.0f, -185.0f, StorageZ)), true);
 	// 쐐기. 처음에는 문 옆 공사 찌꺼기 사이에 있다.
 	SpawnProp(FName(TEXT("Storage.Wedge")), Mesh(TEXT("SM_TimberWedge")), FTransform(FRotator(0.0f, 70.0f, 0.0f), WedgePickup), false);
+	// 정우의 폰과 손전등. 302호는 창이 없고 그 시간에는 방 등도 죽어 있다. 갇힌 정우가 폰을 엎어 천장을
+	// 비춰 두어서 판 너머 천장 구석이 밝고, 그 빛이 방에 번진다. 판과 정우가 그림자를 드리운다.
+	if (UStaticMeshComponent* Phone = SpawnProp(FName(TEXT("Storage.Phone")), Mesh(TEXT("SM_CrackedPhone")), PhoneOnFloor, false))
+	{
+		// 금 간 화면은 따로 덮는 판이라 메시는 그냥 폰 몸이다. 화면이 바닥을 보니 뒷면만 보인다.
+		Phone->SetMaterial(0, LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/M_PlasticDark.M_PlasticDark"), nullptr, LOAD_NoWarn));
+		Phone->SetCastShadow(false);
+	}
+	if (UStaticMeshComponent* Flash = SpawnProp(FName(TEXT("Storage.PhoneFlash")), LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")),
+			FTransform(PhoneOnFloor.Rotator(), PhoneOnFloor.TransformPosition(PhoneFlashLocal + FVector(0.0f, 0.0f, 0.02f)), FVector(0.004f, 0.004f, 0.0004f)), false))
+	{
+		Flash->SetMaterial(0, LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/M_LightPanel.M_LightPanel"), nullptr, LOAD_NoWarn));
+		Flash->SetCastShadow(false);
+	}
+	PhoneTorch = NewObject<USpotLightComponent>(this, TEXT("Storage_PhoneTorch"));
+	PhoneTorch->SetupAttachment(PropRoot);
+	PhoneTorch->SetMobility(EComponentMobility::Movable);
+	PhoneTorch->SetWorldLocationAndRotation(PhoneOnFloor.TransformPosition(PhoneFlashLocal + FVector(0.0f, 0.0f, 0.5f)), FRotator(90.0f, 0.0f, 0.0f));
+	// 폰 플래시는 손전등보다 퍼지고 가운데가 넓다. 엎어 둔 폰에서 천장(238 cm)까지 가운데 87 cm가 밝다.
+	PhoneTorch->SetInnerConeAngle(20.0f);
+	PhoneTorch->SetOuterConeAngle(50.0f);
+	PhoneTorch->SetAttenuationRadius(420.0f);
+	PhoneTorch->SetMaxDrawDistance(1600.0f);
+	PhoneTorch->SetSourceRadius(0.3f);
+	PhoneTorch->SetLightColor(FLinearColor(1.0f, 0.97f, 0.93f));
+	PhoneTorch->SetCastShadows(true);
+	PhoneTorch->SetVolumetricScatteringIntensity(0.0f);
+	PhoneTorch->SetIntensity(0.0f);
+	// 방 등이 아니라 정우의 손전등이다. 어둠 판정(어둑시니)은 이 빛을 세지 않는다.
+	PhoneTorch->ComponentTags.Add(IGLightTags::PortableTorch);
+	PhoneTorch->RegisterComponent();
+	if (Scene)
+	{
+		// 3층에 있을 때만 보인다. 등의 구(420 cm)가 403호 바닥까지 닿는다.
+		Scene->AddZoneLight(PhoneTorch, EIGLightZone::ThirdFloor);
+	}
 
 	const auto Bind = [this](AIGLeftoverTarget* Target, const bool bTap = false)
 	{
@@ -259,7 +319,7 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 			PulledBox.Rotator(), FVector(8.0f, 20.0f, 14.0f), NSLOCTEXT("IGMissingFloor", "LeftoverDohaPullPrompt", "끼인 상자 당기기"),
 			1.6f, 0.25f));
 	}
-	Bind(SpawnTarget(FName(TEXT("Storage.Jeongwoo")), JeongwooCorner + FVector(0.0f, 0.0f, 80.0f), FRotator::ZeroRotator,
+	Bind(SpawnTarget(FName(TEXT("Storage.Jeongwoo")), JeongwooTrapSpot + FVector(0.0f, 0.0f, 120.0f), FRotator::ZeroRotator,
 		FVector(30.0f, 30.0f, 50.0f), NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPrompt", "정우에게 말 걸기"), 0.0f, 0.04f));
 	// 303호 상자의 딱지. 이름표 앞면(상자 원점에서 X 12, Y -19.3, Z 18.7 cm를 상자 방향으로 돌린 자리).
 	Bind(SpawnTarget(FName(TEXT("Storage.Label303")), FVector(-146.3f, -170.7f, StorageZ + 52.9f), FRotator(0.0f, 175.0f, 0.0f),
@@ -428,6 +488,16 @@ void AIGMissingFloorLeftoverDirector::RefreshStorage()
 		&& ((StorageStage == EStorage::Freed && bJeongwooUp) || (StorageStage == EStorage::Bracing && bBraceHeld)
 			|| StorageStage == EStorage::Leaving));
 	SetTargetLive(FindTarget(FName(TEXT("Storage.Jeongwoo"))), bNightThree && (StorageStage == EStorage::Trapped || StorageStage == EStorage::Fallen));
+	// 판 뒤에 갇혀 있는 동안과 풀려나 숨을 고르는 동안 엎어 둔 폰이 천장을 비춘다. 일어나며 집어 든다.
+	const bool bPhoneDown = bNightThree && (StorageStage == EStorage::Trapped || StorageStage == EStorage::Fallen
+		|| StorageStage == EStorage::Released || (StorageStage == EStorage::Freed && !bJeongwooUp));
+	ShowProp(FName(TEXT("Storage.Phone")), bPhoneDown);
+	ShowProp(FName(TEXT("Storage.PhoneFlash")), bPhoneDown);
+	if (PhoneTorch && (PhoneTorch->Intensity > 0.0f) != bPhoneDown)
+	{
+		PhoneTorch->SetIntensity(bPhoneDown ? PhoneTorchIntensity : 0.0f);
+		UE_LOG(LogTemp, Display, TEXT("LEFTOVER_PHONE_TORCH %s stage=%s"), bPhoneDown ? TEXT("on") : TEXT("off"), *GetStorageStage().ToString());
+	}
 	// 장롱: 한 번 밀면 그 자리다. 숨는 자리도 같이 옮긴다.
 	if (Scene)
 	{
@@ -503,7 +573,7 @@ void AIGMissingFloorLeftoverDirector::BeginStorageTrap(const bool bAnnounce)
 	{
 		Jeongwoo->SetCarriedBoxes(0);
 		Jeongwoo->SetBlocksPlayer(true);
-		Jeongwoo->Appear(JeongwooCorner, -135.0f, AIGJeongwooFigure::EPose::Crouch);
+		Jeongwoo->Appear(JeongwooTrapSpot, JeongwooTrapYaw, AIGJeongwooFigure::EPose::Hold);
 	}
 	if (StorageStage == EStorage::Released)
 	{
@@ -556,7 +626,7 @@ void AIGMissingFloorLeftoverDirector::PollStorage()
 	if (State.JeongwooState == Trapped && StorageStage == EStorage::Trapped
 		&& IsPlayerNear(FVector(-30.0f, -250.0f, StorageZ), 520.0f, 160.0f) && Narrative->MarkBeatPlayed(BeatVoice))
 	{
-		const FVector Voice = JeongwooCorner + FVector(0.0f, 0.0f, 110.0f);
+		const FVector Voice = JeongwooTrapSpot + FVector(0.0f, 0.0f, 150.0f);
 		PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, true), Voice, 0.5f, 0.9f, 120.0f, 1400.0f);
 		CaptionIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverBoardKnockCaption", "[302호 안에서 판을 두드리는 소리]"), Voice, 2.6f);
 		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverTrappedCall", "거기 누구 있어요? 판에 끼었어요."));
@@ -631,6 +701,10 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 	{
 		// 쐐기를 받친 채 판을 다시 세운다. 정우가 안에서 같이 민다.
 		SetBoardPose(1, true);
+		if (Jeongwoo)
+		{
+			Jeongwoo->Appear(JeongwooTrapSpot, JeongwooTrapYaw, AIGJeongwooFigure::EPose::Hold);
+		}
 		StorageStage = EStorage::Released;
 		PlaySound(UIGToneSequenceSoundWave::CreateBoardStackFall(this), BoardBase + FVector(0.0f, 0.0f, 60.0f), 0.35f, 1.2f);
 		GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::FreeJeongwoo, 1.4f, false);
@@ -818,9 +892,14 @@ void AIGMissingFloorLeftoverDirector::ReleaseBoard()
 	}
 	else
 	{
-		// 받친 게 없다. 누르던 몸이 떠나자 밑동이 미끄러지며 판이 더 눕는다. 소리가 크다.
+		// 받친 게 없다. 누르던 몸이 떠나자 밑동이 미끄러지며 판이 더 눕는다. 소리가 크다. 밑동이 발끝까지
+		// 들어와 정우가 한 발 물러선다.
 		StorageStage = EStorage::Fallen;
 		SetBoardPose(2, true);
+		if (Jeongwoo)
+		{
+			Jeongwoo->Appear(JeongwooFallenSpot, JeongwooFallenYaw, AIGJeongwooFigure::EPose::Hold);
+		}
 		PlaySound(UIGToneSequenceSoundWave::CreateBoardStackFall(this), BoardBase + FVector(0.0f, 0.0f, 50.0f), 0.95f, 0.95f, 200.0f, 2200.0f);
 		Caption(NSLOCTEXT("IGMissingFloor", "LeftoverBoardFallCaption", "[큰 판이 미끄러지며 쾅 하고 눕는 소리]"), BoardBase, 2.8f);
 		if (UWorld* World = GetWorld())
@@ -872,10 +951,10 @@ void AIGMissingFloorLeftoverDirector::FreeJeongwoo()
 	SetBoardPose(3, true);
 	PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), DohaBoxUnderBoard.GetLocation() + FVector(0.0f, 0.0f, 20.0f), 0.6f, 0.8f);
 	Jeongwoo->SetBlocksPlayer(false);
-	// 판 뒤 구석에서 두 손으로 판을 밀어 낸다(받치는 자세의 손이 판 뒷면에 닿는 거리다). 판이 비켜나면
-	// 그 자리에 쪼그려 숨을 고르고(JeongwooCatchBreath), 다 고르면 일어나 걸어 나온다.
+	// 판 뒷면을 짚고 있던 두 손으로 판을 밀어 낸다. 판이 비켜나면 물러나 폰 쪽으로 돌아서서 쪼그려
+	// 숨을 고르고(JeongwooCatchBreath), 다 고르면 폰을 집으며 일어나 걸어 나온다.
 	bJeongwooUp = false;
-	Jeongwoo->Appear(JeongwooCorner, -135.0f, AIGJeongwooFigure::EPose::Brace);
+	Jeongwoo->Appear(JeongwooTrapSpot, JeongwooTrapYaw, AIGJeongwooFigure::EPose::Hold);
 	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooCatchBreath, 0.7f, false);
 	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
@@ -929,9 +1008,11 @@ void AIGMissingFloorLeftoverDirector::JeongwooCatchBreath()
 	{
 		return;
 	}
-	// 판이 비켜났다. 구석에 쪼그려 앉아 숨을 고른다. 인사는 이 자세로 한다.
-	Jeongwoo->SetPose(AIGJeongwooFigure::EPose::Crouch);
-	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::WalkJeongwooOut, 2.4f, false);
+	// 판이 비켜났다. 판 뒤 자리에서는 쪼그릴 수 없어(구석 벽) 한 걸음 물러나 바닥의 폰 쪽으로 돌아서서
+	// 쪼그려 앉아 숨을 고른다. 인사는 이 자세로 한다. 걷고 돌아서는 데 1초쯤 걸린다.
+	Jeongwoo->WalkRoute({JeongwooTrapSpot, JeongwooBreathSpot}, false, AIGJeongwooFigure::EPose::Crouch, 60.0f,
+		JeongwooBreathYaw);
+	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::WalkJeongwooOut, 3.4f, false);
 }
 
 void AIGMissingFloorLeftoverDirector::WalkJeongwooOut()
@@ -940,10 +1021,11 @@ void AIGMissingFloorLeftoverDirector::WalkJeongwooOut()
 	{
 		return;
 	}
+	// 일어나며 손 앞의 폰을 집는다(RefreshStorage가 폰과 불을 거둔다).
 	bJeongwooUp = true;
 	RefreshStorage();
 	// 바닥 틀 끝(61, 52)과 밀려난 판 서쪽 끝(24, 29) 사이를 지난다. 둘 다 20 cm 넘게 비킨다.
-	Jeongwoo->WalkRoute({JeongwooCorner, FVector(70.0f, 46.0f, StorageZ), FVector(35.0f, 47.0f, StorageZ), FVector(5.0f, 50.0f, StorageZ), JeongwooOutSpot},
+	Jeongwoo->WalkRoute({JeongwooBreathSpot, FVector(70.0f, 46.0f, StorageZ), FVector(35.0f, 47.0f, StorageZ), FVector(5.0f, 50.0f, StorageZ), JeongwooOutSpot},
 		false, AIGJeongwooFigure::EPose::Idle, 80.0f);
 }
 
@@ -1066,6 +1148,11 @@ void AIGMissingFloorLeftoverDirector::JeongwooTakeHold()
 bool AIGMissingFloorLeftoverDirector::IsBraceHeld() const
 {
 	return StorageStage == EStorage::Bracing && bBraceHeld;
+}
+
+bool AIGMissingFloorLeftoverDirector::IsPhoneTorchOn() const
+{
+	return PhoneTorch && PhoneTorch->Intensity > 0.0f;
 }
 
 void AIGMissingFloorLeftoverDirector::SlideDohaBox(const float Distance, const float Seconds, const bool bTakeAtEnd)

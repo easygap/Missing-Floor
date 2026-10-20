@@ -4224,6 +4224,18 @@ void AIGPrologueWorldScene::SetRemoteViewActive(const bool bActive)
 	UpdateLightZones();
 }
 
+void AIGPrologueWorldScene::AddZoneLight(ULightComponent* Light, const EIGLightZone Zone)
+{
+	if (!Light)
+	{
+		return;
+	}
+	ZoneLights[static_cast<int32>(Zone)].AddUnique(Light);
+	// 구역 판단은 층이 바뀔 때만 다시 쓴다. 새 등도 지금 판단을 바로 따르게 한다.
+	ActiveLightBand = -1;
+	UpdateLightZones();
+}
+
 void AIGPrologueWorldScene::SetUnit401GapLit(const bool bLit)
 {
 	FTimerManager& Timers = GetWorldTimerManager();

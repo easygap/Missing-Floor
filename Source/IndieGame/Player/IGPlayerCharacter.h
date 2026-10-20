@@ -20,6 +20,15 @@ class UIGStressComponent;
 class UInputAction;
 struct FInputActionValue;
 
+namespace IGLightTags
+{
+	/**
+	 * 남이 들고 온 손전등. 어둠 판정이 방의 불빛으로 치지 않는다(그녀의 손전등도 방의 불빛이 아니다).
+	 * 셋째 밤 302호에 엎어 둔 정우의 폰이 그렇다.
+	 */
+	inline const FName PortableTorch(TEXT("IG.PortableTorch"));
+}
+
 /**
  * 그녀를 잡은 괴이. 괴이마다 잡히는 시점과 깨어나는 자리, 치르는 값이 다르다
  * (STORY_BIBLE_MISSING_FLOOR.md §5.4). 침대로 돌아가는 일은 없다.

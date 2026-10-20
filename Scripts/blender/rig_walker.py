@@ -23,9 +23,10 @@ rig_crawler.py가 기는 몸을 다뤘다면 여기는 서서 걷는 몸이다. 
 열쇠 꾸러미 규칙을 빼고 두 팔을 다 흔들며, 동작은 Idle·Walk(루프)와 LookBack(1회,
 어깨 너머로 고개를 돌려 뒤를 본다) 셋이다.
 
---profile mover는 resident에 짐 나르는 동작 다섯을 더한다(202호 정우). Carry(상자를 두 팔로
-안고 걷기), CarryIdle(안고 서 있기), Crouch(쪼그려 앉아 숨 고르기), Brace(두 손으로 판을 받치고
-버티기), HoldDoor(오른손으로 문을 잡아 두기). 전부 제자리 루프다.
+--profile mover는 resident에 짐 나르는 동작 여섯을 더한다(202호 정우). Carry(상자를 두 팔로
+안고 걷기), CarryIdle(안고 서 있기), Crouch(쪼그려 앉아 무릎을 짚고 숨 고르기), Brace(두 손으로
+판을 받치고 버티기), Hold(좁은 구석에 발을 모으고 서서 판 뒷면을 짚기), HoldDoor(오른손으로 문을
+잡아 두기). 전부 제자리 루프다.
 
 --profile officer는 resident에 벽을 살피는 동작 둘을 더한다(셋째 아침 5층에 오는 순찰
 경찰관). Knock(1회, 오른손으로 벽을 세 번 두드리고 손을 벽 가까이에 둔다)과 Listen(1회,
@@ -76,8 +77,10 @@ TORCH_HAND = Vector((0.30, 0.19, 0.98))
 # patrol(목한수), resident(빈손으로 선 사람), officer(빈손 + 벽 살피기). main()이 인자에서 정한다.
 PROFILE = "patrol"
 EMPTY_HANDED = ("resident", "officer", "mover")
-# officer는 A자로 벌려 뽑은 팔을 서 있을 때 허벅지 옆으로 모은다(m). main()이 손목 자리로 정한다.
-OFFICER_HANG = 0.0
+# officer와 mover는 A자로 벌려 뽑은 팔을 서 있고 걸을 때 허벅지 옆으로 모은다(m). main()이 손목 자리로 정한다.
+# 302호 판 뒤 구석과 문간은 A자 팔(좌우 48 cm)이 들어갈 폭이 없어 정우의 손이 벽 속으로 들어갔다.
+ARM_HANG = 0.0
+ARM_HANG_PROFILES = ("officer", "mover")
 
 
 def parse_args():
@@ -600,16 +603,25 @@ def author_walk(arm, name, frames, stride, lift, bob, lean, arm_swing, crouch, a
     return action
 
 
+def set_arm_hang(marks, name):
+    """A자 팔을 허벅지 옆으로 모으는 거리. 손목이 몸통 틈에서 3 cm 바깥에 오게 한다."""
+    global ARM_HANG
+    wrist_y = abs(marks["arms"]["r"][2].y)
+    ARM_HANG = max(0.0, wrist_y - (marks["gap"] + 0.03))
+    ig.log(f"{name}: arms gather in by {ARM_HANG * 100:.1f} cm "
+           f"(wrist |y| {wrist_y * 100:.1f} cm, arm gap {marks['gap'] * 100:.1f} cm)")
+
+
 def swing_arm(arm, side, frame, forward, lift):
     """늘어뜨린 팔을 앞뒤로 흔든다. FBX 좌표라 오른쪽이 -Y다."""
     sign = 1.0 if side == "l" else -1.0
     wrist = rest(arm, f"lowerarm_{side}")
     elbow = rest(arm, f"upperarm_{side}")
     target = wrist + Vector((forward, -0.02 * sign, lift))
-    if PROFILE == "officer":
+    if PROFILE in ARM_HANG_PROFILES:
         # 시안을 A자로 뽑았다. 손이 엉덩이 가까이 오면 생성 형상이 팔 안쪽과 옆구리 사이를
         # 막으로 메워서다. 서 있고 걸을 때는 그 팔을 허벅지 옆으로 모은다.
-        target += Vector((0.0, -OFFICER_HANG * sign, -0.04))
+        target += Vector((0.0, -ARM_HANG * sign, -0.04))
     solve_limb(arm, f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", target,
                elbow + Vector((-0.3, 0.05 * sign, 0.0)), frame)
 
@@ -830,21 +842,61 @@ def author_carry_idle(arm, frames=90):
 
 
 def author_crouch(arm, frames=90):
-    """판 뒤 구석에 쪼그려 앉아 있다. 숨이 가쁘다. 팔은 무릎 위에 걸친다."""
+    """쪼그려 앉아 두 손으로 무릎을 짚고 숨을 고른다. 골반은 발뒤꿈치 위로 내리고 상체를 숙인다.
+
+    예전에는 팔을 몸통에 맡겨 두어 A자로 벌린 팔이 그대로 옆으로 나갔다(손이 좌우 46 cm). 판 뒤
+    구석에서 두 손이 벽 속으로 28 cm 들어갔고, 골반을 뒤로만 빼서 보이지 않는 의자에 앉은 꼴이었다.
+    지금은 손을 무릎 앞에 모은다. 팔이 앞으로 오면 팔 밑 막은 접히는 쪽이라 날개처럼 펴지지 않는다.
+    """
     action = new_action(arm, "Crouch", frames)
     for f in range(0, frames + 1, 3):
         t = f / frames * math.tau
         breath = math.sin(3.0 * t)
-        key_loc(arm, "pelvis", f, y=-0.34 - 0.006 * breath)
-        key_rot(arm, "pelvis", f, rx=-12.0)
-        key_rot(arm, "spine_01", f, rx=15.0 + 1.2 * breath)
-        key_rot(arm, "spine_02", f, rx=8.0)
-        key_rot(arm, "spine_03", f, rx=3.0 - 1.0 * breath)
-        key_rot(arm, "neck", f, rx=-14.0)
-        key_rot(arm, "head", f, rx=-16.0, ry=6.0 * math.sin(t * 0.5))
-        plant_feet_offset(arm, f, {"l": Vector((0.05, 0.03, 0.0)), "r": Vector((-0.04, -0.03, 0.0))})
-        # 팔은 IK로 끌지 않고 몸통을 따라 숙인다. 생성 형상은 팔과 옆구리 사이가 막으로
-        # 이어져 있어서, 몸통만 숙이고 손을 따로 두면 그 막이 등 뒤로 날개처럼 펴진다.
+        # 골반 뼈는 앞으로 기운 채 서 있어서 y는 뼈를 따라 뒤아래로, z는 앞아래로 옮긴다.
+        key_loc(arm, "pelvis", f, y=-0.38 - 0.006 * breath, z=0.10)
+        key_rot(arm, "pelvis", f, rx=4.0)
+        key_rot(arm, "spine_01", f, rx=28.0 + 1.5 * breath)
+        key_rot(arm, "spine_02", f, rx=14.0)
+        key_rot(arm, "spine_03", f, rx=6.0 - 1.0 * breath)
+        key_rot(arm, "neck", f, rx=4.0)
+        key_rot(arm, "head", f, rx=8.0, ry=5.0 * math.sin(t * 0.5))
+        plant_feet_offset(arm, f, {"l": Vector((0.03, 0.02, 0.0)), "r": Vector((-0.01, -0.02, 0.0))})
+        bpy.context.view_layer.update()
+        for side, sign in (("l", 1.0), ("r", -1.0)):
+            knee = arm.pose.bones[f"calf_{side}"].head.copy()
+            sh = shoulder_now(arm, side)
+            target = knee + Vector((0.10, -sign * 0.02, 0.004 * breath))
+            solve_limb(arm, f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", target,
+                       sh + Vector((-0.10, sign * 0.45, -0.25)), f, end_direction=Vector((0.45, 0.0, -0.89)))
+    cyclic(arm, action)
+    return action
+
+
+# Hold에서 손 뼈를 어깨보다 얼마나 앞(m)에 두는가. 감독이 이 거리로 판 뒤에 설 자리를 정한다.
+HOLD_REACH = 0.30
+
+
+def author_hold(arm, frames=60):
+    """판 뒤 좁은 구석에 서서 두 손으로 판 뒷면을 짚고 있다. 숨이 가쁘다.
+
+    구석은 깊이 65 cm 삼각형이라 쪼그리면 몸이 벽에 들어간다. 발을 모으고 팔꿈치를 몸 가까이
+    내린다. 손끝은 위를 보고 손바닥이 판에 닿는다.
+    """
+    action = new_action(arm, "Hold", frames)
+    for f in range(0, frames + 1, 2):
+        t = f / frames * math.tau
+        breath = math.sin(2.0 * t)
+        key_loc(arm, "pelvis", f, y=-0.02)
+        key_rot(arm, "spine_01", f, rx=4.0)
+        key_rot(arm, "spine_02", f, rx=2.0 + 0.8 * breath)
+        key_rot(arm, "head", f, rx=-4.0)
+        plant_feet_offset(arm, f, {"l": Vector((0.0, -0.06, 0.0)), "r": Vector((0.0, 0.06, 0.0))})
+        for side, sign in (("l", 1.0), ("r", -1.0)):
+            sh = shoulder_now(arm, side)
+            target = Vector((sh.x + HOLD_REACH, sign * 0.15, sh.z - 0.12 + 0.004 * breath))
+            solve_limb(arm, f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", target,
+                       sh + Vector((-0.10, sign * 0.30, -0.45)), f,
+                       end_direction=Vector((0.45, 0.0, 0.89)))
     cyclic(arm, action)
     return action
 
@@ -1012,12 +1064,8 @@ def main():
         ig.assign_material(low, mat)
 
     marks = find_landmarks(low)
-    if PROFILE == "officer":
-        global OFFICER_HANG
-        wrist_y = abs(marks["arms"]["r"][2].y)
-        OFFICER_HANG = max(0.0, wrist_y - (marks["gap"] + 0.03))
-        ig.log(f"{name}: officer arms gather in by {OFFICER_HANG * 100:.1f} cm "
-               f"(wrist |y| {wrist_y * 100:.1f} cm, arm gap {marks['gap'] * 100:.1f} cm)")
+    if PROFILE in ARM_HANG_PROFILES:
+        set_arm_hang(marks, name)
     arm = build_armature(name, marks)
     skin(low, arm, marks)
 
@@ -1036,6 +1084,7 @@ def main():
             actions["CarryIdle"] = author_carry_idle(arm)
             actions["Crouch"] = author_crouch(arm)
             actions["Brace"] = author_brace(arm)
+            actions["Hold"] = author_hold(arm)
             actions["HoldDoor"] = author_hold_door(arm)
     else:
         actions = patrol_actions(arm)
@@ -1053,7 +1102,7 @@ def main():
         ig.render_preview(low, os.path.join(out_dir, f"{name}_lookback.png"), camera_yaw_deg=160.0, camera_pitch_deg=4.0)
         if PROFILE == "mover":
             for key, frame, yaw in (("Carry", 9, -90.0), ("CarryIdle", 30, -35.0), ("Crouch", 30, -35.0),
-                                    ("Brace", 20, -70.0), ("HoldDoor", 30, -20.0)):
+                                    ("Brace", 20, -70.0), ("Hold", 30, -70.0), ("HoldDoor", 30, -20.0)):
                 set_action_frame(arm, actions[key], frame)
                 ig.render_preview(low, os.path.join(out_dir, f"{name}_{key.lower()}.png"),
                                   camera_yaw_deg=yaw, camera_pitch_deg=4.0)
