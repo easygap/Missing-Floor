@@ -733,7 +733,7 @@
  "IGHUD,A11yKnockHapticDesc": "The gamepad vibrates when the one upstairs makes a sound. More distant sounds produce weaker vibrations.",
  "IGHUD,A11yHeartbeatDesc": "When you’re tense, the edges of the screen pulse with your heartbeat.",
  "IGHUD,A11yKnockAssistDesc": "Knocks still count if your timing is a little early or late.",
- "IGHUD,A11ySoundCaptionsDesc": "Shows sounds as text. ‘Important sounds’ shows only what you need to move on, like knocks or approaching footsteps. ‘All sounds’ also shows the everyday sounds of the building and the neighborhood.",
+ "IGHUD,A11ySoundCaptionsDesc": "Shows sounds as text. ‘Important sounds’ covers knocks and footsteps; ‘All sounds’ adds the rest.",
  "IGHUD,A11yCaptionSizeDesc": "Changes the text size of both dialogue and sound captions. You can preview it below.",
  "IGHUD,A11yCaptionBackgroundDesc": "Sets how dark the background behind captions is.",
  "IGHUD,A11yCaptionSafeAreaDesc": "Lower values move captions in from the edges of the screen.",

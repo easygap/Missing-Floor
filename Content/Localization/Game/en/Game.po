@@ -8943,7 +8943,7 @@ msgstr "Knocks still count if your timing is a little early or late."
 #: Source/IndieGame/Player/IGHorrorHUD.cpp(6678)
 msgctxt "IGHUD,A11ySoundCaptionsDesc"
 msgid "소리를 글로 보여 줍니다. ‘중요한 소리’는 두드리는 소리나 다가오는 발소리처럼 진행에 필요한 소리만, ‘모든 소리’는 건물과 동네의 평범한 소리까지 보여 줍니다."
-msgstr "Shows sounds as text. ‘Important sounds’ shows only what you need to move on, like knocks or approaching footsteps. ‘All sounds’ also shows the everyday sounds of the building and the neighborhood."
+msgstr "Shows sounds as text. ‘Important sounds’ covers knocks and footsteps; ‘All sounds’ adds the rest."
 
 #. Key:	A11yCaptionSizeDesc
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6679)

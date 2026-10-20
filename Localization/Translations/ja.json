@@ -777,7 +777,7 @@
  "IGHUD,AudioCalibrationKnockLabel": "上の階のノック音",
  "IGHUD,AudioCalibrationKnockInstruction": "ノックがはっきり聞こえ、\n耳に負担のない音量に調整してください。",
  "IGHUD,AudioCalibrationShadowLabel": "暗い部分の確認",
- "IGHUD,AudioCalibrationShadowInstruction": "中央のマスがうっすら見えるように調整してください。\n左のマスは、背景と見分けがつかない状態が目安です。",
+ "IGHUD,AudioCalibrationShadowInstruction": "中央のマスがうっすら見え、\n左のマスが背景に溶け込む明るさにします。",
  "IGHUD,AudioCal.MasterVolume": "マスター音量",
  "IGHUD,AudioCal.Music": "BGM",
  "IGHUD,AudioCal.Ambience": "環境音",

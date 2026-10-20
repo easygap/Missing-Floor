@@ -9251,7 +9251,7 @@ msgstr "暗い部分の確認"
 #: Source/IndieGame/Player/IGHorrorHUD.cpp(7671)
 msgctxt "IGHUD,AudioCalibrationShadowInstruction"
 msgid "가운데 칸이 희미하게 보이도록 맞춰 주세요.\n왼쪽 칸은 배경과 구분되지 않아야 합니다."
-msgstr "中央のマスがうっすら見えるように調整してください。\n左のマスは、背景と見分けがつかない状態が目安です。"
+msgstr "中央のマスがうっすら見え、\n左のマスが背景に溶け込む明るさにします。"
 
 #. Key:	AudioCal.MasterVolume
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7706)
