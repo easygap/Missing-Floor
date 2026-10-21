@@ -37,6 +37,16 @@ namespace IGLining
 	// 같은 벽을 따라갈 때 발이 짚는 자리는 그 벽 면에서 방 쪽으로 이만큼, 벽 뒤로 이만큼 안이다.
 	constexpr float AlongWallPadReach = 60.0f;
 	constexpr float AlongWallPadBehind = 8.0f;
+	// 같은 벽을 따라갈 때 무릎이 벽 면에서 방 쪽으로 나오는 한도(cm). 무릎은 늘 방 쪽으로 굽어서, 발이 엉덩이
+	// 가까이 짚으면 벽에서 1 m 넘게 나와 벽 앞에 선 사람 몸을 다리 충돌이 파고들었다. 5층 망치 자리는 벽에서
+	// 110 cm라 사람 캡슐 반지름 30과 다리 반지름 12를 빼면 무릎이 68 cm 안에 있어야 닿지 않는다. 조금 여유를 뒀다.
+	constexpr float AlongWallKneeHeight = 62.0f;
+	// 무릎을 눕히기 시작하고 거두는 데 걸리는 시간(초), 눕힌 각이 한 틱에 뛰지 않게 도는 가장 빠른 각속도(라디안/초).
+	constexpr float KneeLeanFadeSeconds = 0.45f;
+	constexpr float KneeLeanRate = 12.0f;
+	// 눕히는 쪽을 넘긴 뒤 다시 넘기지 않는 시간(초), 눕힐 쪽을 고를 때 몸 바깥쪽에 더 남아 있어야 하는 각(라디안).
+	constexpr float KneeLeanSwitchHold = 0.5f;
+	constexpr float KneeLeanSpare = 0.5f;
 	// 틈 둘레를 짚는 자리. 틈 가장자리에서 이만큼 바깥이다.
 	constexpr float BraceMarginAlong = 34.0f;
 	constexpr float BraceMarginAcross = 40.0f;
@@ -124,20 +134,46 @@ namespace IGLining
 		return Basis(ToDir, ToUp) * Basis(FromDir, FromUp).Inverse();
 	}
 
-	FVector TwoBoneKnee(const FVector& Hip, const FVector& Ankle, const float L1, const float L2, const FVector& Pole)
+	/**
+	 * 엉덩이와 발목이 정해지면 무릎은 엉덩이→발목 축을 도는 원 위에 있다. 극(Pole) 쪽이 각 0이고, 양의 각은
+	 * Axis × Bend 쪽으로 돈다(극을 그 축으로 돌린 것과 같다).
+	 */
+	struct FKneeCircle
 	{
+		FVector Axis = FVector::UpVector;
+		FVector Center = FVector::ZeroVector;
+		FVector Bend = FVector::ForwardVector;
+		FVector Side = FVector::RightVector;
+		float Radius = 0.0f;
+
+		FVector At(const float Angle) const
+		{
+			return Center + (Bend * FMath::Cos(Angle) + Side * FMath::Sin(Angle)) * Radius;
+		}
+	};
+
+	FKneeCircle KneeCircle(const FVector& Hip, const FVector& Ankle, const float L1, const float L2, const FVector& Pole)
+	{
+		FKneeCircle Circle;
 		const FVector To = Ankle - Hip;
 		const float Raw = To.Size();
-		const FVector Axis = Raw > KINDA_SMALL_NUMBER ? To / Raw : FVector::UpVector;
+		Circle.Axis = Raw > KINDA_SMALL_NUMBER ? To / Raw : FVector::UpVector;
 		const float Dist = FMath::Clamp(Raw, FMath::Abs(L1 - L2) + 0.5f, L1 + L2 - 0.5f);
 		const float Along = (L1 * L1 - L2 * L2 + Dist * Dist) / (2.0f * Dist);
-		const float Height = FMath::Sqrt(FMath::Max(L1 * L1 - Along * Along, 0.0f));
-		FVector Bend = Pole - Axis * FVector::DotProduct(Pole, Axis);
-		if (!Bend.Normalize())
+		Circle.Radius = FMath::Sqrt(FMath::Max(L1 * L1 - Along * Along, 0.0f));
+		Circle.Center = Hip + Circle.Axis * Along;
+		Circle.Bend = Pole - Circle.Axis * FVector::DotProduct(Pole, Circle.Axis);
+		if (!Circle.Bend.Normalize())
 		{
-			Bend = (FVector::UpVector - Axis * Axis.Z).GetSafeNormal();
+			Circle.Bend = (FVector::UpVector - Circle.Axis * Circle.Axis.Z).GetSafeNormal();
 		}
-		return Hip + Axis * Along + Bend * Height;
+		Circle.Side = FVector::CrossProduct(Circle.Axis, Circle.Bend);
+		return Circle;
+	}
+
+	FVector TwoBoneKnee(const FVector& Hip, const FVector& Ankle, const float L1, const float L2, const FVector& Pole)
+	{
+		return KneeCircle(Hip, Ankle, L1, L2, Pole).At(0.0f);
 	}
 
 	float Smooth(const float X)
@@ -170,6 +206,16 @@ namespace IGLining
 		static const bool bDraw = FParse::Param(FCommandLine::Get(), TEXT("IGLiningDrawCollision"));
 		return bDraw;
 	}
+
+	/**
+	 * 사람이 몸판·다리·발을 딛고 서지 못하게 한다. 옮기던 발 상자가 서 있는 사람 발밑 가장자리로 들어오면 캐릭터
+	 * 무브먼트가 그 상자를 바닥으로 잡아 사람을 들어 올려 싣고 갔다(5층 망치 자리, 패드가 벽에서 바닥으로 옮겨 갈 때).
+	 */
+	void KeepPawnsOff(UPrimitiveComponent* Shape)
+	{
+		Shape->CanCharacterStepUpOn = ECB_No;
+		Shape->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.0f));
+	}
 }
 
 AIGLiningEntity::AIGLiningEntity()
@@ -188,6 +234,7 @@ AIGLiningEntity::AIGLiningEntity()
 	BodyBlocker->SetCollisionResponseToAllChannels(ECR_Ignore);
 	BodyBlocker->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	BodyBlocker->SetCanEverAffectNavigation(false);
+	IGLining::KeepPawnsOff(BodyBlocker);
 	BodyBlocker->SetUsingAbsoluteRotation(true);
 	SetActorHiddenInGame(true);
 }
@@ -296,6 +343,7 @@ bool AIGLiningEntity::LoadBody()
 		Shape->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Shape->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 		Shape->SetCanEverAffectNavigation(false);
+		IGLining::KeepPawnsOff(Shape);
 		Shape->RegisterComponent();
 	};
 	for (int32 Index = 0; Index < LegCount * 2; ++Index)
@@ -339,6 +387,7 @@ void AIGLiningEntity::RestOnSurface(const FVector& Point, const FVector& Normal,
 		Leg.Fold = 1.0f;
 		Leg.bSwinging = false;
 	}
+	ResetKneeLean();
 	HeldGap = NAME_None;
 	TargetGap = NAME_None;
 	SetActorHiddenInGame(false);
@@ -426,6 +475,7 @@ void AIGLiningEntity::PlaceHolding(const FName GapId)
 	bHasMoved = true;
 	TargetGap = NAME_None;
 	HeldGap = GapId;
+	ResetKneeLean();
 	for (FIGLiningGap& Existing : Gaps)
 	{
 		if (Existing.Id == GapId)
@@ -999,8 +1049,18 @@ void AIGLiningEntity::Tick(const float DeltaSeconds)
 	}
 	// 몸의 눌림은 순간이동하지 않고 따라간다(누르기 끝에서 납작해지고, 당길 때 늘어난다).
 	BodySquash = FMath::VInterpTo(BodySquash, ComputeBodySquash(), DeltaSeconds, 7.0f);
+	// 같은 벽을 따라 걷는 동안에만 무릎을 벽 면 쪽으로 눕힌다. 걷기 시작하면 차오르고, 틈 둘레를 짚으면 빠진다.
+	const auto IsWalking = [](const EIGLiningState InState)
+	{
+		return InState == EIGLiningState::Peeling || InState == EIGLiningState::Stepping;
+	};
+	const bool bLeanKnees = bPathAlongWall
+		&& (IsWalking(State) || (State == EIGLiningState::Gripping && IsWalking(StateBeforeGrip)));
+	KneeLean = FMath::FInterpConstantTo(KneeLean, bLeanKnees ? 1.0f : 0.0f, DeltaSeconds, 1.0f / IGLining::KneeLeanFadeSeconds);
 	UpdateSoftParts(DeltaSeconds);
+	PoseDeltaSeconds = DeltaSeconds;
 	PoseBody();
+	PoseDeltaSeconds = 0.0f;
 	CheckGrip();
 	// 쉬는 동안은 틈만 본다. 자세가 안 바뀌니 몇 틱에 한 번이면 된다. 처진 살이나 막이 아직 흔들리면 매 틱 본다.
 	if ((State == EIGLiningState::Folded || State == EIGLiningState::Holding || State == EIGLiningState::Spread)
@@ -1705,6 +1765,7 @@ void AIGLiningEntity::Hide()
 	SetState(EIGLiningState::Hidden);
 	SetActorHiddenInGame(true);
 	SetBlockersEnabled(false);
+	ResetKneeLean();
 	ResetSoftParts();
 	SetActorTickEnabled(false);
 }
@@ -1781,7 +1842,15 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 		PadQuat = Peel * PadQuat;
 	}
 	FVector Ankle = PadPose - PadQuat.RotateVector(RestPad[Index] - RestAnkle);
-	const FVector Pole = (OutwardWorld * 0.35f + Up * 0.9f).GetSafeNormal();
+	FVector Pole = (OutwardWorld * 0.35f + Up * 0.9f).GetSafeNormal();
+	// 같은 벽을 따라 걷는 동안에는 무릎을 엉덩이→발목 축으로 돌려 벽 면 쪽으로 눕힌다. 극을 같이 돌려야 마디가
+	// 꼬이지 않는다.
+	const float Lean = LeanKnee(Index, Hip, Ankle, Pole);
+	const FVector LegAxis = (Ankle - Hip).GetSafeNormal();
+	if (Lean != 0.0f && !LegAxis.IsZero())
+	{
+		Pole = FQuat(LegAxis, Lean).RotateVector(Pole);
+	}
 	FVector Knee = IGLining::TwoBoneKnee(Hip, Ankle, Length1[Index], Length2[Index], Pole);
 	FQuat Segment3 = PadQuat;
 
@@ -1840,6 +1909,190 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 				Index, static_cast<int32>(State), bPulling ? 1 : 0, BlockedPulls, MaxPadSlip, LegReach(Index, BodyCenter, BodyRotation));
 			NextSlipLog = MaxPadSlip * 2.0f;
 		}
+	}
+}
+
+float AIGLiningEntity::LeanKnee(const int32 Leg, const FVector& Hip, const FVector& Ankle, const FVector& Pole)
+{
+	float Target = 0.0f;
+	UWorld* World = GetWorld();
+	if (KneeLean <= 0.0f || !World || Legs[Leg].Fold >= 0.999f || PinnedLeg == Leg)
+	{
+		KneeLeanSide[Leg] = 0;
+		KneeLeanHold[Leg] = 0.0f;
+	}
+	else
+	{
+		const IGLining::FKneeCircle Circle = IGLining::KneeCircle(Hip, Ankle, Length1[Leg], Length2[Leg], Pole);
+		// SolveLeg처럼 접힌 자세와 Blend만큼 섞고 첫 마디 길이로 맞춘 무릎. 펴지는 중인 다리는 접힌 무릎 쪽으로 끌려
+		// 있어서 덜 눕혀도 되고, Blend 0은 다 편 다리다.
+		const float Fold = Legs[Leg].Fold > 0.001f ? IGLining::Smooth(Legs[Leg].Fold) : 0.0f;
+		FVector FoldKnee = FVector::ZeroVector;
+		if (Fold > 0.0f)
+		{
+			FVector FoldAnkle;
+			FVector FoldPad;
+			IGLining::FoldedJoints(Leg, HipLocal[Leg], FoldKnee, FoldAnkle, FoldPad);
+			FoldKnee = BodyCenter + BodyRotation.RotateVector(FoldKnee);
+		}
+		const auto KneeAt = [this, Leg, &Hip, &Circle, &FoldKnee](const float Angle, const float Blend)
+		{
+			return Hip + (FMath::Lerp(Circle.At(Angle), FoldKnee, Blend) - Hip).GetSafeNormal() * Length1[Leg];
+		};
+		// 무릎 높이(벽 면에서 방 쪽).
+		const auto HeightAt = [this, &KneeAt](const float Angle, const float Blend)
+		{
+			return FVector::DotProduct(KneeAt(Angle, Blend) - PathWallPoint, PathWallNormal);
+		};
+		// 그쪽(Sign)으로 한도까지 내려오는 가장 작은 각. 어디까지 돌려도 한도를 넘으면 가장 낮아지는 각이다.
+		const auto NeededFor = [&HeightAt](const float Sign, const float Blend)
+		{
+			const float Start = HeightAt(0.0f, Blend);
+			if (Start <= IGLining::AlongWallKneeHeight)
+			{
+				return 0.0f;
+			}
+			constexpr int32 Samples = 14;
+			constexpr float MaxAngle = PI * 0.8f;
+			float Previous = 0.0f;
+			float Lowest = 0.0f;
+			float LowestHeight = Start;
+			for (int32 Index = 1; Index <= Samples; ++Index)
+			{
+				const float Theta = MaxAngle * Index / Samples;
+				const float Sampled = HeightAt(Sign * Theta, Blend);
+				if (Sampled <= IGLining::AlongWallKneeHeight)
+				{
+					float Low = Previous;
+					float High = Theta;
+					for (int32 Step = 0; Step < 5; ++Step)
+					{
+						const float Mid = 0.5f * (Low + High);
+						(HeightAt(Sign * Mid, Blend) <= IGLining::AlongWallKneeHeight ? High : Low) = Mid;
+					}
+					return High;
+				}
+				if (Sampled < LowestHeight)
+				{
+					LowestHeight = Sampled;
+					Lowest = Theta;
+				}
+				Previous = Theta;
+			}
+			return Lowest;
+		};
+		// 눕힌 무릎이 천장·바닥·옆 벽이나 소품에 묻히거나 그 너머로 넘어가거나, 몸 위에 얹히거나, 다른 다리의 무릎과
+		// 맞닿으면 거기까지 눕히지 않는다.
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(LiningKnee), false, this);
+		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+		{
+			Params.AddIgnoredActor(PlayerPawn);
+		}
+		const FCollisionObjectQueryParams Objects(ECC_WorldStatic);
+		const FCollisionShape Knob = FCollisionShape::MakeSphere(IGLining::LegRadius);
+		const auto IsClear = [this, World, Leg, &Hip, &KneeAt, &Params, &Objects, &Knob](const float Angle, const float Blend)
+		{
+			const FVector Knee = KneeAt(Angle, Blend);
+			const FVector Local = BodyRotation.UnrotateVector(Knee - BodyCenter);
+			if (FMath::Abs(Local.X) < IGLining::BodyHalf.X && FMath::Abs(Local.Y) < IGLining::BodyHalf.Y)
+			{
+				return false;
+			}
+			for (int32 Other = 0; Other < LegCount; ++Other)
+			{
+				if (Other != Leg && FVector::DistSquared(Knee, Legs[Other].Knee) < FMath::Square(IGLining::LegRadius * 2.0f + 4.0f))
+				{
+					return false;
+				}
+			}
+			FHitResult Hit;
+			return !World->LineTraceSingleByObjectType(Hit, Hip, Knee, Objects, Params)
+				&& !World->OverlapAnyTestByObjectType(Knee, FQuat::Identity, Objects, Knob, Params);
+		};
+		// 한도 쪽에서부터 덜 눕혀 가며 처음으로 비어 있는 각.
+		const auto ClearFor = [&IsClear](const float Sign, const float Needed, const float Blend)
+		{
+			constexpr int32 Tries = 6;
+			for (int32 Try = 0; Try < Tries; ++Try)
+			{
+				const float Theta = Needed * (1.0f - static_cast<float>(Try) / Tries);
+				if (IsClear(Sign * Theta, Blend))
+				{
+					return Theta;
+				}
+			}
+			return 0.0f;
+		};
+		// 다 편 다리를 그쪽으로 막힘 없이 눕힐 수 있는 가장 큰 각. 조금씩 늘려 가며 처음 막히기 전까지다.
+		const auto RoomFor = [&IsClear](const float Sign)
+		{
+			constexpr int32 Steps = 9;
+			constexpr float MaxRoom = PI * 0.75f;
+			float Room = 0.0f;
+			for (int32 Step = 1; Step <= Steps; ++Step)
+			{
+				const float Theta = MaxRoom * Step / Steps;
+				if (!IsClear(Sign * Theta, 0.0f))
+				{
+					break;
+				}
+				Room = Theta;
+			}
+			return Room;
+		};
+		const float Height = HeightAt(0.0f, Fold);
+		int32& Side = KneeLeanSide[Leg];
+		if (Side == 0 && Height > IGLining::AlongWallKneeHeight)
+		{
+			// 몸 바깥쪽으로 눕힌다. 어느 쪽도 아니면 극이 벌써 기울인 쪽으로 눕혀서, 한도를 넘는 순간에 무릎이 튀지 않는다.
+			// 그쪽이 천장이나 바닥에 가까워 다리를 다 폈을 때 금방 막히면 넓은 쪽으로 눕힌다. 걷다가 막혀 반대쪽으로
+			// 넘기면 그동안 무릎이 방 쪽으로 넘어간다.
+			FVector Away = Circle.Center - BodyCenter;
+			Away -= PathWallNormal * FVector::DotProduct(Away, PathWallNormal);
+			const float AwayScore = Away.Normalize() ? FVector::DotProduct(Circle.Side, Away) : 0.0f;
+			const float Tilt = FVector::DotProduct(Circle.Side, PathWallNormal);
+			const int32 Preferred = FMath::Abs(AwayScore) > 0.25f ? (AwayScore > 0.0f ? 1 : -1) : (Tilt > 0.0f ? -1 : 1);
+			const float PreferredRoom = RoomFor(Preferred);
+			Side = PreferredRoom >= NeededFor(Preferred, 0.0f) + IGLining::KneeLeanSpare || PreferredRoom >= RoomFor(-Preferred)
+				? Preferred : -Preferred;
+		}
+		else if (Side != 0 && Height < IGLining::AlongWallKneeHeight - 4.0f)
+		{
+			// 눕히지 않아도 한도 안이다. 다음에 다시 넘으면 그때 쪽을 정한다.
+			Side = 0;
+		}
+		KneeLeanHold[Leg] = FMath::Max(0.0f, KneeLeanHold[Leg] - PoseDeltaSeconds);
+		const float Needed = Side != 0 ? NeededFor(Side, Fold) : 0.0f;
+		float Clear = Side != 0 ? ClearFor(Side, Needed, Fold) : 0.0f;
+		if (Side != 0 && Clear < Needed * 0.5f && KneeLeanHold[Leg] <= 0.0f)
+		{
+			// 몸이 옮겨 가며 눕힌 쪽이 천장·바닥이나 몸, 다른 무릎에 막혔다. 반대쪽이 다 비어 있으면 그쪽으로 넘긴다.
+			// 넘긴 뒤 잠깐은 다시 넘기지 않는다(두 다리가 서로를 막으면 번갈아 넘기며 떨었다).
+			const float OtherNeeded = NeededFor(-Side, Fold);
+			const float OtherClear = ClearFor(-Side, OtherNeeded, Fold);
+			if (OtherClear >= OtherNeeded - KINDA_SMALL_NUMBER)
+			{
+				Side = -Side;
+				Clear = OtherClear;
+				KneeLeanHold[Leg] = IGLining::KneeLeanSwitchHold;
+			}
+		}
+		Target = Side * Clear * KneeLean;
+	}
+	// 눕히는 각은 한 틱에 뛰지 않고 원을 따라 돈다. 순간이동으로 놓을 때는 바로 맞춘다.
+	const float Step = PoseDeltaSeconds > 0.0f ? IGLining::KneeLeanRate * PoseDeltaSeconds : PI;
+	KneeLeanAngle[Leg] = FMath::Clamp(Target, KneeLeanAngle[Leg] - Step, KneeLeanAngle[Leg] + Step);
+	return KneeLeanAngle[Leg];
+}
+
+void AIGLiningEntity::ResetKneeLean()
+{
+	KneeLean = 0.0f;
+	for (int32 Leg = 0; Leg < LegCount; ++Leg)
+	{
+		KneeLeanAngle[Leg] = 0.0f;
+		KneeLeanSide[Leg] = 0;
+		KneeLeanHold[Leg] = 0.0f;
 	}
 }
 

@@ -287,6 +287,14 @@ private:
 	FVector HipWorld(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
 	void PoseBody();
 	void SolveLeg(int32 Leg);
+	/**
+	 * 같은 벽을 따라 걷는 동안 이 다리의 무릎을 엉덩이→발목 축으로 돌릴 각(라디안). 무릎이 벽 면에서
+	 * AlongWallKneeHeight보다 나오면 그만큼만 벽 면 쪽으로 눕힌다. 눕힌 무릎이 천장·바닥·옆 벽에 묻히거나
+	 * 몸판 위에 얹히거나 다른 무릎과 맞닿으면 그 앞까지만 눕히고, 막힌 쪽 대신 반대쪽이 비어 있으면 넘긴다.
+	 * 걷는 동안이 아니면 0으로 돌아간다.
+	 */
+	float LeanKnee(int32 Leg, const FVector& Hip, const FVector& Ankle, const FVector& Pole);
+	void ResetKneeLean();
 	void UpdateColliders();
 	/** 몸판·다리·패드 충돌을 한꺼번에 켜거나 끈다. */
 	void SetBlockersEnabled(bool bEnabled);
@@ -396,6 +404,15 @@ private:
 	bool bPathAlongWall = false;
 	FVector PathWallPoint = FVector::ZeroVector;
 	FVector PathWallNormal = FVector::ForwardVector;
+	/** 무릎을 벽 면 쪽으로 눕히는 정도(0~1). 같은 벽을 따라 걷는 동안 1로 차오르고, 다 오면 0으로 빠진다. */
+	float KneeLean = 0.0f;
+	/** 다리마다 지금 눕힌 각(라디안)과 눕히는 쪽(+1, -1, 0은 아직 안 정함). */
+	float KneeLeanAngle[LegCount] = {};
+	int32 KneeLeanSide[LegCount] = {};
+	/** 눕히는 쪽을 넘긴 뒤 남은 시간(초). 그동안은 다시 넘기지 않는다. */
+	float KneeLeanHold[LegCount] = {};
+	/** 이번 자세를 놓는 틱의 시간(초). 순간이동으로 놓을 때는 0이다. */
+	float PoseDeltaSeconds = 0.0f;
 	/** 당기기 단계인가(아니면 두 다리를 옮기는 단계). */
 	bool bPulling = true;
 	float PhaseSeconds = 0.0f;
