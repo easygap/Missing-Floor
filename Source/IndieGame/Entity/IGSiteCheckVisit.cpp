@@ -972,8 +972,15 @@ float AIGSiteCheckVisit::PushLine(int32 Index)
 	{
 		if (Index == 3)
 		{
+			// 5층 구석에 대 본 회차는 그 자리를 짚고, 조각만 맞춘 회차는 맞춘 것까지만 말한다(§37.5).
+			const UGameInstance* GameInstance = GetGameInstance();
+			const UIGMissingFloorNarrativeSubsystem* Narrative = GameInstance
+				? GameInstance->GetSubsystem<UIGMissingFloorNarrativeSubsystem>()
+				: nullptr;
 			Speaker = Yudam;
-			Line = NSLOCTEXT("IGMissingFloor", "SiteCheckYudamCover", "저 구석 덧판 밑이 원래 점검구예요. 떼어 간 덮개를 제가 맞춰 봤어요.");
+			Line = Narrative && Narrative->GetLeftover().bSiteMatched
+				? NSLOCTEXT("IGMissingFloor", "SiteCheckYudamCover", "저 구석 덧판 자리에 이 덮개가 맞아요. 나사 구멍이 그대로 겹쳐요.")
+				: NSLOCTEXT("IGMissingFloor", "SiteCheckYudamCoverAssembled", "이 덮개요, 관리실이랑 302호에 조각이 나뉘어 있던 걸 제가 맞춰 봤어요.");
 			return PushVisitLine(Speaker, Line);
 		}
 		if (Index == 4)

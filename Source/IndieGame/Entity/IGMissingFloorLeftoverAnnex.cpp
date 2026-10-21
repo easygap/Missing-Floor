@@ -234,7 +234,7 @@ void AIGMissingFloorLeftoverDirector::PushOutAnnexLining(const bool bInstant)
 		return;
 	}
 	Lining->RetreatTo(PushedRest, FVector(0.0f, 0.0f, -1.0f), FVector::ForwardVector, PushOutSeconds);
-	Caption(NSLOCTEXT("IGMissingFloor", "LeftoverPushedCaption", "[휜 철골이 빠지고, 벽을 긁으며 물러나는 소리]"),
+	Caption(NSLOCTEXT("IGMissingFloor", "LeftoverPushedCaption", "[휜 철골이 빠지며 벽을 긁고 멀어지는 소리]"),
 		Lining->GetBodyCenter(), 2.8f);
 }
 

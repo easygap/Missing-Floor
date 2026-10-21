@@ -106,8 +106,23 @@ namespace IGLeftoverStorage
 		FVector(71.1f, 38.0f, StorageZ + 2.0f),
 	};
 	const FVector WedgePickup(-40.0f, -165.0f, StorageZ);
-	/** 덮개 조각과 금속 틀을 넣은 마대. 동벽 앞, 덧댄 것이 지나가는 북서쪽 길과 판·상자를 비켰다. */
-	const FVector PartsSack(105.0f, -100.0f, StorageZ);
+	/**
+	 * 덮개 조각과 금속 틀을 넣은 마대. 동벽 앞, 덧댄 것이 지나가는 북서쪽 길과 판·상자를 비켰다.
+	 * X 105·30도로 두면 마대 몸이 동벽(X 120)을 5 cm 파고들어서, 긴 쪽을 벽과 나란히 돌리고 5 cm 당겼다.
+	 */
+	const FVector PartsSack(100.0f, -100.0f, StorageZ);
+	constexpr float PartsSackYaw = 90.0f;
+	/**
+	 * 낮1에 옮겨 온 짐 더미. 서벽(X -160)과 젖혀 둔 현관문 문짝(X -82.5) 사이는 77 cm라 상자 둘(38·40 cm)을
+	 * 나란히 넣으면 서로 14 cm 겹쳤다. 303호 상자를 얹은 더미는 남서 구석에, 오빠 상자는 그 북쪽 서벽 앞에,
+	 * 마대는 문짝 옆에 둔다. 장롱을 민 자리(Y -126..-44)는 셋째 밤에만 쓰고 그때 오빠 상자는 판 밑에 있다.
+	 */
+	const FTransform PileBase(FRotator(0.0f, 90.0f, 0.0f), FVector(-139.8f, -189.0f, StorageZ));
+	const FTransform PileTop(FRotator(0.0f, 95.0f, 0.0f), FVector(-138.3f, -188.0f, StorageZ + 34.2f));
+	const FTransform PileDoha(FRotator(0.0f, 92.0f, 0.0f), FVector(-139.4f, -137.5f, StorageZ));
+	const FTransform PileSack(FRotator(0.0f, 90.0f, 0.0f), FVector(-102.0f, -189.0f, StorageZ));
+	/** 303호 상자 이름표 앞면. 상자 원점에서 잰 자리라 상자를 돌려 얹어도 따라간다. */
+	const FVector Label303Local(12.0f, -19.3f, 18.7f);
 	/**
 	 * 정우의 폰. 판 뒤 남쪽 끝 바닥에 화면을 아래로 엎어 두었고 긴 변이 판 밑동과 나란하다. 판이 미끄러져
 	 * 밑동이 9 cm 들어와도 닿지 않는 자리다(동벽에서 2 cm). 메시는 뒷면이 +Z이고 카메라 단이 위로 온다.
@@ -227,16 +242,15 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 	SpawnProp(FName(TEXT("Storage.DohaMark")), Mesh(TEXT("SM_LeftoverLabelMarked")), DohaBoxUnderBoard, false);
 	// 남은 덮개 조각과 금속 틀을 넣은 마대(동벽 앞).
 	SpawnProp(FName(TEXT("Storage.PartsSack")), Mesh(TEXT("SM_WasteSack")),
-		FTransform(FRotator(0.0f, 30.0f, 0.0f), PartsSack), true);
-	// 낮1에 옮겨 온 「주인 없는 짐」. 남쪽 벽 서쪽에 쌓였다.
-	SpawnProp(FName(TEXT("Storage.Pile1")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 8.0f, 0.0f), FVector(-138.0f, -192.0f, StorageZ)), true);
-	// 맨 위 상자는 303호 김치통이다. 이름표가 방 쪽을 보도록 돌려 얹었고, 관리인이 이름 위에 「주인 없음」을 붙였다.
-	const FTransform Pile2(FRotator(0.0f, 175.0f, 0.0f), FVector(-136.0f, -191.0f, StorageZ + 34.2f));
-	SpawnProp(FName(TEXT("Storage.Pile2")), Mesh(TEXT("SM_StorageBox")), Pile2, true);
-	SpawnProp(FName(TEXT("Storage.Pile2Label")), Mesh(TEXT("SM_LeftoverLabel303")), Pile2, false);
-	SpawnProp(FName(TEXT("Storage.Pile2Sticker")), Mesh(TEXT("SM_LeftoverStickerUnclaimed")), Pile2, false);
-	SpawnProp(FName(TEXT("Storage.Pile3")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 92.0f, 0.0f), FVector(-108.0f, -192.0f, StorageZ)), true);
-	SpawnProp(FName(TEXT("Storage.Pile4")), Mesh(TEXT("SM_WasteSack")), FTransform(FRotator(0.0f, 40.0f, 0.0f), FVector(-118.0f, -163.0f, StorageZ)), true);
+		FTransform(FRotator(0.0f, PartsSackYaw, 0.0f), PartsSack), true);
+	// 낮1에 옮겨 온 「주인 없는 짐」. 남서 구석에 쌓였다.
+	SpawnProp(FName(TEXT("Storage.Pile1")), Mesh(TEXT("SM_StorageBox")), PileBase, true);
+	// 맨 위 상자는 303호 김치통이다. 이름표가 방 쪽(동쪽)을 보도록 돌려 얹었고, 관리인이 이름 위에 「주인 없음」을 붙였다.
+	SpawnProp(FName(TEXT("Storage.Pile2")), Mesh(TEXT("SM_StorageBox")), PileTop, true);
+	SpawnProp(FName(TEXT("Storage.Pile2Label")), Mesh(TEXT("SM_LeftoverLabel303")), PileTop, false);
+	SpawnProp(FName(TEXT("Storage.Pile2Sticker")), Mesh(TEXT("SM_LeftoverStickerUnclaimed")), PileTop, false);
+	SpawnProp(FName(TEXT("Storage.Pile3")), Mesh(TEXT("SM_StorageBox")), PileDoha, true);
+	SpawnProp(FName(TEXT("Storage.Pile4")), Mesh(TEXT("SM_WasteSack")), PileSack, true);
 	// 조립대 상자 둘. 문 길(X -30)과 동벽 점검구 앞을 비켰다.
 	SpawnProp(FName(TEXT("Storage.Table1")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 90.0f, 0.0f), FVector(15.0f, -185.0f, StorageZ)), true);
 	SpawnProp(FName(TEXT("Storage.Table2")), Mesh(TEXT("SM_StorageBox")), FTransform(FRotator(0.0f, 90.0f, 0.0f), FVector(53.0f, -185.0f, StorageZ)), true);
@@ -322,10 +336,10 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 	Bind(SpawnTarget(FName(TEXT("Storage.Jeongwoo")), JeongwooTrapSpot + FVector(0.0f, 0.0f, 120.0f), FRotator::ZeroRotator,
 		FVector(30.0f, 30.0f, 50.0f), NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPrompt", "정우에게 말 걸기"), 0.0f, 0.04f));
 	// 303호 상자의 딱지. 이름표 앞면(상자 원점에서 X 12, Y -19.3, Z 18.7 cm를 상자 방향으로 돌린 자리).
-	Bind(SpawnTarget(FName(TEXT("Storage.Label303")), FVector(-146.3f, -170.7f, StorageZ + 52.9f), FRotator(0.0f, 175.0f, 0.0f),
+	Bind(SpawnTarget(FName(TEXT("Storage.Label303")), PileTop.TransformPosition(Label303Local), PileTop.Rotator(),
 		FVector(10.0f, 4.0f, 7.0f), NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Prompt", "딱지 들춰 보기"), 0.0f, 0.03f));
 	// 낮1 302호의 오빠 상자(이름을 보는 자리).
-	Bind(SpawnTarget(FName(TEXT("Storage.DohaName")), FVector(-108.0f, -192.0f, StorageZ + 20.0f), FRotator::ZeroRotator,
+	Bind(SpawnTarget(FName(TEXT("Storage.DohaName")), PileDoha.GetLocation() + FVector(0.0f, 0.0f, 20.0f), FRotator::ZeroRotator,
 		FVector(28.0f, 22.0f, 20.0f), NSLOCTEXT("IGMissingFloor", "LeftoverDohaNamePrompt", "상자 이름표 보기"), 0.0f, 0.03f));
 }
 
@@ -453,8 +467,22 @@ void AIGMissingFloorLeftoverDirector::RefreshStorage()
 	ShowProp(FName(TEXT("Storage.Track")), !bLegacy && Night >= 2);
 	const bool bPartsTaken = HasTaken(PieceC) && HasTaken(StorageFrame);
 	ShowProp(FName(TEXT("Storage.PartsSack")), !bLegacy && Night == 3 && !bPartsTaken);
-	ShowProp(FName(TEXT("Storage.Table1")), !bLegacy && Night >= 3);
-	ShowProp(FName(TEXT("Storage.Table2")), !bLegacy && Night >= 3);
+	// 낮에 이름을 들은 회차만 이름으로 부른다. 소개 전이면 판 너머에서 목소리만 들렸다.
+	if (AIGLeftoverTarget* Talk = FindTarget(FName(TEXT("Storage.Jeongwoo"))))
+	{
+		Talk->SetInteractionPrompt(HasBeat(JeongwooIntroBeat)
+			? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPrompt", "정우에게 말 걸기")
+			: NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPromptUnknown", "판 너머에 말 걸기"));
+	}
+	const bool bAssemblyTable = !bLegacy && Night >= 3;
+	ShowProp(FName(TEXT("Storage.Table1")), bAssemblyTable);
+	ShowProp(FName(TEXT("Storage.Table2")), bAssemblyTable);
+	// 조립대 상자가 놓인 자리에 있던 빨래 바구니는 치웠다(상자 속에 바구니가 파묻혀 삐져나왔다).
+	if (UStaticMeshComponent* Basket = Scene ? Scene->GetStorage302Basket() : nullptr)
+	{
+		Basket->SetVisibility(!bAssemblyTable, true);
+		Basket->SetCollisionEnabled(bAssemblyTable ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
+	}
 	const bool bWedgePlaced = State && State->WedgeSocket == WedgeBrace;
 	ShowProp(FName(TEXT("Storage.Wedge")), bNightThree);
 	if (UStaticMeshComponent* WedgeMesh = Props.FindRef(FName(TEXT("Storage.Wedge"))))
@@ -553,18 +581,30 @@ void AIGMissingFloorLeftoverDirector::BeginStorageTrap()
 	{
 		return;
 	}
-	StorageStage = State.WedgeSocket == WedgeBrace && !State.LiningHeldGap.IsNone() && State.LiningHeldGap != GapNarrow
-		? EStorage::Released : EStorage::Trapped;
+	// 덧댄 것이 이미 다른 틈으로 옮겨 간 저장이면, 받쳐 뒀을 때는 판이 풀린 채로, 아니면 판이 더 누운
+	// 채로 되살린다. 예전에는 누운 판을 세운 채 갇힘으로 되돌려서, 이미 연 점검구를 다시 열라는 힌트만
+	// 남고 정우를 꺼낼 길이 힌트 밖의 동벽 점검구뿐이었다(2026-10-21).
+	// 둘째 밤 관리실의 틈 이름도 같은 칸에 남으니 302호의 다른 두 틈만 본다.
+	const bool bLiningAway = State.LiningHeldGap == GapLarge || State.LiningHeldGap == GapAlt;
+	StorageStage = !bLiningAway ? EStorage::Trapped
+		: (State.WedgeSocket == WedgeBrace ? EStorage::Released : EStorage::Fallen);
 	StorageStageAt = GetWorld()->GetTimeSeconds();
 	bBraceAgainSpoken = false;
 	bBraceHeld = false;
 	bJeongwooUp = false;
-	SetBoardPose(0, false);
+	SetBoardPose(StorageStage == EStorage::Fallen ? 2 : 0, false);
 	if (Jeongwoo->LoadBody())
 	{
 		Jeongwoo->SetCarriedBoxes(0);
 		Jeongwoo->SetBlocksPlayer(true);
-		Jeongwoo->Appear(JeongwooTrapSpot, JeongwooTrapYaw, AIGJeongwooFigure::EPose::Hold);
+		if (StorageStage == EStorage::Fallen)
+		{
+			Jeongwoo->Appear(JeongwooFallenSpot, JeongwooFallenYaw, AIGJeongwooFigure::EPose::Hold);
+		}
+		else
+		{
+			Jeongwoo->Appear(JeongwooTrapSpot, JeongwooTrapYaw, AIGJeongwooFigure::EPose::Hold);
+		}
 	}
 	if (StorageStage == EStorage::Released)
 	{
@@ -613,6 +653,12 @@ void AIGMissingFloorLeftoverDirector::PollStorage()
 		// 불러온 밤. 갇힌 채 저장됐다.
 		BeginStorageTrap();
 	}
+	// 방에 들어서면 비스듬히 넘어온 판과 그 너머 구석, 벽을 누르는 것이 다 눈에 든다. 힌트는 이 뒤에야
+	// 판을 누르는 것이 있다고 말한다.
+	if (State.JeongwooState == Trapped && StorageRoomBoxContainsPlayer())
+	{
+		Narrative->MarkBeatPlayed(SawStorageRoomBeat);
+	}
 	// 3층에 내려서면 판 너머에서 정우가 부른다.
 	if (State.JeongwooState == Trapped && StorageStage == EStorage::Trapped
 		&& IsPlayerNear(FVector(-30.0f, -250.0f, StorageZ), 520.0f, 160.0f) && Narrative->MarkBeatPlayed(BeatVoice))
@@ -652,7 +698,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 			Say(YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverKeepBox", "잠깐만요. 이 상자는 두세요. 오빠 이름이 있어요."));
 			Say(JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverMarkBox", "그럼 이건 따로 빼 둘게요. 버리지 말라고 표시해 놓을게요."));
 			PlayBeat(BeatDayOneMarked);
-			PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), FVector(-108.0f, -192.0f, StorageZ + 10.0f), 0.5f);
+			PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), PileDoha.GetLocation() + FVector(0.0f, 0.0f, 10.0f), 0.5f);
 			GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
 				FinishDayOneBoxes();
@@ -664,7 +710,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 	if (Key == FName(TEXT("Storage.Jeongwoo")))
 	{
 		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), StorageStage == EStorage::Fallen
-			? NSLOCTEXT("IGMissingFloor", "LeftoverTrappedFallen", "판이 더 내려왔어요. 몸을 뺄 틈이 없어요.")
+			? NSLOCTEXT("IGMissingFloor", "LeftoverTrappedFallen", "구석이 더 좁아졌어요. 몸을 뺄 틈이 없어요.")
 			: NSLOCTEXT("IGMissingFloor", "LeftoverTrappedTalk", "상자 빼다가 판이 넘어왔어요. 벽에 붙은 게 계속 판을 밀어요."));
 		return;
 	}
@@ -717,14 +763,16 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 	{
 		// 관리실 안쪽 방을 못 봤어도 덮개는 맞출 수 있어야 한다. 버릴 짐을 302호로 옮기면서
 		// 떼어 낸 조각도 이 마대에 같이 쓸어 담았다.
-		const bool bHadOfficePieces = HasTaken(PieceA) && HasTaken(PieceB);
+		const int32 OfficePieces = (HasTaken(PieceA) ? 1 : 0) + (HasTaken(PieceB) ? 1 : 0);
 		Take(PieceA);
 		Take(PieceB);
 		Take(PieceC);
 		Take(StorageFrame);
 		PlaySound(UIGToneSequenceSoundWave::CreatePlasticBagSetDown(this), PartsSack + FVector(0.0f, 0.0f, 30.0f), 0.5f);
-		Think(bHadOfficePieces
+		Think(OfficePieces == 2
 			? NSLOCTEXT("IGMissingFloor", "LeftoverSackThought", "남은 조각 하나랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어.")
+			: OfficePieces == 1
+			? NSLOCTEXT("IGMissingFloor", "LeftoverSackTwoPieces", "남은 조각 둘이랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어.")
 			: NSLOCTEXT("IGMissingFloor", "LeftoverSackAllPieces", "점검구 덮개 조각 셋이랑 금속 틀이야."), 3.6f);
 		RefreshStorage();
 		RefreshAssembly();
@@ -1061,7 +1109,7 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 		// 한 뼘쯤 끌려 나오다 모서리가 판에 걸려 멈춘다.
 		SlideDohaBox(7.0f, 0.3f, false);
 		PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), PushedAside(DohaBoxUnderBoard).GetLocation() + FVector(0.0f, 0.0f, 15.0f), 0.55f, 0.9f);
-		SayIn(IGLeftoverDialogue::BoxStuck, YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuck", "잠깐만요. 상자가 걸렸어요."));
+		SayIn(IGLeftoverDialogue::BoxStuck, YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuck", "잠깐만요. 안 빠져요."));
 		SayIn(IGLeftoverDialogue::BoxStuck, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxStuckReply", "모서리가 판에 걸렸어요. 조금만 더요."));
 		return;
 	}
@@ -1996,10 +2044,10 @@ void AIGMissingFloorLeftoverDirector::RefreshDeliveredBox()
 			Take->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleDeliveredBox);
 		}
 	}
-	for (const TCHAR* Key : {TEXT("Home.DeliveredBox"), TEXT("Home.DeliveredBoxLabel"), TEXT("Home.DeliveredBoxMark")})
-	{
-		ShowProp(FName(Key), bShow);
-	}
+	ShowProp(FName(TEXT("Home.DeliveredBox")), bShow);
+	ShowProp(FName(TEXT("Home.DeliveredBoxLabel")), bShow);
+	// 「버리지 마세요」 딱지는 낮1에 정우가 표시해 둔 회차에만 붙어 있다.
+	ShowProp(FName(TEXT("Home.DeliveredBoxMark")), bShow && HasBeat(BeatDayOneMarked));
 	SetTargetLive(FindTarget(TargetKey), bShow);
 }
 
@@ -2013,6 +2061,6 @@ void AIGMissingFloorLeftoverDirector::HandleDeliveredBox(AIGLeftoverTarget* Targ
 	Take(ToolPouch);
 	AIGNightThreatDirector::HoldQuietAfterDiscovery(this, 60.0f);
 	PlaySound(UIGToneSequenceSoundWave::CreateToolRollClink(this), DeliveredBoxSpot.GetLocation() + FVector(0.0f, 0.0f, 20.0f), 0.5f);
-	Think(NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxThought", "정우 씨가 표시해 둔 그 상자야. 안에 오빠 공구 주머니가 있어."), 3.8f);
+	Think(NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxThought", "오빠 상자야. 안에 공구 주머니가 들어 있어."), 3.8f);
 	RefreshDeliveredBox();
 }

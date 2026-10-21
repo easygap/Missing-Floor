@@ -133,7 +133,7 @@ void AIGFireDoorWedge::PullWedge(const bool bQuiet)
 	{
 		AIGHorrorHUD::PushAudioCaptionAt(
 			this,
-			NSLOCTEXT("IGMissingFloor", "CaptionFireDoorSlam", "[방화문이 쾅 닫힌다]"),
+			NSLOCTEXT("IGMissingFloor", "CaptionFireDoorSlam", "[방화문이 쾅 닫히는 소리]"),
 			2.2f,
 			FireDoor->GetLatchSoundLocation());
 	}

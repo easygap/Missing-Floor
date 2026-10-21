@@ -113,6 +113,10 @@ public:
 	bool IsPlayerAtAssemblyTable() const;
 	/** 힌트용: 그녀가 3층 302호 안이나 문 앞 복도에 있다. */
 	bool IsPlayerNearStorage() const;
+	/** 힌트용: 그녀가 지금 302호 방 안에 있다(판과 덧댄 것이 눈에 드는 자리). */
+	bool IsPlayerInStorageRoom() const { return StorageRoomBoxContainsPlayer(); }
+	/** 셋째 밤 갇힌 정우가 있는 302호에 들어가 판과 그 너머 구석을 본 적이 있다. 힌트가 이것을 보고 말을 고른다. */
+	static const FName SawStorageRoomBeat;
 	/** 힌트용 조립 단계. -1 맞출 것이 없음, 0 조각을 맞추는 중, 1 다 맞춤, 2 뒤집음, 3 막을 들춤. */
 	int32 GetAssemblyHintStage() const;
 	/**

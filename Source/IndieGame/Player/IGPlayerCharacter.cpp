@@ -485,8 +485,10 @@ void AIGPlayerCharacter::ToggleFlashlight()
 		if (const UWorld* World = GetWorld(); World && World->GetTimeSeconds() >= NextMissingFlashlightThoughtAt)
 		{
 			NextMissingFlashlightThoughtAt = World->GetTimeSeconds() + 8.0;
-			AIGHorrorHUD::PushThought(this,
-				NSLOCTEXT("IGFlashlight", "NotCarried", "손전등… 현관 신발장 위에 두고 왔지."), 2.6f);
+			// 잡혔다 깨어나 바닥에 떨어진 손전등을 두고 신발장 이야기를 하지 않는다.
+			AIGHorrorHUD::PushThought(this, Flashlight && Flashlight->IsDropped()
+				? NSLOCTEXT("IGFlashlight", "NotCarriedDropped", "손전등… 아까 떨어뜨렸지.")
+				: NSLOCTEXT("IGFlashlight", "NotCarried", "손전등… 현관 신발장 위에 두고 왔지."), 2.6f);
 		}
 		return;
 	}

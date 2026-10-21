@@ -864,11 +864,13 @@ FText AIGNightPhaseDirector::GetObjectiveText() const
 				return NSLOCTEXT("IGMissingFloor", "DayObjectiveReport", "신고 문자 확인하기");
 			}
 		}
+		// 일지는 아침 독백 뒤에 할머니가 문에 건다. 걸기 전에 걸려 있다고 알려 주지 않는다.
 		if (NightIndex >= 2 && Narrative->HasTruth(EIGMissingFloorTruth::WasStillAlive)
+			&& Narrative->HasBeatPlayed(TEXT("Day.JournalHandedOver"))
 			&& !Narrative->HasSource(EIGMissingFloorTruth::FiveNightsOfThirst,
 				EIGMissingFloorSource::KnockTallyJournal))
 		{
-			return NSLOCTEXT("IGMissingFloor", "DayObjectiveJournal", "401호 문고리에 걸린 일지 읽기");
+			return NSLOCTEXT("IGMissingFloor", "DayObjectiveJournal", "401호 문에 걸린 일지 읽기");
 		}
 		// 이미 끝낸 대화로 되돌려 보내지 않는다. 이전 저장의 특별 대화 기록도 읽는다.
 		const bool bTalked = Narrative->HasBeatPlayed(DayConversationBeatId(NightIndex))

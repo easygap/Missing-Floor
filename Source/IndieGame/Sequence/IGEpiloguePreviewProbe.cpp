@@ -21,8 +21,11 @@ namespace IGEpiloguePreview
 	constexpr float StartDelaySeconds = 3.0f;
 	/** 장면이 바뀐 뒤 그림과 글이 다 들어온 때(HUD 입장 1.15초 뒤)에 찍는다. */
 	constexpr float ShotDelaySeconds = 2.6f;
-	/** 엔딩 A가 99초다. 그보다 넉넉히 기다리고 그래도 안 끝나면 실패로 본다. */
-	constexpr float TimeoutSeconds = 150.0f;
+	/**
+	 * 엔딩 A가 99초다. 글을 다 읽기 전에는 다음 장면으로 넘기지 않아서(EPILOGUE_READING_HOLD) 읽기 느린 언어는
+	 * 30초 넘게 길어질 수 있다. 그보다 넉넉히 기다리고 그래도 안 끝나면 실패로 본다.
+	 */
+	constexpr float TimeoutSeconds = 240.0f;
 }
 
 AIGEpiloguePreviewProbe::AIGEpiloguePreviewProbe()

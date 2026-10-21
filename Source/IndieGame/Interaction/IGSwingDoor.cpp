@@ -158,13 +158,13 @@ void AIGSwingDoor::ConfigureFramedGlassVisuals(
 	DoorMesh->SetRelativeScale3D(
 		FVector(PanelSize.X * 0.55f, PanelSize.Y - 14.0f, PanelSize.Z - 14.0f) / 100.0f);
 
+	// 밀대는 양쪽 문틀 기둥에서 받침 둘로 뺀다. 예전에는 막대만 문틀 앞 2 cm에 떠 있었다.
+	const float BarX = -PanelSize.X * 0.5f - 3.5f;
+	const float BarZ = PanelSize.Z * 0.47f;
 	HandleMesh->SetStaticMesh(CubeMesh);
 	HandleMesh->SetMaterial(0, FrameMaterial);
-	HandleMesh->SetRelativeLocation(FVector(
-		-PanelSize.X * 0.5f - 3.5f,
-		PanelSize.Y * 0.5f,
-		PanelSize.Z * 0.47f));
-	HandleMesh->SetRelativeScale3D(FVector(0.03f, (PanelSize.Y - 26.0f) / 100.0f, 0.045f));
+	HandleMesh->SetRelativeLocation(FVector(BarX, PanelSize.Y * 0.5f, BarZ));
+	HandleMesh->SetRelativeScale3D(FVector(0.03f, (PanelSize.Y - 8.0f) / 100.0f, 0.045f));
 
 	struct FFramePiece
 	{
@@ -195,6 +195,26 @@ void AIGSwingDoor::ConfigureFramedGlassVisuals(
 		Frame->SetCanEverAffectNavigation(false);
 		Frame->SetMobility(EComponentMobility::Movable);
 		Frame->RegisterComponent();
+	}
+	// 받침: 문틀 기둥 앞면(-PanelSize.X/2)에서 밀대 뒷면(BarX + 1.5)까지.
+	const float FaceX = -PanelSize.X * 0.5f;
+	const float BackX = BarX + 1.5f;
+	int32 StandoffIndex = 0;
+	for (const float StileY : { 6.0f, static_cast<float>(PanelSize.Y) - 6.0f })
+	{
+		UStaticMeshComponent* Standoff = NewObject<UStaticMeshComponent>(
+			this,
+			*FString::Printf(TEXT("DoorBarStandoff_%d"), StandoffIndex++));
+		Standoff->SetupAttachment(DoorPivot);
+		Standoff->SetStaticMesh(CubeMesh);
+		Standoff->SetMaterial(0, FrameMaterial);
+		Standoff->SetRelativeLocation(FVector((FaceX + BackX) * 0.5f, StileY, BarZ));
+		Standoff->SetRelativeScale3D(FVector((FaceX - BackX) / 100.0f, 0.03f, 0.03f));
+		Standoff->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+		Standoff->SetGenerateOverlapEvents(false);
+		Standoff->SetCanEverAffectNavigation(false);
+		Standoff->SetMobility(EComponentMobility::Movable);
+		Standoff->RegisterComponent();
 	}
 }
 
@@ -406,7 +426,7 @@ void AIGSwingDoor::Tick(const float DeltaSeconds)
 				GetDoorVoice() * 0.72f);
 			AIGHorrorHUD::PushAudioCaptionAt(
 				this,
-				NSLOCTEXT("IGMissingFloor", "CaptionDoorBlocked", "[문이 무언가에 걸려 덜컥 멈춘다]"),
+				NSLOCTEXT("IGMissingFloor", "CaptionDoorBlocked", "[문이 무언가에 걸려 덜컥 멈추는 소리]"),
 				2.2f,
 				GetStrikeSoundLocation());
 			ReportSwingNoise(0.25f);
@@ -721,7 +741,7 @@ void AIGSwingDoor::PlayHandleRattle()
 	}
 	AIGHorrorHUD::PushAudioCaptionAt(
 		this,
-		NSLOCTEXT("IGMissingFloor", "CaptionHandleRattle", "[문손잡이가 덜컥거린다]"),
+		NSLOCTEXT("IGMissingFloor", "CaptionHandleRattle", "[문손잡이가 덜컥거리는 소리]"),
 		2.0f,
 		GetLatchSoundLocation());
 	ReportSwingNoise(0.3f);

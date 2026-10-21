@@ -46,6 +46,8 @@
 #include "Player/IGHorrorHUD.h"
 #include "Player/IGInteractionComponent.h"
 #include "Player/IGPlayerCharacter.h"
+#include "Save/IGSaveSubsystem.h"
+#include "Sequence/IGPlacementAudit.h"
 #include "InputCoreTypes.h"
 #include "ShaderCompiler.h"
 #include "UnrealClient.h"
@@ -91,6 +93,8 @@ void AIGLeftoverProbe::Configure(AIGPrologueWorldScene* InScene, AIGPlayerCharac
 	bInputVariant = Variant == TEXT("input") || bNight3Av;
 	bRecordAV = bNight3Av && FParse::Param(FCommandLine::Get(), TEXT("IGLeftoverRecord"));
 	bLinesVariant = Variant == TEXT("lines");
+	bHintsVariant = Variant == TEXT("hints");
+	FParse::Value(FCommandLine::Get(), TEXT("IGHintScenario="), HintScenario);
 	if (UIGGameInstance* GameInstance = Cast<UIGGameInstance>(GetGameInstance()))
 	{
 		GameInstance->SetRuntimeProfileStage(0);
@@ -117,7 +121,8 @@ void AIGLeftoverProbe::Configure(AIGPrologueWorldScene* InScene, AIGPlayerCharac
 		});
 		Manager->OnErrandReturning.AddWeakLambda(this, [this]() { bErrandReturning = true; });
 	}
-	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
+	// 저장을 불러와 다시 연 밤은 불러온 상태를 본다. 지우면 검사할 것이 없다.
+	if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative(); Narrative && !GetWorld()->URL.HasOption(TEXT("IGResumeSave")))
 	{
 		Narrative->ResetNarrative();
 	}
@@ -702,6 +707,11 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 	{
 		return;
 	}
+	if (bHintsVariant)
+	{
+		TickHints(Director, Narrative);
+		return;
+	}
 	const auto Taken = [Narrative](const FName Item) { return Narrative->HasLeftover(EIGLeftoverList::Taken, Item); };
 	AIGLiningEntity* Lining = Director->GetLining();
 	switch (Phase)
@@ -1042,7 +1052,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Check(bClear, TEXT("n3_lining_legs_clear_of_props"));
 		}
 		Check(Mok->IsAvoidingStorage(), TEXT("n3_manager_skips_third_floor"));
-		Check(HintIs(TEXT("Hint.Night3.Storage"), TEXT("n3_hint")), TEXT("n3_hint_points_to_storage"));
+		// 문 앞 복도에서 부르는 소리만 들었다. 판을 누르는 것은 방에 들어가야 보인다.
+		Check(HintIs(TEXT("Hint.Night3.Storage.Call"), TEXT("n3_hint")), TEXT("n3_hint_points_to_storage"));
 		Check(Director->IsPhoneTorchOn(), TEXT("n3_phone_torch_lights_corner"));
 		CheckStorageContact(false, TEXT("n3_trapped"));
 		// 문 안쪽에서 넘어진 판과 그 너머 구석을 본다. 판 윗변 높이를 보고 서서, 판 뒤 폰이 비추는 천장
@@ -1796,13 +1807,13 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Wall->BuildConfrontationReplyLinesForTesting(Replies);
 			Check(Replies.ContainsByPredicate([](const FText& Line)
 			{
-				return Line.EqualTo(NSLOCTEXT("IGMissingFloor", "ConfrontationReplyCover", "이 판, 위에서 떼어 왔죠?"));
+				return Line.EqualTo(NSLOCTEXT("IGMissingFloor", "ConfrontationReplyCover", "이 덮개, 저 점검구에서 떼어 냈죠?"));
 			}), TEXT("e07_confrontation_names_the_cover"));
 			for (TActorIterator<AIGMissingFloorEpilogueDirector> It(GetWorld()); It; ++It)
 			{
 				const TArray<FText> Workshop = It->BuildWorkshopLinesForTesting();
 				Check(Workshop.Num() > 0 && Workshop[0].EqualTo(NSLOCTEXT("IGMissingFloor", "EpilogueWorkshopPouch",
-					"가져온 오빠 공구 주머니를 입구 보관 상자에 넣는다.")), TEXT("e07_ending_a_pouch_into_workshop_box"));
+					"챙겨 온 오빠 공구 주머니부터 입구 보관함에 넣는다.")), TEXT("e07_ending_a_pouch_into_workshop_box"));
 				const TArray<FText> Bay = It->BuildServiceBayLinesForTesting();
 				Check(Bay.ContainsByPredicate([](const FText& Line)
 				{
@@ -2174,17 +2185,17 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
 				NSLOCTEXT("IGMissingFloor", "LeftoverGoAheadLine", "저 먼저 내려갈게요. 문은 열어 둘게요. 오래 있지 마요."), TEXT("LeftoverGoAheadLine")},
 			{TEXT('P'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
-				NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooBoxAtDoor", "새벽엔 진짜 고마웠어요. 표시해 둔 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요."), TEXT("LeftoverJeongwooBoxAtDoor")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooBoxAtDoor", "새벽엔 진짜 고마웠어요. 그 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요."), TEXT("LeftoverJeongwooBoxAtDoor")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
 				NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 남아 있어요?"), TEXT("NarinReceiptQuestion")},
-			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "나린"),
 				NSLOCTEXT("IGMissingFloor", "NarinReceiptAnswer", "포스에 남아 있을 거예요. 잠깐만요, 찾아볼게요."), TEXT("NarinReceiptAnswer")},
-			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "나린"),
 				NSLOCTEXT("IGMissingFloor", "NarinReceiptFound", "작년 8월 2일이네요. 건물주 아저씨가 대신 받아 가셨어요. 한 장 뽑아 드릴게요."), TEXT("NarinReceiptFound")},
-			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "나린"),
 				NSLOCTEXT("IGMissingFloor", "NarinReceiptHere", "여기 있어요."), TEXT("NarinReceiptHere")},
-			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "한나린"),
-				NSLOCTEXT("IGMissingFloor", "NarinLineLastDayReceipt", "그 영수증 잘 챙겨 둬요. 필요하면 저도 본 대로 말할게요. 무슨 일 있으면 바로 이쪽으로 오세요."), TEXT("NarinLineLastDayReceipt")},
+			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "나린"),
+				NSLOCTEXT("IGMissingFloor", "NarinLineLastDayReceipt", "그 영수증 잘 챙겨 두세요. 필요하면 저도 본 대로 말할게요. 무슨 일 있으면 바로 이쪽으로 오세요."), TEXT("NarinLineLastDayReceipt")},
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverFitWrongSlot", "잘린 면이 바깥으로 나와."), TEXT("LeftoverFitWrongSlot")},
 			{TEXT('T'), FText::GetEmpty(),
@@ -2214,13 +2225,13 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxThought", "정우 씨가 표시해 둔 그 상자야. 안에 오빠 공구 주머니가 있어."), TEXT("LeftoverDeliveredBoxThought")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "오빠가 부탁했다고?"), TEXT("StoreReceiptThought")},
+				NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "8월 2일이면 오빠가 없어진 뒤잖아."), TEXT("StoreReceiptThought")},
 			{TEXT('C'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "CaptionLiningCreak", "[철골 마디가 버티며 삐걱이는 소리]"), TEXT("CaptionLiningCreak")},
+				NSLOCTEXT("IGMissingFloor", "CaptionLiningCreak", "[쇠붙이가 버티며 삐걱이는 소리]"), TEXT("CaptionLiningCreak")},
 			{TEXT('C'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "CaptionLiningPress", "[두꺼운 비닐이 벽에 쩍 들러붙는 소리]"), TEXT("CaptionLiningPress")},
+				NSLOCTEXT("IGMissingFloor", "CaptionLiningPress", "[무언가 벽에 쩍 들러붙는 소리]"), TEXT("CaptionLiningPress")},
 			{TEXT('C'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverPushedCaption", "[휜 철골이 빠지고, 벽을 긁으며 물러나는 소리]"), TEXT("LeftoverPushedCaption")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverPushedCaption", "[휜 철골이 빠지며 벽을 긁고 멀어지는 소리]"), TEXT("LeftoverPushedCaption")},
 			{TEXT('C'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기를 삑삑 누르는 소리]"), TEXT("StoreTerminalCaption")},
 			{TEXT('C'), FText::GetEmpty(),
@@ -2352,6 +2363,424 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		Finish();
 		return;
 	}
+	default:
+		return;
+	}
+}
+
+// -- 302호 구출의 힌트 상태표 ----------------------------------------------------------------
+// 순간 이동과 상호작용 직접 호출로 상태를 만들고, 그 자리에서 H를 눌렀을 때 나올 세 단계를 다 남긴다.
+// 문장이 그 순간 유담이 아는 것과 맞는지는 사람이 로그를 읽고 판정한다.
+
+void AIGLeftoverProbe::DumpHint(const TCHAR* Where)
+{
+	const FIGHintStep Hint = IGMissingFloorHints::Resolve(this);
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const AIGMissingFloorLeftoverDirector* Director = Leftover.Get();
+	const auto Beat = [Narrative](const TCHAR* Id) { return Narrative && Narrative->HasBeatPlayed(FName(Id)) ? 1 : 0; };
+	FString Tiers;
+	for (int32 Index = 0; Index < Hint.Tiers.Num(); ++Index)
+	{
+		Tiers += FString::Printf(TEXT(" tier%d=\"%s\""), Index, *Hint.Tiers[Index].ToString());
+	}
+	UE_LOG(LogIndieGame, Display,
+		TEXT("LEFTOVER_HINT_DUMP scenario=%s where=%s goal=%s near=%d stage=%s jeongwoo=%s wedge=%s wardrobe=%d intro=%d talk=%d text=%d voice=%d goalDone=%d seenMove=%d%s"),
+		*HintScenario, Where, *Hint.GoalId.ToString(), Director && Director->IsPlayerNearStorage() ? 1 : 0,
+		Director ? *Director->GetStorageStage().ToString() : TEXT("none"),
+		Narrative ? *Narrative->GetLeftover().JeongwooState.ToString() : TEXT("none"),
+		Narrative ? *Narrative->GetLeftover().WedgeSocket.ToString() : TEXT("none"),
+		Narrative && Narrative->GetLeftover().bWardrobeMoved ? 1 : 0,
+		Beat(TEXT("Day.Jeongwoo.Intro")), Beat(TEXT("Leftover.Day2.Talk")), Beat(TEXT("Leftover.N3.Text")),
+		Beat(TEXT("Leftover.N3.Voice")), Beat(TEXT("Night3.Goal")), Beat(TEXT("Leftover.SeenMove")), *Tiers);
+}
+
+void AIGLeftoverProbe::AuditStorage(const TCHAR* Label)
+{
+	IGPlacementAudit::FOptions Options;
+	Options.Label = Label;
+	// 302호 안쪽(동벽 X 120, 북벽 Y 85, 남벽 Y −215, 서벽 X ≈ −157)과 둘레 벽.
+	Options.Area = FBox(FVector(-175.0, -230.0, 590.0), FVector(135.0, 100.0, 880.0));
+	if (Player.IsValid())
+	{
+		Options.Ignore.Add(Player.Get());
+	}
+	const IGPlacementAudit::FResult Result = IGPlacementAudit::Run(GetWorld(), Options);
+	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_PLACEMENT label=%s measured=%d props=%d attached=%d floating=%d penetrations=%d"),
+		Label, Result.bMeasured ? 1 : 0, Result.Props, Result.Attached, Result.Floating, Result.Penetrations);
+}
+
+bool AIGLeftoverProbe::StorageViews(const TCHAR* Label)
+{
+	if (!bShots)
+	{
+		return true;
+	}
+	// 문간, 남서 구석, 장롱 쪽, 북쪽 벽 앞. 판·상자·쐐기와 밀어 둔 장롱이 다 한 번은 정면에 온다.
+	static const FVector Views[][2] = {
+		{ FVector(-40.0f, -190.0f, 600.0f), FVector(70.0f, 30.0f, 650.0f) },
+		{ FVector(-110.0f, -150.0f, 600.0f), FVector(60.0f, 40.0f, 640.0f) },
+		{ FVector(-20.0f, -110.0f, 600.0f), FVector(-150.0f, -60.0f, 690.0f) },
+		{ FVector(-70.0f, 20.0f, 600.0f), FVector(80.0f, 30.0f, 620.0f) },
+	};
+	if (StorageViewIndex >= UE_ARRAY_COUNT(Views))
+	{
+		StorageViewIndex = 0;
+		StorageViewStep = 0;
+		return true;
+	}
+	if (StorageViewStep == 0)
+	{
+		Stand(Views[StorageViewIndex][0], Views[StorageViewIndex][1]);
+		StorageViewClock = PhaseSeconds;
+		StorageViewStep = 1;
+	}
+	else if (StorageViewStep == 1 && PhaseSeconds - StorageViewClock >= 0.6f)
+	{
+		Shoot(*FString::Printf(TEXT("302_%s_%d"), Label, StorageViewIndex));
+		StorageViewClock = PhaseSeconds;
+		StorageViewStep = 2;
+	}
+	else if (StorageViewStep == 2 && PhaseSeconds - StorageViewClock >= 0.4f)
+	{
+		++StorageViewIndex;
+		StorageViewStep = 0;
+	}
+	return false;
+}
+
+void AIGLeftoverProbe::TickHints(AIGMissingFloorLeftoverDirector* Director, UIGMissingFloorNarrativeSubsystem* Narrative)
+{
+	const FVector HomeFeet(-20.0f, -120.0f, 900.0f);
+	const FVector HomeLook(-58.0f, -172.0f, 975.0f);
+	const FVector DoorwayFeet(-40.0f, -190.0f, 600.0f);
+	const FVector DoorwayLook(80.0f, 40.0f, 740.0f);
+	switch (Phase)
+	{
+	case 0:
+		if (PhaseSeconds < 3.0f)
+		{
+			return;
+		}
+		if (GetWorld()->URL.HasOption(TEXT("IGResumeSave")))
+		{
+			Silence();
+			Next(590);
+			return;
+		}
+		if (!EndNight())
+		{
+			return;
+		}
+		// 낮에 정우와 있었던 일을 시나리오대로 남기고 셋째 밤을 연다. 문자는 이 비트를 보고 온다.
+		if (HintScenario != TEXT("unnamed") && HintScenario != TEXT("talk"))
+		{
+			Narrative->MarkBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro")));
+		}
+		if (HintScenario != TEXT("unnamed"))
+		{
+			Narrative->MarkBeatPlayed(FName(TEXT("Leftover.Day2.Talk")));
+		}
+		if (!BeginNight(3))
+		{
+			return;
+		}
+		Stand(HomeFeet, HomeLook);
+		Next(501);
+		return;
+	case 501:
+		if (PhaseSeconds < 1.0f)
+		{
+			return;
+		}
+		DumpHint(TEXT("remote_before_text"));
+		Next(502);
+		return;
+	case 502:
+		// 04:12 문자는 갇히고 9초 뒤에 온다.
+		if (PhaseSeconds < 11.0f)
+		{
+			return;
+		}
+		DumpHint(TEXT("remote_after_text"));
+		if (HintScenario == TEXT("remote"))
+		{
+			Next(560);
+			return;
+		}
+		// 302호 문 앞 복도에 선 바로 그 틱. 판 너머에서 부르기 전이다.
+		Stand(FVector(-30.0f, -330.0f, 600.0f), FVector(-30.0f, -150.0f, 660.0f));
+		DumpHint(TEXT("near_before_voice"));
+		Next(503);
+		return;
+	case 503:
+		if (PhaseSeconds < 2.0f)
+		{
+			return;
+		}
+		DumpHint(TEXT("near_after_voice"));
+		Stand(DoorwayFeet, DoorwayLook);
+		Next(504);
+		return;
+	case 504:
+		if (PhaseSeconds < 1.0f)
+		{
+			return;
+		}
+		DumpHint(TEXT("inside_doorway"));
+		if (HintScenario == TEXT("fallen") || HintScenario == TEXT("fallensave"))
+		{
+			Next(530);
+			return;
+		}
+		Check(Use(Target(TEXT("Storage.WedgePick"))), TEXT("hints_pick_wedge"));
+		DumpHint(TEXT("wedge_in_hand"));
+		Check(Use(Target(TEXT("Storage.Socket1"))), TEXT("hints_wedge_wrong_socket"));
+		DumpHint(TEXT("wedge_slipped"));
+		Check(Use(Target(TEXT("Storage.WedgePick"))), TEXT("hints_pick_wedge_again"));
+		Check(Use(Target(TEXT("Storage.Socket0"))), TEXT("hints_wedge_right_socket"));
+		DumpHint(TEXT("wedge_braced"));
+		Stand(FVector(-70.0f, 0.0f, 600.0f), FVector(-140.0f, 0.0f, 680.0f));
+		Check(Use(Target(TEXT("Storage.Wardrobe"))), TEXT("hints_push_wardrobe"));
+		Next(505);
+		return;
+	case 505:
+		if (PhaseSeconds < 2.5f)
+		{
+			return;
+		}
+		if (Step == 0)
+		{
+			DumpHint(TEXT("wardrobe_moved"));
+			AuditStorage(TEXT("302.braced_moved"));
+			Step = 1;
+		}
+		if (!StorageViews(TEXT("braced_moved")))
+		{
+			return;
+		}
+		if (HintScenario == TEXT("save"))
+		{
+			Next(580);
+			return;
+		}
+		Stand(FVector(-80.0f, -60.0f, 600.0f), FVector(-160.0f, 0.0f, 660.0f));
+		Check(Use(Director->GetHatch(FName(TEXT("Storage.Large")))), TEXT("hints_open_large_hatch"));
+		Step = 0;
+		Next(506);
+		return;
+	case 506:
+		// 덧댄 것이 큰 점검구로 옮겨 가면 판이 풀리고, 정우가 판을 밀고 나온다.
+		if (PhaseSeconds < 0.5f)
+		{
+			return;
+		}
+		if (Step == 0 && Director->GetStorageStage() == FName(TEXT("Released")))
+		{
+			DumpHint(TEXT("released"));
+			Step = 1;
+		}
+		if (Narrative->GetLeftover().JeongwooState != FName(TEXT("Trapped")) || PhaseSeconds > 30.0f)
+		{
+			Check(Narrative->GetLeftover().JeongwooState != FName(TEXT("Trapped")), TEXT("hints_jeongwoo_freed"));
+			Step = 0;
+			DumpHint(TEXT("freed_near"));
+			AuditStorage(TEXT("302.freed"));
+			Stand(HomeFeet, HomeLook);
+			Next(507);
+		}
+		return;
+	case 507:
+		if (PhaseSeconds < 1.0f)
+		{
+			return;
+		}
+		DumpHint(TEXT("freed_remote"));
+		Finish();
+		return;
+
+	// 판을 받치지 않고 장롱 뒤 점검구부터 연 회차. 판이 더 눕고, 쐐기를 끼운 뒤 들어 올린다.
+	case 530:
+		Stand(FVector(-70.0f, 0.0f, 600.0f), FVector(-140.0f, 0.0f, 680.0f));
+		Check(Use(Target(TEXT("Storage.Wardrobe"))), TEXT("hints_fallen_push_wardrobe"));
+		Next(531);
+		return;
+	case 531:
+		if (PhaseSeconds < 2.5f)
+		{
+			return;
+		}
+		DumpHint(TEXT("fallen_wardrobe_first"));
+		Stand(FVector(-80.0f, -60.0f, 600.0f), FVector(-160.0f, 0.0f, 660.0f));
+		Check(Use(Director->GetHatch(FName(TEXT("Storage.Large")))), TEXT("hints_fallen_open_hatch"));
+		Next(532);
+		return;
+	case 532:
+		if (Director->GetStorageStage() != FName(TEXT("Fallen")) && PhaseSeconds < 25.0f)
+		{
+			return;
+		}
+		Check(Director->GetStorageStage() == FName(TEXT("Fallen")), TEXT("hints_board_fell"));
+		Next(533);
+		return;
+	case 533:
+		// 판이 눕는 소리와 정우의 말, 유담의 속말이 지나간 뒤에 본다.
+		if (PhaseSeconds < 4.0f)
+		{
+			return;
+		}
+		if (Step == 0)
+		{
+			DumpHint(TEXT("fallen"));
+			AuditStorage(TEXT("302.fallen"));
+			Step = 1;
+		}
+		if (!StorageViews(TEXT("fallen")))
+		{
+			return;
+		}
+		if (HintScenario == TEXT("fallensave"))
+		{
+			// 판이 누운 채로 저장한다(밤의 일을 마치면 이렇게 자동 저장된다).
+			Next(580);
+			return;
+		}
+		Stand(DoorwayFeet, DoorwayLook);
+		Check(Use(Target(TEXT("Storage.WedgePick"))), TEXT("hints_fallen_pick_wedge"));
+		DumpHint(TEXT("fallen_wedge_in_hand"));
+		Check(Use(Target(TEXT("Storage.Socket0"))), TEXT("hints_fallen_wedge_socket"));
+		DumpHint(TEXT("fallen_braced"));
+		Check(Use(Target(TEXT("Storage.Lift"))), TEXT("hints_fallen_lift"));
+		Step = 0;
+		Next(506);
+		return;
+
+	// 멀리(403호)에서 밤의 일을 마쳤는지, 부르는 소리를 들었는지에 따라.
+	case 560:
+	{
+		const FIGMissingFloorNarrativeSnapshot Before = Narrative->GetSnapshot();
+		Narrative->MarkBeatPlayed(FName(TEXT("Night3.Goal")));
+		DumpHint(TEXT("remote_goal_no_voice"));
+		Narrative->RestoreSnapshot(Before);
+		Narrative->MarkBeatPlayed(FName(TEXT("Leftover.N3.Voice")));
+		DumpHint(TEXT("remote_voice_no_goal"));
+		Narrative->MarkBeatPlayed(FName(TEXT("Night3.Goal")));
+		DumpHint(TEXT("remote_voice_goal"));
+		Finish();
+		return;
+	}
+
+	// 받친 판과 밀어 둔 장롱을 자동 저장에 남긴다. -IGHintResume으로 다시 켜서 불러온다.
+	case 580:
+		if (UIGSaveSubsystem* Save = GetGameInstance()->GetSubsystem<UIGSaveSubsystem>())
+		{
+			Check(Save->RequestAutosave(
+				FGameplayTag::RequestGameplayTag(FName(TEXT("Chapter.MissingFloor")), false),
+				GetWorld()->GetOutermost()->GetFName(),
+				FGameplayTag::RequestGameplayTag(FName(TEXT("Checkpoint.MissingFloor.Night")), false)),
+				TEXT("hints_save_requested"));
+		}
+		Next(581);
+		return;
+	case 581:
+		if (PhaseSeconds < 5.0f)
+		{
+			return;
+		}
+		if (const UIGSaveSubsystem* Save = GetGameInstance()->GetSubsystem<UIGSaveSubsystem>())
+		{
+			Check(Save->HasCompatibleAutosave(), TEXT("hints_save_written"));
+		}
+		Finish();
+		return;
+
+	// 불러온 밤. 302호가 저장한 그대로 다시 지어졌는지 보고, 힌트와 이어지는 구출을 본다.
+	case 590:
+		if (PhaseSeconds < 4.0f)
+		{
+			return;
+		}
+		if (Step == 0)
+		{
+			AuditStorage(HintScenario == TEXT("fallensave") ? TEXT("302.resume_fallen") : TEXT("302.resume"));
+			Step = 1;
+		}
+		if (!StorageViews(HintScenario == TEXT("fallensave") ? TEXT("resume_fallen") : TEXT("resume")))
+		{
+			return;
+		}
+	{
+		const FIGLeftoverState& State = Narrative->GetLeftover();
+		const bool bFallenSave = HintScenario == TEXT("fallensave");
+		Check(Narrative->GetNightIndex() == 3, TEXT("resume_is_night_three"));
+		Check(State.JeongwooState == FName(TEXT("Trapped")), TEXT("resume_jeongwoo_still_trapped"));
+		Check(State.bWardrobeMoved, TEXT("resume_wardrobe_still_moved"));
+		if (bFallenSave)
+		{
+			// 판이 누운 뒤의 저장. 불러와도 판이 누운 채여야 하고, 쐐기를 끼우면 들어 올릴 수 있어야 한다.
+			const UStaticMeshComponent* Board = Director->GetPropForTesting(FName(TEXT("Storage.Board")));
+			UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_RESUME fallen stage=%s board=%s rot=%s"),
+				*Director->GetStorageStage().ToString(),
+				Board ? *Board->GetComponentLocation().ToCompactString() : TEXT("none"),
+				Board ? *Board->GetComponentRotation().ToCompactString() : TEXT("none"));
+			Check(Director->GetStorageStage() == FName(TEXT("Fallen")), TEXT("resume_board_still_fallen"));
+			DumpHint(TEXT("resume_fallen_where_loaded"));
+			Stand(DoorwayFeet, DoorwayLook);
+			Next(595);
+			return;
+		}
+		Check(State.WedgeSocket == FName(TEXT("Brace")), TEXT("resume_wedge_still_braced"));
+		const UStaticMeshComponent* Wardrobe = Scene.IsValid() ? Scene->GetWardrobe302() : nullptr;
+		const UStaticMeshComponent* Wedge = Director->GetPropForTesting(FName(TEXT("Storage.Wedge")));
+		UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_RESUME stage=%s wardrobe=%s wedge=%s visible=%d jeongwooShown=%d"),
+			*Director->GetStorageStage().ToString(),
+			Wardrobe ? *Wardrobe->GetComponentLocation().ToCompactString() : TEXT("none"),
+			Wedge ? *Wedge->GetComponentLocation().ToCompactString() : TEXT("none"), Wedge && Wedge->IsVisible() ? 1 : 0,
+			Director->GetJeongwoo() && Director->GetJeongwoo()->IsShown() ? 1 : 0);
+		Check(Wardrobe && FVector::Dist2D(Wardrobe->GetComponentLocation(), FVector(-138.0f, -85.0f, 600.0f)) < 2.0,
+			TEXT("resume_wardrobe_mesh_where_pushed"));
+		Check(Wedge && Wedge->IsVisible() && FVector::Dist2D(Wedge->GetComponentLocation(), FVector(51.0f, 60.0f, 600.0f)) < 5.0,
+			TEXT("resume_wedge_mesh_in_socket"));
+		Check(Director->GetJeongwoo() && Director->GetJeongwoo()->IsShown(), TEXT("resume_jeongwoo_behind_board"));
+		DumpHint(TEXT("resume_where_loaded"));
+		Stand(HomeFeet, HomeLook);
+		Next(591);
+		return;
+	}
+	case 591:
+		if (PhaseSeconds < 1.0f)
+		{
+			return;
+		}
+		DumpHint(TEXT("resume_remote"));
+		Stand(DoorwayFeet, DoorwayLook);
+		Next(592);
+		return;
+	case 592:
+		if (PhaseSeconds < 1.5f)
+		{
+			return;
+		}
+		DumpHint(TEXT("resume_inside"));
+		Stand(FVector(-80.0f, -60.0f, 600.0f), FVector(-160.0f, 0.0f, 660.0f));
+		Check(Use(Director->GetHatch(FName(TEXT("Storage.Large")))), TEXT("resume_open_large_hatch"));
+		Step = 0;
+		Next(506);
+		return;
+	case 595:
+		// 누운 판을 불러온 밤: 쐐기를 끼우고 들어 올려 정우를 꺼낼 수 있는가.
+		if (PhaseSeconds < 1.5f)
+		{
+			return;
+		}
+		DumpHint(TEXT("resume_fallen_inside"));
+		Check(Use(Target(TEXT("Storage.WedgePick"))), TEXT("resume_fallen_pick_wedge"));
+		Check(Use(Target(TEXT("Storage.Socket0"))), TEXT("resume_fallen_wedge_socket"));
+		DumpHint(TEXT("resume_fallen_braced"));
+		Check(CanUse(Target(TEXT("Storage.Lift"))), TEXT("resume_fallen_lift_available"));
+		Use(Target(TEXT("Storage.Lift")));
+		Step = 0;
+		Next(506);
+		return;
 	default:
 		return;
 	}

@@ -246,6 +246,8 @@ bool AIGMissingFloorPuzzleTwoDirector::Configure(AIGPrologueWorldScene* InScene)
 				"담당  목한수  /  확인란 별도"),
 		});
 
+	FairCopyLedger->OnReadStateChanged.AddDynamic(this, &AIGMissingFloorPuzzleTwoDirector::HandleFairCopyRead);
+
 	// 뜯어낸 접수지 아래 남은 눌린 글씨. 저장 파일의 기존 Carbon 식별자는 유지한다.
 	SpawnParameters.Name = TEXT("MissingFloorCarbonLedger");
 	CarbonLedger = World->SpawnActor<AIGMissingFloorEvidence>(
@@ -263,10 +265,12 @@ bool AIGMissingFloorPuzzleTwoDirector::Configure(AIGPrologueWorldScene* InScene)
 			? FVector::ZeroVector
 			: FVector(21.0f, 29.7f, .6f),
 		NSLOCTEXT("IGMissingFloor", "P2CarbonPrompt", "접수철 밑장 연필로 문지르기"),
+		// 대장을 아직 안 읽었으면 밑장에 보이는 것(7/31 「아직 들림. 언제 오는지 문의」)만 말한다.
+		// 대장을 펼쳐 읽으면 HandleFairCopyRead가 「종결」과 견주는 줄로 바꾼다.
 		NSLOCTEXT(
 			"IGMissingFloor",
-			"P2CarbonRestored",
-			"31일에도 들린다고 했는데, 장부엔 ‘소음 없음. 종결’이라고 적어 놨네."),
+			"P2CarbonRestoredUnread",
+			"31일에도 아직 들린다고 했네. 언제 오냐고까지 물었어."),
 		EIGMissingFloorTruth::WasStillAlive,
 		EIGMissingFloorSource::CarbonLedgerOriginal,
 		IGPuzzleTwo::FrottageHoldSeconds,
@@ -346,7 +350,7 @@ bool AIGMissingFloorPuzzleTwoDirector::Configure(AIGPrologueWorldScene* InScene)
 		CubeMesh,
 		DarkPlasticMaterial,
 		FVector(5.0f, 2.0f, 4.0f),
-		NSLOCTEXT("IGMissingFloor", "P2CctvPrompt", "모니터 외부 입력 보기"),
+		NSLOCTEXT("IGMissingFloor", "P2CctvPrompt", "모니터 5번 버튼 누르기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -445,13 +449,13 @@ bool AIGMissingFloorPuzzleTwoDirector::Configure(AIGPrologueWorldScene* InScene)
 	BoardReceipts->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "P2ReceiptsTitle", "자재 반입 영수증 (2장)"),
 		{
-			NSLOCTEXT("IGMissingFloor", "P2Receipt1", "무영건재  ·  무영로 27-3 달빛빌라"),
+			NSLOCTEXT("IGMissingFloor", "P2Receipt1", "무영건재  ·  달빛빌라"),
 			FText::GetEmpty(),
 			NSLOCTEXT("IGMissingFloor", "P2Receipt2", "7/26   석고보드 12.5T  12장     현금"),
-			NSLOCTEXT("IGMissingFloor", "P2Receipt3", "       경량스터드 3.6m  8본     현금"),
+			NSLOCTEXT("IGMissingFloor", "P2Receipt3", "       경량스터드 3.6m  8본"),
 			FText::GetEmpty(),
 			NSLOCTEXT("IGMissingFloor", "P2Receipt4", "7/27   석고보드 12.5T  12장     현금"),
-			NSLOCTEXT("IGMissingFloor", "P2Receipt5", "       미장몰탈 20kg    4포     현금"),
+			NSLOCTEXT("IGMissingFloor", "P2Receipt5", "       미장몰탈 20kg    4포"),
 			FText::GetEmpty(),
 			NSLOCTEXT(
 				"IGMissingFloor",
@@ -757,6 +761,17 @@ void AIGMissingFloorPuzzleTwoDirector::SetHourActive(const bool bHourActive)
 			"BoothDayThought",
 			"안에 사람 있는데. 낮에는 문을 안 열어 주네.");
 		BoothDoor->SetRequirements(MoveTemp(DayLock));
+	}
+}
+
+void AIGMissingFloorPuzzleTwoDirector::HandleFairCopyRead(AIGReadableNote* Note, const bool bOpened)
+{
+	if (bOpened && CarbonLedger)
+	{
+		CarbonLedger->SetExamineThought(NSLOCTEXT(
+			"IGMissingFloor",
+			"P2CarbonRestored",
+			"31일에도 들린다고 했는데, 장부엔 ‘소음 없음. 종결’이라고 적어 놨네."));
 	}
 }
 
@@ -1273,7 +1288,7 @@ void AIGMissingFloorPuzzleTwoDirector::HandleCctvExamined(
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"P2CctvThought2",
-					"녹화는 안 되네. 어디로 이어지는지 봐 두자."),
+					"녹화는 안 되네. 저 복도가 어딘지 찾아봐야겠어."),
 				4.2f);
 		}),
 		0.32f + AIGCctvChannelFive::LiveSeconds + 0.86f + 0.25f,
@@ -1304,7 +1319,7 @@ void AIGMissingFloorPuzzleTwoDirector::HandleBoardReceiptsRead(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"P2ReceiptsThought",
-				"26일에도 사고, 27일에도 샀네. 장부엔 26일 것만 적혀 있는데."),
+				"26일에도 사고 27일에도 샀는데, 둘 다 26일 옥상 보수비로 적어 놨네."),
 			4.6f);
 	}
 }
@@ -1374,7 +1389,7 @@ void AIGMissingFloorPuzzleTwoDirector::HandleInnerRoomListenExamined(
 				EIGAudioBus::World);
 			AIGHorrorHUD::PushAudioCaption(
 				this,
-				NSLOCTEXT("IGMissingFloor", "P2InnerRoomCreakCaption", "[문 너머] 나무 한 번 삐걱거리는 소리"),
+				NSLOCTEXT("IGMissingFloor", "P2InnerRoomCreakCaption", "[문 너머] 나무가 한 번 삐걱거리는 소리"),
 				IGPuzzleTwo::InnerRoomClothSeconds - IGPuzzleTwo::InnerRoomCreakSeconds);
 		}),
 		IGPuzzleTwo::InnerRoomCreakSeconds,

@@ -397,7 +397,7 @@ void AIGSeoRecorderProbe::Tick(const float DeltaSeconds)
 		Check(!Contains(Replies, NSLOCTEXT("IGMissingFloor", "ConfrontationReplyPills", "서일영 씨는 누구예요? 골목에서 5층만 올려다보던데요.")),
 			TEXT("confrontation_drops_the_pills_question"));
 		const TArray<FText> News = Epilogue->BuildNewsLinesForTesting();
-		Check(Contains(News, NSLOCTEXT("IGMissingFloor", "EpilogueNews4Recorder", "전 세입자 서모씨는 경찰에 출석해 유족이 제출한 녹음기가 자신의 것이라고 인정했다")),
+		Check(Contains(News, NSLOCTEXT("IGMissingFloor", "EpilogueNews4Recorder", "전 세입자 서모씨는 유족이 제출한 녹음기가 자신의 것이라고 인정했다")),
 			TEXT("news_reports_the_recorder"));
 		Finish();
 		return;

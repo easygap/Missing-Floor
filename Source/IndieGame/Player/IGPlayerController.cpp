@@ -4473,7 +4473,7 @@ void AIGPlayerController::ConfirmKeyBindingSelection()
 			KeyBindingStatusText = NSLOCTEXT(
 				"IGHUD",
 				"KeyBindingsUseArrows",
-				"좌우 방향키로 값을 바꿀 수 있습니다.");
+				"좌우로 움직여 값을 바꿀 수 있습니다.");
 		}
 		bKeyBindingStatusIsError = false;
 		RefreshMenuHud();

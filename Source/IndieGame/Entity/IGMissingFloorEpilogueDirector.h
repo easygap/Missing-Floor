@@ -83,6 +83,8 @@ private:
 	void HandleNextCue();
 	void FireCue(int32 CueIndex);
 	void FinishEpilogue();
+	/** 이 큐가 떠 있는 장면 글을 다른 장면으로 바꾸거나 결말을 닫는가. 소리만 내는 큐는 아니다. */
+	bool ReplacesSceneText(int32 CueIndex) const;
 
 	/** 몽타주 네 소리. 두 엔딩이 같은 발견을 공유한다(§9 공통 사실). */
 	void PlayMontageCue(int32 MontageIndex);
@@ -120,6 +122,13 @@ private:
 	FTimerHandle FirstViewSkipTimer;
 	FName ActiveEndingId;
 	double StartWorldSeconds = 0.0;
+	/**
+	 * 장면 글은 시각표대로 바뀌지만, 다 읽을 시간이 모자라면 다음 장면을 미룬다. 보도 화면은 한국어로도
+	 * 14초보다 길게 걸렸고 영어·일본어는 두 배였다(2026-10-21). 미룬 시간은 뒤 큐에 모두 더한다.
+	 */
+	double SceneShownWorldSeconds = 0.0;
+	float SceneReadSeconds = 0.0f;
+	double ReadingHoldSeconds = 0.0;
 	uint32 FiredCueMask = 0;
 	int32 NextCueIndex = 1;
 	int32 PlayedSceneCount = 0;

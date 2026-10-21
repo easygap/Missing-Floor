@@ -201,15 +201,15 @@ namespace IGHorrorHUD
 		static const TArray<FJournalEntryDefinition> Entries = {
 			{TEXT("Lobby.MeterFifthDial"), EJournalLane::Administration,
 				NSLOCTEXT("IGJournal", "MeterFifthDial.Title", "다섯 번째 계량기"),
-				NSLOCTEXT("IGJournal", "MeterFifthDial.Excerpt", "복도등과는 따로 연결돼 있다. 이름표 없는 차단기를 올리면 원판이 돈다."),
+				NSLOCTEXT("IGJournal", "MeterFifthDial.Excerpt", "복도등은 껐는데 이건 돌아가네."),
 				NSLOCTEXT("IGJournal", "MeterFifthDial.Where", "공동현관 계량기함 · 첫째 밤"), EJournalThumbnail::Meter},
 			{TEXT("Office.MeterReadingSheet"), EJournalLane::Administration,
 				NSLOCTEXT("IGJournal", "MeterReadingSheet.Title", "검침 기록지"),
-				NSLOCTEXT("IGJournal", "MeterReadingSheet.Excerpt", "다섯 번째 칸. 63 · 58 · 61 · 0"),
-				NSLOCTEXT("IGJournal", "MeterReadingSheet.Where", "관리실 사본 · 첫째 밤"), EJournalThumbnail::Document},
+				NSLOCTEXT("IGJournal", "MeterReadingSheet.Excerpt", "(공란)  63  58  61  0"),
+				NSLOCTEXT("IGJournal", "MeterReadingSheet.Where", "1층 계량기함 옆 · 첫째 밤"), EJournalThumbnail::Document},
 			{TEXT("Office.BoardDeliveryReceipt"), EJournalLane::Administration,
 				NSLOCTEXT("IGJournal", "BoardDeliveryReceipt.Title", "자재 반입 영수증"),
-				NSLOCTEXT("IGJournal", "BoardDeliveryReceipt.Excerpt", "석고보드 12.5T 12장씩, 7/26과 7/27"),
+				NSLOCTEXT("IGJournal", "BoardDeliveryReceipt.Excerpt", "7/26 석고보드 12.5T 12장 · 7/27 석고보드 12.5T 12장"),
 				NSLOCTEXT("IGJournal", "BoardDeliveryReceipt.Where", "관리실 책상 · 둘째 밤"), EJournalThumbnail::Document},
 			{TEXT("Office.CarbonLedgerOriginal"), EJournalLane::Administration,
 				NSLOCTEXT("IGJournal", "CarbonLedgerOriginal.Title", "민원 접수철 밑장"),
@@ -221,7 +221,7 @@ namespace IGHorrorHUD
 				NSLOCTEXT("IGJournal", "AgentMoveOutMessage.Where", "관리실 책상 · 둘째 밤"), EJournalThumbnail::Document},
 			{TEXT("Office.EvictionWarning"), EJournalLane::Administration,
 				NSLOCTEXT("IGJournal", "EvictionWarning.Title", "퇴거 통보문"),
-				NSLOCTEXT("IGJournal", "EvictionWarning.Excerpt", "시설 무단 조작으로 이번 주 안에 퇴거. 내일 07:00 옥상 누수 공사."),
+				NSLOCTEXT("IGJournal", "EvictionWarning.Excerpt", "403호. 계약 위반(무단 시설 조작). 이번 주 내 퇴거 바랍니다. 내일 07:00 옥상 누수 공사."),
 				NSLOCTEXT("IGJournal", "EvictionWarning.Where", "4층 복도 · 넷째 날 낮"), EJournalThumbnail::Document},
 
 			{TEXT("Forum.NoisePosts"), EJournalLane::Life,
@@ -234,16 +234,16 @@ namespace IGHorrorHUD
 				NSLOCTEXT("IGJournal", "FinalPost.Where", "1층 게시판 인쇄본"), EJournalThumbnail::Document},
 			{TEXT("Fifth.LandingImpactMark"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "LandingImpactMark.Title", "자재 모서리에 남은 자국"),
-				NSLOCTEXT("IGJournal", "LandingImpactMark.Excerpt", "철골 모서리와 바닥에 같은 검은 얼룩이 묻어 있다."),
+				NSLOCTEXT("IGJournal", "LandingImpactMark.Excerpt", "여기 검은 얼룩… 바닥에도 묻어 있네."),
 				NSLOCTEXT("IGJournal", "LandingImpactMark.Where", "5층 자재 더미 · 셋째 밤"), EJournalThumbnail::Metal},
 			{TEXT("Fifth.FreshPlasterDating"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "FreshPlasterDating.Title", "덧댄 벽"),
-				NSLOCTEXT("IGJournal", "FreshPlasterDating.Excerpt", "안쪽 석고보드는 바싹 말랐는데, 바깥 실리콘은 아직 덜 굳었다."),
-				NSLOCTEXT("IGJournal", "FreshPlasterDating.Where", "5층 공동벽 · 셋째 밤"), EJournalThumbnail::Plaster},
+				NSLOCTEXT("IGJournal", "FreshPlasterDating.Excerpt", "안쪽은 바싹 말랐는데, 바깥 실리콘은 덜 굳었어."),
+				NSLOCTEXT("IGJournal", "FreshPlasterDating.Where", "5층 가운데 칸 벽 · 셋째 밤"), EJournalThumbnail::Plaster},
 			{TEXT("Fifth.PipeWaterComparison"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "PipeWaterComparison.Title", "배관에서 들은 소리"),
-				NSLOCTEXT("IGJournal", "PipeWaterComparison.Excerpt", "한쪽에서는 물이 흐르고, 다른 쪽에서는 속이 빈 듯한 소리가 난다."),
-				NSLOCTEXT("IGJournal", "PipeWaterComparison.Where", "5층 점검구 쪽 벽 · 셋째 밤"), EJournalThumbnail::Metal},
+				NSLOCTEXT("IGJournal", "PipeWaterComparison.Excerpt", "바로 뒤로 물이 흐른다. 이 벽만 소리가 달라."),
+				NSLOCTEXT("IGJournal", "PipeWaterComparison.Where", "5층 밸브 옆 벽 · 셋째 밤"), EJournalThumbnail::Metal},
 			{TEXT("Fifth.WallEchoByHand"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "WallEchoByHand.Title", "직접 두드린 벽"),
 				NSLOCTEXT("IGJournal", "WallEchoByHand.Excerpt", "한쪽 벽만 오래 울린다. 다른 벽은 두드리면 소리가 금방 끊긴다."),
@@ -259,10 +259,10 @@ namespace IGHorrorHUD
 			{TEXT("Fifth.AnswerReturned"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "AnswerReturned.Title", "벽 너머에서 돌아온 소리"),
 				NSLOCTEXT("IGJournal", "AnswerReturned.Excerpt", "둘, 쉬고, 하나."),
-				NSLOCTEXT("IGJournal", "AnswerReturned.Where", "5층 공동벽 · 셋째 밤"), EJournalThumbnail::Plaster},
+				NSLOCTEXT("IGJournal", "AnswerReturned.Where", "5층 가운데 칸 벽 · 셋째 밤"), EJournalThumbnail::Plaster},
 			{TEXT("Fifth.BreakerCutIntervention"), EJournalLane::Life,
-				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Title", "나간 전기"),
-				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Excerpt", "세 번째 망치질에 건물 불이 다 나갔다."),
+				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Title", "정전"),
+				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Excerpt", "불이 나갔어. 밑에 누가 있어."),
 				NSLOCTEXT("IGJournal", "BreakerCutIntervention.Where", "5층 · 넷째 밤"), EJournalThumbnail::Metal},
 
 			{TEXT("Estate.ShippingLabels"), EJournalLane::Personal,
@@ -1222,8 +1222,21 @@ bool AIGHorrorHUD::IsCurrentVoiceCutShort(const double CurrentTime) const
 		&& CurrentTime + IGHorrorHUD::VoiceCutToleranceSeconds < CurrentDialogue.VoiceExpectedEnd;
 }
 
+namespace IGDialogueLog
+{
+	/** 검사 로그 한 줄에 들어가게 줄바꿈과 따옴표를 바꾼다. */
+	FString Flat(const FText& Text)
+	{
+		return Text.ToString().Replace(TEXT("\r"), TEXT("")).Replace(TEXT("\n"), TEXT("\\n")).Replace(TEXT("\""), TEXT("'"));
+	}
+}
+
 void AIGHorrorHUD::EndDialogueMessage(FIGDialogueMessage& Message, const EIGDialogueEndReason Reason)
 {
+	// 이어 보기 검사가 화면에 오른 줄과 끝난 까닭을 짝지어 빠진 말과 겹친 말을 찾는다.
+	UE_LOG(LogIndieGame, Log, TEXT("DIALOGUE_ENDED serial=%llu reason=%d cont=%d ctx=%s line=\"%s\""),
+		Message.MessageSerial, static_cast<int32>(Reason), Message.bContinuation ? 1 : 0,
+		*Message.Scope.Context.ToString(), *IGDialogueLog::Flat(Message.Line));
 	// 끝까지 간 소리는 그대로 두고, 거두거나 밀어낸 줄의 소리는 같이 멈춘다.
 	if (Reason != EIGDialogueEndReason::Completed)
 	{
@@ -1406,6 +1419,9 @@ void AIGHorrorHUD::RecordHeardLine(const FIGDialogueMessage& Message) const
 		: nullptr)
 	{
 		Narrative->RecordHeardLine(Message.Speaker, Message.FullLine.IsEmpty() ? Message.Line : Message.FullLine);
+		UE_LOG(LogIndieGame, Log, TEXT("HEARD_RECORDED serial=%llu speaker=\"%s\" line=\"%s\""), Message.MessageSerial,
+			*IGDialogueLog::Flat(Message.Speaker),
+			*IGDialogueLog::Flat(Message.FullLine.IsEmpty() ? Message.Line : Message.FullLine));
 	}
 }
 
@@ -1607,6 +1623,37 @@ float AIGHorrorHUD::CalculateDialogueDuration(
 		* GetCaptionDurationScale();
 }
 
+float AIGHorrorHUD::EstimateEpilogueReadSeconds(const UObject* WorldContext, const FText& Heading,
+	const TArray<FText>& Lines, const FText& Footnote)
+{
+	int32 VisibleGlyphs = 0;
+	const auto Count = [&VisibleGlyphs](const FText& Text)
+	{
+		for (const TCHAR Character : Text.ToString())
+		{
+			VisibleGlyphs += FChar::IsWhitespace(Character) ? 0 : 1;
+		}
+	};
+	Count(Heading);
+	for (const FText& Line : Lines)
+	{
+		Count(Line);
+	}
+	Count(Footnote);
+	if (VisibleGlyphs == 0)
+	{
+		return 0.0f;
+	}
+	const UWorld* World = GEngine && WorldContext
+		? GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull)
+		: nullptr;
+	const APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	const AIGHorrorHUD* Hud = PlayerController ? Cast<AIGHorrorHUD>(PlayerController->GetHUD()) : nullptr;
+	// 대사의 쪽당 상한(9초)은 두지 않는다. 장면 글은 나눠 보이지 않고 한 화면에 다 뜬다.
+	return (1.15f + VisibleGlyphs / (IGHorrorHUD::DialogueGlyphsPerSecond * IGHorrorHUD::GetReadingRateScale()))
+		* (Hud ? Hud->GetCaptionDurationScale() : 1.0f);
+}
+
 float AIGHorrorHUD::GetDialogueBacklogSeconds(const UObject* WorldContext)
 {
 	const UWorld* World = GEngine && WorldContext
@@ -1634,6 +1681,10 @@ void AIGHorrorHUD::ActivateDialogue(
 {
 	CurrentDialogue = MoveTemp(Message);
 	bHasCurrentDialogue = true;
+	UE_LOG(LogIndieGame, Log, TEXT("DIALOGUE_SHOWN serial=%llu cont=%d channel=%d ctx=%s speaker=\"%s\" line=\"%s\""),
+		CurrentDialogue.MessageSerial, CurrentDialogue.bContinuation ? 1 : 0, static_cast<int32>(CurrentDialogue.Channel),
+		*CurrentDialogue.Scope.Context.ToString(), *IGDialogueLog::Flat(CurrentDialogue.Speaker),
+		*IGDialogueLog::Flat(CurrentDialogue.Line));
 	// 긴급 대사 뒤에 앞쪽을 다시 띄워도 남은 쪽은 그대로 줄 서 있다.
 	// 이 상태를 잃으면 첫 쪽만 읽고도 원문 전체가 「들은 말」에 남았다.
 	bCurrentDialogueHasContinuation = DialogueQueue.ContainsByPredicate([this](const FIGDialogueMessage& Queued)
@@ -2493,7 +2544,7 @@ void AIGHorrorHUD::DrawNightClock()
 		FLinearColor RestColour = IGHorrorHUD::PaleGray;
 		RestColour.A *= Guidance.ObjectiveAlpha();
 		DrawCenteredText(
-			NSLOCTEXT("IGHUD", "NightRestAvailable", "403호 침대에서 아침까지 쉴 수 있다 · 오늘 밤은 거기서 끝난다"),
+			NSLOCTEXT("IGHUD", "NightRestAvailable", "403호 침대에서 아침까지 쉴 수 있다 · 쉬면 이 밤이 끝난다"),
 			42.0f,
 			RestColour,
 			EIGHudTextRole::Objective);
@@ -3271,7 +3322,7 @@ void AIGHorrorHUD::DrawContextTip(const float Alpha)
 		Action = EIGBindableAction::RequestHint;
 		break;
 	case EIGContextTip::HintAnswer:
-		Line = NSLOCTEXT("IGHUD", "TipHintAnswer", "풀이 보기\n한 번 더 누르면 풀이가 나온다");
+		Line = NSLOCTEXT("IGHUD", "TipHintAnswer", "풀이 보기\n한 번 더 누르면 나온다");
 		Action = EIGBindableAction::RequestHint;
 		break;
 	default:
@@ -6684,20 +6735,20 @@ void AIGHorrorHUD::DrawAccessibilityPanel()
 		NSLOCTEXT("IGHUD", "A11yHintsDesc", "힌트 키를 누르면 다음에 살펴볼 곳을 알려 줍니다. 다시 누르면 더 자세한 힌트가 나옵니다."),
 		NSLOCTEXT("IGHUD", "A11yReducedMotionDesc", "걷거나 쫓길 때 화면이 덜 흔들리게 합니다."),
 		NSLOCTEXT("IGHUD", "A11yReducedFlickerDesc", "손전등과 조명이 빠르게 깜빡이는 효과를 줄입니다."),
-		NSLOCTEXT("IGHUD", "A11yFieldOfViewDesc", "한 화면에 얼마나 넓게 보일지 조절합니다. 시야가 좁게 느껴지거나 어지럽다면 값을 바꿔 보세요."),
-		NSLOCTEXT("IGHUD", "A11yVignetteDesc", "화면 가장자리를 어둡게 합니다. 움직일 때 주변 풍경이 덜 보이게 할 수 있습니다."),
+		NSLOCTEXT("IGHUD", "A11yFieldOfViewDesc", "화면에 보이는 범위를 넓히거나 좁힙니다. 시야가 좁게 느껴지거나 어지럽다면 값을 바꿔 보세요."),
+		NSLOCTEXT("IGHUD", "A11yVignetteDesc", "화면 가장자리를 어둡게 합니다. 움직일 때 어지럽다면 값을 높여 보세요."),
 		NSLOCTEXT("IGHUD", "A11yCameraTextureDesc", "화면 가장자리에 약한 렌즈 왜곡 효과를 더합니다. 눈이 피로하면 낮춰 주세요."),
 		NSLOCTEXT("IGHUD", "A11yCenterDotDesc", "조사할 물건을 보면 화면 가운데에 점이 뜹니다. 어지럽다면 항상 표시하도록 바꿔 보세요. 시선을 둘 곳이 생깁니다."),
 		NSLOCTEXT("IGHUD", "A11yFearDirectionDesc", "중요한 소리가 나면 화면 가장자리에 그 방향을 표시합니다."),
-		NSLOCTEXT("IGHUD", "A11yKnockRingDesc", "위층 사람이 낸 소리는 얇은 원으로, 내가 낸 소리는 굵은 원으로 표시합니다."),
+		NSLOCTEXT("IGHUD", "A11yKnockRingDesc", "켜면 위층 사람이 낸 소리도 얇은 원으로 표시합니다. 내가 낸 소리는 늘 굵은 원입니다."),
 		NSLOCTEXT("IGHUD", "A11yKnockHapticDesc", "위층 사람이 소리를 내면 게임패드가 진동합니다. 멀리서 나는 소리일수록 진동도 약해집니다."),
-		NSLOCTEXT("IGHUD", "A11yHeartbeatDesc", "긴장했을 때 화면 가장자리가 심장 박동에 맞춰 움직입니다."),
+		NSLOCTEXT("IGHUD", "A11yHeartbeatDesc", "긴장하면 화면 가장자리가 심장 박동에 맞춰 어두워졌다 밝아집니다."),
 		NSLOCTEXT("IGHUD", "A11yKnockAssistDesc", "박자가 조금 늦거나 빨라도 맞은 것으로 칩니다."),
 		NSLOCTEXT("IGHUD", "A11ySoundCaptionsDesc", "소리를 글로 보여 줍니다. ‘중요한 소리’는 두드리는 소리나 다가오는 발소리처럼 진행에 필요한 소리만, ‘모든 소리’는 건물과 동네의 평범한 소리까지 보여 줍니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionSizeDesc", "대화와 소리 자막의 글자 크기를 함께 바꿉니다. 아래에서 미리 볼 수 있습니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionBackgroundDesc", "자막 뒤의 검은 배경을 얼마나 진하게 표시할지 정합니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionSafeAreaDesc", "값을 줄이면 자막이 화면 안쪽에 표시됩니다."),
-		NSLOCTEXT("IGHUD", "A11yCaptionDurationDesc", "자막이 사라지는 시간을 조절합니다. 읽을 시간이 부족하면 값을 높여 주세요."),
+		NSLOCTEXT("IGHUD", "A11yCaptionDurationDesc", "자막이 화면에 떠 있는 시간을 조절합니다. 읽을 시간이 부족하면 값을 높여 주세요."),
 		NSLOCTEXT("IGHUD", "A11yCrouchInputDesc", "앉기 키를 한 번 눌러 전환하거나, 누르고 있는 동안만 유지하도록 선택합니다."),
 		NSLOCTEXT("IGHUD", "A11yHoldInputDesc", "버튼을 길게 누르기 어렵다면 한 번 눌러 시작하고 다시 눌러 취소하도록 바꿀 수 있습니다."),
 		NSLOCTEXT("IGHUD", "A11yHoldDurationDesc", "문을 열거나 조사할 때 버튼을 얼마나 오래 누를지 정합니다."),
@@ -7127,7 +7178,7 @@ void AIGHorrorHUD::DrawMissingFloorJournalPanel()
 	const int32 ObservedCount =
 		Lanes[0].Num() + Lanes[1].Num() + Lanes[2].Num();
 	const FText CountText = FText::Format(
-		NSLOCTEXT("IGHUD", "JournalCountFormat", "{0}개 기록  ·  {1} / {2}"),
+		NSLOCTEXT("IGHUD", "JournalCountFormat", "기록 {0}개  ·  {1} / {2}"),
 		FText::AsNumber(ObservedCount),
 		FText::AsNumber(SafePage + 1),
 		FText::AsNumber(PageCount));
@@ -7325,7 +7376,7 @@ void AIGHorrorHUD::DrawMissingFloorJournalPanel()
 	const FText LaneTitles[3] = {
 		NSLOCTEXT("IGHUD", "JournalLaneAdministration", "건물 서류"),
 		NSLOCTEXT("IGHUD", "JournalLaneLife", "소리와 흔적"),
-		NSLOCTEXT("IGHUD", "JournalLanePersonal", "오빠의 물건"),
+		NSLOCTEXT("IGHUD", "JournalLanePersonal", "오빠의 흔적"),
 	};
 
 	for (int32 LaneIndex = 0; LaneIndex < 3; ++LaneIndex)
@@ -7795,10 +7846,10 @@ void AIGHorrorHUD::DrawAudioCalibrationPanel()
 	const FText CalibrationControls = bUsingGamepad
 				? NSLOCTEXT(
 					"IGHUD", "AudioCalibrationControlsGamepad",
-					"D-pad 항목·조정  ·  A 선택  ·  B 취소")
+					"D-pad 이동·값 변경  ·  A 선택  ·  B 취소")
 				: NSLOCTEXT(
 					"IGHUD", "AudioCalibrationControlsKeyboard",
-					"방향키/WASD 항목·조정  ·  Enter 선택  ·  Esc 취소  ·  마우스 선택");
+					"방향키/WASD 이동·값 변경  ·  Enter 선택  ·  Esc 취소  ·  마우스 선택");
 	DrawCenteredText(
 		CalibrationControls,
 		Layout.FooterTop,
@@ -8297,7 +8348,7 @@ void AIGHorrorHUD::DrawKeyBindingsPanel()
 	if (SystemMenuKeyBindingSelection < UIGInputBindingSubsystem::LookRowCount)
 	{
 		DrawDetailLine(
-			NSLOCTEXT("IGHUD", "LookDetail", "마우스와 게임패드 감도는 따로 조절합니다. 세로 감도 배율을 높이면 위아래로 더 빠르게 움직입니다."),
+			NSLOCTEXT("IGHUD", "LookDetail", "마우스와 게임패드 감도는 따로 조절합니다. 세로 감도 배율을 높이면 시점이 위아래로 더 빨리 움직입니다."),
 			DetailY,
 			IGHorrorHUD::SettingsSecondary,
 			0.82f * Scale);
@@ -8332,7 +8383,7 @@ void AIGHorrorHUD::DrawKeyBindingsPanel()
 				? NSLOCTEXT(
 					"IGHUD",
 					"KeyBindingsControlsPad",
-					"십자키 ↑↓ 항목 이동 · ←→ 값 변경/장치 선택 · A 바꾸기 · B 돌아가기")
+					"D-pad ↑↓ 항목 이동 · ←→ 값 변경/장치 선택 · A 바꾸기 · B 돌아가기")
 				: NSLOCTEXT(
 					"IGHUD",
 					"KeyBindingsControlsKeys",
@@ -8566,7 +8617,7 @@ void AIGHorrorHUD::DrawSystemMenuPanel()
 		const FVector2D NoticeTitleOrigin =
 			HeaderOrigin + FVector2D(0.0f, 24.0f * Metrics.Scale);
 		DrawDisplayTitle(
-			NSLOCTEXT("IGHUD", "NoticeTitle", "플레이 안내"),
+			NSLOCTEXT("IGHUD", "NoticeTitle", "콘텐츠 안내"),
 			NoticeTitleOrigin,
 			0.78f * TitleScale);
 
@@ -8581,7 +8632,7 @@ void AIGHorrorHUD::DrawSystemMenuPanel()
 			{NSLOCTEXT("IGHUD", "NoticeSensory1", "어두운 곳에서 무언가 갑자기 다가오거나 큰 소리가 날 수 있습니다. 화면 흔들림과 조명 깜빡임도 있습니다."), false},
 			{NSLOCTEXT("IGHUD", "NoticeSensory2", "화면이나 소리가 불편하면 잠시 쉬거나 설정을 조절해 주세요."), false},
 			{NSLOCTEXT("IGHUD", "NoticeThemes", "다루는 내용"), true},
-			{NSLOCTEXT("IGHUD", "NoticeThemes1", "시신이 나오는 장면과, 사람이 죽어 가는"
+			{NSLOCTEXT("IGHUD", "NoticeThemes1", "시신이 나오는 장면과 사람이 죽어 가는"
 					" 소리를 듣는 구간이 있습니다."), false},
 			{NSLOCTEXT("IGHUD", "NoticeThemes2", "층간소음 분쟁과 불법 증축, 실종 사건을 다루는 허구의 이야기입니다."), false},
 			{NSLOCTEXT("IGHUD", "NoticeControls", "불편하다면"), true},
@@ -8733,7 +8784,7 @@ void AIGHorrorHUD::DrawSystemMenuPanel()
 	const float MainTitleHeight = DrawDisplayTitle(
 		bSystemMenuIsTitle
 			? NSLOCTEXT("IGHUD", "MainTitle", "Missing Floor")
-			: NSLOCTEXT("IGHUD", "PauseTitle", "잠시 멈춤"),
+			: NSLOCTEXT("IGHUD", "PauseTitle", "일시정지"),
 		MainTitleOrigin,
 		TitleScale);
 	if (!bSystemMenuIsTitle)
@@ -9486,7 +9537,7 @@ void AIGHorrorHUD::DrawNotePanel()
 	if (NotePageCount > 1)
 	{
 		const FText Navigation = bUsingGamepad
-			? NSLOCTEXT("IGHUD", "NoteNavigationGamepad", "방향 패드 좌우")
+			? NSLOCTEXT("IGHUD", "NoteNavigationGamepad", "D-pad 좌우")
 			: NSLOCTEXT("IGHUD", "NoteNavigationKeyboard", "← → / 휠");
 		Footer = FText::Format(
 			ArtworkPage
@@ -9817,7 +9868,7 @@ void AIGHorrorHUD::DrawPhoneNotificationPanel(const AIGReadableNote& Note)
 	if (NotePageCount > 1)
 	{
 		const FText Navigation = bUsingGamepad
-			? NSLOCTEXT("IGHUD", "NoteNavigationGamepad", "방향 패드 좌우")
+			? NSLOCTEXT("IGHUD", "NoteNavigationGamepad", "D-pad 좌우")
 			: NSLOCTEXT("IGHUD", "NoteNavigationKeyboard", "← → / 휠");
 		Hint = FText::FromString(FText::Format(
 			NSLOCTEXT("IGHUD", "NotePageFormat", "[ {0} ]  {1} / {2}"),

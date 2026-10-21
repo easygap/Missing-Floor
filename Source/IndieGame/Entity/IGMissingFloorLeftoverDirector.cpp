@@ -101,8 +101,11 @@ namespace IGLeftover
 	const FVector AnnexRecovery(60.0f, 640.0f, 1300.0f);
 
 	// -- 낮 ---------------------------------------------------------------------
-	/** 1층 게시판 옆, 수거 안내 자리(로비 북벽 안쪽 면 Y -148.65). */
-	const FVector CollectionNoticeSpot(568.0f, -148.6f, 150.0f);
+	/**
+	 * 1층 게시판 옆, 수거 안내 자리. 로비 북벽 맨 벽면은 Y -145이고 게시판 판(X 592..674)만 그 앞 3 cm에 있다.
+	 * 게시판 밖인 X 568에서 판 앞면(-148.6)에 맞춰 두면 종이가 벽에서 3.6 cm 떠 있다.
+	 */
+	const FVector CollectionNoticeSpot(568.0f, -145.0f, 150.0f);
 	/** 필로티 적치 자리(뒷벽 앞). 낮2와 밤3 동안 마대와 상자가 쌓인다. */
 	const FVector LoadingSpot(-150.0f, -262.0f, 0.0f);
 
@@ -568,6 +571,7 @@ bool AIGMissingFloorLeftoverDirector::IsAnySceneActive(const UWorld* World)
 	return false;
 }
 
+const FName AIGMissingFloorLeftoverDirector::SawStorageRoomBeat(TEXT("Leftover.N3.SawRoom"));
 const FName AIGMissingFloorLeftoverDirector::SeenAnnexInspectionBeat(TEXT("Leftover.Seen.AnnexInspection"));
 const FName AIGMissingFloorLeftoverDirector::SeenBraceFrameBeat(TEXT("Leftover.Seen.BraceFrame"));
 
@@ -1053,7 +1057,7 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 
 	// 작업대의 덮개 조각(A). 방수막 쪽이 위로 누워 있다.
 	if (AIGLeftoverTarget* Piece = SpawnTarget(IGLeftover::PieceA, FVector(-62.0f, 62.0f, 84.0f), FRotator::ZeroRotator,
-			FVector(18.0f, 36.0f, 3.0f), NSLOCTEXT("IGMissingFloor", "LeftoverPieceAPrompt", "막에 붙은 조각 떼어 내기"), 1.2f, 0.12f))
+			FVector(18.0f, 36.0f, 3.0f), NSLOCTEXT("IGMissingFloor", "LeftoverPieceAPrompt", "작업대 위 조각 챙기기"), 1.2f, 0.12f))
 	{
 		Piece->SetVisual(IGLeftover::Mesh(TEXT("SM_CoverPieceA")),
 			FTransform(FRotator(90.0f, 90.0f, 0.0f), FVector(-14.5f, 0.0f, -2.0f)));
@@ -1125,7 +1129,7 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 	if (AIGLeftoverTarget* Heap = SpawnTarget(FName(TEXT("Inner.Heap")), FVector(50.0f, 150.0f, 112.0f), FRotator::ZeroRotator,
 			FVector(14.0f, 58.0f, 42.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHeapPrompt", "벽에 붙은 더미 보기"), 0.0f, 0.03f))
 	{
-		Heap->SetThought(NSLOCTEXT("IGMissingFloor", "LeftoverHeapThought", "방음재랑 방수 시트를 겹겹이 덧대 놨어. 철 골조까지 같이 붙어 있네."));
+		Heap->SetThought(NSLOCTEXT("IGMissingFloor", "LeftoverHeapThought", "방음재랑 방수 시트를 겹겹이 덧대 놨어. 철골까지 같이 붙어 있네."));
 		Heap->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
 	}
 
@@ -1326,7 +1330,10 @@ void AIGMissingFloorLeftoverDirector::HandleInnerTarget(AIGLeftoverTarget* Targe
 	else if (Key == IGLeftover::Gloves)
 	{
 		Take(IGLeftover::Gloves);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverGlovesThought", "낮에 정우 씨한테 보여 주자."), 3.0f);
+		// 이름표에는 「202 정우」뿐이다. 그가 공동현관 옆 오토바이 기사라는 건 낮에 소개받은 회차만 안다.
+		Think(HasBeat(IGLeftover::JeongwooIntroBeat)
+			? NSLOCTEXT("IGMissingFloor", "LeftoverGlovesThought", "낮에 정우 씨한테 보여 주자.")
+			: NSLOCTEXT("IGMissingFloor", "LeftoverGlovesThought202", "낮에 202호에 가져다주자."), 3.0f);
 	}
 	RefreshInnerRoom();
 }
@@ -1548,14 +1555,16 @@ void AIGMissingFloorLeftoverDirector::BuildDayProps()
 		CollectionNotice->OnReadStateChanged.AddDynamic(this, &AIGMissingFloorLeftoverDirector::HandleNoticeRead);
 	}
 	// 필로티 적치 자리의 마대와 상자. 낮2부터 밤3까지 있다가 수거차가 가져간다.
+	// 뒷벽 앞면은 Y -240(X -90 서쪽)·-245(동쪽)이고 문짝은 -244까지 나온다. 평대차는 X -175 서쪽이다.
+	// 예전 자리에서는 상자가 벽을 10 cm, 마대가 벽·문을 3~6 cm 파고들었고 마대 하나는 평대차 짐판을 뚫었다.
 	SpawnProp(FName(TEXT("Day.Load1")), IGLeftover::Mesh(TEXT("SM_WasteSack")),
-		FTransform(FRotator(0.0f, 10.0f, 0.0f), IGLeftover::LoadingSpot + FVector(-40.0f, 0.0f, 0.0f)), true);
+		FTransform(FRotator(0.0f, 10.0f, 0.0f), IGLeftover::LoadingSpot + FVector(8.0f, -6.0f, 0.0f)), true);
 	SpawnProp(FName(TEXT("Day.Load2")), IGLeftover::Mesh(TEXT("SM_WasteSack")),
-		FTransform(FRotator(0.0f, -25.0f, 0.0f), IGLeftover::LoadingSpot + FVector(10.0f, 4.0f, 0.0f)), true);
+		FTransform(FRotator(0.0f, -25.0f, 0.0f), IGLeftover::LoadingSpot + FVector(68.0f, -10.0f, 0.0f)), true);
 	SpawnProp(FName(TEXT("Day.Load3")), IGLeftover::Mesh(TEXT("SM_StorageBox")),
-		FTransform(FRotator(0.0f, 4.0f, 0.0f), IGLeftover::LoadingSpot + FVector(60.0f, 6.0f, 0.0f)), true);
+		FTransform(FRotator(0.0f, 4.0f, 0.0f), IGLeftover::LoadingSpot + FVector(130.0f, -6.0f, 0.0f)), true);
 	SpawnProp(FName(TEXT("Day.Load4")), IGLeftover::Mesh(TEXT("SM_StorageBox")),
-		FTransform(FRotator(0.0f, -6.0f, 0.0f), IGLeftover::LoadingSpot + FVector(58.0f, 4.0f, 34.2f)), true);
+		FTransform(FRotator(0.0f, -6.0f, 0.0f), IGLeftover::LoadingSpot + FVector(128.0f, -7.0f, 34.2f)), true);
 	SpawnProp(FName(TEXT("Day.Load5")), IGLeftover::Mesh(TEXT("SM_RemovedBoards")),
 		FTransform(FRotator(0.0f, 0.0f, 0.0f), IGLeftover::LoadingSpot + FVector(-100.0f, 8.0f, 0.0f)), true);
 
@@ -1635,7 +1644,7 @@ void AIGMissingFloorLeftoverDirector::RefreshDay()
 						State != IGLeftover::JeongwooLeftTogether
 							? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooAlone", "새벽에 판이 갑자기 헐거워져서 겨우 밀고 나왔어요. 상자는 못 챙겼어요. 302호 혼자 가지 마세요.")
 							: bBoxAtDoor
-							? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooBoxAtDoor", "새벽엔 진짜 고마웠어요. 표시해 둔 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요.")
+							? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooBoxAtDoor", "새벽엔 진짜 고마웠어요. 그 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요.")
 							: NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooThanks", "새벽엔 진짜 고마웠어요. 짐은 아침에 제가 마저 뺐어요. 그 방엔 이제 혼자 들어가지 마세요."),
 						EIGDialogueChannel::Device, 0.0f, EIGDialoguePriority::Story);
 				}), 14.0f, false);
@@ -1657,7 +1666,7 @@ void AIGMissingFloorLeftoverDirector::RefreshLoadingArea()
 		&& PlayBeat(IGLeftover::BeatDayThreeEmptied))
 	{
 		PlaySound(UIGToneSequenceSoundWave::CreateVentDuctSpinUp(this), IGLeftover::LoadingSpot + FVector(0.0f, -900.0f, 120.0f), 0.35f, 0.6f, 300.0f, 2600.0f);
-		Caption(NSLOCTEXT("IGMissingFloor", "LeftoverTruckCaption", "[골목 끝에서 트럭 엔진 소리가 멀어진다]"),
+		Caption(NSLOCTEXT("IGMissingFloor", "LeftoverTruckCaption", "[골목 끝으로 멀어지는 트럭 엔진 소리]"),
 			IGLeftover::LoadingSpot + FVector(0.0f, -900.0f, 120.0f), 3.0f);
 		GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
@@ -1884,14 +1893,14 @@ bool AIGMissingFloorLeftoverDirector::TryJeongwooTalk(const bool bKnown, const b
 		// 밤에 안쪽 방에서 챙긴 장갑 주머니를 건넨다.
 		Narrative->AddLeftover(EIGLeftoverList::Taken, IGLeftover::GlovesGiven);
 		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverGloves1", "이거 제 건데요. 버리라고 한 적 없어요."));
-		Talk(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverGloves2", "302호에 더 있다면서요. 그것도 한번 봐요."));
+		Talk(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverGloves2", "302호 짐에 더 섞여 있을지도 몰라요. 그것도 한번 봐요."));
 		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverGloves3", "배달 끝나면 네 시쯤 돼요. 들어오는 길에 빼놓을게요."));
 	}
 	else
 	{
 		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves1", "302호로 옮긴 짐에 제 겨울 장비도 섞여 있더라고요."));
 		Talk(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves2", "302호에 더 있으면 같이 봐요."));
-		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves3", "배달 끝나면 네 시쯤이에요. 들어오는 길에 빼 놓을게요."));
+		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverNoGloves3", "배달 끝나면 네 시쯤 돼요. 들어오는 길에 빼놓을게요."));
 	}
 	return true;
 }

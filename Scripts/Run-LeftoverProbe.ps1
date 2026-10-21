@@ -7,7 +7,10 @@ param(
 	# lines: 이 줄기의 새 문장을 한 줄씩 띄워 찍는다(-Shots, -Culture, -TextScale과 같이).
 	# night3av: input에 이어 계단·옥상·5층(밸브, 벽 듣기, 수첩, 박자 두드리기, 벽의 대답)과 복도의 그를 지나
 	# 403호까지 실제 입력으로 간다. -Record와 같이 쓰면 믹스를 녹음한다.
-	[ValidateSet('full', 'dawn', 'dawnbrace', 'night2', 'wall', 'input', 'lines', 'night3av')][string]$Variant = 'full',
+	# hints: 밤3 302호 구출의 H 힌트 세 단계를 상태마다 남긴다(-HintScenario). save는 받친 판과 밀어 둔 장롱을
+	# 자동 저장에 남기고, 같은 사용자 폴더로 다시 켜서 이어 한 밤을 본다.
+	[ValidateSet('full', 'dawn', 'dawnbrace', 'night2', 'wall', 'input', 'lines', 'night3av', 'hints')][string]$Variant = 'full',
+	[ValidateSet('named', 'unnamed', 'talk', 'fallen', 'remote', 'save', 'fallensave')][string]$HintScenario = 'named',
 	# 스피커로 내지 않고 마스터 믹스를 녹음한다(-DeterministicAudio). 오프스크린 D3D로 그린다.
 	[switch]$Record,
 	[switch]$Shots,
@@ -36,7 +39,7 @@ try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
-$tag = $Variant + $(if ($Culture) { "-$Culture" } else { '' }) + $(if ($TextScale -gt 1) { "-x$TextScale" } else { '' }) + $(if ($Clean) { '-clean' } else { '' }) + $(if ($Collision) { '-collision' } else { '' })
+$tag = $Variant + $(if ($Variant -eq 'hints') { "-$HintScenario" } else { '' }) + $(if ($Culture) { "-$Culture" } else { '' }) + $(if ($TextScale -gt 1) { "-x$TextScale" } else { '' }) + $(if ($Clean) { '-clean' } else { '' }) + $(if ($Collision) { '-collision' } else { '' })
 $probeUser = Join-Path $projectRoot ('Saved/Validation/Leftover-' + $tag + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
 # 로그는 실행 폴더 안에 둔다. 예전에는 Saved/Logs의 같은 이름을 썼는데, 두 작업이 같은 변형을 동시에
 # 돌리면 엔진이 한쪽 이름을 _2로 바꿔서 이 스크립트가 남의 실행 로그를 읽고 판정했다(10-19).
@@ -47,6 +50,7 @@ if ($Culture) { $extra += ('-IGCulture=' + $Culture) }
 if ($TextScale -gt 1) { $extra += ('-IGCaptionScale=' + $TextScale) }
 if ($Shots -and $Frames) { $extra += '-IGLeftoverFrames' }
 if ($Shots -and $Collision) { $extra += '-IGLiningDrawCollision' }
+if ($Variant -eq 'hints') { $extra += ('-IGHintScenario=' + $HintScenario) }
 $audio = @('-nosound')
 if ($Record) {
 	# 숨긴 창은 초점이 없어 엔진이 소리를 줄인다. 녹음할 때는 열어 둔다.
@@ -59,9 +63,24 @@ $probeArg = if ($Variant -eq 'full') { '-IGLeftoverProbe' } else { "-IGLeftoverP
 & $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen @audio @render `
 	-IGListenerGreybox $probeArg -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
 	"-UserDir=$probeUser" "-abslog=$logPath" @extra | Out-Null
-Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_(CHECK|PROBE|N2|N3|DAY1|TAKEN|LINING)|N3AV t=[0-9.]+ (setup|record)|MANAGER_(ERRAND|CHASE|CATCH|INVESTIGATE)|LINING_(TARGET|SEALED|GRIP|PLACED)|INPUT_(SEGMENT|ROUTE|MOUSE|STUCK|FOCUS|BLOCK|LINING_LEG)|LEFTOVER_LEG' | ForEach-Object { Write-Host $_.Line }
-if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
+$exitCode = $LASTEXITCODE
+$probePattern = 'LEFTOVER_(CHECK|PROBE|N2|N3|DAY1|TAKEN|LINING|HINT_DUMP|RESUME)|N3AV t=[0-9.]+ (setup|record)|MANAGER_(ERRAND|CHASE|CATCH|INVESTIGATE)|LINING_(TARGET|SEALED|GRIP|PLACED)|INPUT_(SEGMENT|ROUTE|MOUSE|STUCK|FOCUS|BLOCK|LINING_LEG)|LEFTOVER_LEG'
+Select-String -LiteralPath $logPath -Pattern $probePattern | ForEach-Object { Write-Host $_.Line }
+if ($exitCode -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
 	throw "남은 짐 검사에 실패했습니다: $logPath"
+}
+if ($Variant -eq 'hints' -and $HintScenario -in @('save', 'fallensave')) {
+	# 같은 사용자 폴더로 다시 켜면 방금 남긴 밤 저장을 불러와 이어 한다.
+	$resumeLog = Join-Path (Split-Path -Parent $probeUser) "Leftover-$tag-resume-$FrameRate.log"
+	& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen @audio @render `
+		-IGListenerGreybox $probeArg -IGSkipFrontend -IGHintResume -UseFixedTimeStep "-FPS=$FrameRate" `
+		"-UserDir=$probeUser" "-abslog=$resumeLog" @extra | Out-Null
+	$exitCode = $LASTEXITCODE
+	Select-String -LiteralPath $resumeLog -Pattern $probePattern | ForEach-Object { Write-Host $_.Line }
+	if ($exitCode -ne 0 -or -not (Select-String -LiteralPath $resumeLog -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
+		throw "저장을 불러온 밤의 남은 짐 검사에 실패했습니다: $resumeLog"
+	}
+	Write-Host "LEFTOVER_LOG $resumeLog"
 }
 Write-Host "LEFTOVER_LOG $logPath"
 if ($Shots) {

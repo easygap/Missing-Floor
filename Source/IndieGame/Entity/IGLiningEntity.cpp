@@ -689,7 +689,7 @@ void AIGLiningEntity::BeginTravelTo(const FName GapId)
 		MoveFromCenter = BodyCenter;
 		PlayCue(TEXT("Lining_Peel"), 1, Legs[PeelLeg].Pad, 0.85f, 1.0f);
 		double Dummy = -100.0;
-		Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningPeel", "[끈적한 것이 벽에서 쩍 떨어지는 소리]"), Legs[PeelLeg].Pad, 2.6f, Dummy, 0.0f);
+		Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningPeel", "[무언가 벽에서 쩍 떨어지는 소리]"), Legs[PeelLeg].Pad, 2.6f, Dummy, 0.0f);
 		OnFirstMove.Broadcast(this);
 	}
 	else
@@ -1074,7 +1074,7 @@ void AIGLiningEntity::UpdateStepping(const float DeltaSeconds)
 		{
 			LastCreakAt = Now;
 			PlayCue(TEXT("Lining_Creak"), 3, BodyCenter, 0.7f, FMath::FRandRange(0.9f, 1.05f));
-			Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningCreak", "[철골 마디가 버티며 삐걱이는 소리]"), BodyCenter, 2.0f,
+			Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningCreak", "[쇠붙이가 버티며 삐걱이는 소리]"), BodyCenter, 2.0f,
 				LastCreakCaptionAt, IGLining::CreakCaptionInterval);
 		}
 		if (Alpha >= 1.0f)
@@ -1198,7 +1198,7 @@ void AIGLiningEntity::UpdateBracing(const float DeltaSeconds)
 		const FIGLiningGap* Gap = FindGap(TargetGap);
 		MoveToCenter = Gap ? Gap->BodyAnchor() + Gap->Normal.GetSafeNormal() * IGLining::PressStandOff : BodyCenter;
 		PlayCue(TEXT("Lining_Press"), 1, MoveToCenter, 0.85f, 0.94f);
-		Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningPress", "[두꺼운 비닐이 벽에 쩍 들러붙는 소리]"), MoveToCenter, 2.4f,
+		Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningPress", "[무언가 벽에 쩍 들러붙는 소리]"), MoveToCenter, 2.4f,
 			LastPressCaptionAt, 3.0f);
 	}
 }
@@ -1596,7 +1596,7 @@ void AIGLiningEntity::SpreadTo(
 		Legs[Leg].SwingAlpha = (Leg == 1 || Leg == 2) ? -1.0f : 0.0f;
 	}
 	PlayCue(TEXT("Lining_Creak"), 3, InBodyCenter, 0.95f, 0.82f);
-	Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningSpread", "[철골 여러 개가 한꺼번에 펴지며 긁히는 소리]"), InBodyCenter, 2.8f,
+	Caption(NSLOCTEXT("IGMissingFloor", "CaptionLiningSpread", "[쇠붙이 여러 개가 한꺼번에 긁히는 소리]"), InBodyCenter, 2.8f,
 		LastCreakCaptionAt, 0.0f);
 	StartTicking();
 }

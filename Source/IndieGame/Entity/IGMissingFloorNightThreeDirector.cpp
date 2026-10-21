@@ -57,6 +57,7 @@ namespace IGNightThree
 	/** 렌치를 챙긴 회차. 저장되는 사실이라 불러온 밤에 자재 위로 돌아오지 않는다. */
 	const FName WrenchTakenBeatId(TEXT("Night3.WrenchTaken"));
 	const FVector WorkGloveLocation(-135.0f, 774.0f, 1231.97f);
+	/** 카트 바퀴가 닿는 자리. Z는 바닥에 깐 공사 시트의 윗면이다. */
 	const FVector TunerToolCartLocation(-280.0f, 865.0f, 1201.0f);
 	// 첫째·둘째 칸 사이 스터드 틈(Y 620..640)으로 나온 가지관 끝의 손잡이. 벽 앞 4.5 cm에 걸린다.
 	// 예전 자리(296, 610)는 첫 칸 벽 뒤 31 cm라 틈으로 비스듬히 들여다봐야만 조준이 됐다.
@@ -637,7 +638,10 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		TunerToolCart->RegisterComponent();
 		TunerToolCart->SetStaticMesh(CartMesh);
 		TunerToolCart->SetMaterial(0, TuningHammerMaterial);
-		TunerToolCart->SetWorldLocation(IGNightThree::TunerToolCartLocation);
+		// 메시 원점이 바퀴 밑보다 3.8 cm 아래라서 원점을 바닥에 두면 카트가 떠 있었다.
+		// 바퀴 밑(메시 바운드의 아래 면)을 공사 시트 윗면에 맞춘다.
+		TunerToolCart->SetWorldLocation(IGNightThree::TunerToolCartLocation
+			- FVector(0.0f, 0.0f, CartMesh->GetBoundingBox().Min.Z));
 		TunerToolCart->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		TunerToolCart->SetCollisionResponseToAllChannels(ECR_Block);
 		TunerToolCart->SetCanEverAffectNavigation(false);
@@ -886,7 +890,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			CubeMesh,
 			nullptr,
 			FVector(3.0f, 20.0f, 26.0f),
-			NSLOCTEXT("IGMissingFloor", "PlasterDatingPrompt", "새로 바른 벽 이음매 보기"),
+			NSLOCTEXT("IGMissingFloor", "PlasterDatingPrompt", "벽 이음매 살펴보기"),
 			FText::GetEmpty(),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
@@ -927,7 +931,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		CubeMesh,
 		nullptr,
 		FVector(24.0f, 1.0f, 14.0f),
-		NSLOCTEXT("IGMissingFloor", "TankAuditionPrompt", "저수조 살펴보기"),
+		NSLOCTEXT("IGMissingFloor", "TankAuditionPrompt", "물탱크 살펴보기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -1915,7 +1919,7 @@ void AIGMissingFloorNightThreeDirector::HandleTankAuditionExamined(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"TankAuditionCaption",
-			"[안쪽] 물이 아주 천천히 흐르는 소리"),
+			"[안쪽] 물이 천천히 출렁이는 소리"),
 		3.0f);
 
 	// 일지를 이미 읽었다면 두 사실이 여기서 맞물린다. 안 읽었으면 그냥
@@ -2071,8 +2075,8 @@ void AIGMissingFloorNightThreeDirector::HandleWallKnocked(const int32 BayIndex)
 	AIGHorrorHUD::PushAudioCaptionAt(
 		this,
 		bHollow
-			? NSLOCTEXT("IGMissingFloor", "WallKnockLongCaption", "두드린 소리가 벽 안에서 오래 울리는 소리")
-			: NSLOCTEXT("IGMissingFloor", "WallKnockShortCaption", "두드린 소리가 금방 끊기는 소리"),
+			? NSLOCTEXT("IGMissingFloor", "WallKnockLongCaption", "두드리자 벽 안에서 오래 울리는 소리")
+			: NSLOCTEXT("IGMissingFloor", "WallKnockShortCaption", "두드리자 금방 끊기는 소리"),
 		2.4f,
 		KnockLocation);
 
@@ -2804,7 +2808,7 @@ void AIGMissingFloorNightThreeDirector::AdvanceReturn()
 					? NSLOCTEXT(
 						"IGMissingFloor",
 						"N3ReturnHintComing",
-						"저기 있다. 이쪽으로 와.")
+						"저기 있다. 이쪽으로 오고 있어.")
 					: NSLOCTEXT(
 						"IGMissingFloor",
 						"N3ReturnHint",

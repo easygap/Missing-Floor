@@ -4046,9 +4046,11 @@ void AIGPrologueWorldScene::BuildLowerFloors()
 		}
 		// 북동 구석은 마감판과 정우 자리라 비운다. 살림 몇 개는 남동쪽 벽 밑에 몰아 두었다.
 		CreateProp(TEXT("SM_KimchiTub"), FVector(95, -198, 600), nullptr, 15.0f, 1.0f, true);
-		CreateProp(TEXT("SM_Basket"), FVector(58, -200, 600), nullptr, -20.0f, 1.0f, true);
+		// 바구니 자리는 셋째 밤부터 조립대 상자(X 34..72)가 놓인다. 그때는 감독이 바구니를 치운다.
+		Storage302Basket = CreateProp(TEXT("SM_Basket"), FVector(58, -200, 600), nullptr, -20.0f, 1.0f, true);
+		// 슬리퍼 두 짝은 문간에 나란히. 동쪽 짝이 X 2에 있으면 셋째 밤 조립대 상자(X -4..34) 속에 묻혔다.
 		CreateProp(TEXT("SM_HouseSlipper"), FVector(-12, -190, 600), nullptr, 8.0f, 1.0f, false);
-		CreateProp(TEXT("SM_HouseSlipper"), FVector(2, -192, 600), nullptr, -4.0f, 1.0f, false);
+		CreateProp(TEXT("SM_HouseSlipper"), FVector(-25, -192, 600), nullptr, -4.0f, 1.0f, false);
 		if (RingMesh && DomeMesh)
 		{
 			CreateBlock(
@@ -6683,8 +6685,10 @@ void AIGPrologueWorldScene::BuildAlley()
 	CreateBlock(FVector(1510, -1477, 105), FVector(92, 5, 210), TexMat(TEXT("M_Shutter_X"), Metal), true);
 	CreateBlock(FVector(2045, -1475, 151), FVector(116, 8, 86), PlasticDarkMaterial, false);
 	CreateBlock(FVector(2045, -1470, 151), FVector(108, 2, 78), TexMat(TEXT("M_PaperClean"), SignWhiteMaterial), false);
+	// 비율을 지키며 줄여서 상자 바구니는 23×32×21 cm가 된다. 종이 상자를 그 위(Z 27)에 얹으면
+	// 바구니 모서리에 1.7 cm만 걸친 채 6 cm 떠 있었다. 바구니 옆 바닥에 내려 둔다.
 	PlacePhotoProp(TEXT("plastic_crate_01"), FVector(1560, -1447, 0), FVector(42, 32, 26), 0);
-	PlacePhotoProp(TEXT("cardboard_box_01"), FVector(1580, -1430, 27), FVector(28, 26, 21), 0);
+	PlacePhotoProp(TEXT("cardboard_box_01"), FVector(1586, -1444, 0), FVector(28, 26, 21), 0);
 	PlacePhotoProp(TEXT("trashbag"), FVector(2390, -1435, 0), FVector(42, 42, 45), 0);
 	if (UStaticMesh* Mirror = PropMesh(TEXT("SM_ConvexMirror")))
 		CreateBlock(FVector(1196, -680.5f, 240), FVector(100), nullptr, false, Mirror, FRotator(0, 145, 0));
@@ -6823,8 +6827,9 @@ void AIGPrologueWorldScene::BuildStore()
 	CreatePrintedBlock(FVector(2590, -51, 228), FVector(140, 1, 12),
 		SignWhiteMaterial, TexMat(TEXT("M_TobaccoNotice"), SignWhiteMaterial), FVector(0, -1, 0), false);
 	// 계산대 옆 직원 출입문. 호출을 듣고 나오는 방향을 공간으로 보여 준다.
+	// 레버·도어락은 문짝과 원점이 같은 메시다. 3 cm 앞에 두면 철물이 문에서 떠 보인다.
 	Fixture(TEXT("SM_UnitDoorLeaf"), FVector(2925, -53, 6), 0, false);
-	Fixture(TEXT("SM_UnitDoorHardware"), FVector(2925, -56, 6), 0, false);
+	Fixture(TEXT("SM_UnitDoorHardware"), FVector(2925, -53, 6), 0, false);
 	// 품목별 구획과 앞줄 맞춤. 같은 상품은 3~4개 폭으로 묶고 뒤에 재고를 둔다.
 	const TCHAR* Bags[] = {TEXT("SM_RetailPotato"), TEXT("SM_RetailShrimp"), TEXT("SM_RetailCorn")};
 	const TCHAR* BagPrices[] = {TEXT("M_RetailPricePotato"), TEXT("M_RetailPriceShrimp"), TEXT("M_RetailPriceCorn")};

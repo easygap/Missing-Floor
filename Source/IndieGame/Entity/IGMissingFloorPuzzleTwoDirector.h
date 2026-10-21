@@ -125,6 +125,8 @@ private:
 	void HandleInnerRoomListenExamined(AIGMissingFloorEvidence* Evidence);
 	UFUNCTION()
 	void HandleBoardReceiptsRead(class AIGReadableNote* Note, bool bOpened);
+	UFUNCTION()
+	void HandleFairCopyRead(class AIGReadableNote* Note, bool bOpened);
 	/** §13 밤2 회수. 낮에 본 매물이 관리실 책상에서 돈으로 적혀 있다. */
 	UFUNCTION()
 	void HandleCashMemoRead(class AIGReadableNote* Note, bool bOpened);

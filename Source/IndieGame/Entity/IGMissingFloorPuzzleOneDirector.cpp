@@ -226,7 +226,8 @@ bool AIGMissingFloorPuzzleOneDirector::Configure(AIGPrologueWorldScene* InScene)
 	ReadingSheet->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "P1SheetTitle", "달빛빌라 검침 기록"),
 		{
-			NSLOCTEXT("IGMissingFloor", "P1SheetHeader", "월 사용량(kWh) / 4월  5월  6월  7월"),
+			NSLOCTEXT("IGMissingFloor", "P1SheetHeader", "월 사용량 (kWh) / 2024년"),
+			NSLOCTEXT("IGMissingFloor", "P1SheetColumns", "호실   4월   5월   6월   7월"),
 			NSLOCTEXT("IGMissingFloor", "P1Sheet401", "401    182   174   169   201"),
 			NSLOCTEXT("IGMissingFloor", "P1Sheet402", "402    240   233   251   266"),
 			NSLOCTEXT("IGMissingFloor", "P1Sheet403", "403    118   121   115   130"),
@@ -237,7 +238,7 @@ bool AIGMissingFloorPuzzleOneDirector::Configure(AIGPrologueWorldScene* InScene)
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"P1SheetNote",
-				"(공란)  24.07~ 0  검침 생략\n공용은 복도등 계량. 이름 없는 것은 확인 후 기입."),
+				"공용: 복도등\n공란: 24.07부터 검침 생략\n회로 확인 후 기입"),
 		});
 	ReadingSheet->OnReadStateChanged.AddDynamic(
 		this, &AIGMissingFloorPuzzleOneDirector::HandleSheetRead);

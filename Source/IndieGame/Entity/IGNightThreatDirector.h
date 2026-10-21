@@ -320,6 +320,8 @@ private:
 	float DarknessSeconds = 0.0f;
 	float EoduksiniGrowth = 0.0f;
 	float EoduksiniUnseenSeconds = 0.0f;
+	/** 이번에 나타난 동안 그녀가 한 번이라도 쳐다봤는가. 못 봤으면 사라진 것도 모른다. */
+	bool bEoduksiniSeenThisTime = false;
 	double EoduksiniCooldownUntil = 0.0;
 	double EoduksiniCaptureSeconds = -1.0;
 	/** 덮쳐 왔지만 잡지 않는 중이다(추격 없음). 리셋을 기다리지 않고 1.4초 뒤에 흩어진다. */

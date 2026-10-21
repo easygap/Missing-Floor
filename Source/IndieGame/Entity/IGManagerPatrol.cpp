@@ -2562,7 +2562,7 @@ void AIGManagerPatrol::UpdateSenses(const float DeltaSeconds)
 	if (Exposure >= 0.35f)
 	{
 		ThinkOnce(TEXT("Night3.MokTorchWarning"),
-			NSLOCTEXT("IGMissingFloor", "YudamMokTorchWarning", "저 불빛 안에 들어가면 들켜."));
+			NSLOCTEXT("IGMissingFloor", "YudamMokTorchWarning", "저 불빛에 오래 있으면 들켜."));
 		if (State == EIGManagerPatrolState::Patrolling)
 		{
 			BeginInvestigation(GetPlayerFeet(), true);

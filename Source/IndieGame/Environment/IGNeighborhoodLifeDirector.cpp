@@ -1909,7 +1909,7 @@ void AIGNeighborhoodLifeDirector::PlayScooterWhoosh(const int32 SlotIndex, const
 	SpawnTransientOneShot(Wave, At + FVector(0.0f, 0.0f, 120.0f), 0.9f, 140.0f, 900.0f);
 	AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 		this,
-		NSLOCTEXT("IGMissingFloor", "CaptionScooterWhoosh", "[오토바이가 스쳐 지나간다]"),
+		NSLOCTEXT("IGMissingFloor", "CaptionScooterWhoosh", "[오토바이가 스쳐 지나가는 소리]"),
 		1.8f,
 		At);
 	(void)SlotIndex;

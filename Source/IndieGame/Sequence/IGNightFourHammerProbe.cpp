@@ -345,6 +345,8 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 			bSawCaughtOnBolt |= Threat->GetGuestStage() == EIGGuestStage::CaughtOnLatch;
 			if (Threat->GetGuestStage() == EIGGuestStage::Spent)
 			{
+				UE_LOG(LogIndieGame, Display, TEXT("NIGHT4HAMMER_BOLT caught=%d closed=%d captured=%d seconds=%.1f"),
+					bSawCaughtOnBolt ? 1 : 0, AnnexDoor->IsFullyClosed() ? 1 : 0, IsCapturedSince(CaptureBaseline) ? 1 : 0, PhaseSeconds);
 				Check(bSawCaughtOnBolt && AnnexDoor->IsFullyClosed() && !IsCapturedSince(CaptureBaseline),
 					TEXT("bolt_holds_the_hammer_call"));
 				Next(4);

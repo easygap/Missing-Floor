@@ -39,6 +39,11 @@ public class IndieGame : ModuleRules
 		PrivateDependencyModuleNames.Add("Json");
 		// 소품 접지 검사에서 복잡 충돌이 실제 삼각형을 사용하는지 확인한다.
 		PrivateDependencyModuleNames.Add("PhysicsCore");
+		// 소품 배치 검사는 에디터에서만 메시 원본 삼각형을 읽는다(Sequence/IGPlacementAudit).
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { "MeshDescription", "StaticMeshDescription" });
+		}
 
 		// Bundle UI typefaces with every target. Loading from the project
 		// directory keeps glyph metrics identical in Editor and packaged builds.

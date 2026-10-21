@@ -106,7 +106,7 @@ void AIGResonantPanel::ReleasePanel()
 	if (bNight && Narrative->MarkBeatPlayed(FName(TEXT("Discovery.PanelReply"))))
 	{
 		AIGHorrorHUD::PushThought(this,
-			NSLOCTEXT("IGPanel", "Reply", "손을 떼고 한참 있다가 튀어나오네."), 3.0f);
+			NSLOCTEXT("IGPanel", "Reply", "손을 떼고 좀 있다가 튀어나오네."), 3.0f);
 	}
 }
 

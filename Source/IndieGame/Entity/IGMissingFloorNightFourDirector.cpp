@@ -531,12 +531,12 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 	ProcedureSheet->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "ProcedureSheetTitle", "저수조 점검 메모 (2019.03)"),
 		{
-			NSLOCTEXT("IGMissingFloor", "ProcedureSheet1", "물이 넘친 날: 배수는 잠겨 있었고, 우회만 열려 있었음."),
+			NSLOCTEXT("IGMissingFloor", "ProcedureSheet1", "넘친 날: 배수는 잠겨 있었고 우회만 열려 있었음."),
 			NSLOCTEXT("IGMissingFloor", "ProcedureSheet2", "펌프가 멎은 날: 배수만 열고 돌림. 우회관에 물이 안 찼음."),
-			NSLOCTEXT("IGMissingFloor", "ProcedureSheet3", "세척할 때는 자동 수위 조절을 쓰지 말 것."),
+			NSLOCTEXT("IGMissingFloor", "ProcedureSheet3", "세척할 때는 자동 운전 금지."),
 			FText::GetEmpty(),
-			NSLOCTEXT("IGMissingFloor", "ProcedureSheet4", "고장등이 켜지면 손대지 말고 10초 정도 기다리세요."),
-			NSLOCTEXT("IGMissingFloor", "ProcedureSheet5", "배관이 조용해지고 등이 꺼진 뒤 다시 돌리면 됩니다."),
+			NSLOCTEXT("IGMissingFloor", "ProcedureSheet4", "고장등이 켜지면 10초 대기."),
+			NSLOCTEXT("IGMissingFloor", "ProcedureSheet5", "배관이 조용해지고 등이 꺼진 뒤 다시 돌리세요."),
 		});
 
 	// 관로를 한 메시로 굽는다. 배수구·입수구가 탱크와 지면까지 이어진다.
@@ -1758,7 +1758,7 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 			EIGDialogueChannel::Conversation,
 			IGNightFour::ConfrontationReplySeconds,
 			EIGDialoguePriority::Critical);
-		if (!bCoverAnswered && ReplyLine.EqualTo(NSLOCTEXT("IGMissingFloor", "ConfrontationReplyCover", "이 판, 위에서 떼어 왔죠?")))
+		if (!bCoverAnswered && ReplyLine.EqualTo(NSLOCTEXT("IGMissingFloor", "ConfrontationReplyCover", "이 덮개, 저 점검구에서 떼어 냈죠?")))
 		{
 			bCoverAnswered = true;
 			AIGHorrorHUD::PushDialogue(
@@ -2962,7 +2962,7 @@ void AIGMissingFloorNightFourDirector::PlayNeighbor303Call()
 			EIGAudioBus::World);
 		AIGHorrorHUD::PushAudioCaptionAt(
 			this,
-			NSLOCTEXT("IGMissingFloor", "Neighbor303DoorCaption", "303호 현관문이 열리는 소리"),
+			NSLOCTEXT("IGMissingFloor", "Neighbor303DoorCaption", "3층에서 현관문 열리는 소리"),
 			2.4f,
 			IGNightFour::Neighbor303Voice);
 		Rearm(IGNightFour::Neighbor303FirstLineSeconds);
@@ -3251,7 +3251,7 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyCover",
-				"이 판, 위에서 떼어 왔죠?"),
+				"이 덮개, 저 점검구에서 떼어 냈죠?"),
 		},
 		{
 			EIGMissingFloorWitness::BoothSoundproofing,
@@ -3286,14 +3286,14 @@ void AIGMissingFloorNightFourDirector::BuildConfrontationReplyLines(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyInnerRoom",
-				"관리실 안에도 계셨잖아요. 두드리는 소리 못 들었어요?"),
+				"관리실 안쪽 방에 있었잖아요. 두드리는 소리 못 들었어요?"),
 		},
 		{
 			EIGMissingFloorWitness::RoofDoorWind,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"ConfrontationReplyWind",
-				"바람 소리라면서요. 사람이 두드리고 있었잖아요."),
+				"바람 소리 아니었잖아요. 사람이 두드리고 있었어요."),
 		},
 	};
 
@@ -3958,7 +3958,7 @@ bool AIGMissingFloorNightFourDirector::CommitFailureEnding(
 	{
 		AIGHorrorHUD::PushAudioCaption(
 			this,
-			NSLOCTEXT("IGMissingFloor", "EndingCCaption", "아주 가까이서, 똑같이 두 번 두드리는 소리"),
+			NSLOCTEXT("IGMissingFloor", "EndingCCaption", "아주 가까이서 두 번 두드리는 소리"),
 			2.0f);
 	}
 	GetWorldTimerManager().SetTimer(

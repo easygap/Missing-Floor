@@ -399,7 +399,7 @@ void AIGElevatorOverloadDirector::TickLeftBehind()
 				NSLOCTEXT("IGElevatorOverload", "StopAboveCaption", "엘리베이터가 서는 소리"), 2.6f, Top);
 			if (FVector::Dist(Player->GetActorLocation(), Lift->GetLandingFrontWorldLocation(StartLanding)) < 800.0f)
 			{
-				AIGHorrorHUD::PushThought(this, NSLOCTEXT("IGElevatorOverload", "NoFifthThought", "5층은 없잖아."), 2.6f);
+				AIGHorrorHUD::PushThought(this, NSLOCTEXT("IGElevatorOverload", "NoFifthThought", "엘리베이터는 4층까지잖아."), 2.6f);
 			}
 			Cue = 3;
 			StageSeconds = 0.0f;
@@ -519,7 +519,7 @@ void AIGElevatorOverloadDirector::TickAtFive()
 			const FVector Roof = CabPoint(FVector(10.0f, 10.0f, AIGElevator::CabHeight + 12.0f));
 			IGAudio::SpawnOneShotAt(this, UIGToneSequenceSoundWave::CreateAnswerKnockPattern(this, 0.25f), Roof, 0.9f, 1.0f, 120.0f, 1200.0f);
 			AIGHorrorHUD::PushAudioCaptionAt(this,
-				NSLOCTEXT("IGElevatorOverload", "RoofKnockCaption", "천장을 두드리는 소리"), 2.8f, Roof);
+				NSLOCTEXT("IGElevatorOverload", "RoofKnockCaption", "천장을 두 번, 쉬었다 한 번 두드리는 소리"), 2.8f, Roof);
 			Cue = 3;
 		}
 		break;
@@ -574,7 +574,7 @@ void AIGElevatorOverloadDirector::TickReturning()
 	{
 		AIGHorrorHUD::PushThought(this, bSawEmptyMirror
 			? NSLOCTEXT("IGElevatorOverload", "EmptyMirrorThought", "거울에 아무도 없었어.")
-			: NSLOCTEXT("IGElevatorOverload", "NoFifthAfterThought", "…5층은 없는데."), 2.8f);
+			: NSLOCTEXT("IGElevatorOverload", "NoFifthAfterThought", "…4층 위로는 안 가는데."), 2.8f);
 		bAbsentUntilExit = true;
 		Finish(false);
 	}

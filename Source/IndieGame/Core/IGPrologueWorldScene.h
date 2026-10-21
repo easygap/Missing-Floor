@@ -306,6 +306,8 @@ public:
 	bool IsInnerRoomBulbOn() const { return bInnerRoomBulbOn; }
 	/** 302호 장롱(짐 줄기 감독이 한 번 민다). */
 	UStaticMeshComponent* GetWardrobe302() const { return Wardrobe302Mesh; }
+	/** 302호 남벽 밑 빨래 바구니. 셋째 밤부터 그 자리에 조립대 상자가 놓이면 감독이 치운다. */
+	UStaticMeshComponent* GetStorage302Basket() const { return Storage302Basket; }
 	/** 302호 장롱 문틈 숨는 자리. 장롱을 밀면 감독이 같이 옮긴다. */
 	AIGHidingSpot* GetWardrobe302HidingSpot() const { return Wardrobe302Hide; }
 	/**
@@ -838,6 +840,8 @@ private:
 	static constexpr float InnerRoomBulbIntensity = 1500.0f;
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> Wardrobe302Mesh;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> Storage302Basket;
 	UPROPERTY(Transient)
 	TObjectPtr<AIGHidingSpot> Wardrobe302Hide;
 

@@ -316,6 +316,8 @@ bool AIGMissingFloorEpilogueDirector::StartEpilogue(
 	FiredCueMask = 0;
 	NextCueIndex = 1;
 	PlayedSceneCount = 0;
+	SceneReadSeconds = 0.0f;
+	ReadingHoldSeconds = 0.0;
 	ReplaySkipProgress = 0.0f;
 	bReplaySkipInputActive = false;
 	bReplaySkipRewinding = false;
@@ -404,7 +406,7 @@ void AIGMissingFloorEpilogueDirector::ScheduleNextCue()
 		: IGEpilogue::EndingBTimes[NextCueIndex];
 	const double WorldElapsed = World->GetTimeSeconds() - StartWorldSeconds;
 	const float Delay = FMath::Max(
-		static_cast<float>(CueTime - WorldElapsed),
+		static_cast<float>(CueTime + ReadingHoldSeconds - WorldElapsed),
 		KINDA_SMALL_NUMBER);
 	World->GetTimerManager().SetTimer(
 		CueTimerHandle,
@@ -423,9 +425,31 @@ void AIGMissingFloorEpilogueDirector::HandleNextCue()
 	{
 		return;
 	}
+	// 떠 있는 장면 글을 다 읽기 전에는 다음 장면으로 넘기지 않는다. 소리만 내는 큐는 제때 낸다.
+	if (ReplacesSceneText(NextCueIndex) && SceneReadSeconds > 0.0f)
+	{
+		const double Shown = GetWorld()->GetTimeSeconds() - SceneShownWorldSeconds;
+		if (Shown + 0.05 < SceneReadSeconds)
+		{
+			ReadingHoldSeconds += SceneReadSeconds - Shown;
+			UE_LOG(LogIndieGame, Display, TEXT("EPILOGUE_READING_HOLD cue=%d shown=%.2f need=%.2f total=%.2f"),
+				NextCueIndex, Shown, SceneReadSeconds, ReadingHoldSeconds);
+			ScheduleNextCue();
+			return;
+		}
+	}
 	FireCue(NextCueIndex);
 	++NextCueIndex;
 	ScheduleNextCue();
+}
+
+bool AIGMissingFloorEpilogueDirector::ReplacesSceneText(const int32 CueIndex) const
+{
+	// A: 공방 5, 가을 7, 뉴스 8, 문 9, 카드 10, 끝 11. 6은 공방 위의 조율 소리다.
+	// B: 서비스 베이 5, 뉴스 9, 문 10, 카드 11, 끝 12. 6~8은 서비스 베이 위의 소리다.
+	return bEndingA
+		? (CueIndex == 5 || CueIndex >= 7)
+		: (CueIndex == 5 || CueIndex >= 9);
 }
 
 void AIGMissingFloorEpilogueDirector::PlayMontageCue(const int32 MontageIndex)
@@ -527,6 +551,8 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 		{
 			Hud->BeginMissingFloorEpilogueScene(Scene, Heading, Lines, Footnote);
 		}
+		SceneShownWorldSeconds = GetWorld()->GetTimeSeconds();
+		SceneReadSeconds = AIGHorrorHUD::EstimateEpilogueReadSeconds(this, Heading, Lines, Footnote);
 	};
 
 	// 몽타주 네 소리는 두 엔딩이 같은 인덱스에 둔다.
@@ -640,7 +666,7 @@ void AIGMissingFloorEpilogueDirector::FireCue(const int32 CueIndex)
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"EpilogueAutumnFootnote",
-					"네 시 반 알람은 지웠다."));
+					"네 시 반 알람은 지웠다"));
 			return;
 
 		case 8:
@@ -832,7 +858,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildWorkshopLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueWorkshopPouch",
-			"가져온 오빠 공구 주머니를 입구 보관 상자에 넣는다."));
+			"챙겨 온 오빠 공구 주머니부터 입구 보관함에 넣는다."));
 	}
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
@@ -882,7 +908,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildAutumnLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueAutumn2",
-			"401호 창턱에 작은 라디오가 창밖을 향해 놓여 있다."));
+			"401호 창턱에 작은 라디오가 놓여 있다."));
 	}
 	// 문 너머로 그 소리를 들어 본 적이 있으면 알아본다. 없으면 그냥
 	// 창밖을 향해 놓인 라디오이고, 그것도 같은 그림이다.
@@ -899,7 +925,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildAutumnLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueAutumn3Seen",
-			"라디오를 창밖 쪽으로 돌려놓으셨다. 골목까지 들리겠다."));
+			"창밖 쪽으로 놓아두셨네. 골목까지 들리겠다."));
 	}
 	// 나린에게 오빠가 올 때마다 바나나우유를 둘 샀다는 말을 들은 회차만. 같은 걸 한다.
 	if (Narrative && Narrative->HasBeatPlayed(FName(TEXT("Day2.NarinMilk"))))
@@ -907,7 +933,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildAutumnLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueAutumnMilk",
-			"편의점에서 바나나우유를 두 개 산다. 하나는 가방 앞주머니에 넣는다."));
+			"바나나우유를 두 개 사서 하나는 가방 앞주머니에 넣는다."));
 	}
 	// 202호 정우. 이름을 들은 회차에만 나온다. 엄마 목소리 이야기까지 들었으면 요즘
 	// 새벽이 어떤지도 정우한테서 듣는다.
@@ -982,7 +1008,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildServiceBayLines() const
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
 		"EpilogueServiceBay4",
-		"방을 빼고 403호 열쇠를 돌려줬다."));
+		"403호 열쇠는 반납함에 넣었다."));
 	// A의 가을과 같은 조건. 나오는 길에 오빠가 하던 대로 둘을 산다.
 	if (Narrative && Narrative->HasBeatPlayed(FName(TEXT("Day2.NarinMilk"))))
 	{
@@ -1019,7 +1045,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 	Lines.Add(NSLOCTEXT(
 		"IGMissingFloor",
 		"EpilogueNews1",
-		"무영로 다세대주택 벽체에서 남성 유해 발견 … 실종 1년 만"));
+		"무영로 다세대주택 벽 속에서 남성 유해 발견… 실종 1년 만"));
 	// 같은 사실, 다른 마지막 그림(§9). 05:30에 바로 신고한 A는 그를 방음한
 	// 방에서 만나고, 한 시간을 벽 앞에 앉아 있던 B는 빈 방을 만난다. 그의
 	// 처분은 여기서도 확정하지 않는다.
@@ -1048,7 +1074,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueNews3",
-			"민원 대장 두 벌과 이틀치 자재 영수증이 확보됐다"));
+			"민원 대장 두 벌과 실종 당일·이튿날 자재 영수증이 확보됐다"));
 	}
 
 	if (Narrative
@@ -1059,7 +1085,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueNews4Recorder",
-			"전 세입자 서모씨는 경찰에 출석해 유족이 제출한 녹음기가 자신의 것이라고 인정했다"));
+			"전 세입자 서모씨는 유족이 제출한 녹음기가 자신의 것이라고 인정했다"));
 	}
 	else if (Narrative
 		&& Narrative->HasWitness(EIGMissingFloorWitness::SeoSleepingPills))
@@ -1109,7 +1135,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueNews5Receipt",
-			"인근 편의점 직원은 실종 일주일 뒤 건물주가 실종자의 택배를 대신 받아 간 기록을 경찰에 냈다"));
+			"인근 편의점 직원은 실종 일주일 뒤 건물주가 택배를 대신 받아 간 기록을 제출했다"));
 	}
 	else if (Narrative
 		&& Narrative->HasWitness(EIGMissingFloorWitness::StoreNightRoster))
@@ -1132,7 +1158,7 @@ TArray<FText> AIGMissingFloorEpilogueDirector::BuildNewsLines() const
 		Lines.Add(NSLOCTEXT(
 			"IGMissingFloor",
 			"EpilogueNews5",
-			"인근 편의점 직원의 목격 진술을 토대로 당시 행적을 확인 중이다"));
+			"경찰은 인근 편의점 직원의 목격 진술을 토대로 실종 당시 행적을 확인하고 있다"));
 	}
 	return Lines;
 }

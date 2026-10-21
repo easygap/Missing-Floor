@@ -302,7 +302,7 @@ void AIGMissingFloorNightFourDirector::BuildWallStage(UStaticMesh* CubeMesh)
 		{TEXT("NightFourWallOverlay"), FVector(246.0f, 492.0f, 1265.0f), FVector(3.0f, 64.0f, 90.0f),
 			NSLOCTEXT("IGMissingFloor", "WallOverlayPrompt", "덧판 떼어 내기"), 0.8f, 1.0f},
 		{TEXT("NightFourWallBrace"), FVector(218.0f, 472.0f, 1310.0f), FVector(66.0f, 14.0f, 200.0f),
-			NSLOCTEXT("IGMissingFloor", "WallBracePrompt", "철골 틀 세워서 걸기"), 0.6f, 0.35f},
+			NSLOCTEXT("IGMissingFloor", "WallBracePrompt", "철골 틀 세우기"), 0.6f, 0.35f},
 		{TEXT("NightFourWallOuterScrews"), FVector(243.5f, 700.0f, JointZ + 2.0f), FVector(3.0f, 106.0f, 12.0f),
 			NSLOCTEXT("IGMissingFloor", "WallOuterScrewsPrompt", "드러난 나사 쳐 내기"), 0.8f, 1.0f},
 		{TEXT("NightFourWallRebrace"), FVector(190.0f, BraceUprightY, 1255.0f), FVector(20.0f, 64.0f, 110.0f),

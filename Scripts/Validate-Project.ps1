@@ -757,7 +757,9 @@ $reviewedTickingFiles = @(
 	# -IGStoreCounterProbe에서만 생성한다. 편의점 계산대 장면을 실제 입력으로 겪고 종료한다.
 	'IGStoreCounterProbe.cpp',
 	# -IGAimReachProbe에서만 생성한다. 밤과 낮을 열 때마다 상호작용 물체의 조준 자리를 재고 종료한다.
-	'IGAimReachProbe.cpp'
+	'IGAimReachProbe.cpp',
+	# -IGPlacementProbe에서만 생성한다. 낮과 밤1~4의 첫 상태에서 소품 배치를 재고, 걸린 물건을 찍은 뒤 종료한다.
+	'IGPlacementProbe.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)

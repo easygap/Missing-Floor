@@ -65,6 +65,8 @@ public:
 	 * OnExamined. The pencil has to cross the page more than once.
 	 */
 	void SetProgressiveStages(TArray<FText> InStageThoughts);
+	/** 살펴본 뒤 떠올릴 속말을 바꾼다. 다른 문서를 읽었는지에 따라 견줄 말이 달라지는 단서에 쓴다. */
+	void SetExamineThought(const FText& InThought) { ExamineThought = InThought; }
 
 	/**
 	 * Gives this prop an audible cue for the whole length of its hold (§21.3

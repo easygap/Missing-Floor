@@ -877,8 +877,12 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 		&& Now - EoduksiniManifestedAt > IGNightThreat::RoomLightGraceSeconds;
 	if (bRoomLit || (Sensors && Sensors->IsLitAt(Figure->GetChestLocation())))
 	{
+		const bool bWasSeen = bEoduksiniSeenThisTime;
 		DismissEoduksini(false);
-		ThinkOnce(TEXT("Threat.Eoduksini.Light"), IGNightThreat::EoduksiniLightThought(), 0.6f);
+		if (bWasSeen)
+		{
+			ThinkOnce(TEXT("Threat.Eoduksini.Light"), IGNightThreat::EoduksiniLightThought(), 0.6f);
+		}
 		return;
 	}
 
@@ -887,6 +891,7 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 	const bool bLit = bLooked && IsTorchOn(Chest);
 	if (bLooked)
 	{
+		bEoduksiniSeenThisTime = true;
 		EoduksiniUnseenSeconds = 0.0f;
 		const float PreviousGrowth = EoduksiniGrowth;
 		EoduksiniGrowth = FMath::Min(
@@ -964,11 +969,16 @@ void AIGNightThreatDirector::UpdateEoduksini(const float DeltaSeconds)
 		Figure->SetTrembling(false);
 		if (EoduksiniUnseenSeconds >= IGNightThreat::UnseenVanishSeconds)
 		{
+			// 한 번도 못 본 채 사라졌으면 그녀는 그것이 있었는지도 모른다.
+			const bool bWasSeen = bEoduksiniSeenThisTime;
 			DismissEoduksini(false);
-			ThinkOnce(
-				TEXT("Threat.Eoduksini.LookAway"),
-				NSLOCTEXT("IGMissingFloor", "YudamEoduksiniLookAway", "눈을 돌리니까 없어졌어. 계속 쳐다보면 안 되겠네."),
-				0.5f);
+			if (bWasSeen)
+			{
+				ThinkOnce(
+					TEXT("Threat.Eoduksini.LookAway"),
+					NSLOCTEXT("IGMissingFloor", "YudamEoduksiniLookAway", "눈을 돌리니까 없어졌어. 계속 쳐다보면 안 되겠네."),
+					0.5f);
+			}
 			return;
 		}
 	}
@@ -1160,6 +1170,7 @@ void AIGNightThreatDirector::ManifestEoduksiniAt(const FVector& Spot)
 	}
 	EoduksiniGrowth = IGNightThreat::StartGrowth;
 	EoduksiniUnseenSeconds = 0.0f;
+	bEoduksiniSeenThisTime = false;
 	if (const UWorld* World = GetWorld())
 	{
 		EoduksiniManifestedAt = World->GetTimeSeconds();
@@ -1306,8 +1317,12 @@ void AIGNightThreatDirector::HandleSensorLamp(const int32 LampIndex, const bool 
 		if (Figure && Figure->IsManifested() && EoduksiniCaptureSeconds < 0.0
 			&& Sensors->IsLitAt(Figure->GetChestLocation()))
 		{
+			const bool bWasSeen = bEoduksiniSeenThisTime;
 			DismissEoduksini(false);
-			ThinkOnce(TEXT("Threat.Eoduksini.Light"), IGNightThreat::EoduksiniLightThought(), 0.6f);
+			if (bWasSeen)
+			{
+				ThinkOnce(TEXT("Threat.Eoduksini.Light"), IGNightThreat::EoduksiniLightThought(), 0.6f);
+			}
 		}
 		return;
 	}
@@ -1452,7 +1467,7 @@ bool AIGNightThreatDirector::UpdateGuestAtRoomDoor(
 	{
 		ThinkOnce(
 			*FString::Printf(TEXT("Threat.Guest.RoomGone.N%d"), GuestNight),
-			NSLOCTEXT("IGMissingFloor", "YudamGuestGone", "나갔어. 문이… 저절로 닫혔어."),
+			NSLOCTEXT("IGMissingFloor", "YudamGuestGone", "현관문 닫히는 소리… 나갔나?"),
 			1.0f);
 		EndGuest(true);
 	}
@@ -3053,7 +3068,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		{
 			ThinkOnce(
 				*FString::Printf(TEXT("Threat.Guest.Searched.N%d"), GuestNight),
-				NSLOCTEXT("IGMissingFloor", "YudamGuestGone", "나갔어. 문이… 저절로 닫혔어."),
+				NSLOCTEXT("IGMissingFloor", "YudamGuestGone", "현관문 닫히는 소리… 나갔나?"),
 				1.0f);
 			EndGuest(true);
 		}

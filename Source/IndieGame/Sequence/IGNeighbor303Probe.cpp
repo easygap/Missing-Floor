@@ -359,7 +359,7 @@ void AIGNeighbor303Probe::Tick(const float DeltaSeconds)
 		// 디렉터는 1초마다 보고, 내려가기 시작한 3초 뒤에 속말을 민다.
 		if (PhaseSeconds >= 5.5f && PhaseSeconds - DeltaSeconds < 5.5f)
 		{
-			Check(SaidLine(NSLOCTEXT("IGMissingFloor", "Neighbor303AfterThought", "작년 여름에도 들었대.")),
+			Check(SaidLine(NSLOCTEXT("IGMissingFloor", "Neighbor303AfterThought", "작년 여름이면… 오빠가 없어진 때잖아.")),
 				TEXT("yudam_thinks_after_she_leaves"));
 		}
 		if (Walker->GetStage() == EStage::Gone)

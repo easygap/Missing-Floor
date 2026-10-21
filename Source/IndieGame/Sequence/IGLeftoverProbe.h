@@ -76,6 +76,22 @@ private:
 	bool BeginNight(int32 Night);
 	/** 열린 밤이 있으면 끝낸다. 닫혀 있으면 true. */
 	bool EndNight();
+	/**
+	 * -IGLeftoverProbe=hints. 셋째 밤 302호 구출에서 정우 소개 여부, 302호 곁과 멀리, 쐐기·장롱·판 낙하 순서,
+	 * 저장하고 이어 한 밤마다 H 힌트 세 단계를 그대로 남긴다(-IGHintScenario=named|unnamed|talk|fallen|remote|save).
+	 * 저장 시나리오 뒤에 -IGHintResume으로 다시 켜면 자동 저장을 불러온 밤에서 같은 것을 본다.
+	 */
+	void TickHints(class AIGMissingFloorLeftoverDirector* Director, UIGMissingFloorNarrativeSubsystem* Narrative);
+	void DumpHint(const TCHAR* Where);
+	/** 302호 안 소품의 받침·관통을 실제 메시로 잰다(에디터 실행에서만). 판·장롱·쐐기를 움직인 상태마다 부른다. */
+	void AuditStorage(const TCHAR* Label);
+	/** -IGLeftoverShots면 302호를 네 자리에서 손전등으로 비춰 찍는다. 다 찍었으면 true. */
+	bool StorageViews(const TCHAR* Label);
+	int32 StorageViewIndex = 0;
+	int32 StorageViewStep = 0;
+	float StorageViewClock = 0.0f;
+	bool bHintsVariant = false;
+	FString HintScenario;
 
 	TWeakObjectPtr<AIGPrologueWorldScene> Scene;
 	TWeakObjectPtr<AIGPlayerCharacter> Player;

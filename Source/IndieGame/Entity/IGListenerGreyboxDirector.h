@@ -81,6 +81,8 @@ private:
 	void SpawnOptionalWitnesses(UStaticMesh* CubeMesh);
 	/** 편의점 카운터의 나린. 아는 것이 늘면 하는 말이 달라진다. */
 	FText GetNarinCounterLine() const;
+	/** 나린의 화자 이름. 근무표를 보기 전에는 「편의점 직원」이다. */
+	FText NarinSpeakerName() const;
 	UFUNCTION()
 	void HandleUsedListingRead(class AIGReadableNote* Note, bool bOpened);
 	UFUNCTION()

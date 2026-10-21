@@ -654,7 +654,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			Check(!IsShown(Slip), TEXT("receipt_leaves_counter_after_reading"));
 			if (bShots)
 			{
-				Check(SaidLine(NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "오빠가 부탁했다고?")),
+				Check(SaidLine(NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "8월 2일이면 오빠가 없어진 뒤잖아.")),
 					TEXT("yudam_doubts_the_request"));
 			}
 		}
@@ -667,7 +667,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			if (bShots)
 			{
 				Check(SaidLine(NSLOCTEXT("IGMissingFloor", "NarinLineLastDayReceipt",
-					"그 영수증 잘 챙겨 둬요. 필요하면 저도 본 대로 말할게요. 무슨 일 있으면 바로 이쪽으로 오세요.")),
+					"그 영수증 잘 챙겨 두세요. 필요하면 저도 본 대로 말할게요. 무슨 일 있으면 바로 이쪽으로 오세요.")),
 					TEXT("narin_offers_to_say_what_she_saw"));
 			}
 		}

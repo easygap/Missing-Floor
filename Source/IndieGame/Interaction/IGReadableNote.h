@@ -75,6 +75,8 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Note")
 	bool IsOpen() const { return bOpen; }
+	/** 이번 실행에서 한 번이라도 펼쳐 읽었는가. */
+	bool HasEverBeenRead() const { return bEverRead; }
 
 	UFUNCTION(BlueprintPure, Category = "Note")
 	const FText& GetTitle() const { return NoteTitle; }

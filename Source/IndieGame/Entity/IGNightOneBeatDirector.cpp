@@ -438,7 +438,7 @@ void AIGNightOneBeatDirector::StageSighting()
 		EIGAudioBus::Entity);
 	AIGHorrorHUD::PushAudioCaptionAt(
 		this,
-		NSLOCTEXT("IGMissingFloor", "SightingCrawlCaption", "기는 소리"),
+		NSLOCTEXT("IGMissingFloor", "SightingCrawlCaption", "무언가 기어가는 소리"),
 		2.0f,
 		IGNightOne::SightingStagePoint);
 	GetWorldTimerManager().SetTimer(

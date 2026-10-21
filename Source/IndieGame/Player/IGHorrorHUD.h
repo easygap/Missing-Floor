@@ -423,6 +423,12 @@ public:
 	 * 맞출 때 쓴다. HUD가 없으면 0이다.
 	 */
 	static float GetDialogueBacklogSeconds(const UObject* WorldContext);
+	/**
+	 * 결말 장면 글(머리글·본문·각주)을 다 읽는 데 드는 시간. 한꺼번에 떠오르므로 대사와 같은 읽기 속도로
+	 * 한 번에 세고, 자막 표시 시간 설정을 따른다. 글이 없으면 0이다.
+	 */
+	static float EstimateEpilogueReadSeconds(const UObject* WorldContext, const FText& Heading,
+		const TArray<FText>& Lines, const FText& Footnote);
 
 	/** Shows a non-dialogue sound caption when the accessibility option is on. */
 	static void PushAudioCaption(

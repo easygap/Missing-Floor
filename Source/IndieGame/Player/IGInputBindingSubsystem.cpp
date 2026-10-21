@@ -186,7 +186,7 @@ bool UIGInputBindingSubsystem::TryRebind(
 		OutFailureReason = NSLOCTEXT(
 			"IGInput",
 			"RebindReserved",
-			"일시정지와 접근성 설정에 쓰는 키는 바꿀 수 없습니다.");
+			"일시정지와 접근성 설정에 쓰는 키라 다른 동작에 지정할 수 없습니다.");
 		return false;
 	}
 	// 칸과 장치가 어긋나면 그 칸에서 영영 눌리지 않는 키가 된다.
@@ -213,7 +213,7 @@ bool UIGInputBindingSubsystem::TryRebind(
 				NSLOCTEXT(
 					"IGInput",
 					"RebindConflict",
-					"‘{0}’에서 이미 쓰는 키입니다. 그쪽을 먼저 바꿔 주세요."),
+					"‘{0}’에 이미 지정된 키입니다. 그쪽을 먼저 바꿔 주세요."),
 				GetActionInfo(Other).Label);
 			return false;
 		}

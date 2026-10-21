@@ -509,7 +509,7 @@ void AIGCctvChannelFive::UpdateLiveSound(const float LiveProgress01)
 			// 자막은 한 번. 방위를 붙인다 — 위.
 			AIGHorrorHUD::PushAudioCaptionAt(
 				this,
-				NSLOCTEXT("IGMissingFloor", "CctvLiveSoundCaption", "기는 소리"),
+				NSLOCTEXT("IGMissingFloor", "CctvLiveSoundCaption", "무언가 기어가는 소리"),
 				2.4f,
 				StepLocation);
 		}
