@@ -33,11 +33,14 @@ namespace IGNightFourHammerProbe
 {
 	/**
 	 * 5층 동쪽 벽 앞, 망치를 드는 자리와 벽의 판 가운데. 월드 좌표다. 0.10.0부터 덧댄 것이 벽을
-	 * 따라 이음매로 오고, 옮겨 갈 때 몸판이 벽에서 60 cm 남짓 부푼다. 그래서 벽에서 110 cm 떨어져
-	 * 선다(망치는 220 cm까지 닿는다). 바짝 붙어 있으면 지나가는 몸판에 눌린다.
+	 * 따라 이음매로 왔다가 점검구로 옮겨 간다. 몸판은 벽에서 36 cm 안으로 붙어 가고 발도 벽 가까이만
+	 * 짚지만, 무릎은 벽에서 1 m 남짓까지 나온다. 그래서 벽에서 110 cm 떨어져 선다(망치는 220 cm까지
+	 * 닿는다). 바짝 붙어 있으면 지나가는 몸판에 눌린다.
 	 */
 	const FVector WallFeet(140.0f, 700.0f, 1200.0f);
 	const FVector WallFace(246.0f, 700.0f, 1290.0f);
+	/** 첫째~셋째 단계 동안 망치 든 자리에서 밀려나도 되는 거리(cm). 덧댄 것의 발에 걸려 끌려가면 넘는다. */
+	constexpr float MaxHammerDrift = 5.0f;
 	/** 넷째 타 뒤 벽 안의 대답까지(밤4 디렉터의 3.6 + 4.4초). 이보다 일찍 풀리면 부름을 건너뛴 것이다. */
 	constexpr float ExpectedReleaseSeconds = 8.0f;
 }
@@ -273,7 +276,11 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 
 	case 1:
 		// 첫째에서 셋째 단계. 덧댄 것이 이음매로 왔다가 점검구로 옮겨 가 몸을 펴고, 틀에 걸린다.
-		// 셋째 뒤 0.7초에 차단기가 내려간다.
+		// 셋째 뒤 0.7초에 차단기가 내려간다. 그동안 망치 든 사람은 제자리에 있어야 한다.
+		if (Player.IsValid())
+		{
+			MaxDrift = FMath::Max(MaxDrift, FVector::Dist2D(Player->GetActorLocation(), WallFeet));
+		}
 		if (!bActed && PhaseSeconds >= 0.5f)
 		{
 			bActed = true;
@@ -294,6 +301,8 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 		{
 			Check(Struck == 3 && !Building->IsMissingFloorAnnexPowered(), TEXT("third_strike_cuts_the_power"));
 			Check(Building->AreCommonInspectionLightsOff(), TEXT("corridor_lobby_and_sensor_lights_die"));
+			UE_LOG(LogIndieGame, Display, TEXT("NIGHT4HAMMER drift=%.1f"), MaxDrift);
+			Check(MaxDrift < MaxHammerDrift && !IsCapturedSince(CaptureBaseline), TEXT("lining_passes_the_hammer_spot"));
 			Next(2);
 		}
 		else if (PhaseSeconds >= 60.0f)

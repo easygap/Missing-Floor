@@ -392,6 +392,10 @@ private:
 	float PathTravelled = 0.0f;
 	FQuat PathStartRotation = FQuat::Identity;
 	FQuat PathGoalRotation = FQuat::Identity;
+	/** 같은 벽 위의 틈으로 가는 길이면 몸도 발도 그 벽(면 위의 점과 방 쪽 법선)을 따라간다. */
+	bool bPathAlongWall = false;
+	FVector PathWallPoint = FVector::ZeroVector;
+	FVector PathWallNormal = FVector::ForwardVector;
 	/** 당기기 단계인가(아니면 두 다리를 옮기는 단계). */
 	bool bPulling = true;
 	float PhaseSeconds = 0.0f;

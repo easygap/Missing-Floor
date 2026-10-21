@@ -32,8 +32,11 @@ namespace IGLining
 
 	// 몸판 바닥에서 몸 뼈까지(cm). 누를 때 이만큼 벽에서 떨어진 자리가 몸 가운데다.
 	constexpr float PressStandOff = 21.0f;
-	// 짚고 버틸 때 몸 가운데와 벽 사이.
+	// 짚고 버틸 때 몸 가운데와 벽 사이. 같은 벽 위의 다른 틈으로 옮겨 갈 때도 이 높이로 벽을 따라간다.
 	constexpr float BraceStandOff = 36.0f;
+	// 같은 벽을 따라갈 때 발이 짚는 자리는 그 벽 면에서 방 쪽으로 이만큼, 벽 뒤로 이만큼 안이다.
+	constexpr float AlongWallPadReach = 60.0f;
+	constexpr float AlongWallPadBehind = 8.0f;
 	// 틈 둘레를 짚는 자리. 틈 가장자리에서 이만큼 바깥이다.
 	constexpr float BraceMarginAlong = 34.0f;
 	constexpr float BraceMarginAcross = 40.0f;
@@ -725,11 +728,25 @@ void AIGLiningEntity::BeginTravelTo(const FName GapId)
 
 void AIGLiningEntity::BuildPath(const FVector& Start, const FVector& StartUp, const FVector& Goal, const FVector& GoalNormal)
 {
-	// 벽에서 몸을 떼어 방 쪽으로 나왔다가, 목표 틈 앞에서 벽 쪽으로 들어간다.
+	const FVector N = GoalNormal.GetSafeNormal();
+	// 다른 면으로 건너갈 때는 벽에서 몸을 떼어 방 쪽으로 나왔다가, 목표 틈 앞에서 벽 쪽으로 들어간다.
 	const FVector P0 = Start;
-	const FVector P1 = Start + StartUp.GetSafeNormal() * 55.0f;
-	const FVector P2 = Goal + GoalNormal * 70.0f;
+	FVector P1 = Start + StartUp.GetSafeNormal() * 55.0f;
+	FVector P2 = Goal + N * 70.0f;
 	const FVector P3 = Goal;
+	// 목표 틈이 난 벽 면에서 출발점까지의 높이. 같은 벽에 붙어 있었으면 누를 때(21)나 버틸 때(36) 높이다.
+	const float StartHeight = FVector::DotProduct(Start - Goal, N) + IGLining::BraceStandOff;
+	bPathAlongWall = FVector::DotProduct(StartUp.GetSafeNormal(), N) > 0.97f
+		&& FMath::Abs(StartHeight - IGLining::BraceStandOff) < 30.0f;
+	PathWallPoint = Goal - N * IGLining::BraceStandOff;
+	PathWallNormal = N;
+	if (bPathAlongWall)
+	{
+		// 같은 벽 위의 틈이면 짚고 버틸 만큼만 떼고 벽 면을 따라 기어간다. 방 쪽으로 부풀어 가면 몸판이
+		// 벽에서 70 cm 넘게 떠서 벽 앞에 서서 일하는 사람을 덮친다(5층 이음매→점검구 277 cm).
+		P1 = Start + N * (IGLining::BraceStandOff - StartHeight);
+		P2 = Goal;
+	}
 	PathPoints.Reset();
 	PathDistances.Reset();
 	constexpr int32 Samples = 24;
@@ -813,6 +830,14 @@ bool AIGLiningEntity::FindContact(
 		(Side * 0.4f + Ahead - Up * 1.2f).GetSafeNormal(),
 		(Side * 0.6f - Ahead * 0.4f - FVector::UpVector).GetSafeNormal(),
 	};
+	// 같은 벽을 따라가는 동안은 그 벽 가까이만 짚는다. 벽에 붙은 몸에서 위쪽 후보는 방 쪽이라 그대로 두면
+	// 1 m 넘게 떨어진 천장이나 바닥을 짚고, 열린 점검구 안으로 벽 속을 짚기도 한다.
+	const bool bHugWall = bPathAlongWall && (State == EIGLiningState::Peeling || State == EIGLiningState::Stepping);
+	const auto OffWall = [this, bHugWall](const FVector& Pad)
+	{
+		const float Height = FVector::DotProduct(Pad - PathWallPoint, PathWallNormal);
+		return bHugWall && (Height > IGLining::AlongWallPadReach || Height < -IGLining::AlongWallPadBehind);
+	};
 	bool bFound = false;
 	float BestScore = TNumericLimits<float>::Max();
 	for (const FVector& Direction : Candidates)
@@ -830,7 +855,7 @@ bool AIGLiningEntity::FindContact(
 		// 앞으로 갈 몸 자리를 보고 고르되, 지금 몸에서도 닿아야 한다. 안 그러면 발이 면에 닿지 못하고 몸이 따라올
 		// 때까지 허공에 떠 있다.
 		const FVector Pad = Hit.ImpactPoint + Hit.ImpactNormal * 2.0f;
-		if (ReachTo(Leg, Pad, Hit.ImpactNormal, BodyCenter, BodyRotation) > 0.96f)
+		if (OffWall(Pad) || ReachTo(Leg, Pad, Hit.ImpactNormal, BodyCenter, BodyRotation) > 0.96f)
 		{
 			continue;
 		}
@@ -849,6 +874,7 @@ bool AIGLiningEntity::FindContact(
 		FHitResult Hit;
 		const FVector Out = Hip + Side * 70.0f;
 		if (World->LineTraceSingleByObjectType(Hit, Out + FVector(0, 0, 30.0f), Out - FVector(0, 0, 400.0f), Objects, Params)
+			&& !OffWall(Hit.ImpactPoint + Hit.ImpactNormal * 2.0f)
 			&& ReachTo(Leg, Hit.ImpactPoint + Hit.ImpactNormal * 2.0f, Hit.ImpactNormal, BodyCenter, BodyRotation) <= 0.96f)
 		{
 			OutPad = Hit.ImpactPoint + Hit.ImpactNormal * 2.0f;

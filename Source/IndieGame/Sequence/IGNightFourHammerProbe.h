@@ -18,8 +18,9 @@ class AIGSwingDoor;
  * -IGNightFourHammerProbe 전용. 밤4 망치질 사이를 겪는다(EXPANSION_PLAN §2.3 넷째 밤).
  *
  * 밤4로 놓고 진실 셋(벽 속 사람, 살아 있었다, 대답을 기다린다)과 물소리 가면을 세운 뒤 5층
- * 벽을 친다. 셋째 타 뒤 정전에 건물 안 등이 다 죽어야 한다. 넷째 타 뒤에는 손이 저려 잠깐
- * 못 치고, 그 사이 5층 철문 밖에서 「유담아. 오빠야. 문 좀 열어 줘.」가 오고, 벽 안에서
+ * 벽을 친다. 덧댄 것이 벽을 따라 이음매와 점검구로 옮겨 가는 동안 망치 든 사람은 밀리지도
+ * 눌리지도 않아야 한다. 셋째 타 뒤 정전에 건물 안 등이 다 죽어야 한다. 넷째 타 뒤에는 손이
+ * 저려 잠깐 못 치고, 그 사이 5층 철문 밖에서 「유담아. 오빠야. 문 좀 열어 줘.」가 오고, 벽 안에서
  * 둘, 쉬고, 하나가 오면 다시 칠 수 있어야 한다. 빗장을 걸어 두었으므로 손님은 열쇠를 꽂다
  * 빗장에 걸려 간다. 그 뒤 정전 속에 어둑시니가 빚은 몸(SK_Eoduksini)으로 서야 하고, 다섯째 타에
  * 벽이 열리면 어둑시니와 손님이 다 그쳐야 한다.
@@ -72,6 +73,8 @@ private:
 	int32 Struck = 0;
 	float LastActionSeconds = -10.0f;
 	float ThirdStageSeconds = -1.0f;
+	/** 첫째~셋째 단계 동안 망치 든 자리에서 가장 멀리 밀려난 거리(cm). */
+	float MaxDrift = 0.0f;
 	bool bSawHeld = false;
 	bool bSawCall = false;
 	bool bSawCaughtOnBolt = false;
