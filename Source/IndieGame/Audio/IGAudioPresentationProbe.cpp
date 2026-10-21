@@ -12,6 +12,7 @@
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "Entity/IGListenerEntity.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
@@ -20,6 +21,7 @@
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "Save/IGSaveSubsystem.h"
 #include "Player/IGHorrorHUD.h"
 #include "Player/IGPlayerCharacter.h"
 #include "Player/IGStressComponent.h"
@@ -514,6 +516,25 @@ void AIGAudioPresentationProbe::Tick(const float DeltaSeconds)
 		Check(VoiceEnded == 1 && VoiceLastReason == static_cast<uint8>(EIGDialogueEndReason::Cancelled),
 			TEXT("cut_voice_is_not_counted_as_finished"));
 		IGVoice::SetSoundForTesting(IGVoice::LineIdOf(ProbeVoiceLine()), nullptr);
+		// 「들은 말」이 든 채로 자동 저장을 쓴다. 이어하기와 같은 검사로 다시 읽혀야 한다. 저장 검사가
+		// FText를 몰라서 대사를 들은 뒤의 저장이 모두 걸러지던 일(2026-10-21)을 배포본에서 다시 본다.
+		if (UIGSaveSubsystem* Save = GetGameInstance() ? GetGameInstance()->GetSubsystem<UIGSaveSubsystem>() : nullptr)
+		{
+			Check(Save->RequestAutosave(
+				FGameplayTag::RequestGameplayTag(FName(TEXT("Chapter.MissingFloor")), false),
+				GetWorld()->GetOutermost()->GetFName(),
+				FGameplayTag::RequestGameplayTag(FName(TEXT("Checkpoint.MissingFloor.Night")), false)),
+				TEXT("heard_line_autosave_requested"));
+		}
+		Phase = 28; Seconds = 0;
+	}
+	else if (Phase == 28 && Seconds > 3.0f)
+	{
+		const UIGSaveSubsystem* Save = GetGameInstance() ? GetGameInstance()->GetSubsystem<UIGSaveSubsystem>() : nullptr;
+		const int32 Heard = Save ? Save->GetLastAutosaveHeardLinesForTesting() : -1;
+		UE_LOG(LogTemp, Display, TEXT("AUDIO_PRESENTATION_SAVE map=%s heard=%d"),
+			*GetWorld()->GetOutermost()->GetName(), Heard);
+		Check(Heard > 0, TEXT("autosave_with_heard_lines_is_loadable"));
 		Phase = 30; Seconds = 0;
 	}
 	else if (Phase == 30)

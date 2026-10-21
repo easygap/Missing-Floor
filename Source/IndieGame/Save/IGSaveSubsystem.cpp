@@ -15,6 +15,7 @@
 #include "Serialization/MemoryReader.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 #include "Templates/UnrealTemplate.h"
+#include "UObject/FortniteMainBranchObjectVersion.h"
 #include "UObject/PropertyTypeName.h"
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/UnrealType.h"
@@ -277,8 +278,108 @@ namespace IGSave
 			{
 				return Skip(Property->GetElementSize(), End);
 			}
+			// 「들은 말」(2026-10-15)이 화자와 문장을 FText로 남긴다. 이 검사가 FText를 몰라서
+			// 대사를 하나라도 들은 뒤의 자동 저장이 모두 불러올 수 없는 파일로 걸러졌다(2026-10-21).
+			if (CastField<FTextProperty>(Property))
+			{
+				return ValidateText(End, Depth + 1);
+			}
 			// 현재 저장에는 Map, Set, 객체 참조가 없다. 새 필드는 읽기 검사를
 			// 함께 추가해야 하며, 알 수 없는 할당 경로는 여기서 멈춘다.
+			return false;
+		}
+
+		/**
+		 * FText::SerializeText의 꼴을 따라 읽는다. 대사에 쓰는 기록 형식만 받는다: 문화권과 무관한 문자열(-1),
+		 * 네임스페이스·키·원문(0), 이름 붙은 인자 서식(1), 순서 인자 서식(2). 나머지 형식은 저장에 남길 일이 없다.
+		 */
+		bool ValidateText(const int64 End, const int32 Depth)
+		{
+			int32 Flags = 0;
+			int8 History = 0;
+			FString Value;
+			if (Depth > MaxNestingDepth || !Read(Flags, End) || !Read(History, End))
+			{
+				return false;
+			}
+			switch (History)
+			{
+			case -1:
+			{
+				// 아카이브의 bool은 4바이트다.
+				uint32 bHasString = 0;
+				return Read(bHasString, End) && bHasString <= 1 && (bHasString == 0 || ReadString(Value, End));
+			}
+			case 0:
+				if (!ReadString(Value, End) || !ReadString(Value, End) || !ReadString(Value, End))
+				{
+					return false;
+				}
+#if WITH_EDITORONLY_DATA
+				// 에디터 빌드는 개발 메모 칸을 하나 더 쓰고 읽는다(FTextHistory_Base::Serialize와 같은 조건).
+				if (CustomVer(FFortniteMainBranchObjectVersion::GUID) >= FFortniteMainBranchObjectVersion::AddDevNotesToFText
+					&& !IsFilterEditorOnly())
+				{
+					return ReadString(Value, End);
+				}
+#endif
+				return true;
+			case 1:
+			case 2:
+			{
+				int32 Count = 0;
+				if (!ValidateText(End, Depth + 1) || !ReadCount(Count, End))
+				{
+					return false;
+				}
+				for (int32 Index = 0; Index < Count; ++Index)
+				{
+					if ((History == 1 && !ReadString(Value, End)) || !ValidateFormatArgument(End, Depth + 1))
+					{
+						return false;
+					}
+				}
+				return true;
+			}
+			default:
+				return false;
+			}
+		}
+
+		/** FFormatArgumentValue: 형식 한 바이트(Int, UInt, Float, Double, Text, Gender) 뒤에 값. */
+		bool ValidateFormatArgument(const int64 End, const int32 Depth)
+		{
+			int8 Type = 0;
+			if (!Read(Type, End))
+			{
+				return false;
+			}
+			switch (Type)
+			{
+			case 0:
+			case 1:
+			case 3:
+				return Skip(8, End);
+			case 2:
+				return Skip(4, End);
+			case 4:
+				return ValidateText(End, Depth + 1);
+			case 5:
+				return Skip(1, End);
+			default:
+				return false;
+			}
+		}
+
+		/** 가장 안쪽에서 처음 막힌 자리 하나만 남긴다. 걸러진 저장이 왜 이어하기에서 빠졌는지 찾을 수 있게. */
+		bool Reject(const TCHAR* Stage, const UStruct* Struct, const FString& Name, const int64 At)
+		{
+			if (!bRejectLogged)
+			{
+				bRejectLogged = true;
+				UE_LOG(LogIndieGame, Display, TEXT("SAVE_CHECK_REJECT stage=%s struct=%s property=%s offset=%lld"),
+					Stage, Struct ? *Struct->GetName() : TEXT("none"), *Name, At);
+			}
 			return false;
 		}
 
@@ -316,13 +417,14 @@ namespace IGSave
 				const UE::FPropertyTypeName Type = Property ? UE::FPropertyTypeName(Property) : UE::FPropertyTypeName();
 				int32 Nodes = 0, Size = 0, ArrayIndex = 0;
 				uint8 Flags = 0;
+				const int64 TagStart = Tell();
 				if (!ValidateType(Property ? &Type : nullptr, End, 0, Nodes)
 					|| !Read(Size, End) || Size < 0 || !Read(Flags, End)
 					|| (Flags & ~0x1b) != 0
 					|| ((Flags & 0x01) && (!Read(ArrayIndex, End) || ArrayIndex != 0))
 					|| ((Flags & 0x02) && !Skip(16, End)) || !HasBytes(Size, End))
 				{
-					return false;
+					return Reject(TEXT("tag"), Struct, Name, TagStart);
 				}
 				const int64 PropertyEnd = Tell() + Size;
 				if (Property)
@@ -334,7 +436,7 @@ namespace IGSave
 						|| (bBool ? Size != 0 : !ValidateValue(Property, PropertyEnd, Depth + 1))
 						|| Tell() != PropertyEnd)
 					{
-						return false;
+						return Reject(TEXT("value"), Struct, Name, TagStart);
 					}
 				}
 				// 예전 저장에서 없어진 필드는 엔진처럼 크기만큼 건너뛴다.
@@ -346,6 +448,7 @@ namespace IGSave
 		const TArray<uint8>& Bytes;
 		int32 PropertyTags = 0;
 		int32 TotalElements = 0;
+		bool bRejectLogged = false;
 	};
 
 	static UIGSaveGame* LoadCheckedSave(const FString& SlotName)
@@ -649,6 +752,14 @@ bool UIGSaveSubsystem::HasCompatibleAutosave() const
 	return FindNewestCompatibleAutosave(NewestSlot);
 }
 
+int32 UIGSaveSubsystem::GetLastAutosaveHeardLinesForTesting() const
+{
+	const int32 LastIndex = (NextAutosaveIndex + IGSave::AutosaveSlotCount - 1) % IGSave::AutosaveSlotCount;
+	const UIGSaveGame* Last = IGSave::LoadCheckedSave(
+		FString::Printf(TEXT("%s_%d"), IGSave::AutosaveSlotPrefix, LastIndex));
+	return IsAutosaveLoadable(Last) ? Last->Progress.MissingFloorNarrative.Heard.Num() : -1;
+}
+
 bool UIGSaveSubsystem::HasEndingBAutosave() const
 {
 	FString NewestSlot;
@@ -681,6 +792,10 @@ bool UIGSaveSubsystem::FindNewestCompatibleAutosave(
 		}
 
 		const UIGSaveGame* Candidate = IGSave::LoadCheckedSave(SlotName);
+		// 걸러진 저장이 조용히 지나가면 이어하기가 더 오래된 판으로 돌아간다. 고른 까닭을 남긴다.
+		UE_LOG(LogIndieGame, Display, TEXT("AUTOSAVE_CANDIDATE slot=%s checked=%d loadable=%d savedAt=%s"),
+			*SlotName, Candidate ? 1 : 0, IsAutosaveLoadable(Candidate) ? 1 : 0,
+			Candidate ? *Candidate->Progress.SavedAtUtc.ToIso8601() : TEXT("none"));
 		if (IsAutosaveLoadable(Candidate)
 			&& (OutSlotName.IsEmpty()
 				|| Candidate->Progress.SavedAtUtc > NewestTimestamp))
