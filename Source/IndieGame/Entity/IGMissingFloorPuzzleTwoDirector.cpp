@@ -510,7 +510,7 @@ bool AIGMissingFloorPuzzleTwoDirector::Configure(AIGPrologueWorldScene* InScene)
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"P2CalendarThought",
-				"작년 7월 달력이네. 26일에만 동그라미가 쳐져 있다."),
+				"작년 7월 달력이네. 26일에만 동그라미가 쳐져 있어."),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
 			0.9f,

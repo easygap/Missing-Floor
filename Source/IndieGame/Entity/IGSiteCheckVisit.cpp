@@ -5,6 +5,7 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Audio/IGVoice.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
@@ -50,6 +51,8 @@ namespace IGSiteCheckVisit
 	constexpr float CapsuleRadius = 25.0f;
 	/** 경찰관 머리 높이. 그녀가 그를 볼 수 있는지 잴 때 쓴다. */
 	constexpr float HeadHeight = 160.0f;
+	/** 두 사람의 입 높이. 녹음된 말이 여기서 난다. */
+	constexpr float MouthHeight = 150.0f;
 
 	// 문. 관리인이 열쇠를 꺼내고 이만큼 뒤에 자물쇠가 돈다.
 	constexpr double KeysToSwingSeconds = 1.1;
@@ -644,13 +647,20 @@ bool AIGSiteCheckVisit::OpenGateAhead(const float DeltaSeconds, const double Now
 				Door->PlayHandleRattle();
 				if (DoorKnocks == 2)
 				{
-					AIGHorrorHUD::PushDialogue(
+					// 빗장 걸린 철문 너머에서 부른다. 녹음이 있으면 관리인 입에서 나고 문짝이 고역을 먹는다.
+					const TWeakObjectPtr<USceneComponent> Feet(Manager.Feet);
+					IGVoice::Say(
 						this,
 						NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
 						NSLOCTEXT("IGMissingFloor", "SiteCheckBolted", "안에 누구 있어요? 문 좀 열어 봐요."),
-						EIGDialogueChannel::Conversation,
-						0.0f,
-						EIGDialoguePriority::Story);
+						FIGDialogueScope(),
+						[Feet]() -> FVector
+						{
+							return Feet.IsValid()
+								? Feet->GetComponentLocation() + FVector(0.0f, 0.0f, MouthHeight)
+								: FVector::ZeroVector;
+						},
+						IGVoice::ESource::PersonThroughDoor);
 				}
 			}
 			return false;
@@ -902,7 +912,8 @@ void AIGSiteCheckVisit::TickKnocking(const float DeltaSeconds, const double Now)
 	{
 		PushVisitLine(
 			NSLOCTEXT("IGMissingFloor", "PoliceOfficerSpeaker", "경찰관"),
-			NSLOCTEXT("IGMissingFloor", "SiteCheckAsk", "계세요? 안에 누구 있어요?"));
+			NSLOCTEXT("IGMissingFloor", "SiteCheckAsk", "계세요? 안에 누구 있어요?"),
+			&Officer);
 	}
 	if (Elapsed >= ListenAt && Before < ListenAt)
 	{
@@ -967,6 +978,7 @@ float AIGSiteCheckVisit::PushLine(int32 Index)
 	const FText Yudam = NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담");
 	FText Speaker;
 	FText Line;
+	const FWalker* Speaking = nullptr;
 	// 덮개를 가져온 회차는 관리인의 「배관」 다음에 두 줄이 끼고, 뒤의 둘은 한 칸씩 밀린다.
 	if (HasCoverToShow())
 	{
@@ -980,14 +992,14 @@ float AIGSiteCheckVisit::PushLine(int32 Index)
 			Speaker = Yudam;
 			Line = Narrative && Narrative->GetLeftover().bSiteMatched
 				? NSLOCTEXT("IGMissingFloor", "SiteCheckYudamCover", "저 구석 덧판 자리에 이 덮개가 맞아요. 나사 구멍이 그대로 겹쳐요.")
-				: NSLOCTEXT("IGMissingFloor", "SiteCheckYudamCoverAssembled", "이 덮개요, 관리실이랑 302호에 조각이 나뉘어 있던 걸 제가 맞춰 봤어요.");
-			return PushVisitLine(Speaker, Line);
+				: NSLOCTEXT("IGMissingFloor", "SiteCheckYudamCoverAssembled", "이 덮개 조각이 관리실이랑 302호에 따로 있었어요. 제가 맞춰 봤고요.");
+			return PushVisitLine(Speaker, Line, nullptr);
 		}
 		if (Index == 4)
 		{
 			Speaker = OfficerName;
 			Line = NSLOCTEXT("IGMissingFloor", "SiteCheckOfficerCover", "그 덮개도 찍어 둘게요. 버리지 말고 갖고 계세요.");
-			return PushVisitLine(Speaker, Line);
+			return PushVisitLine(Speaker, Line, &Officer);
 		}
 		if (Index > 4)
 		{
@@ -999,6 +1011,7 @@ float AIGSiteCheckVisit::PushLine(int32 Index)
 	case 0:
 		Speaker = OfficerName;
 		Line = NSLOCTEXT("IGMissingFloor", "SiteCheckNoAnswer", "속이 비긴 했는데, 지금은 안에서 아무 반응이 없네요.");
+		Speaking = &Officer;
 		break;
 	case 1:
 		Speaker = Yudam;
@@ -1007,22 +1020,25 @@ float AIGSiteCheckVisit::PushLine(int32 Index)
 	case 2:
 		Speaker = Mok;
 		Line = NSLOCTEXT("IGMissingFloor", "SiteCheckMokPipes", "창고라니까요. 밤이면 물탱크 배관이 울려요.");
+		Speaking = &Manager;
 		break;
 	case 3:
 		Speaker = OfficerName;
 		Line = NSLOCTEXT("IGMissingFloor", "SiteCheckWarrant", "보내 주신 자료는 담당 팀에서 보고 있어요. 벽은 저희가 다시 와서 볼 테니까, 그때까지 손대지 마세요.");
+		Speaking = &Officer;
 		break;
 	case 4:
 		Speaker = OfficerName;
 		Line = NSLOCTEXT("IGMissingFloor", "SiteCheckCallUs", "다시 소리 나면 바로 연락 주세요. 저희는 사진 몇 장만 더 찍고 내려갈게요.");
+		Speaking = &Officer;
 		break;
 	default:
 		return 0.0f;
 	}
-	return PushVisitLine(Speaker, Line);
+	return PushVisitLine(Speaker, Line, Speaking);
 }
 
-float AIGSiteCheckVisit::PushVisitLine(const FText& Speaker, const FText& Line)
+float AIGSiteCheckVisit::PushVisitLine(const FText& Speaker, const FText& Line, const FWalker* Speaking)
 {
 	FIGDialogueScope Scope;
 	Scope.Context = IGSiteCheckVisit::DialogueContext;
@@ -1032,9 +1048,21 @@ float AIGSiteCheckVisit::PushVisitLine(const FText& Speaker, const FText& Line)
 	{
 		return WeakThis.IsValid() && WeakThis->IsOut() && WeakThis->IsPlayerOnRoof();
 	};
-	AIGHorrorHUD::PushDialogueScoped(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f,
-		EIGDialoguePriority::Story, MoveTemp(Scope));
-	// 다음 줄은 이 줄이 화면에서 내려가면 민다. 자막을 오래 두는 설정이면 그만큼 늦다.
+	TFunction<FVector()> Mouth;
+	if (Speaking)
+	{
+		const TWeakObjectPtr<USceneComponent> Feet(Speaking->Feet);
+		Mouth = [Feet]() -> FVector
+		{
+			return Feet.IsValid()
+				? Feet->GetComponentLocation() + FVector(0.0f, 0.0f, IGSiteCheckVisit::MouthHeight)
+				: FVector::ZeroVector;
+		};
+	}
+	IGVoice::Say(this, Speaker, Line, MoveTemp(Scope), MoveTemp(Mouth),
+		Speaking ? IGVoice::ESource::Person : IGVoice::ESource::Self);
+	// 다음 줄은 이 줄이 화면에서 내려가면 민다. 자막을 오래 두는 설정이면 그만큼 늦고, 녹음된 말이면
+	// 그 소리가 끝나기 전에는 내려가지 않는다.
 	float CaptionScale = 1.0f;
 	if (const UGameInstance* GameInstance = GetGameInstance())
 	{
@@ -1043,7 +1071,7 @@ float AIGSiteCheckVisit::PushVisitLine(const FText& Speaker, const FText& Line)
 			CaptionScale = Accessibility->GetCaptionDurationScale();
 		}
 	}
-	return AIGHorrorHUD::EstimateDialogueSeconds(Line) * CaptionScale;
+	return FMath::Max(AIGHorrorHUD::EstimateDialogueSeconds(Line) * CaptionScale, IGVoice::GetSeconds(Line));
 }
 
 void AIGSiteCheckVisit::TickTalking(const float DeltaSeconds, const double Now)

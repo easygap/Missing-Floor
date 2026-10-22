@@ -2,6 +2,7 @@
 
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Audio/IGVoice.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -67,6 +68,8 @@ namespace IGLeftover
 	const FName BeatDayThreeText(TEXT("Leftover.Day3.JeongwooText"));
 	const FName BeatSeenMoveHint(TEXT("Leftover.SeenMove"));
 	const FName JeongwooIntroBeat(TEXT("Day.Jeongwoo.Intro"));
+	/** 골목에서 오토바이가 스친 일. 동네 연출(IGNeighborhoodLifeDirector)이 남긴다. */
+	const FName ScooterNearMissBeat(TEXT("Neighborhood.ScooterNearMiss"));
 
 	// 정우 상태.
 	const FName JeongwooLeftTogether(TEXT("LeftTogether"));
@@ -321,7 +324,7 @@ bool AIGMissingFloorLeftoverDirector::HasBeat(const FName Beat) const
 
 void AIGMissingFloorLeftoverDirector::Say(const FText& Speaker, const FText& Line, const float MinSeconds)
 {
-	AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, MinSeconds, EIGDialoguePriority::Story);
+	Speak(Speaker, Line, FIGDialogueScope(), MinSeconds);
 }
 
 void AIGMissingFloorLeftoverDirector::Think(const FText& Line, const float Seconds)
@@ -340,8 +343,7 @@ void AIGMissingFloorLeftoverDirector::SayIn(const FName Context, const FText& Sp
 	Scope.Context = Context;
 	Scope.Owner = this;
 	Scope.Lifetime = bStory ? EIGDialogueLifetime::Story : EIGDialogueLifetime::Reaction;
-	AIGHorrorHUD::PushDialogueScoped(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f,
-		EIGDialoguePriority::Story, MoveTemp(Scope));
+	Speak(Speaker, Line, MoveTemp(Scope), 0.0f);
 }
 
 void AIGMissingFloorLeftoverDirector::ThinkIn(const FName Context, const FText& Line, const float Seconds, const bool bStory)
@@ -382,11 +384,37 @@ void AIGMissingFloorLeftoverDirector::SayThen(
 	Scope.Owner = this;
 	Scope.Lifetime = EIGDialogueLifetime::Story;
 	Scope.OnEnded = [Fire](EIGDialogueEndReason) { Fire(); };
-	AIGHorrorHUD::PushDialogueScoped(this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f,
-		EIGDialoguePriority::Story, MoveTemp(Scope));
+	Speak(Speaker, Line, MoveTemp(Scope), 0.0f);
 	FTimerHandle Fallback;
 	GetWorldTimerManager().SetTimer(Fallback, FTimerDelegate::CreateWeakLambda(this, [Fire]() { Fire(); }),
 		FMath::Max(0.1f, FallbackSeconds), false);
+}
+
+void AIGMissingFloorLeftoverDirector::Speak(
+	const FText& Speaker, const FText& Line, FIGDialogueScope Scope, const float MinSeconds)
+{
+	if (IGVoice::IsYudam(Speaker))
+	{
+		IGVoice::Say(this, Speaker, Line, MoveTemp(Scope), nullptr, IGVoice::ESource::Self,
+			EIGDialogueChannel::Conversation, MinSeconds);
+		return;
+	}
+	// 정우(이름을 듣기 전에는 배달 기사, 302호 안)의 말. 판이 풀려 밀고 나오기 전까지는 판 너머에서 난다.
+	const bool bBehindBoard = StorageStage == EStorage::Trapped || StorageStage == EStorage::Fallen
+		|| StorageStage == EStorage::Released;
+	const TWeakObjectPtr<AIGJeongwooFigure> WeakBody(Jeongwoo.Get());
+	const TWeakObjectPtr<AIGMissingFloorLeftoverDirector> WeakThis(this);
+	IGVoice::Say(this, Speaker, Line, MoveTemp(Scope),
+		[WeakBody, WeakThis]() -> FVector
+		{
+			if (const AIGJeongwooFigure* Body = WeakBody.Get())
+			{
+				return Body->GetHeadLocation();
+			}
+			return WeakThis.IsValid() ? WeakThis->GetActorLocation() : FVector::ZeroVector;
+		},
+		bBehindBoard ? IGVoice::ESource::PersonThroughDoor : IGVoice::ESource::Person,
+		EIGDialogueChannel::Conversation, MinSeconds);
 }
 
 void AIGMissingFloorLeftoverDirector::Hush(const FName Context)
@@ -1492,7 +1520,7 @@ void AIGMissingFloorLeftoverDirector::ArmNightTwoReturn(const bool bWithThought)
 	NightTwoBeats->ArmReturnChase(/*bWithConclusion=*/false);
 	if (bWithThought)
 	{
-		Think(NSLOCTEXT("IGMissingFloor", "N2ReturnThought", "이제 403호까지 올라가야 해."), 4.0f);
+		Think(NSLOCTEXT("IGMissingFloor", "N2ReturnThought", "이제 403호로 돌아가야 해."), 4.0f);
 	}
 	UE_LOG(LogTemp, Display, TEXT("LEFTOVER_N2 return armed"));
 }
@@ -1749,8 +1777,12 @@ void AIGMissingFloorLeftoverDirector::HandleJeongwooArrived()
 		const bool bKnown = HasBeat(IGLeftover::JeongwooIntroBeat);
 		if (!bKnown)
 		{
-			Say(IGLeftover::RiderName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxesIntro",
-				"어, 어제 골목에서 뵌… 진짜 죄송했어요. 저 202호 정우예요."));
+			// 사과는 골목에서 오토바이가 스친 회차에만 한다. 첫째 낮 오토바이 앞 인사와 같은 조건이다.
+			// 그 일이 없었으면 처음 보는 이웃끼리의 인사다.
+			Say(IGLeftover::RiderName(), HasBeat(IGLeftover::ScooterNearMissBeat)
+				? NSLOCTEXT("IGMissingFloor", "LeftoverBoxesIntro",
+					"어, 어제 골목에서 뵌… 진짜 죄송했어요. 저 202호 정우예요.")
+				: NSLOCTEXT("IGMissingFloor", "LeftoverBoxesHello", "안녕하세요. 저 202호 사는 정우예요."));
 			PlayBeat(IGLeftover::JeongwooIntroBeat);
 		}
 		Say(IGLeftover::JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBoxesAskDoor", "저기, 죄송한데 문 좀 잡아 주실래요?"));
@@ -1893,7 +1925,7 @@ bool AIGMissingFloorLeftoverDirector::TryJeongwooTalk(const bool bKnown, const b
 		// 밤에 안쪽 방에서 챙긴 장갑 주머니를 건넨다.
 		Narrative->AddLeftover(EIGLeftoverList::Taken, IGLeftover::GlovesGiven);
 		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverGloves1", "이거 제 건데요. 버리라고 한 적 없어요."));
-		Talk(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverGloves2", "302호 짐에 더 섞여 있을지도 몰라요. 그것도 한번 봐요."));
+		Talk(IGLeftover::YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverGloves2", "302호 짐에 더 섞여 있을지도 몰라요. 거기도 한번 봐요."));
 		Talk(Rider, NSLOCTEXT("IGMissingFloor", "LeftoverGloves3", "배달 끝나면 네 시쯤 돼요. 들어오는 길에 빼놓을게요."));
 	}
 	else

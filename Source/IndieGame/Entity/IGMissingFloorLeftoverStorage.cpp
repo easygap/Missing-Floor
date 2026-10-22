@@ -926,8 +926,7 @@ void AIGMissingFloorLeftoverDirector::ReleaseBoard()
 					Self->SceneTimer, Self, &AIGMissingFloorLeftoverDirector::FreeJeongwoo, 0.3f, false);
 			}
 		};
-		AIGHorrorHUD::PushDialogueScoped(this, StorageVoice(), ReleasedLine,
-			EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story, MoveTemp(Scope));
+		Speak(StorageVoice(), ReleasedLine, MoveTemp(Scope), 0.0f);
 	}
 	else
 	{
@@ -1940,7 +1939,7 @@ void AIGMissingFloorLeftoverDirector::TickSiteHold()
 	if (bSiteLinePending && Seconds >= 1.8f)
 	{
 		bSiteLinePending = false;
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch1", "틀 구멍 넷이 덧판 나사 넷이랑 딱 맞아."), 3.6f);
+		Think(NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch1", "덧판 나사 네 개가 틀 구멍에 딱 맞네."), 3.6f);
 	}
 	FTransform Where = SiteHold;
 	if (Seconds >= SiteHoldSeconds)

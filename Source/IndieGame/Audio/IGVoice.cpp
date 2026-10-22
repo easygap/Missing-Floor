@@ -22,6 +22,12 @@ namespace
 	constexpr float DoorInnerRadius = 60.0f;
 	constexpr float DoorFalloffDistance = 900.0f;
 	constexpr float DoorLowPassHz = 2200.0f;
+	/**
+	 * 다른 층. 계단으로 올라오는 말이라 거리로 줄이지 않는다. 크기와 먹먹함은 층을 가로지르는
+	 * 오클루전이 맡는다(같은 자리의 웅얼거림이 쓰던 거리다).
+	 */
+	constexpr float FloorsInnerRadius = 1100.0f;
+	constexpr float FloorsFalloffDistance = 2600.0f;
 	/** 녹음기·휴대폰. 작은 스피커라 저역과 고역이 같이 빠진다. */
 	constexpr float DeviceInnerRadius = 40.0f;
 	constexpr float DeviceFalloffDistance = 700.0f;
@@ -56,6 +62,13 @@ FName IGVoice::LineIdOf(const FText& Line)
 {
 	const TOptional<FString> Key = FTextInspector::GetKey(Line);
 	return Key.IsSet() && !Key->IsEmpty() ? FName(*Key.GetValue()) : NAME_None;
+}
+
+bool IGVoice::IsYudam(const FText& Speaker)
+{
+	// 화자 이름표의 키는 어느 언어로 켜도 같다. 유담의 이름표는 이 둘이다.
+	const FName Key = LineIdOf(Speaker);
+	return Key == FName(TEXT("YudamCounterSpeaker")) || Key == FName(TEXT("YudamName"));
 }
 
 USoundBase* IGVoice::Find(const FName LineId)
@@ -129,32 +142,52 @@ UAudioComponent* IGVoice::Play(
 		return Component;
 	}
 
-	const bool bDoor = Source == ESource::ThroughDoor;
-	const bool bDevice = Source == ESource::Device;
+	float InnerRadius = PersonInnerRadius;
+	float FalloffDistance = PersonFalloffDistance;
+	EIGAudioBus Bus = EIGAudioBus::Speech;
+	float LowPassHz = 0.0f;
+	float HighPassHz = 0.0f;
+	switch (Source)
+	{
+	case ESource::ThroughDoor:
+		InnerRadius = DoorInnerRadius;
+		FalloffDistance = DoorFalloffDistance;
+		Bus = EIGAudioBus::Entity;
+		LowPassHz = DoorLowPassHz;
+		break;
+	case ESource::PersonThroughDoor:
+		// 문짝은 고역만 먹는다. 사람의 말은 문에 귀를 붙이지 않아도 들린다.
+		LowPassHz = DoorLowPassHz;
+		break;
+	case ESource::PersonAcrossFloors:
+		InnerRadius = FloorsInnerRadius;
+		FalloffDistance = FloorsFalloffDistance;
+		LowPassHz = DoorLowPassHz;
+		break;
+	case ESource::Device:
+		InnerRadius = DeviceInnerRadius;
+		FalloffDistance = DeviceFalloffDistance;
+		LowPassHz = DeviceLowPassHz;
+		HighPassHz = DeviceHighPassHz;
+		break;
+	default:
+		break;
+	}
 	UAudioComponent* Component = IGAudio::SpawnPersistentOneShotAt(
-		WorldContext,
-		Sound,
-		Where,
-		1.0f,
-		1.0f,
-		bDevice ? DeviceInnerRadius : bDoor ? DoorInnerRadius : PersonInnerRadius,
-		bDevice ? DeviceFalloffDistance : bDoor ? DoorFalloffDistance : PersonFalloffDistance,
-		bDoor ? EIGAudioBus::Entity : EIGAudioBus::Speech);
+		WorldContext, Sound, Where, 1.0f, 1.0f, InnerRadius, FalloffDistance, Bus);
 	if (!Component)
 	{
 		return nullptr;
 	}
-	if (bDoor)
+	if (LowPassHz > 0.0f)
 	{
 		Component->SetLowPassFilterEnabled(true);
-		Component->SetLowPassFilterFrequency(DoorLowPassHz);
+		Component->SetLowPassFilterFrequency(LowPassHz);
 	}
-	else if (bDevice)
+	if (HighPassHz > 0.0f)
 	{
-		Component->SetLowPassFilterEnabled(true);
-		Component->SetLowPassFilterFrequency(DeviceLowPassHz);
 		Component->SetHighPassFilterEnabled(true);
-		Component->SetHighPassFilterFrequency(DeviceHighPassHz);
+		Component->SetHighPassFilterFrequency(HighPassHz);
 	}
 	return Component;
 }

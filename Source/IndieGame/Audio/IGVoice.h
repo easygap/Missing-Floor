@@ -23,11 +23,21 @@ namespace IGVoice
 		/** 녹음기·휴대폰 스피커. 좁은 대역으로 장치 자리에서 난다. */
 		Device,
 		/** 유담 자신의 말. 내 머리에서 나므로 정위하지 않는다. */
-		Self
+		Self,
+		/**
+		 * 문이나 판 너머의 사람(401호 문 안의 황순금, 판 뒤의 정우, 잠긴 문 앞의 목한수). 문짝이
+		 * 고역을 먹는 것은 ThroughDoor와 같고, 사람의 말이라 SPEECH 버스에 건다.
+		 */
+		PersonThroughDoor,
+		/** 다른 층에서 계단을 타고 오는 사람의 말. 거리로는 줄지 않고 층 가림과 고역 손실만 남는다. */
+		PersonAcrossFloors
 	};
 
 	/** 그 대사의 줄 키(NSLOCTEXT 키). 조립한 문장처럼 키가 없으면 None. */
 	INDIEGAME_API FName LineIdOf(const FText& Line);
+
+	/** 화자 이름이 유담인가. 상대와 유담의 말을 한 함수로 번갈아 내는 대화가 Self를 고를 때 쓴다. */
+	INDIEGAME_API bool IsYudam(const FText& Speaker);
 
 	/** 그 줄의 녹음. 없으면 nullptr. 찾은 녹음은 약하게 들고 있어서 다 쓰면 메모리에서 내려간다. */
 	INDIEGAME_API USoundBase* Find(FName LineId);

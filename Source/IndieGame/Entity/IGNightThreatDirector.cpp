@@ -1905,14 +1905,23 @@ void AIGNightThreatDirector::GuestSpeak(const int32 LineIndex)
 
 void AIGNightThreatDirector::GuestSpeakAtNeighbor()
 {
-	// 401호 할머니에게 403호 사람의 목소리로 말한다. 그 사람은 지금 403호 안에 있다.
-	AIGHorrorHUD::PushDialogue(
+	// 401호 할머니에게 403호 사람의 목소리로 말한다. 그 사람은 지금 403호 안에 있다. 녹음이 있으면 그
+	// 목소리가 401호 문 앞에서 나고, 없으면 말은 자막이 맡고 귀에는 웅얼거림만 온다(GuestSpeak와 같다).
+	const FText Line = NSLOCTEXT("IGMissingFloor", "GuestN3Neighbor", "할머니, 저 403호예요. 문 좀 열어 주세요.");
+	const bool bVoiced = IGVoice::Find(IGVoice::LineIdOf(Line)) != nullptr;
+	IGVoice::Say(
 		this,
 		NSLOCTEXT("IGMissingFloor", "GuestSpeakerCorridor", "복도"),
-		NSLOCTEXT("IGMissingFloor", "GuestN3Neighbor", "할머니, 저 403호예요. 문 좀 열어 주세요."),
+		Line,
+		FIGDialogueScope(),
+		[]() { return GetNeighborDoorOutside(0) + FVector(0.0f, 0.0f, 60.0f); },
+		IGVoice::ESource::ThroughDoor,
 		EIGDialogueChannel::Conversation,
-		3.2f,
-		EIGDialoguePriority::Story);
+		3.2f);
+	if (bVoiced)
+	{
+		return;
+	}
 	IGAudio::SpawnOneShotAt(
 		this,
 		UIGToneSequenceSoundWave::CreateDoorMurmur(this),
@@ -2356,15 +2365,40 @@ void AIGNightThreatDirector::SpeakGuestBehind()
 		Line = NSLOCTEXT("IGMissingFloor", "GuestN4Behind", "유담아. 나 왔어.");
 		break;
 	}
-	AIGHorrorHUD::PushDialogue(
-		this,
-		GuestDoor == EIGGuestDoor::Annex
-			? NSLOCTEXT("IGMissingFloor", "GuestSpeakerRoom", "방 안")
-			: NSLOCTEXT("IGMissingFloor", "GuestSpeakerHome", "집 안"),
-		Line,
-		EIGDialogueChannel::Conversation,
-		2.6f,
-		EIGDialoguePriority::Story);
+	const FText Speaker = GuestDoor == EIGGuestDoor::Annex
+		? NSLOCTEXT("IGMissingFloor", "GuestSpeakerRoom", "방 안")
+		: NSLOCTEXT("IGMissingFloor", "GuestSpeakerHome", "집 안");
+	// 녹음이 있으면 그 목소리가 그녀의 등 뒤에서 난다. 줄이 화면에 오를 때 그녀가 보는 쪽의 뒤다.
+	// 넷째 밤의 오빠 목소리는 녹음하지 않는다. 죽은 사람의 말은 노크로만 온다(설정집 §3).
+	const bool bMayVoice = GuestNight < 4;
+	const bool bVoiced = bMayVoice && IGVoice::Find(IGVoice::LineIdOf(Line)) != nullptr;
+	if (bMayVoice)
+	{
+		const TWeakObjectPtr<AIGPlayerCharacter> WeakPlayer(Player);
+		IGVoice::Say(
+			this,
+			Speaker,
+			Line,
+			FIGDialogueScope(),
+			[WeakPlayer]() -> FVector
+			{
+				const AIGPlayerCharacter* Listener = WeakPlayer.Get();
+				return Listener
+					? Listener->GetPawnViewLocation() - Listener->GetControlRotation().Vector().GetSafeNormal2D() * 160.0f
+					: FVector::ZeroVector;
+			},
+			IGVoice::ESource::Person,
+			EIGDialogueChannel::Conversation,
+			2.6f);
+	}
+	else
+	{
+		AIGHorrorHUD::PushDialogue(this, Speaker, Line, EIGDialogueChannel::Conversation, 2.6f, EIGDialoguePriority::Story);
+	}
+	if (bVoiced)
+	{
+		return;
+	}
 	const FVector Behind = Player->GetPawnViewLocation()
 		- Player->GetControlRotation().Vector().GetSafeNormal2D() * 160.0f;
 	IGAudio::SpawnOneShotAt(

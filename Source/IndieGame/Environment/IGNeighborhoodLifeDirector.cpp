@@ -3,6 +3,7 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Audio/IGVoice.h"
 #include "Components/AudioComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -36,6 +37,8 @@ namespace IGNeighborhoodLife
 	// 125cc 배달 스쿠터와 라이더. 차체 중심에서 앞뒤 끝까지, 옆면까지(cm).
 	constexpr float ScooterHalfLength = 95.0f;
 	constexpr float ScooterHalfWidth = 36.0f;
+	/** 차체 중심 바닥에서 앉은 기사의 입까지. 가슴(105 cm)보다 한 뼘 위다. */
+	constexpr float RiderMouthHeight = 140.0f;
 	// 몸과 차체 사이에 남기는 여유. 이보다 가까우면 지나갈 수 없다고 본다.
 	constexpr float PassMargin = 10.0f;
 	// 첫 외출의 스침. 몸 중심에서 차체 중심까지 92 cm면 어깨에서 손 한 뼘이다.
@@ -1407,7 +1410,7 @@ void AIGNeighborhoodLifeDirector::AdvanceScooter(
 		if (!Runtime.bBlockLinePlayed)
 		{
 			Runtime.bBlockLinePlayed = true;
-			PlayRiderLine(NSLOCTEXT("IGMissingFloor", "ScooterRiderStartled", "아, 깜짝이야…"));
+			PlayRiderLine(SlotIndex, NSLOCTEXT("IGMissingFloor", "ScooterRiderStartled", "아, 깜짝이야…"));
 		}
 	}
 	if (bBlocked && Runtime.Speed < 12.0f && Runtime.bParkAtEnd
@@ -1439,7 +1442,7 @@ void AIGNeighborhoodLifeDirector::AdvanceScooter(
 		}
 		if (Runtime.BlockedSeconds > 2.6f && Runtime.BlockedSeconds - DeltaSeconds <= 2.6f)
 		{
-			PlayRiderLine(NSLOCTEXT("IGMissingFloor", "ScooterRiderPassing", "저기요, 좀 지나갈게요."));
+			PlayRiderLine(SlotIndex, NSLOCTEXT("IGMissingFloor", "ScooterRiderPassing", "저기요, 좀 지나갈게요."));
 		}
 	}
 	else
@@ -1472,7 +1475,7 @@ void AIGNeighborhoodLifeDirector::AdvanceScooter(
 		}
 		if (Runtime.bNearMissPass)
 		{
-			PlayRiderLine(NSLOCTEXT("IGMissingFloor", "ScooterRiderSorry", "아, 죄송해요!"));
+			PlayRiderLine(SlotIndex, NSLOCTEXT("IGMissingFloor", "ScooterRiderSorry", "아, 죄송해요!"));
 			if (!bNearMissThoughtPending)
 			{
 				bNearMissThoughtPending = true;
@@ -1618,7 +1621,7 @@ void AIGNeighborhoodLifeDirector::ResolvePlayerClearance(const int32 SlotIndex, 
 			1.15f,
 			60.0f,
 			700.0f);
-		PlayRiderLine(NSLOCTEXT("IGMissingFloor", "ScooterRiderBrushed", "괜찮으세요? 진짜 죄송합니다!"));
+		PlayRiderLine(SlotIndex, NSLOCTEXT("IGMissingFloor", "ScooterRiderBrushed", "괜찮으세요? 진짜 죄송합니다!"));
 	}
 }
 
@@ -1951,12 +1954,23 @@ void AIGNeighborhoodLifeDirector::PlayScooterEngineOff(const int32 SlotIndex)
 		1600.0f);
 }
 
-void AIGNeighborhoodLifeDirector::PlayRiderLine(const FText& Line)
+void AIGNeighborhoodLifeDirector::PlayRiderLine(const int32 SlotIndex, const FText& Line)
 {
-	AIGHorrorHUD::PushDialogue(
+	// 목소리는 말을 시작할 때 기사가 있는 자리에서 난다. 지나가는 오토바이를 따라가지는 않는다.
+	const TWeakObjectPtr<AIGNeighborhoodLifeDirector> WeakThis(this);
+	IGVoice::Say(
 		this,
 		NSLOCTEXT("IGMissingFloor", "ScooterRiderSpeaker", "배달 기사"),
 		Line,
+		FIGDialogueScope(),
+		[WeakThis, SlotIndex]() -> FVector
+		{
+			const AIGNeighborhoodLifeDirector* Self = WeakThis.Get();
+			return Self && Self->ScooterRuntime.IsValidIndex(SlotIndex)
+				? Self->ScooterRuntime[SlotIndex].Location + FVector(0.0f, 0.0f, IGNeighborhoodLife::RiderMouthHeight)
+				: FVector::ZeroVector;
+		},
+		IGVoice::ESource::Person,
 		EIGDialogueChannel::Conversation,
 		0.0f,
 		EIGDialoguePriority::Ambient);

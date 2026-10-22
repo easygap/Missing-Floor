@@ -1734,6 +1734,8 @@ if ($python) {
 & (Join-Path $PSScriptRoot 'Test-BackgroundLaunch.ps1')
 & (Join-Path $PSScriptRoot 'Test-GeneratedArtifactCleanup.ps1')
 & (Join-Path $PSScriptRoot 'Test-AsciiWorkspace.ps1')
+# 목소리 반입 전에 반출 목록의 대사·원문 해시·WAV 규격을 지금 소스와 맞춰 보는지 본다. 언리얼은 띄우지 않는다.
+& (Join-Path $PSScriptRoot 'Test-ImportVoiceLines.ps1')
 
 if ($python) {
     & $python.Source (Join-Path $PSScriptRoot 'test_windows_telemetry.py')

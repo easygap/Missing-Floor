@@ -823,7 +823,7 @@ void AIGMissingFloorNightTwoBeatDirector::ArmReturnChase(const bool bWithConclus
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"N2ReturnThought",
-					"이제 403호까지 올라가야 해."),
+					"이제 403호로 돌아가야 해."),
 				4.0f);
 		}));
 	}

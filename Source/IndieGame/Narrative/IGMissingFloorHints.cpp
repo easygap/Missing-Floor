@@ -160,7 +160,7 @@ namespace
 		{
 			return Make(TEXT("Hint.Arrival.Contract"), {
 				NSLOCTEXT("IGHint", "ArrivalContract1", "책상 위에 계약서를 뒀지. 한번 읽어 보자."),
-				NSLOCTEXT("IGHint", "ArrivalContract2", "403호 책상 위 임대차계약서. 그것부터 보자.") });
+				NSLOCTEXT("IGHint", "ArrivalContract2", "403호 책상 위 임대차계약서. 그거부터 보자.") });
 		}
 		if (!Beat(N, TEXT("Arrival.Box.Parcel"))
 			|| !Beat(N, TEXT("Arrival.Box.Notebook"))

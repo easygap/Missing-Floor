@@ -5,6 +5,7 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Audio/IGVoice.h"
 #include "Camera/CameraComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -948,10 +949,19 @@ void AIGElevator::Press(const EIGElevatorButtonKind Kind, const int32 Floor, AAc
 				{
 					return;
 				}
-				AIGHorrorHUD::PushDialogue(this,
+				// 녹음이 있으면 관리실의 목소리가 버튼판의 인터폰 스피커에서 난다.
+				const TWeakObjectPtr<USceneComponent> Cab(CabRoot.Get());
+				IGVoice::Say(this,
 					NSLOCTEXT("IGElevator", "IntercomSpeaker", "인터폰"),
 					NSLOCTEXT("IGElevator", "IntercomReply", "관리실이에요. …무슨 일이에요? 고장 아니면 누르지 마세요."),
-					EIGDialogueChannel::Device, 4.0f);
+					FIGDialogueScope(),
+					[Cab]() -> FVector
+					{
+						return Cab.IsValid()
+							? Cab->GetComponentTransform().TransformPosition(FVector(CopX - 1.0f, CopY, CopBottomZ + 50.0f))
+							: FVector::ZeroVector;
+					},
+					IGVoice::ESource::Device, EIGDialogueChannel::Device, 4.0f);
 			}), 2.2f, false);
 		}
 		return;

@@ -618,7 +618,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"WorkGloveThought",
-				"장갑에 석고가 굳어 있다. 오빠 장갑은 이것보다 작았는데."),
+				"장갑에 석고가 굳어 있네. 오빠 장갑은 이거보다 작았는데."),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
 			0.9f,
@@ -1601,8 +1601,8 @@ void AIGMissingFloorNightThreeDirector::PlayWallListenResponse(
 		AIGHorrorHUD::PushAudioCaptionAt(
 			this,
 			bHollow
-				? NSLOCTEXT("IGMissingFloor", "WallListenNearCaption", "벽 안에서 물소리가 길게 울리는 소리")
-				: NSLOCTEXT("IGMissingFloor", "WallListenFarCaption", "멀리서 물소리가 웅웅거리는 소리"),
+				? NSLOCTEXT("IGMissingFloor", "WallListenNearCaption", "벽 안에서 길게 울리는 물소리")
+				: NSLOCTEXT("IGMissingFloor", "WallListenFarCaption", "멀리서 웅웅 울리는 물소리"),
 			2.6f,
 			WallLocation);
 	}

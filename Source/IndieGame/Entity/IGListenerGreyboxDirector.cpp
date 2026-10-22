@@ -124,6 +124,10 @@ namespace IGListenerGreybox
 	constexpr double StairNeighborThoughtDelaySeconds = 3.0;
 	/** 차체 중심 바닥에서 앉은 기사의 가슴까지. */
 	constexpr float JeongwooChestHeight = 105.0f;
+	/** 차체 중심 바닥에서 앉은 기사의 입까지. 정우의 목소리가 여기서 난다. */
+	constexpr float JeongwooMouthHeight = 140.0f;
+	/** 계단에 선 303호의 발에서 입까지. */
+	constexpr float StairNeighborMouthHeight = 140.0f;
 	/** 정우에게 말을 건 뒤 다시 받기까지. 나린의 호출벨과 같은 식이다. */
 	constexpr double JeongwooTalkCooldownSeconds = 6.0;
 	/**
@@ -229,6 +233,11 @@ namespace IGListenerGreybox
 	 */
 	const FName HwangPeekBeat(TEXT("Night1.HwangPeek"));
 	const FVector HwangPeekDoor(-140.0f, -246.0f, 1010.0f);
+	/**
+	 * 황순금의 목소리가 나는 자리. 401호 문면 복도 쪽의 입 높이다. 공유 월드에서 문 안쪽은
+	 * 403호 방이라 라디오처럼 문 앞에 두고, 문이 닫혀 있으면 필터로 문짝을 씌운다.
+	 */
+	const FVector Hwang401VoiceLocation(-150.0f, -246.0f, 1045.0f);
 	constexpr float HwangPeekPollSeconds = 0.5f;
 	constexpr float HwangPeekMinDistance = 120.0f;
 	constexpr float HwangPeekMaxDistance = 700.0f;
@@ -282,6 +291,13 @@ namespace IGListenerGreybox
 			"IGMissingFloor",
 			"Unit402VacancyThought",
 			"메모는 붙어 있는데, 안에서 냉장고 소리도 안 나네.");
+	}
+
+	/** 닫힌 401호 문 너머로 하는 황순금의 말. 녹음이 있으면 문짝이 고역을 먹은 목소리로 난다. */
+	static void SayThroughUnit401Door(const UObject* Context, const FText& Speaker, const FText& Line)
+	{
+		IGVoice::Say(Context, Speaker, Line, FIGDialogueScope(), []() { return Hwang401VoiceLocation; },
+			IGVoice::ESource::PersonThroughDoor);
 	}
 }
 
@@ -2974,7 +2990,7 @@ bool AIGListenerGreyboxDirector::TalkAtStoreCounter()
 		bDeliveryQuestion
 			? NSLOCTEXT("IGMissingFloor", "NarinDeliveryQuestion", "뒷골목 게시판에 붙은 택배 안내문 보고 왔는데요. 백도하 앞으로 온 택배도 여기 맡긴 적 있어요?")
 			: bReceiptQuestion
-			? NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 남아 있어요?")
+			? NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 기록이 남아 있어요?")
 			: bRoofQuestion
 			? NSLOCTEXT("IGMissingFloor", "NarinRoofQuestion", "저희 빌라 옥상 문이요, 원래 잠가 둬요? 자물쇠가 채워져 있던데.")
 			: (Narrative->GetNightIndex() == 0
@@ -3486,7 +3502,7 @@ void AIGListenerGreyboxDirector::ContinueStoreReceipt(const bool bTalkCompleted)
 			// 가게 일하는 소리다. 보통 화면에서는 나린의 몸짓과 소리로만 알리고, 「모든 소리」를 고른
 			// 사람에게만 글로 띄운다.
 			AIGHorrorHUD::PushAudioCaptionWhileAudible(Self,
-				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기를 삑삑 누르는 소리]"), 2.4f,
+				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기를 누를 때 나는 삑삑 소리]"), 2.4f,
 				AIGStoreClerk::GetPosScreen(), IGListenerGreybox::StoreReceiptContext,
 				[WeakThis]() { return WeakThis.IsValid() && WeakThis->IsPlayerNearStoreCounter(); },
 				EIGSoundCaptionWeight::Background);
@@ -3638,7 +3654,7 @@ FText AIGListenerGreyboxDirector::GetNarinCounterLine() const
 	if (Narrative && IGListenerGreybox::IsNarinDeliveryTalkDue(*Narrative))
 	{
 		return NSLOCTEXT("IGMissingFloor", "NarinDeliveryAnswer",
-			"작년 여름에 몇 번 맡겼어요. 마지막 건 건물주 아저씨가 찾아가셨고요. 오빠분이 부탁했다고 하던데요.");
+			"작년 여름에 몇 번 맡아 드렸어요. 마지막 건 건물주 아저씨가 찾아가셨고요. 오빠분이 부탁했다고 하던데요.");
 	}
 	if (Narrative && IGListenerGreybox::IsNarinReceiptTalkDue(*Narrative))
 	{
@@ -6123,13 +6139,13 @@ void AIGListenerGreyboxDirector::TickHwangPeekScene()
 		&& (bTurnedToDoor || Elapsed >= IGListenerGreybox::HwangPeekLineSeconds))
 	{
 		bHwangPeekLineShown = true;
-		AIGHorrorHUD::PushDialogue(
+		// 한 뼘 열린 문틈으로 하는 말이라 문짝이 가리지 않는다.
+		IGVoice::Say(
 			this,
 			NSLOCTEXT("IGMissingFloor", "HwangSpeaker", "황순금"),
 			NSLOCTEXT("IGMissingFloor", "Hwang401Peek", "새벽에 나와 있었죠? 들어가서 눈 좀 붙여요."),
-			EIGDialogueChannel::Conversation,
-			0.0f,
-			EIGDialoguePriority::Story);
+			FIGDialogueScope(),
+			[]() { return IGListenerGreybox::Hwang401VoiceLocation; });
 	}
 	if (!bTurnedToDoor && Elapsed < IGListenerGreybox::HwangPeekCloseSeconds)
 	{
@@ -6367,60 +6383,42 @@ void AIGListenerGreyboxDirector::HandleUnit401Knocked(
 			&& Narrative->MarkBeatPlayed(FName(TEXT("Day.Hwang.Journal"))))
 		{
 			bJournalLine = true;
-			AIGHorrorHUD::PushDialogue(
+			IGListenerGreybox::SayThroughUnit401Door(
 				this,
 				Speaker,
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"Hwang401JournalGiven",
-					"문에 걸어 둔 거 읽어 봐요. 사람이 없다는데, 난 분명히 들었다니까요."),
-				EIGDialogueChannel::Conversation,
-				0.0f,
-				EIGDialoguePriority::Story);
+					"문에 걸어 둔 거 읽어 봐요. 사람이 없다는데, 난 분명히 들었다니까요."));
 		}
 		// 둘째 낮에 처음 두드리면 이삿날 이야기부터 한다(§2.3 둘째 낮). 일지 이야기가 먼저 나온
 		// 노크에서는 미룬다 — 세 줄을 넘기면 마지막 줄이 버려진다.
 		if (!bJournalLine && Narrative && Narrative->GetNightIndex() == 2
 			&& Narrative->MarkBeatPlayed(IGListenerGreybox::HwangSonDayBeat))
 		{
-			AIGHorrorHUD::PushDialogue(
+			IGListenerGreybox::SayThroughUnit401Door(
 				this,
 				Speaker,
-				NSLOCTEXT("IGMissingFloor", "Hwang401SonDay", "이삿짐 들어오던 날, 그날이 손 있는 날이었어요."),
-				EIGDialogueChannel::Conversation,
-				0.0f,
-				EIGDialoguePriority::Story);
-			AIGHorrorHUD::PushDialogue(
+				NSLOCTEXT("IGMissingFloor", "Hwang401SonDay", "이삿짐 들어오던 날, 그날이 손 있는 날이었어요."));
+			IGListenerGreybox::SayThroughUnit401Door(
 				this,
 				Speaker,
-				NSLOCTEXT("IGMissingFloor", "Hwang401DontOpen", "문 두드린다고 다 열어 주는 거 아니에요."),
-				EIGDialogueChannel::Conversation,
-				0.0f,
-				EIGDialoguePriority::Story);
+				NSLOCTEXT("IGMissingFloor", "Hwang401DontOpen", "문 두드린다고 다 열어 주는 거 아니에요."));
 		}
-		AIGHorrorHUD::PushDialogue(
-			this,
-			Speaker,
-			GetHwangDoorLine(),
-			EIGDialogueChannel::Conversation,
-			0.0f,
-			EIGDialoguePriority::Story);
+		IGListenerGreybox::SayThroughUnit401Door(this, Speaker, GetHwangDoorLine());
 		// 첫째 밤 옥상 드릴의 까닭(§3.3). 403호에 새 사람이 들면 그는 첫 새벽에 올라가
 		// 이음매를 한 번 더 조인다. 30년 산 401호는 그걸 안다. 둘째 낮, 드릴을 들은 판에 한 번.
 		if (Narrative && Narrative->GetNightIndex() == 1
 			&& Narrative->HasBeatPlayed(FName(TEXT("Night1.RoofDriver")))
 			&& Narrative->MarkBeatPlayed(IGListenerGreybox::HwangDrillBeat))
 		{
-			AIGHorrorHUD::PushDialogue(
+			IGListenerGreybox::SayThroughUnit401Door(
 				this,
 				Speaker,
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"Hwang401Drill",
-					"새벽에 옥상에서 드릴 소리 났죠? 403호에 새 사람 들 때마다 그 양반이 그래요. 첫날 새벽엔 꼭 올라가요."),
-				EIGDialogueChannel::Conversation,
-				0.0f,
-				EIGDialoguePriority::Story);
+					"새벽에 옥상에서 드릴 소리 났죠? 403호에 새 사람 들 때마다 그 양반이 그래요. 첫날 새벽엔 꼭 올라가요."));
 			// 두 줄이 읽힐 무렵 떠올린다. 그 사이 잠들어 밤이 왔으면 떠올리지 않는다.
 			TFunction<bool()> SameScene = AIGHorrorHUD::MakeSceneGuard(this);
 			FTimerHandle DrillThoughtTimer;
@@ -6444,13 +6442,10 @@ void AIGListenerGreyboxDirector::HandleUnit401Knocked(
 		if (Narrative && Narrative->GetNightIndex() <= 0
 			&& Narrative->MarkBeatPlayed(IGListenerGreybox::HwangWarningBeat))
 		{
-			AIGHorrorHUD::PushDialogue(
+			IGListenerGreybox::SayThroughUnit401Door(
 				this,
 				Speaker,
-				NSLOCTEXT("IGMissingFloor", "Hwang401DarkWarning", "새벽에 깜깜한 데서 뭐가 보이거든 쳐다보지 말아요."),
-				EIGDialogueChannel::Conversation,
-				0.0f,
-				EIGDialoguePriority::Story);
+				NSLOCTEXT("IGMissingFloor", "Hwang401DarkWarning", "새벽에 깜깜한 데서 뭐가 보이거든 쳐다보지 말아요."));
 		}
 		if (Narrative && Narrative->GetNightIndex() >= 1
 			&& Narrative->GetNightIndex() <= 3)
@@ -6488,30 +6483,24 @@ bool AIGListenerGreyboxDirector::TryPlayHwangPermission()
 		NSLOCTEXT("IGMissingFloor", "HwangSpeaker", "황순금");
 	// 오빠라는 말을 처음 들었을 때는 그 일에만 답한다.
 	// 물탱크를 쓰자는 제안과 허락은 다음 노크의 P5 힌트에서 한다.
-	AIGHorrorHUD::PushDialogue(
+	IGVoice::Say(
 		this,
 		NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"YudamToHwangAnswer",
 			"벽 안에서 대답이 왔어요. 둘, 쉬고, 하나. 오빠가 문 두드리던 박자예요."),
-		EIGDialogueChannel::Conversation,
-		0.0f,
-		EIGDialoguePriority::Story);
-	AIGHorrorHUD::PushDialogue(
+		FIGDialogueScope(),
+		nullptr,
+		IGVoice::ESource::Self);
+	IGListenerGreybox::SayThroughUnit401Door(
 		this,
 		Speaker,
-		NSLOCTEXT("IGMissingFloor", "Hwang401IsItYourBrother", "아이고… 그 사람이 오빠였어요?"),
-		EIGDialogueChannel::Conversation,
-		0.0f,
-		EIGDialoguePriority::Story);
-	AIGHorrorHUD::PushDialogue(
+		NSLOCTEXT("IGMissingFloor", "Hwang401IsItYourBrother", "아이고… 그 사람이 오빠였어요?"));
+	IGListenerGreybox::SayThroughUnit401Door(
 		this,
 		Speaker,
-		NSLOCTEXT("IGMissingFloor", "Hwang401Permission", "꺼내 줘요. 거기 혼자 두지 말고."),
-		EIGDialogueChannel::Conversation,
-		0.0f,
-		EIGDialoguePriority::Story);
+		NSLOCTEXT("IGMissingFloor", "Hwang401Permission", "꺼내 줘요. 거기 혼자 두지 말고."));
 	return true;
 }
 
@@ -10018,7 +10007,7 @@ void AIGListenerGreyboxDirector::RunArrivalProbe()
 	HandleNeighborhoodDeliveryRead(NeighborhoodDeliveryNote, true);
 	const bool bDeliverySaved = Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.Delivery")))
 		&& GetNarinCounterLine().EqualTo(NSLOCTEXT("IGMissingFloor", "NarinDeliveryAnswer",
-			"작년 여름에 몇 번 맡겼어요. 마지막 건 건물주 아저씨가 찾아가셨고요. 오빠분이 부탁했다고 하던데요."));
+			"작년 여름에 몇 번 맡아 드렸어요. 마지막 건 건물주 아저씨가 찾아가셨고요. 오빠분이 부탁했다고 하던데요."));
 	if (!bRoofFirstSafe || !bLastClueRequired || !SleepTarget->IsInteractionEnabled() || !bDeliverySaved)
 	{
 		UE_LOG(LogTemp, Error, TEXT("MISSINGFLOOR_ARRIVAL FAIL free_order=%d last_clue=%d sleep=%d delivery=%d"),
@@ -10038,8 +10027,9 @@ void AIGListenerGreyboxDirector::RunArrivalProbe()
 		GetWorldTimerManager().SetTimer(SetupTimer, FTimerDelegate::CreateWeakLambda(this, [this, StartedAt]()
 		{
 			UIGSaveSubsystem* Save = GetGameInstance()->GetSubsystem<UIGSaveSubsystem>();
+			const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 			// 자기 타이머를 지우는 순간 이 람다와 캡처가 해제된다. 지우기는 갈래마다 맨 끝에 둔다.
-			if (!Save || FPlatformTime::Seconds() - StartedAt > 30.0)
+			if (!Save || !Narrative || FPlatformTime::Seconds() - StartedAt > 30.0)
 			{
 				FailProbe(TEXT("입주 조사 결과의 자동 저장이 끝나지 않음"));
 				GetWorldTimerManager().ClearTimer(SetupTimer);
@@ -12522,8 +12512,16 @@ void AIGListenerGreyboxDirector::HandleJeongwooTalk(AIGMissingFloorEvidence* Evi
 		Scope.SpeakerActor = TalkSpot;
 		Scope.EarshotRadius = IGListenerGreybox::TalkEarshotRadius;
 		Scope.bReplayIfInterrupted = true;
-		AIGHorrorHUD::PushDialogueScoped(
-			this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story, MoveTemp(Scope));
+		// 유담의 말은 머리에서, 정우의 말은 오토바이에 앉은 그의 입에서 난다.
+		IGVoice::Say(this, Speaker, Line, MoveTemp(Scope),
+			[TalkSpot]() -> FVector
+			{
+				return TalkSpot.IsValid()
+					? TalkSpot->GetActorLocation() + FVector(
+						0.0f, 0.0f, IGListenerGreybox::JeongwooMouthHeight - IGListenerGreybox::JeongwooChestHeight)
+					: FVector::ZeroVector;
+			},
+			IGVoice::IsYudam(Speaker) ? IGVoice::ESource::Self : IGVoice::ESource::Person);
 	};
 	// 한 번에 세 줄까지다. 자막 배율이 크면 넷째 줄은 줄을 서다 버려진다.
 	if (Night == 1 && !bKnown)
@@ -12543,7 +12541,7 @@ void AIGListenerGreyboxDirector::HandleJeongwooTalk(AIGMissingFloorEvidence* Evi
 				NSLOCTEXT("IGMissingFloor", "YudamHelloJeongwoo", "네, 어제 왔어요."));
 		}
 		Say(Rider, NSLOCTEXT(
-			"IGMissingFloor", "JeongwooIntro", "저 202호 살아요, 정우예요. 새벽에 오토바이 소리 나면 저예요. 죄송해요."));
+			"IGMissingFloor", "JeongwooIntro", "저 202호 사는 정우예요. 새벽에 오토바이 소리 나면 저예요. 죄송해요."));
 	}
 	else if (Night == 2 && Narrative->MarkBeatPlayed(IGListenerGreybox::JeongwooGuestBeat))
 	{
@@ -12731,8 +12729,15 @@ void AIGListenerGreyboxDirector::HandleStairNeighborMet(AIGStairNeighbor* Neighb
 		Scope.SpeakerActor = WeakNeighbor;
 		Scope.EarshotRadius = IGListenerGreybox::TalkEarshotRadius;
 		Scope.OnEnded = MoveTemp(OnEnded);
-		AIGHorrorHUD::PushDialogueScoped(
-			this, Speaker, Line, EIGDialogueChannel::Conversation, 0.0f, EIGDialoguePriority::Story, MoveTemp(Scope));
+		// 유담의 말은 머리에서, 303호의 말은 계단에 선 그녀의 입에서 난다.
+		IGVoice::Say(this, Speaker, Line, MoveTemp(Scope),
+			[WeakNeighbor]() -> FVector
+			{
+				return WeakNeighbor.IsValid()
+					? WeakNeighbor->GetActorLocation() + FVector(0.0f, 0.0f, IGListenerGreybox::StairNeighborMouthHeight)
+					: FVector::ZeroVector;
+			},
+			IGVoice::IsYudam(Speaker) ? IGVoice::ESource::Self : IGVoice::ESource::Person);
 	};
 	// 고함은 치지 않는다. 그녀도 들었고, 대답하지 않은 사람이다(EXPANSION_PLAN §2.3). 한 번에 세 줄까지다.
 	const FText Speaker = NSLOCTEXT("IGMissingFloor", "Neighbor303Speaker", "303호");

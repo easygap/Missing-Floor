@@ -6749,13 +6749,13 @@ void AIGHorrorHUD::DrawAccessibilityPanel()
 		NSLOCTEXT("IGHUD", "A11yCaptionBackgroundDesc", "자막 뒤의 검은 배경을 얼마나 진하게 표시할지 정합니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionSafeAreaDesc", "값을 줄이면 자막이 화면 안쪽에 표시됩니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionDurationDesc", "자막이 화면에 떠 있는 시간을 조절합니다. 읽을 시간이 부족하면 값을 높여 주세요."),
-		NSLOCTEXT("IGHUD", "A11yCrouchInputDesc", "앉기 키를 한 번 눌러 전환하거나, 누르고 있는 동안만 유지하도록 선택합니다."),
+		NSLOCTEXT("IGHUD", "A11yCrouchInputDesc", "앉기 키를 한 번씩 눌러 앉고 서거나, 누르고 있는 동안만 앉도록 설정합니다."),
 		NSLOCTEXT("IGHUD", "A11yHoldInputDesc", "버튼을 길게 누르기 어렵다면 한 번 눌러 시작하고 다시 눌러 취소하도록 바꿀 수 있습니다."),
 		NSLOCTEXT("IGHUD", "A11yHoldDurationDesc", "문을 열거나 조사할 때 버튼을 얼마나 오래 누를지 정합니다."),
 		NSLOCTEXT("IGHUD", "A11yPromptKeysDesc", "‘항상’으로 두면 누를 키를 계속 표시합니다. ‘익힐 때까지’로 두면 같은 동작을 세 번 한 뒤부터 키 이름을 숨깁니다."),
 		NSLOCTEXT("IGHUD", "A11yHapticsDesc", "게임패드 진동을 켜거나 끕니다."),
 		NSLOCTEXT("IGHUD", "A11yMicrophoneDesc", "켜면 마이크로 들어오는 내 목소리와 주변 소리에 위층 사람이 반응합니다."),
-		NSLOCTEXT("IGHUD", "A11yResetDesc", "이 화면의 설정을 처음 상태로 되돌립니다."),
+		NSLOCTEXT("IGHUD", "A11yResetDesc", "이 화면의 설정을 기본값으로 되돌립니다."),
 		NSLOCTEXT("IGHUD", "A11yCloseDesc", "설정을 저장하고 이전 화면으로 돌아갑니다.")
 	};
 	static_assert(UE_ARRAY_COUNT(Labels) == IGSettingsMenuLayout::AccessibilityRowCount, "접근성 행 이름 수가 행 수와 다르다");

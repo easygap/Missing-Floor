@@ -4,6 +4,7 @@
 #include "Audio/IGAudioHelpers.h"
 #include "Audio/IGMissingFloorAudioSubsystem.h"
 #include "Audio/IGToneSequenceSoundWave.h"
+#include "Audio/IGVoice.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/AudioComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -93,6 +94,8 @@ namespace IGNightFour
 	const FVector EndingBLocation(165.0f, 765.0f, 1220.0f);
 	const FVector CavityVisualOrigin(327.0f, 700.0f, 1200.0f);
 	const FVector MokStartLocation(130.0f, 470.0f, 1195.0f);
+	/** 목한수의 발에서 입까지. 대치에서 그의 녹음된 말이 여기서 난다. */
+	constexpr float MokMouthHeight = 155.0f;
 	const FVector MokExitLocation(130.0f, 865.0f, 1195.0f);
 	const FRotator MokRotation(0.0f, -90.0f, 0.0f);
 	const FVector EndingHammerStart(218.0f, 660.0f, 1205.0f);
@@ -1730,13 +1733,28 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 		"IGMissingFloor",
 		"MokHansooFinalLine",
 		"망치 내려놔요. 거기서 나와. 내가 처리할 테니까.");
-	AIGHorrorHUD::PushDialogue(
-		this,
-		NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
-		MokLine,
-		EIGDialogueChannel::Conversation,
-		3.0f,
-		EIGDialoguePriority::Critical);
+	// 녹음이 있으면 그의 말은 말을 시작할 때 그가 선 자리, 입 높이에서 난다.
+	const TWeakObjectPtr<AIGMissingFloorNightFourDirector> WeakThis(this);
+	const auto MokSays = [this, WeakThis](const FText& Line)
+	{
+		IGVoice::Say(
+			this,
+			NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
+			Line,
+			FIGDialogueScope(),
+			[WeakThis]() -> FVector
+			{
+				const AIGMissingFloorNightFourDirector* Self = WeakThis.Get();
+				const UStaticMeshComponent* Body = Self && Self->MokVisuals.Num() > 0 ? Self->MokVisuals[0].Get() : nullptr;
+				return (Body ? Body->GetComponentLocation() : IGNightFour::MokStartLocation)
+					+ FVector(0.0f, 0.0f, IGNightFour::MokMouthHeight);
+			},
+			IGVoice::ESource::Person,
+			EIGDialogueChannel::Conversation,
+			3.0f,
+			EIGDialoguePriority::Critical);
+	};
+	MokSays(MokLine);
 
 	// §22.3. 그의 말은 언제나 같다 — 애원은 본 것과 무관하다. 달라지는 것은
 	// 유담이 그 앞에서 무엇을 댈 수 있느냐다. 아무것도 못 본 회차는 침묵이
@@ -1751,23 +1769,20 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 	bool bCoverAnswered = false;
 	for (const FText& ReplyLine : ReplyLines)
 	{
-		AIGHorrorHUD::PushDialogue(
+		IGVoice::Say(
 			this,
 			NSLOCTEXT("IGMissingFloor", "YudamName", "백유담"),
 			ReplyLine,
+			FIGDialogueScope(),
+			nullptr,
+			IGVoice::ESource::Self,
 			EIGDialogueChannel::Conversation,
 			IGNightFour::ConfrontationReplySeconds,
 			EIGDialoguePriority::Critical);
 		if (!bCoverAnswered && ReplyLine.EqualTo(NSLOCTEXT("IGMissingFloor", "ConfrontationReplyCover", "이 덮개, 저 점검구에서 떼어 냈죠?")))
 		{
 			bCoverAnswered = true;
-			AIGHorrorHUD::PushDialogue(
-				this,
-				NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
-				CoverReply,
-				EIGDialogueChannel::Conversation,
-				3.0f,
-				EIGDialoguePriority::Critical);
+			MokSays(CoverReply);
 		}
 	}
 	// 추궁이 있든 없든, 열린 벽 앞에서 그는 제 몫부터 던다(§3.3 회계). 7월 26일에 민
@@ -1777,26 +1792,14 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 		"IGMissingFloor",
 		"MokHansooRetort",
 		"내가 민 거 아니야. 403호 살던 그 사람이 밀었어. 난 치우기만 했다고.");
-	AIGHorrorHUD::PushDialogue(
-		this,
-		NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
-		MokRetort,
-		EIGDialogueChannel::Conversation,
-		3.0f,
-		EIGDialoguePriority::Critical);
+	MokSays(MokRetort);
 	// 제 몫을 덜다가 한마디가 더 샌다. 7월 26일 아침 그가 찾았을 때 도하는 숨을 쉬고 있었다
 	// (설정집 §2). 그날의 날짜들로만 짐작하던 것을 그의 입으로 확인한다.
 	const FText MokBreath = NSLOCTEXT(
 		"IGMissingFloor",
 		"MokHansooBreathLine",
-		"숨은 붙어 있었어. 근데 어차피 틀렸었다고.");
-	AIGHorrorHUD::PushDialogue(
-		this,
-		NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
-		MokBreath,
-		EIGDialogueChannel::Conversation,
-		3.0f,
-		EIGDialoguePriority::Critical);
+		"숨은 붙어 있었어. 근데 어차피 가망이 없었다고.");
+	MokSays(MokBreath);
 	// 그가 지나가기 전에 댄 줄이 다 끝나야 한다. 존재가 먼저 들어오면
 	// 대치가 대화가 아니라 배경이 된다. 줄마다 실제로 화면에 머무는 시간을
 	// 잰다 — 한 줄에 3.05초를 곱하던 값은 마흔 글자짜리 줄이 5초를 쓰는
@@ -2971,25 +2974,33 @@ void AIGMissingFloorNightFourDirector::PlayNeighbor303Call()
 	case 2:
 	{
 		const bool bFirst = Neighbor303CallStage == 2;
-		AIGHorrorHUD::PushDialogue(
+		const FText Line = bFirst
+			? NSLOCTEXT("IGMissingFloor", "Neighbor303CallsUp", "위에 누구 있어요? 괜찮아요?")
+			: NSLOCTEXT("IGMissingFloor", "Neighbor303NoSignal", "119 눌렀는데 왜 안 걸려.");
+		// 녹음이 있으면 그 목소리가 계단을 타고 올라온다. 없으면 말은 자막이 맡고 귀에는 계단을 타고
+		// 오는 웅얼거림만 온다(확장 계획 §3.3과 같은 규칙).
+		const bool bVoiced = IGVoice::Find(IGVoice::LineIdOf(Line)) != nullptr;
+		IGVoice::Say(
 			this,
 			NSLOCTEXT("IGMissingFloor", "Neighbor303Speaker", "303호"),
-			bFirst
-				? NSLOCTEXT("IGMissingFloor", "Neighbor303CallsUp", "위에 누구 있어요? 괜찮아요?")
-				: NSLOCTEXT("IGMissingFloor", "Neighbor303NoSignal", "119 눌렀는데 왜 안 걸려."),
+			Line,
+			FIGDialogueScope(),
+			[]() { return IGNightFour::Neighbor303Voice; },
+			IGVoice::ESource::PersonAcrossFloors,
 			EIGDialogueChannel::Conversation,
-			3.2f,
-			EIGDialoguePriority::Story);
-		// 말은 자막이 맡고 귀에는 계단을 타고 오는 웅얼거림만 온다(확장 계획 §3.3과 같은 규칙).
-		IGAudio::SpawnOneShotAt(
-			this,
-			UIGToneSequenceSoundWave::CreateDoorMurmur(this),
-			IGNightFour::Neighbor303Voice,
-			bFirst ? 0.62f : 0.42f,
-			1.18f,
-			1100.0f,
-			2600.0f,
-			EIGAudioBus::World);
+			3.2f);
+		if (!bVoiced)
+		{
+			IGAudio::SpawnOneShotAt(
+				this,
+				UIGToneSequenceSoundWave::CreateDoorMurmur(this),
+				IGNightFour::Neighbor303Voice,
+				bFirst ? 0.62f : 0.42f,
+				1.18f,
+				1100.0f,
+				2600.0f,
+				EIGAudioBus::World);
+		}
 		if (bFirst)
 		{
 			Rearm(IGNightFour::Neighbor303SecondLineSeconds);

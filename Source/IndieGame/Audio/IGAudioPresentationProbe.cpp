@@ -5,6 +5,7 @@
 #include "Audio/IGToneSequenceSoundWave.h"
 #include "Audio/IGVoice.h"
 #include "Accessibility/IGAccessibilitySubsystem.h"
+#include "ActiveSound.h"
 #include "AudioMixerBlueprintLibrary.h"
 #include "AudioDevice.h"
 #include "AudioThread.h"
@@ -515,6 +516,40 @@ void AIGAudioPresentationProbe::Tick(const float DeltaSeconds)
 	{
 		Check(VoiceEnded == 1 && VoiceLastReason == static_cast<uint8>(EIGDialogueEndReason::Cancelled),
 			TEXT("cut_voice_is_not_counted_as_finished"));
+		// 문이나 층 너머의 사람도 사람 목소리 버스에 건다. 문밖 손님만 존재의 버스다. 셋 다 고역이 먹힌다.
+		// 엔진은 필터를 컴포넌트 값이 아니라 재생 중인 소리에 건다. 그 소리를 오디오 스레드에서 읽는다.
+		const auto PlaysFiltered = [this](const IGVoice::ESource Source, const EIGAudioBus Bus)
+		{
+			USoundBase* Sample = IGVoice::Find(IGVoice::LineIdOf(ProbeVoiceLine()));
+			FAudioDevice* Device = GetWorld()->GetAudioDeviceRaw();
+			const FVector Door = Player.IsValid() ? Player->GetActorLocation() + FVector(200, 0, 60) : FVector::ZeroVector;
+			UAudioComponent* Component = Sample && Device ? IGVoice::Play(this, Sample, Door, Source) : nullptr;
+			if (!Component)
+			{
+				return false;
+			}
+			const uint64 ComponentId = Component->GetAudioComponentID();
+			bool bFiltered = false;
+			FAudioThread::RunCommandOnAudioThread([Device, ComponentId, &bFiltered]()
+			{
+				if (const FActiveSound* Sound = Device->FindActiveSound(ComponentId))
+				{
+					bFiltered = Sound->bEnableLowPassFilter && Sound->LowPassFilterFrequency < 20000.0f;
+				}
+			});
+			FAudioCommandFence Fence;
+			Fence.BeginFence();
+			Fence.Wait();
+			const bool bTracked = IsTrackedVoice(Component, Bus);
+			UE_LOG(LogTemp, Display, TEXT("AUDIO_PRESENTATION_VOICE_SOURCE source=%d tracked=%d filtered=%d"),
+				static_cast<int32>(Source), bTracked ? 1 : 0, bFiltered ? 1 : 0);
+			Component->Stop();
+			return bTracked && bFiltered;
+		};
+		const bool bPersonDoor = PlaysFiltered(IGVoice::ESource::PersonThroughDoor, EIGAudioBus::Speech);
+		const bool bPersonFloors = PlaysFiltered(IGVoice::ESource::PersonAcrossFloors, EIGAudioBus::Speech);
+		Check(bPersonDoor && bPersonFloors, TEXT("person_behind_door_speaks_on_speech_bus"));
+		Check(PlaysFiltered(IGVoice::ESource::ThroughDoor, EIGAudioBus::Entity), TEXT("guest_behind_door_stays_on_entity_bus"));
 		IGVoice::SetSoundForTesting(IGVoice::LineIdOf(ProbeVoiceLine()), nullptr);
 		// 「들은 말」이 든 채로 자동 저장을 쓴다. 이어하기와 같은 검사로 다시 읽혀야 한다. 저장 검사가
 		// FText를 몰라서 대사를 들은 뒤의 저장이 모두 걸러지던 일(2026-10-21)을 배포본에서 다시 본다.

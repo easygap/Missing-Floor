@@ -205,7 +205,8 @@ private:
 	void PlayScooterScreech(int32 SlotIndex);
 	void PlayScooterWhoosh(int32 SlotIndex, const FVector& At);
 	void PlayScooterEngineOff(int32 SlotIndex);
-	void PlayRiderLine(const FText& Line);
+	/** 그 오토바이 기사의 말. 녹음이 있으면 기사 자리에서 목소리가 난다. */
+	void PlayRiderLine(int32 SlotIndex, const FText& Line);
 
 	void UpdateGust(float DeltaSeconds);
 	void UpdateLeaves(float DeltaSeconds, const FVector& ListenerLocation);

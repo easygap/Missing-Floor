@@ -25,6 +25,7 @@ namespace IGLeftoverDialogue
 	inline const FName Fit(TEXT("Leftover.Assembly.Fit"));
 }
 
+struct FIGDialogueScope;
 class AIGAccessHatch;
 class AIGJeongwooFigure;
 class AIGLeftoverTarget;
@@ -208,6 +209,11 @@ private:
 	 * 한 번 부른다. Then은 한 번만 불린다.
 	 */
 	void SayThen(FName Context, const FText& Speaker, const FText& Line, float FallbackSeconds, TFunction<void()> Then);
+	/**
+	 * Say·SayIn·SayThen이 대사를 내는 곳. 녹음이 있으면 유담의 말은 머리에서, 정우의 말은 그 몸에서 나고,
+	 * 판 뒤에 갇혀 있는 동안은 판이 고역을 먹는다.
+	 */
+	void Speak(const FText& Speaker, const FText& Line, FIGDialogueScope Scope, float MinSeconds);
 	/** 그 사건의 떠 있는 줄과 밀린 줄, 소리 자막을 거둔다. */
 	void Hush(FName Context);
 	void PlaySound(USoundBase* Sound, const FVector& Where, float Volume, float Pitch = 1.0f, float Inner = 120.0f, float Outer = 1400.0f);

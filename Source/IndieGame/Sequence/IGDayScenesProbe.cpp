@@ -270,7 +270,6 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			TEXT("hwang_warns_about_the_dark_on_arrival"));
 		// 첫째 밤. 이사 온 날 골목에서 정우와 스쳤다고 치고, 403호 안에서 밤을 채운다.
 		Narrative->SetNightIndex(1);
-		Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.ScooterNearMiss")));
 		HomeDoor->ForceOpenState(false);
 		Stand(HomeFeet + Floor4, FVector(131.0f, -237.0f, 100.0f) + Floor4);
 		if (!Hour->IsHourActive())
@@ -333,7 +332,7 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			JeongwooTalk->OnExamined.Broadcast(JeongwooTalk.Get());
 			Check(Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro")))
 				&& SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooIntro",
-					"저 202호 살아요, 정우예요. 새벽에 오토바이 소리 나면 저예요. 죄송해요.")),
+					"저 202호 사는 정우예요. 새벽에 오토바이 소리 나면 저예요. 죄송해요.")),
 				TEXT("jeongwoo_introduces_himself_day1"));
 			if (!bShots)
 			{

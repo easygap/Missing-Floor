@@ -2187,7 +2187,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('P'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
 				NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooBoxAtDoor", "새벽엔 진짜 고마웠어요. 그 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요."), TEXT("LeftoverJeongwooBoxAtDoor")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
-				NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 남아 있어요?"), TEXT("NarinReceiptQuestion")},
+				NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 기록이 남아 있어요?"), TEXT("NarinReceiptQuestion")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "나린"),
 				NSLOCTEXT("IGMissingFloor", "NarinReceiptAnswer", "포스에 남아 있을 거예요. 잠깐만요, 찾아볼게요."), TEXT("NarinReceiptAnswer")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "나린"),
@@ -2233,7 +2233,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('C'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverPushedCaption", "[휜 철골이 빠지며 벽을 긁고 멀어지는 소리]"), TEXT("LeftoverPushedCaption")},
 			{TEXT('C'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기를 삑삑 누르는 소리]"), TEXT("StoreTerminalCaption")},
+				NSLOCTEXT("IGMissingFloor", "StoreTerminalCaption", "[계산대 단말기를 누를 때 나는 삑삑 소리]"), TEXT("StoreTerminalCaption")},
 			{TEXT('C'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "StorePrinterCaption", "[영수증이 뽑혀 나오다 딸깍 잘리는 소리]"), TEXT("StorePrinterCaption")},
 		};
