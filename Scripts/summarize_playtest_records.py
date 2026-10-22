@@ -9,6 +9,10 @@
 
 판정 기준은 Docs/MISSING_FLOOR_ACCEPTANCE.md의 §18.7·§19.9·§20.5다. 기록으로
 알 수 없는 것(헤드폰으로 층을 맞혔는지, 입력 지연)은 설문으로 따로 받는다.
+
+0.10.0부터(스키마 2) 위치 기록에 그 순간 사건이 벌어지고 있었는지, 숨어 있었는지가
+붙는다. 그걸로 멈춰 있던 시간을 「사건 앞에서 기다린 시간」과 「막힌 자리에서 헤맨
+시간」으로 나눠 보여 준다. 판정 줄은 이 구분과 상관없이 예전 계산 그대로다.
 """
 import argparse
 import glob
@@ -24,6 +28,8 @@ NIGHT_MINUTES = {1: (20, 30), 2: (30, 40), 3: (35, 50), 4: (30, 45)}
 CAPTURE_MEDIAN_LIMIT = {1: 1, 4: 3}
 STUCK_SECONDS = 600.0
 STUCK_RADIUS = 600.0  # 같은 자리로 보는 범위(cm)
+STILL_RADIUS = 150.0  # 5초 표본 사이에 이만큼도 안 움직였으면 멈춰 있던 것으로 본다(cm)
+STILL_GAP_LIMIT = 15.0  # 표본 사이가 이보다 길면(기록이 끊긴 것) 멈춘 시간에 넣지 않는다(초)
 
 
 def histogram_percentile(histogram, fraction):
@@ -39,8 +45,32 @@ def histogram_percentile(histogram, fraction):
     return len(histogram) - 0.5
 
 
+def threatened(point):
+    """사건이 벌어지는 중이었거나 숨어 있었다. 스키마 1 기록에는 값이 없어 None이다."""
+    if len(point) < 9:
+        return None
+    return bool(point[7]) or bool(point[8])
+
+
+def waiting_seconds(trail):
+    """사건이 벌어지거나 숨어 있는 동안 거의 안 움직인 시간. 스키마 1 기록이면 None."""
+    total = 0.0
+    for first, second in zip(trail, trail[1:]):
+        flag = threatened(first)
+        if flag is None:
+            return None
+        gap = second[0] - first[0]
+        if flag and 0 < gap <= STILL_GAP_LIMIT and math.dist(first[1:4], second[1:4]) <= STILL_RADIUS:
+            total += gap
+    return total
+
+
 def stuck_episodes(trail):
-    """진실 수가 그대로인 채 같은 자리 근처에 10분 넘게 머문 구간."""
+    """진실 수가 그대로인 채 같은 자리 근처에 10분 넘게 머문 구간.
+
+    waiting_share는 그 구간에서 사건이 벌어지고 있었거나 숨어 있던 표본의 비율이다.
+    절반을 넘으면 무서워서 기다린 구간, 아니면 뭘 할지 몰라 헤맨 구간으로 본다.
+    """
     episodes = []
     start = 0
     for index in range(1, len(trail) + 1):
@@ -53,8 +83,10 @@ def stuck_episodes(trail):
             span = trail[index - 1][0] - trail[start][0]
             if span >= STUCK_SECONDS:
                 anchor = trail[start]
+                flags = [threatened(point) for point in trail[start:index]]
+                share = None if None in flags else sum(flags) / len(flags)
                 episodes.append({"from": anchor[0], "seconds": span, "night": anchor[4],
-                                 "at": [round(v) for v in anchor[1:4]]})
+                                 "at": [round(v) for v in anchor[1:4]], "waiting_share": share})
             start = index
     return episodes
 
@@ -90,6 +122,9 @@ def summarize(records):
             else:
                 record["settings"][key] = value
     stuck = [episode for r in records for episode in stuck_episodes(r.get("trail", []))]
+    waited = [waiting_seconds(r.get("trail", [])) for r in records]
+    waited = [seconds for seconds in waited if seconds is not None]
+    lost = [e["seconds"] * (1.0 - e["waiting_share"]) for e in stuck if e["waiting_share"] is not None]
     events = record.get("events", [])
     journal_in_day = any(event["type"] in ("first_journal", "journal") for event in events)
     actions = record.get("actions", {})
@@ -102,6 +137,9 @@ def summarize(records):
         "quiet_door": "quiet_door" in actions,
         "hints": actions.get("hint", {}).get("count", 0),
         "stuck": stuck,
+        # 스키마 1 기록만 있으면 None이다.
+        "waiting_minutes": sum(waited) / 60.0 if waited else None,
+        "lost_minutes": sum(lost) / 60.0 if waited else None,
         "endings": endings,
         "difficulty": settings.get("difficulty"),
         "gamepad_share": settings.get("gamepad_seconds", 0) / max(1.0, settings.get("gamepad_seconds", 0) + settings.get("keyboard_seconds", 0)),
@@ -124,17 +162,21 @@ def main(argv=None):
     people = [(os.path.basename(folder) or folder, summarize(records)) for folder, records in sorted(grouped.items())]
 
     print(f"테스터 {len(people)}명, 기록 파일 {len(paths)}개\n")
-    print("| 테스터 | 밤1 | 밤2 | 밤3 | 밤4 | 포획(1/4) | 기록 화면 | 앉기 | 조용히 열기 | 힌트 | 10분 막힘 | 결말 | GPU |")
-    print("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+    print("| 테스터 | 밤1 | 밤2 | 밤3 | 밤4 | 포획(1/4) | 기록 화면 | 앉기 | 조용히 열기 | 힌트 | 10분 막힘 | 기다림/헤맴 | 결말 | GPU |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for name, person in people:
         cells = []
         for index in (1, 2, 3, 4):
             night = person["nights"].get(index)
             cells.append(f"{night['minutes']:.0f}분" if night else "-")
         captures = "/".join(str(person["nights"].get(i, {}).get("captures", "-")) for i in (1, 4))
+        split = ("-" if person["waiting_minutes"] is None
+                 else f"{person['waiting_minutes']:.0f}/{person['lost_minutes']:.0f}분")
         print(f"| {name} | " + " | ".join(cells) + f" | {captures} | {'예' if person['journal'] else '아니오'} | "
               f"{'예' if person['crouch'] else '아니오'} | {'예' if person['quiet_door'] else '아니오'} | {person['hints']} | "
-              f"{len(person['stuck'])} | {', '.join(person['endings']) or '-'} | {person['system'].get('gpu', '-')} |")
+              f"{len(person['stuck'])} | {split} | {', '.join(person['endings']) or '-'} | {person['system'].get('gpu', '-')} |")
+    print("\n기다림은 사건이 벌어지거나 숨어 있는 동안 멈춰 있던 시간, 헤맴은 10분 막힘 구간에서 사건도 없고"
+          " 숨지도 않았던 시간이다. 0.10.0 전 기록에는 이 값이 없다(-).")
 
     print("\n## 출시 기준과 비교\n")
     total = len(people)
@@ -153,6 +195,11 @@ def main(argv=None):
             print(f"- 밤{index} 붙잡힌 횟수 중앙값 {median:g}회 (기준 {limit}회 이하): {'통과' if median <= limit else '벗어남'}")
     stuck = sum(1 for _, p in people if p["stuck"])
     print(f"- 같은 자리에서 10분 넘게 막힌 사람 {stuck}명 (기준 1명 이하): {'통과' if stuck <= 1 else '벗어남'}")
+    known = [e for _, p in people for e in p["stuck"] if e["waiting_share"] is not None]
+    if known:
+        waited = sum(1 for e in known if e["waiting_share"] > 0.5)
+        print(f"  - 그중 사건 앞에서 기다린 구간 {waited}개, 헤맨 구간 {len(known) - waited}개"
+              " (구간의 절반 넘게 사건이 벌어지거나 숨어 있었으면 기다림. 판정은 위 줄 그대로다)")
     for key, label in (("crouch", "앉기"), ("quiet_door", "문 조용히 열기"), ("journal", "기록 화면 열기")):
         used = sum(1 for _, p in people if p[key])
         need = math.ceil(total * 0.8)

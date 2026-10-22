@@ -5,7 +5,7 @@ body:
     attributes:
       value: |
         기록 방법은 [테스트 안내](https://github.com/easygap/Missing-Floor/blob/main/Docs/TESTING.md)에 있습니다.
-        기록에는 밤마다 걸린 시간, 붙잡힌 횟수, 위치(5초마다), 처음 써 본 동작, 프레임 시간, PC 사양이 들어 있습니다. 이름이나 계정 같은 개인 정보는 없습니다.
+        기록에는 밤마다 걸린 시간, 붙잡힌 횟수, 위치(5초마다)와 그때 숨어 있었는지·무언가 다가오고 있었는지, 처음 써 본 동작, 프레임 시간, PC 사양이 들어 있습니다. 이름이나 계정 같은 개인 정보는 없습니다.
   - type: textarea
     id: record
     attributes:
@@ -58,6 +58,20 @@ body:
     attributes:
       label: 오래 헤맨 곳이 있었나요?
       description: 어느 밤, 어디서, 무엇을 찾고 있었는지 적어 주세요.
+  - type: dropdown
+    id: why_still
+    attributes:
+      label: 한자리에 오래 머문 적이 있다면 주로 왜였나요?
+      options:
+        - 무서워서 지나가기를 기다렸다
+        - 뭘 해야 할지 몰라서였다
+        - 둘 다 있었다
+        - 그런 적 없다
+  - type: textarea
+    id: hint
+    attributes:
+      label: 힌트(H)를 봤다면, 무엇을 몰라서였나요?
+      description: 어느 밤, 무엇을 하려던 참이었는지, 힌트를 보고 나서 풀렸는지 적어 주세요.
   - type: textarea
     id: impressions
     attributes:

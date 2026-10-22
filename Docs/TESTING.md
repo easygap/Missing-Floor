@@ -49,7 +49,8 @@ Missing Floor는 정식 출시 전에 두 가지를 확인해야 합니다. 여�
 
 성능 측정 ZIP에는 CPU·그래픽카드 이름과 드라이버 버전, 메모리 크기, Windows 버전,
 전원 설정, 게임 설정과 프레임 시간이 들어갑니다(dxdiag 사양 파일 포함).
-플레이 기록에는 밤마다 걸린 시간, 붙잡힌 횟수, 5초마다의 게임 속 위치, 기록 화면과
+플레이 기록에는 밤마다 걸린 시간, 붙잡힌 횟수, 5초마다의 게임 속 위치와 그때 숨어
+있었는지·무언가 다가오고 있었는지, 기록 화면과
 힌트를 연 횟수, 앉기·문 조용히 열기 같은 동작을 처음 쓴 때, 프레임 시간, 사양이
 들어갑니다. 이름, 계정, 사진, 녹음은 들어가지 않습니다. 기록은 이 PC에만 남고,
 보내 주신 파일만 확인합니다.
@@ -77,6 +78,6 @@ Open the 테스트 도구 (Test Tools) folder in the extracted ZIP.
 The performance ZIP contains your PC specifications, driver and Windows versions,
 power settings, game settings, and frame times, including a dxdiag report. Playtest
 records include time spent on each night, how often you get caught, your in-game position every five
-seconds, journal and hint use, when you first use certain controls, frame times, and
+seconds (and whether you were hiding or something was closing in at that moment), journal and hint use, when you first use certain controls, frame times, and
 PC specifications. They do not record your name, account, photos, or audio. Files stay
 on your PC until you choose to share them.

@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
+#include "Entity/IGNightThreatDirector.h"
 #include "GameFramework/GameUserSettings.h"
 #include "GameFramework/Pawn.h"
 #include "HAL/FileManager.h"
@@ -20,7 +21,9 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
+#include "Player/IGPlayerCharacter.h"
 #include "Player/IGPlayerController.h"
+#include "Player/IGStressComponent.h"
 #include "RHIGlobals.h"
 #include "Scalability.h"
 #include "Serialization/JsonSerializer.h"
@@ -221,6 +224,24 @@ bool UIGPlayRecordSubsystem::Sample(float /*FrameDeltaSeconds*/)
 		Point.Night = LastNightIndex;
 		Point.bHourActive = bLastHourActive;
 		Point.Truths = LastTruths;
+		// 오래 머문 자리가 무서워서 기다린 것인지, 뭘 할지 몰라 헤맨 것인지 가르는 데 쓴다.
+		for (TActorIterator<AIGNightThreatDirector> It(World); It; ++It)
+		{
+			if (It->IsBusyForNightRest())
+			{
+				Point.bThreatActive = true;
+				break;
+			}
+		}
+		const APlayerController* PlayerController = World->GetFirstPlayerController();
+		if (const AIGPlayerCharacter* Player = Cast<AIGPlayerCharacter>(PlayerController ? PlayerController->GetPawn() : nullptr))
+		{
+			Point.bHiding = Player->IsInHidingSpot() || Player->IsConcealedInHidingSpot();
+			if (const UIGStressComponent* Stress = Player->GetStress())
+			{
+				Point.Stress = Stress->GetStress();
+			}
+		}
 	}
 	if (Seconds - LastSaveSeconds >= IGPlayRecord::SaveInterval)
 	{
@@ -234,7 +255,7 @@ bool UIGPlayRecordSubsystem::Sample(float /*FrameDeltaSeconds*/)
 void UIGPlayRecordSubsystem::Save() const
 {
 	const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
-	Root->SetNumberField(TEXT("schema"), 1);
+	Root->SetNumberField(TEXT("schema"), 2);
 	FString ProjectVersion;
 	GConfig->GetString(TEXT("/Script/EngineSettings.GeneralProjectSettings"), TEXT("ProjectVersion"), ProjectVersion, GGameIni);
 	Root->SetStringField(TEXT("game_version"), ProjectVersion);
@@ -307,7 +328,8 @@ void UIGPlayRecordSubsystem::Save() const
 	}
 	Root->SetArrayField(TEXT("events"), EventValues);
 
-	// [초, X, Y, Z, 밤, 밤 진행 중, 확인한 진실 수]. 오래 막힌 자리는 이 줄로 찾는다.
+	// [초, X, Y, Z, 밤, 밤 진행 중, 확인한 진실 수, 사건 중, 숨음, 공포 수치]. 오래 막힌 자리는 이 줄로 찾고,
+	// 뒤의 셋으로 그 자리에서 무서워서 기다렸는지 헤맸는지 가른다. 스키마 1 기록에는 뒤의 셋이 없다.
 	TArray<TSharedPtr<FJsonValue>> TrailValues;
 	for (const FTrailPoint& Point : Trail)
 	{
@@ -319,6 +341,9 @@ void UIGPlayRecordSubsystem::Save() const
 		Row.Add(MakeShared<FJsonValueNumber>(Point.Night));
 		Row.Add(MakeShared<FJsonValueBoolean>(Point.bHourActive));
 		Row.Add(MakeShared<FJsonValueNumber>(Point.Truths));
+		Row.Add(MakeShared<FJsonValueBoolean>(Point.bThreatActive));
+		Row.Add(MakeShared<FJsonValueBoolean>(Point.bHiding));
+		Row.Add(MakeShared<FJsonValueNumber>(FMath::RoundToDouble(Point.Stress * 100.0f) / 100.0));
 		TrailValues.Add(MakeShared<FJsonValueArray>(Row));
 	}
 	Root->SetArrayField(TEXT("trail"), TrailValues);
