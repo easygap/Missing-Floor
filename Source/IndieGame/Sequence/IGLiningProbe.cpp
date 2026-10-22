@@ -224,7 +224,7 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 		Finish();
 		return;
 	}
-	if (Phase >= 1 && Phase <= 7)
+	if (Phase >= 1 && Phase <= 8)
 	{
 		for (int32 Leg = 0; Leg < AIGLiningEntity::LegCount; ++Leg)
 		{
@@ -266,7 +266,7 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 			FScreenshotRequest::RequestScreenshot(FPaths::Combine(Directory, FString::Printf(TEXT("f%04d.png"), FrameIndex++)), false, false);
 		}
 	}
-	else if (bShots && Phase >= 1 && Phase <= 7)
+	else if (bShots && Phase >= 1 && Phase <= 8)
 	{
 		ShotClock += DeltaSeconds;
 		if (ShotClock >= 0.5f)
@@ -365,19 +365,36 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 		}
 		break;
 	case 6:
-		// 큰 쪽을 다 막은 뒤에야 다시 연 작은 쪽으로 간다.
-		if (Targets.Num() >= 3 && Targets.Last() == TEXT("Small"))
+		// 큰 쪽을 막은 뒤에는 다시 연 작은 쪽이 열려 있어도 옮겨 가지 않는다. 지금 누르는 틈보다 넓은 틈만 본다
+		// (둘째 밤 안쪽 방에서 큰 점검구를 먼저 열고 작은 것을 연 순서와 같다).
+		if (PhaseSeconds >= 3.0f)
 		{
-			Check(true, TEXT("returns_to_reopened_gap_after_sealing"));
-			Next(7);
-		}
-		else if (PhaseSeconds > 4.0f)
-		{
-			Check(false, TEXT("returns_to_reopened_gap_after_sealing"));
+			Check(Small->IsGapOpen() && Targets.Num() == 2 && Body->GetHeldGap() == TEXT("Large")
+				&& Body->GetState() == EIGLiningState::Holding, TEXT("narrower_open_gap_does_not_draw_it"));
+			// 작은 쪽 판을 더 넓게 떼어 냈다. 이제 누르는 틈보다 넓으니 그리로 간다.
+			if (const FIGLiningGap* Opened = Body->FindGap(TEXT("Small")))
+			{
+				FIGLiningGap Wider = *Opened;
+				Wider.Size = FVector2D(90.0f, 100.0f);
+				Body->SetGap(Wider);
+				Body->NotifyGapsChanged();
+			}
 			Next(7);
 		}
 		break;
 	case 7:
+		if (Targets.Num() >= 3 && Targets.Last() == TEXT("Small"))
+		{
+			Check(true, TEXT("gap_wider_than_held_draws_it"));
+			Next(8);
+		}
+		else if (PhaseSeconds > 4.0f)
+		{
+			Check(false, TEXT("gap_wider_than_held_draws_it"));
+			Next(8);
+		}
+		break;
+	case 8:
 		if (Sealed.Num() >= 3)
 		{
 			// 떠난 큰 쪽 덮개는 이제 닫힌다(막힌 채).
@@ -385,7 +402,7 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 			Context.TargetActor = Large;
 			Check(!Large->IsObstructed(), TEXT("left_hatch_unobstructed"));
 			Check(Large->IsSealed(), TEXT("left_gap_stays_sealed"));
-			Next(8);
+			Next(9);
 		}
 		else if (PhaseSeconds > 45.0f)
 		{
@@ -393,7 +410,7 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 			Finish();
 		}
 		break;
-	case 8:
+	case 9:
 		if (PhaseSeconds >= 1.0f)
 		{
 			Check(!bGripped, TEXT("bystander_at_door_not_gripped"));
@@ -409,10 +426,10 @@ void AIGLiningProbe::Tick(const float DeltaSeconds)
 			Check(MinPadsHolding >= 2, TEXT("two_pads_hold_while_walking"));
 			Check(Body->GetMaxPadSlip() < 3.0f, TEXT("planted_pads_do_not_slip"));
 			Shoot(TEXT("lining_end"));
-			Next(9);
+			Next(10);
 		}
 		break;
-	case 9:
+	case 10:
 		if (PhaseSeconds >= 0.5f)
 		{
 			Finish();

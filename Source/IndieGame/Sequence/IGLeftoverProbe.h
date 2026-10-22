@@ -78,8 +78,10 @@ private:
 	bool EndNight();
 	/**
 	 * -IGLeftoverProbe=hints. 셋째 밤 302호 구출에서 정우 소개 여부, 302호 곁과 멀리, 쐐기·장롱·판 낙하 순서,
-	 * 저장하고 이어 한 밤마다 H 힌트 세 단계를 그대로 남긴다(-IGHintScenario=named|unnamed|talk|fallen|remote|save).
-	 * 저장 시나리오 뒤에 -IGHintResume으로 다시 켜면 자동 저장을 불러온 밤에서 같은 것을 본다.
+	 * 저장하고 이어 한 밤마다 H 힌트 세 단계를 그대로 남긴다
+	 * (-IGHintScenario=named|unnamed|talk|fallen|remote|save|fallensave|fallenbracedsave).
+	 * 저장 시나리오 뒤에 -IGHintResume으로 다시 켜면 자동 저장을 불러온 밤에서 같은 것을 본다. fallensave는 판이
+	 * 누운 채, fallenbracedsave는 누운 판 밑동에 쐐기만 끼우고 세우지 않은 채 저장한다.
 	 */
 	void TickHints(class AIGMissingFloorLeftoverDirector* Director, UIGMissingFloorNarrativeSubsystem* Narrative);
 	void DumpHint(const TCHAR* Where);

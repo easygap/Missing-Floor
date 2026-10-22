@@ -368,8 +368,8 @@ namespace
 			case 1:
 				return Make(TEXT("Hint.Night4.Wall1"), {
 					NSLOCTEXT("IGHint", "NightFourWall1a", "그게 이음매를 덮고 있어."),
-					NSLOCTEXT("IGHint", "NightFourWall1b", "다른 데 틈을 내주면 그리로 옮겨 갈까."),
-					NSLOCTEXT("IGHint", "NightFourWall1c", "구석 쪽 작은 덧판을 떼어 내자. 밑에 틈이 있으면 그리로 옮겨 갈 거야.") });
+					NSLOCTEXT("IGHint", "NightFourWall1b", "더 넓은 틈을 내주면 그리로 옮겨 갈까."),
+					NSLOCTEXT("IGHint", "NightFourWall1c", "구석 쪽 작은 덧판을 떼어 내자. 밑이 넓게 뚫려 있으면 그리로 옮겨 갈 거야.") });
 			case 2:
 				return Leftover.bFramePlaced
 					? Make(TEXT("Hint.Night4.Wall2Braced"), {

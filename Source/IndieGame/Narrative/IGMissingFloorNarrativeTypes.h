@@ -316,6 +316,13 @@ struct INDIEGAME_API FIGLeftoverState
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
 	bool bWardrobeMoved = false;
 
+	/**
+	 * 302호 판이 받친 것 없이 더 누운 채이고 아직 다시 세우지 않았다. 누운 뒤에 쐐기만 끼우고 저장한 밤도
+	 * 판을 세우는 데서 이어 간다. 이 칸이 없던 저장은 예전처럼 쐐기만 보고 되살린다.
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
+	bool bBoardFallen = false;
+
 	/** 정우: None, Trapped, Freed, LeftTogether, SelfEscaped. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame, Category = "Narrative")
 	FName JeongwooState;

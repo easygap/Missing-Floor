@@ -683,11 +683,14 @@ void AIGLiningEntity::StartTicking()
 
 bool AIGLiningEntity::ChooseTarget()
 {
+	// 누르고 있는 틈이 있으면 그보다 넓은 틈만 본다. 예전에는 누르는 틈만 빼고 골라서, 둘째 밤 안쪽 방에서
+	// 큰 점검구를 먼저 열고 작은 것을 열면 작은 쪽으로 옮겨 갔다. 힌트와 302호 풀이는 틈의 크기를 말한다.
+	const FIGLiningGap* Held = HeldGap.IsNone() ? nullptr : FindGap(HeldGap);
 	const FIGLiningGap* Best = nullptr;
 	float BestDistance = 0.0f;
 	for (const FIGLiningGap& Gap : Gaps)
 	{
-		if (Gap.Id == HeldGap || !IsGapOpen(Gap.Id))
+		if (Gap.Id == HeldGap || !IsGapOpen(Gap.Id) || (Held && Gap.Area() <= Held->Area() + 1.0f))
 		{
 			continue;
 		}

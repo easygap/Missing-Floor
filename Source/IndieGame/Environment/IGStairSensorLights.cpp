@@ -77,10 +77,12 @@ void AIGStairSensorLights::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 bool AIGStairSensorLights::IsPowered() const
 {
-	// 센서등은 공용 회로에 물려 있다. 1층 공용 차단기를 내리면 같이 죽고, 넷째 밤에
-	// 관리인이 차단기를 내리면 건물의 등이 전부 죽는다. 비상구 등만 축전지로 남는다.
+	// 센서등은 1층 계량기함의 복도등 차단기와 회로가 따로다(관리실 공지 「계단은 센서등이 켜집니다」).
+	// 넷째 밤에 관리인이 건물 차단기를 내리면 그때 건물의 등이 전부 죽는다. 비상구 등만 축전지로 남는다.
+	// 예전에는 복도등 차단기에도 물려 있어서, P1에서 복도등을 끄면 첫째 밤 3층 참의 어둑시니 소개가 나오지
+	// 않고 그동안 어둠도 쌓이지 않았다. 불을 끈 쪽이 더 안전했다.
 	const AIGPrologueWorldScene* Building = Scene.Get();
-	return Building && Building->AreCommonInspectionLightsEnabled() && Building->IsMissingFloorAnnexPowered();
+	return Building && Building->IsMissingFloorAnnexPowered();
 }
 
 void AIGStairSensorLights::ApplyPower()

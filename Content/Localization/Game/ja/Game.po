@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-10-22 04:26\n"
-"PO-Revision-Date: 2026-10-22 04:26\n"
+"POT-Creation-Date: 2026-10-22 06:49\n"
+"PO-Revision-Date: 2026-10-22 06:49\n"
 "Language-Team: \n"
 "Language: ja\n"
 "MIME-Version: 1.0\n"
@@ -49,218 +49,218 @@ msgid "{0} {1}병 계산하기 ({2})"
 msgstr "{0}を{1}本会計する（{2}）"
 
 #. Key:	EntranceSealedPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(5305)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(5305)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(5301)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(5301)
 msgctxt "IGMissingFloor,EntranceSealedPrompt"
 msgid "공동현관 열어 보기"
 msgstr "エントランスのドアを開けてみる"
 
 #. Key:	EntranceSealedThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(5311)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(5311)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(5307)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(5307)
 msgctxt "IGMissingFloor,EntranceSealedThought"
 msgid "…안 열리네. 잠긴 것도 아닌데."
 msgstr "……開かない。鍵はかかってないのに。"
 
 #. Key:	BuildingDoorPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7214)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7214)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7210)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7210)
 msgctxt "IGPrologue,BuildingDoorPrompt"
 msgid "공동현관 열기"
 msgstr "エントランスのドアを開ける"
 
 #. Key:	LightsOutNoticePrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7350)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7350)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7346)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7346)
 msgctxt "IGMissingFloor,LightsOutNoticePrompt"
 msgid "공지 읽기"
 msgstr "お知らせを読む"
 
 #. Key:	LightsOutNoticeTitle
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7352)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7352)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7348)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7348)
 msgctxt "IGMissingFloor,LightsOutNoticeTitle"
 msgid "복도 소등 안내"
 msgstr "廊下消灯のお知らせ"
 
 #. Key:	LightsOutNoticeBody
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7354)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7354)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7350)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7350)
 msgctxt "IGMissingFloor,LightsOutNoticeBody"
 msgid "공용 전기료를 줄이기 위해 밤 12시부터 새벽 5시까지 복도 등을 끕니다."
 msgstr "共用部の電気代を節約するため、夜12時から朝5時まで廊下の照明を消します。"
 
 #. Key:	LightsOutNoticeStairs
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7359)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7359)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7355)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7355)
 msgctxt "IGMissingFloor,LightsOutNoticeStairs"
 msgid "계단은 센서등이 켜집니다."
 msgstr "階段はセンサーライトが点きます。"
 
 #. Key:	LightsOutNoticeSigned
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7361)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7361)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7357)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7357)
 msgctxt "IGMissingFloor,LightsOutNoticeSigned"
 msgid "관리실"
 msgstr "管理人室"
 
 #. Key:	Door202NotePrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7381)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7381)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7377)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7377)
 msgctxt "IGMissingFloor,Door202NotePrompt"
 msgid "쪽지 읽기"
 msgstr "メモを読む"
 
 #. Key:	Door202NoteTitle
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7383)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7383)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7379)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7379)
 msgctxt "IGMissingFloor,Door202NoteTitle"
 msgid "기사님 죄송해요ㅠ"
 msgstr "配達員さん、すみません"
 
 #. Key:	Door202NoteBody
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7386)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7386)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7382)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7382)
 msgctxt "IGMissingFloor,Door202NoteBody"
 msgid "다 다른 집이에요"
 msgstr "全部別の部屋です"
 
 #. Key:	Door202NoteAsk
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7387)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7387)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7383)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7383)
 msgctxt "IGMissingFloor,Door202NoteAsk"
 msgid "호수 한 번만 봐 주세요!"
 msgstr "部屋番号を確認してください！"
 
 #. Key:	Door303SignPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7406)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7406)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7402)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7402)
 msgctxt "IGMissingFloor,Door303SignPrompt"
 msgid "안내문 읽기"
 msgstr "貼り紙を読む"
 
 #. Key:	Door303SignTitle
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7408)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7408)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7404)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7404)
 msgctxt "IGMissingFloor,Door303SignTitle"
 msgid "벨 누르지 마세요"
 msgstr "チャイムを鳴らさないでください"
 
 #. Key:	Door303SignSleep
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7410)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7410)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7406)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7406)
 msgctxt "IGMissingFloor,Door303SignSleep"
 msgid "낮에 자는 사람이 있어요."
 msgstr "昼間に寝ている人がいます。"
 
 #. Key:	Door303SignKnock
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7411)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7411)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7407)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7407)
 msgctxt "IGMissingFloor,Door303SignKnock"
 msgid "노크도 하지 말아 주세요."
 msgstr "ノックもしないでください。"
 
 #. Key:	Door303SignParcel
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7412)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7412)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7408)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7408)
 msgctxt "IGMissingFloor,Door303SignParcel"
 msgid "택배는 문 앞에 두고 가 주세요."
 msgstr "荷物はドアの前に置いてください。"
 
 #. Key:	WindowPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7439)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7439)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7435)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7435)
 msgctxt "IGPrologue,WindowPrompt"
 msgid "창문"
 msgstr "窓"
 
 #. Key:	WindowThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7440)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7440)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7436)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7436)
 msgctxt "IGPrologue,WindowThought"
 msgid "건너편 불빛이 방까지 들어오네."
 msgstr "向かいの明かりが、部屋まで入ってくる。"
 
 #. Key:	WaterProfileA
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7509)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7509)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7505)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7505)
 msgctxt "IGPrologue,WaterProfileA"
 msgid "새벽샘물 500mL 2병 고르기"
 msgstr "セビョク天然水 500mLを2本選ぶ"
 
 #. Key:	WaterProfileAThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7511)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7511)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7507)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7507)
 msgctxt "IGPrologue,WaterProfileAThought"
 msgid "두 병이면 충분하겠지."
 msgstr "二本あれば足りるでしょ。"
 
 #. Key:	WaterProfileB
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7516)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7516)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7512)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7512)
 msgctxt "IGPrologue,WaterProfileB"
 msgid "한강수 1L 1병 고르기"
 msgstr "ハンガン水 1Lを1本選ぶ"
 
 #. Key:	WaterProfileBThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7518)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7518)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7514)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7514)
 msgctxt "IGPrologue,WaterProfileBThought"
 msgid "이거 하나면 되겠다."
 msgstr "これ一本でいいか。"
 
 #. Key:	WaterProfileC
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7524)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7524)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7520)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7520)
 msgctxt "IGPrologue,WaterProfileC"
 msgid "맑은산 2L 2병 고르기"
 msgstr "マルグンサン 2Lを2本選ぶ"
 
 #. Key:	WaterProfileCThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7526)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7526)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7522)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7522)
 msgctxt "IGPrologue,WaterProfileCThought"
 msgid "무겁지만 한 번에 가져가자."
 msgstr "重いけど、一回で持って帰ろう。"
 
 #. Key:	LeftHomeThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7637)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7637)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7633)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7633)
 msgctxt "IGPrologue,LeftHomeThought"
 msgid "밖은 후텁지근하네."
 msgstr "外は蒸し暑いな。"
 
 #. Key:	HideUnderDeskPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7703)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7703)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7699)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7699)
 msgctxt "IGMissingFloor,HideUnderDeskPrompt"
 msgid "책상 밑에 숨기"
 msgstr "机の下に隠れる"
 
 #. Key:	HideBehindSheetPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7719)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7719)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7715)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7715)
 msgctxt "IGMissingFloor,HideBehindSheetPrompt"
 msgid "비닐 뒤에 숨기"
 msgstr "ビニールの陰に隠れる"
 
 #. Key:	BatteryBuyPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7767)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7767)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7763)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7763)
 msgctxt "IGMissingFloor,BatteryBuyPrompt"
 msgid "건전지 한 팩 사기"
 msgstr "電池を1パック買う"
 
 #. Key:	BathroomOn
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7866)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7866)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7862)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7862)
 msgctxt "IGRoomLight,BathroomOn"
 msgid "욕실 불 켜기"
 msgstr "浴室の電気をつける"
 
 #. Key:	BathroomOff
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7867)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7867)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7863)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7863)
 msgctxt "IGRoomLight,BathroomOff"
 msgid "욕실 불 끄기"
 msgstr "浴室の電気を消す"
@@ -343,29 +343,29 @@ msgid "…4층 위로는 안 가는데."
 msgstr "……4階より上には行かないのに。"
 
 #. Key:	CaptionLiningCreak
-#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1370)
-#: Source/IndieGame/Entity/IGLiningEntity.cpp(1370)
+#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1373)
+#: Source/IndieGame/Entity/IGLiningEntity.cpp(1373)
 msgctxt "IGMissingFloor,CaptionLiningCreak"
 msgid "[쇠붙이가 버티며 삐걱이는 소리]"
 msgstr "［金物が重みに耐えてきしむ音］"
 
 #. Key:	CaptionLiningPress
-#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1494)
-#: Source/IndieGame/Entity/IGLiningEntity.cpp(1494)
+#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1497)
+#: Source/IndieGame/Entity/IGLiningEntity.cpp(1497)
 msgctxt "IGMissingFloor,CaptionLiningPress"
 msgid "[무언가 벽에 쩍 들러붙는 소리]"
 msgstr "［何かが壁にべたりと貼りつく音］"
 
 #. Key:	CaptionLiningSpread
-#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1897)
-#: Source/IndieGame/Entity/IGLiningEntity.cpp(1897)
+#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1900)
+#: Source/IndieGame/Entity/IGLiningEntity.cpp(1900)
 msgctxt "IGMissingFloor,CaptionLiningSpread"
 msgid "[쇠붙이 여러 개가 한꺼번에 긁히는 소리]"
 msgstr "［いくつもの金物がいっせいにこすれる音］"
 
 #. Key:	CaptionLiningPeel
-#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(759)
-#: Source/IndieGame/Entity/IGLiningEntity.cpp(759)
+#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(762)
+#: Source/IndieGame/Entity/IGLiningEntity.cpp(762)
 msgctxt "IGMissingFloor,CaptionLiningPeel"
 msgid "[무언가 벽에서 쩍 떨어지는 소리]"
 msgstr "［何かが壁からべりっとはがれる音］"
@@ -3178,239 +3178,239 @@ msgid "[점검구 안으로 바람이 빨려 드는 소리]"
 msgstr "［点検口の中へ風が吸い込まれる音］"
 
 #. Key:	LeftoverFreedLine
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1014)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1014)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1021)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1021)
 msgctxt "IGMissingFloor,LeftoverFreedLine"
 msgid "살았다… 고마워요."
 msgstr "助かった……ありがとうございます。"
 
 #. Key:	LeftoverFreedIntro
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1021)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1021)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1028)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1028)
 msgctxt "IGMissingFloor,LeftoverFreedIntro"
 msgid "살았다… 고마워요. 저 202호 정우예요."
 msgstr "助かった……ありがとうございます。202号室のジョンウです。"
 
 #. Key:	LeftoverFreedBoxLine
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1043)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1043)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1050)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1050)
 msgctxt "IGMissingFloor,LeftoverFreedBoxLine"
 msgid "그 상자… 아직 판 밑에 걸려 있어요."
 msgstr "あの箱……まだ板の下に引っかかってます。"
 
 #. Key:	LeftoverBraceAgain
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1098)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1098)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1105)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1105)
 msgctxt "IGMissingFloor,LeftoverBraceAgain"
 msgid "상자요? 잠깐만요, 판 잡을게요."
 msgstr "箱ですか？ちょっと待ってください、板を押さえます。"
 
 #. Key:	LeftoverBoxStuck
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1123)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1123)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1130)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1130)
 msgctxt "IGMissingFloor,LeftoverBoxStuck"
 msgid "잠깐만요. 안 빠져요."
 msgstr "待ってください。抜けないんです。"
 
 #. Key:	LeftoverBoxStuckReply
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1124)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1124)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1131)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1131)
 msgctxt "IGMissingFloor,LeftoverBoxStuckReply"
 msgid "모서리가 판에 걸렸어요. 조금만 더요."
 msgstr "角が板に引っかかってるんです。もうちょっとです。"
 
 #. Key:	LeftoverPouchThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1136)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1136)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1143)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1143)
 msgctxt "IGMissingFloor,LeftoverPouchThought"
 msgid "오빠 공구 주머니야. 집에 가져가자."
 msgstr "お兄ちゃんの工具袋だ。家に持って帰ろう。"
 
 #. Key:	LeftoverLeaveBoxLine
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1166)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1166)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1173)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1173)
 msgctxt "IGMissingFloor,LeftoverLeaveBoxLine"
 msgid "문 잡고 있을게요. 상자 뺄 거면 말해요, 판 잡아 줄게요."
 msgstr "ドアは押さえておきます。箱を出すなら言ってください、板を支えますから。"
 
 #. Key:	LeftoverLeaveLine
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1167)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1167)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1174)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1174)
 msgctxt "IGMissingFloor,LeftoverLeaveLine"
 msgid "문 잡고 있을게요. 더 볼 거 있으면 보고 나와요."
 msgstr "ドアは僕が押さえておきます。まだ見るものがあれば、見てから出てきてください。"
 
 #. Key:	LeftoverBraceReady
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1189)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1189)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1196)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1196)
 msgctxt "IGMissingFloor,LeftoverBraceReady"
 msgid "잡았어요. 당겨요."
 msgstr "押さえました。引いてください。"
 
 #. Key:	LeftoverBraceLine
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1193)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1193)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1200)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1200)
 msgctxt "IGMissingFloor,LeftoverBraceLine"
 msgid "제가 받칠게요. 상자부터 당겨요."
 msgstr "僕が支えます。先に箱を引っぱってください。"
 
 #. Key:	LeftoverBraceRelease
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1267)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1267)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1274)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1274)
 msgctxt "IGMissingFloor,LeftoverBraceRelease"
 msgid "판 놓을게요. 상자는 이따 다시 해요."
 msgstr "板、下ろしますね。箱はあとでもう一回やりましょう。"
 
 #. Key:	LeftoverByeLine
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1292)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1292)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1299)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1299)
 msgctxt "IGMissingFloor,LeftoverByeLine"
 msgid "짐은 낮에 마저 뺄게요. 들어가세요."
 msgstr "荷物の残りは昼間に出します。おやすみなさい。"
 
 #. Key:	LeftoverGoAheadLine
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1293)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1293)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1300)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1300)
 msgctxt "IGMissingFloor,LeftoverGoAheadLine"
 msgid "저 먼저 내려갈게요. 문은 열어 둘게요. 오래 있지 마요."
 msgstr "僕、先に下りてますね。ドアは開けておきます。長居しないでください。"
 
 #. Key:	LeftoverPiecePickPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1437)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1437)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1444)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1444)
 msgctxt "IGMissingFloor,LeftoverPiecePickPrompt"
 msgid "조각 집어 들기"
 msgstr "破片を手に取る"
 
 #. Key:	LeftoverHeldPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1444)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1444)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1451)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1451)
 msgctxt "IGMissingFloor,LeftoverHeldPrompt"
 msgid "돌려 보기 · 길게 눌러 뒤집기"
 msgstr "回してみる · 長押しで裏返す"
 
 #. Key:	LeftoverSlotPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1456)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1456)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1463)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1463)
 msgctxt "IGMissingFloor,LeftoverSlotPrompt"
 msgid "테두리에 대 보기"
 msgstr "枠にはめてみる"
 
 #. Key:	LeftoverAssemblyFlipPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1463)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1463)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1470)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1470)
 msgctxt "IGMissingFloor,LeftoverAssemblyFlipPrompt"
 msgid "맞춘 덮개 뒤집어 보기"
 msgstr "組み合わせたふたを裏返してみる"
 
 #. Key:	LeftoverMembranePrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1465)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1465)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1472)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1472)
 msgctxt "IGMissingFloor,LeftoverMembranePrompt"
 msgid "방수막 들춰 보기"
 msgstr "防水シートをめくってみる"
 
 #. Key:	LeftoverCoverTakePrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1467)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1467)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1474)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1474)
 msgctxt "IGMissingFloor,LeftoverCoverTakePrompt"
 msgid "덮개 챙기기"
 msgstr "ふたを持っていく"
 
 #. Key:	LeftoverSitePrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1470)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1470)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1477)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1477)
 msgctxt "IGMissingFloor,LeftoverSitePrompt"
 msgid "떼어 낸 덮개 대 보기"
 msgstr "外されたふたを当ててみる"
 
 #. Key:	LeftoverFirstPickThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1675)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1675)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1682)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1682)
 msgctxt "IGMissingFloor,LeftoverFirstPickThought"
 msgid "조각 셋에 틀 하나."
 msgstr "破片が三つと、枠がひとつ。"
 
 #. Key:	LeftoverFitNoRoom
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1724)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1724)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1731)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1731)
 msgctxt "IGMissingFloor,LeftoverFitNoRoom"
 msgid "이 자리엔 안 들어가."
 msgstr "ここには入らない。"
 
 #. Key:	LeftoverClampLiftCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1756)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1756)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1763)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1763)
 msgctxt "IGMissingFloor,LeftoverClampLiftCaption"
 msgid "[고정쇠가 덜컥 들뜨는 소리]"
 msgstr "［留め金がガタッと浮く音］"
 
 #. Key:	LeftoverFitFlipped
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1762)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1762)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1769)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1769)
 msgctxt "IGMissingFloor,LeftoverFitFlipped"
 msgid "고정쇠가 방수막 위에서 미끄러져."
 msgstr "留め金が防水シートの上で滑る。"
 
 #. Key:	LeftoverFitWrongSlot
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1764)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1764)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1771)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1771)
 msgctxt "IGMissingFloor,LeftoverFitWrongSlot"
 msgid "잘린 면이 바깥으로 나와."
 msgstr "切り口が外側に来てる。"
 
 #. Key:	LeftoverFitRotated
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1765)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1765)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1772)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1772)
 msgctxt "IGMissingFloor,LeftoverFitRotated"
 msgid "자리는 맞는데 구멍 위치가 어긋나."
 msgstr "場所は合ってるのに、穴の位置がずれてる。"
 
 #. Key:	LeftoverClampSeatCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1798)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1798)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1805)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1805)
 msgctxt "IGMissingFloor,LeftoverClampSeatCaption"
 msgid "[고정쇠가 딸깍 물리는 소리]"
 msgstr "［留め金がカチッとはまる音］"
 
 #. Key:	LeftoverAssembledThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1804)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1804)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1811)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1811)
 msgctxt "IGMissingFloor,LeftoverAssembledThought"
 msgid "다 맞았어. 한 장짜리 덮개였네."
 msgstr "全部はまった。一枚のふただったんだ。"
 
 #. Key:	LeftoverFlipThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1816)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1816)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1823)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1823)
 msgctxt "IGMissingFloor,LeftoverFlipThought"
 msgid "얼룩이 대각선으로 이어져. 물이 위에서 새어 내려온 자국이야."
 msgstr "しみが斜めにつながってる。上から水が漏れてきた跡だ。"
 
 #. Key:	LeftoverVentThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1833)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1833)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1840)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1840)
 msgctxt "IGMissingFloor,LeftoverVentThought"
 msgid "통풍구를 방음재로 쑤셔 막고 그 위에 방수막을 덮었어."
 msgstr "通気口に防音材を詰め込んでふさいで、その上から防水シートをかぶせてある。"
 
 #. Key:	LeftoverCoverTakeThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1922)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1922)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1929)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1929)
 msgctxt "IGMissingFloor,LeftoverCoverTakeThought"
 msgid "이만한 덧판을 어디서 봤는데."
 msgstr "このくらいの当て板、どこかで見た。"
 
 #. Key:	LeftoverCoverTakeUnseen
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1923)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1923)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1930)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1930)
 msgctxt "IGMissingFloor,LeftoverCoverTakeUnseen"
 msgid "네 귀퉁이에 나사 구멍이 있어. 어딘가에 박혀 있던 거야."
 msgstr "四隅にネジ穴がある。どこかに留めてあったんだ。"
 
 #. Key:	LeftoverSiteMatch1
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1960)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1960)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1967)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1967)
 msgctxt "IGMissingFloor,LeftoverSiteMatch1"
 msgid "덧판 나사 네 개가 틀 구멍에 딱 맞네."
 msgstr "当て板のネジ四本が、枠の穴にぴったり合ってる。"
@@ -3423,15 +3423,15 @@ msgid "302호 안"
 msgstr "302号室の中"
 
 #. Key:	LeftoverDeliveredBoxPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(2077)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(2077)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(2084)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(2084)
 msgctxt "IGMissingFloor,LeftoverDeliveredBoxPrompt"
 msgid "상자 들여놓기"
 msgstr "箱を部屋に入れる"
 
 #. Key:	LeftoverDeliveredBoxThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(2099)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(2099)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(2106)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(2106)
 msgctxt "IGMissingFloor,LeftoverDeliveredBoxThought"
 msgid "오빠 상자야. 안에 공구 주머니가 들어 있어."
 msgstr "お兄ちゃんの箱だ。中に工具袋が入ってる。"
@@ -3507,155 +3507,155 @@ msgid "판 너머에 말 걸기"
 msgstr "板の向こうに声をかける"
 
 #. Key:	LeftoverJeongwooText
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(644)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(644)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(649)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(649)
 msgctxt "IGMissingFloor,LeftoverJeongwooText"
 msgid "[04:12] 302호 짐 빼러 들어왔는데 상자가 판에 끼어서 안 빠지네요. 조금만 더 해 보고 갈게요."
 msgstr "［04:12］302号室の荷物を出しに来たんですけど、箱が板に挟まって抜けなくて。もうちょっとやってみてから戻ります。"
 
 #. Key:	LeftoverBoardKnockCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(676)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(676)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(681)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(681)
 msgctxt "IGMissingFloor,LeftoverBoardKnockCaption"
 msgid "[302호 안에서 판을 두드리는 소리]"
 msgstr "［302号室の中で板を叩く音］"
 
 #. Key:	LeftoverTrappedCall
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(679)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(679)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(684)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(684)
 msgctxt "IGMissingFloor,LeftoverTrappedCall"
 msgid "거기 누구 있어요? 판에 끼었어요."
 msgstr "そこ、誰かいますか？ 板に挟まって……"
 
 #. Key:	LeftoverDohaNameThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(705)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(705)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(710)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(710)
 msgctxt "IGMissingFloor,LeftoverDohaNameThought"
 msgid "백도하. 오빠 글씨야."
 msgstr "ペク・ドハ。お兄ちゃんの字だ。"
 
 #. Key:	LeftoverKeepBox
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(708)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(708)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(713)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(713)
 msgctxt "IGMissingFloor,LeftoverKeepBox"
 msgid "잠깐만요. 이 상자는 두세요. 오빠 이름이 있어요."
 msgstr "待ってください。この箱は残しておいてください。兄の名前が書いてあるんです。"
 
 #. Key:	LeftoverMarkBox
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(709)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(709)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(714)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(714)
 msgctxt "IGMissingFloor,LeftoverMarkBox"
 msgid "그럼 이건 따로 빼 둘게요. 버리지 말라고 표시해 놓을게요."
 msgstr "じゃあ、これは別にしておきます。捨てないように印をつけておきますね。"
 
 #. Key:	LeftoverTrappedFallen
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(723)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(723)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(728)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(728)
 msgctxt "IGMissingFloor,LeftoverTrappedFallen"
 msgid "구석이 더 좁아졌어요. 몸을 뺄 틈이 없어요."
 msgstr "隅がもっと狭くなりました。体を抜く隙間がないんです。"
 
 #. Key:	LeftoverTrappedTalk
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(724)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(724)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(729)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(729)
 msgctxt "IGMissingFloor,LeftoverTrappedTalk"
 msgid "상자 빼다가 판이 넘어왔어요. 벽에 붙은 게 계속 판을 밀어요."
 msgstr "箱を出そうとしたら、板が倒れてきて。壁のあれが、ずっと板を押してるんです。"
 
 #. Key:	LeftoverWedgePicked
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(733)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(733)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(738)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(738)
 msgctxt "IGMissingFloor,LeftoverWedgePicked"
 msgid "문 고이는 나무 쐐기야."
 msgstr "ドア止めの木のくさびだ。"
 
 #. Key:	LeftoverLabel303Thought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(767)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(767)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(773)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(773)
 msgctxt "IGMissingFloor,LeftoverLabel303Thought"
 msgid "303호에서 맡긴 짐이네. 겨울까지만 보관해 달라고 적혀 있어."
 msgstr "303号室の人が預けた荷物だ。冬まで保管してほしいって書いてある。"
 
 #. Key:	LeftoverSackThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(783)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(783)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(789)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(789)
 msgctxt "IGMissingFloor,LeftoverSackThought"
 msgid "남은 조각 하나랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어."
 msgstr "最後の破片と、金属の枠だ。管理人室から持ってきたのと同じシートがついてる。"
 
 #. Key:	LeftoverSackTwoPieces
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(785)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(785)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(791)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(791)
 msgctxt "IGMissingFloor,LeftoverSackTwoPieces"
 msgid "남은 조각 둘이랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어."
 msgstr "残りの破片二つと、金属の枠だ。管理人室から持ってきたのと同じシートがついてる。"
 
 #. Key:	LeftoverSackAllPieces
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(786)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(786)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(792)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(792)
 msgctxt "IGMissingFloor,LeftoverSackAllPieces"
 msgid "점검구 덮개 조각 셋이랑 금속 틀이야."
 msgstr "点検口のふたの破片が三つと、金属の枠だ。"
 
 #. Key:	LeftoverWedgeHeld
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(820)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(820)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(826)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(826)
 msgctxt "IGMissingFloor,LeftoverWedgeHeld"
 msgid "물렸어. 이제 판이 안 밀려."
 msgstr "くさびが効いた。もう板はずれない。"
 
 #. Key:	LeftoverWedgeSlip1
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(834)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(834)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(840)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(840)
 msgctxt "IGMissingFloor,LeftoverWedgeSlip1"
 msgid "장판에서 미끄러져 빠졌어."
 msgstr "床シートの上で滑って外れた。"
 
 #. Key:	LeftoverWedgeSlip2
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(835)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(835)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(841)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(841)
 msgctxt "IGMissingFloor,LeftoverWedgeSlip2"
 msgid "또 빠졌어. 장판 위라 걸릴 데가 없어."
 msgstr "また外れた。床シートの上じゃ引っかかるところがない。"
 
 #. Key:	LeftoverWardrobeCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(859)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(859)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(865)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(865)
 msgctxt "IGMissingFloor,LeftoverWardrobeCaption"
 msgid "[장롱 다리가 장판을 긁으며 밀리는 소리]"
 msgstr "［クローゼットの脚が床をこすりながらずれる音］"
 
 #. Key:	LeftoverWardrobeHatch
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(898)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(898)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(904)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(904)
 msgctxt "IGMissingFloor,LeftoverWardrobeHatch"
 msgid "장롱 뒤에 점검구가 있었어."
 msgstr "クローゼットの裏に点検口があった。"
 
 #. Key:	LeftoverReleasedBraced
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(920)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(920)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(926)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(926)
 msgctxt "IGMissingFloor,LeftoverReleasedBraced"
 msgid "어, 판이 풀렸어요. 밀어 볼게요."
 msgstr "あ、板が緩みました。押してみます。"
 
 #. Key:	LeftoverBoardFallCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(954)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(954)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(961)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(961)
 msgctxt "IGMissingFloor,LeftoverBoardFallCaption"
 msgid "[큰 판이 미끄러지며 쾅 하고 눕는 소리]"
 msgstr "［大きな板がすべって、バタンと倒れる音］"
 
 #. Key:	LeftoverFallenLine
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(962)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(962)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(969)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(969)
 msgctxt "IGMissingFloor,LeftoverFallenLine"
 msgid "괜찮아요! 근데 판이 더 내려왔어요."
 msgstr "大丈夫です！ でも、板がもっと倒れてきた。"
 
 #. Key:	LeftoverFallenThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(965)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(965)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(972)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(972)
 msgctxt "IGMissingFloor,LeftoverFallenThought"
 msgid "아래가 밀리면서 판이 내려앉았어."
 msgstr "下が滑って、板が沈んだ。"
@@ -7423,15 +7423,15 @@ msgstr "あれが継ぎ目を覆ってる。"
 #. SourceLocation:	Source/IndieGame/Narrative/IGMissingFloorHints.cpp(371)
 #: Source/IndieGame/Narrative/IGMissingFloorHints.cpp(371)
 msgctxt "IGHint,NightFourWall1b"
-msgid "다른 데 틈을 내주면 그리로 옮겨 갈까."
-msgstr "別のところに隙間を開けてやったら、そっちに移るかな。"
+msgid "더 넓은 틈을 내주면 그리로 옮겨 갈까."
+msgstr "もっと広い隙間を開けてやったら、そっちに移るかな。"
 
 #. Key:	NightFourWall1c
 #. SourceLocation:	Source/IndieGame/Narrative/IGMissingFloorHints.cpp(372)
 #: Source/IndieGame/Narrative/IGMissingFloorHints.cpp(372)
 msgctxt "IGHint,NightFourWall1c"
-msgid "구석 쪽 작은 덧판을 떼어 내자. 밑에 틈이 있으면 그리로 옮겨 갈 거야."
-msgstr "隅の小さな当て板をはがそう。下に隙間があれば、そっちに移るはず。"
+msgid "구석 쪽 작은 덧판을 떼어 내자. 밑이 넓게 뚫려 있으면 그리로 옮겨 갈 거야."
+msgstr "隅の小さな当て板をはがそう。下に大きな穴が開いてたら、そっちに移るはず。"
 
 #. Key:	NightFourWall2Ba
 #. SourceLocation:	Source/IndieGame/Narrative/IGMissingFloorHints.cpp(376)

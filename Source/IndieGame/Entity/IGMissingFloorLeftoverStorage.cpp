@@ -585,9 +585,14 @@ void AIGMissingFloorLeftoverDirector::BeginStorageTrap()
 	// 덧댄 것이 이미 다른 틈으로 옮겨 간 저장이면, 받쳐 뒀을 때는 판이 풀린 채로, 아니면 판이 더 누운
 	// 채로 되살린다. 예전에는 누운 판을 세운 채 갇힘으로 되돌려서, 이미 연 점검구를 다시 열라는 힌트만
 	// 남고 정우를 꺼낼 길이 힌트 밖의 동벽 점검구뿐이었다(2026-10-21).
+	// 판이 누운 채로 저장했으면 덧댄 것이 어디 있든 누운 판으로 되살리고, 누운 뒤에 쐐기만 끼웠으면 판을
+	// 세우는 데서 이어 간다. 덧댄 것이 누르는 틈은 다 눌러 막아야 바뀌어서 큰 점검구로 가는 도중의 저장에는
+	// 아직 작업 틈이 남는다. 예전에는 그 저장을 판이 선 갇힘으로 되돌렸고, 쐐기를 끼운 저장이면 덧댄 것이
+	// 다시 떠날 때 판을 세우지 않았는데도 정우가 나왔다(2026-10-22).
 	// 둘째 밤 관리실의 틈 이름도 같은 칸에 남으니 302호의 다른 두 틈만 본다.
 	const bool bLiningAway = State.LiningHeldGap == GapLarge || State.LiningHeldGap == GapAlt;
-	StorageStage = !bLiningAway ? EStorage::Trapped
+	StorageStage = State.bBoardFallen ? EStorage::Fallen
+		: !bLiningAway ? EStorage::Trapped
 		: (State.WedgeSocket == WedgeBrace ? EStorage::Released : EStorage::Fallen);
 	StorageStageAt = GetWorld()->GetTimeSeconds();
 	bBraceAgainSpoken = false;
@@ -747,6 +752,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 	if (Key == FName(TEXT("Storage.Lift")))
 	{
 		// 쐐기를 받친 채 판을 다시 세운다. 정우가 안에서 같이 민다.
+		State.bBoardFallen = false;
 		SetBoardPose(1, true);
 		if (Jeongwoo)
 		{
@@ -945,6 +951,7 @@ void AIGMissingFloorLeftoverDirector::ReleaseBoard()
 		// 받친 게 없다. 누르던 몸이 떠나자 밑동이 미끄러지며 판이 더 눕는다. 소리가 크다. 밑동이 발끝까지
 		// 들어와 정우가 한 발 물러선다.
 		StorageStage = EStorage::Fallen;
+		Narrative->MutableLeftover().bBoardFallen = true;
 		SetBoardPose(2, true);
 		if (Jeongwoo)
 		{

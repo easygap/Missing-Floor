@@ -2573,7 +2573,7 @@ void AIGLeftoverProbe::TickHints(AIGMissingFloorLeftoverDirector* Director, UIGM
 			return;
 		}
 		DumpHint(TEXT("inside_doorway"));
-		if (HintScenario == TEXT("fallen") || HintScenario == TEXT("fallensave"))
+		if (HintScenario == TEXT("fallen") || HintScenario == TEXT("fallensave") || HintScenario == TEXT("fallenbracedsave"))
 		{
 			Next(530);
 			return;
@@ -2690,6 +2690,18 @@ void AIGLeftoverProbe::TickHints(AIGMissingFloorLeftoverDirector* Director, UIGM
 			Next(580);
 			return;
 		}
+		if (HintScenario == TEXT("fallenbracedsave"))
+		{
+			// 누운 판 밑동에 쐐기만 끼우고, 판은 세우지 않은 채 저장한다.
+			Stand(DoorwayFeet, DoorwayLook);
+			Check(Use(Target(TEXT("Storage.WedgePick"))), TEXT("hints_fallen_pick_wedge"));
+			Check(Use(Target(TEXT("Storage.Socket0"))), TEXT("hints_fallen_wedge_socket"));
+			DumpHint(TEXT("fallen_braced"));
+			Check(Director->GetStorageStage() == FName(TEXT("Fallen")) && Narrative->GetLeftover().bBoardFallen,
+				TEXT("hints_fallen_braced_board_still_down"));
+			Next(580);
+			return;
+		}
 		Stand(DoorwayFeet, DoorwayLook);
 		Check(Use(Target(TEXT("Storage.WedgePick"))), TEXT("hints_fallen_pick_wedge"));
 		DumpHint(TEXT("fallen_wedge_in_hand"));
@@ -2741,22 +2753,22 @@ void AIGLeftoverProbe::TickHints(AIGMissingFloorLeftoverDirector* Director, UIGM
 
 	// 불러온 밤. 302호가 저장한 그대로 다시 지어졌는지 보고, 힌트와 이어지는 구출을 본다.
 	case 590:
+	{
+		const bool bFallenSave = HintScenario == TEXT("fallensave") || HintScenario == TEXT("fallenbracedsave");
 		if (PhaseSeconds < 4.0f)
 		{
 			return;
 		}
 		if (Step == 0)
 		{
-			AuditStorage(HintScenario == TEXT("fallensave") ? TEXT("302.resume_fallen") : TEXT("302.resume"));
+			AuditStorage(bFallenSave ? TEXT("302.resume_fallen") : TEXT("302.resume"));
 			Step = 1;
 		}
-		if (!StorageViews(HintScenario == TEXT("fallensave") ? TEXT("resume_fallen") : TEXT("resume")))
+		if (!StorageViews(bFallenSave ? TEXT("resume_fallen") : TEXT("resume")))
 		{
 			return;
 		}
-	{
 		const FIGLeftoverState& State = Narrative->GetLeftover();
-		const bool bFallenSave = HintScenario == TEXT("fallensave");
 		Check(Narrative->GetNightIndex() == 3, TEXT("resume_is_night_three"));
 		Check(State.JeongwooState == FName(TEXT("Trapped")), TEXT("resume_jeongwoo_still_trapped"));
 		Check(State.bWardrobeMoved, TEXT("resume_wardrobe_still_moved"));
@@ -2764,11 +2776,19 @@ void AIGLeftoverProbe::TickHints(AIGMissingFloorLeftoverDirector* Director, UIGM
 		{
 			// 판이 누운 뒤의 저장. 불러와도 판이 누운 채여야 하고, 쐐기를 끼우면 들어 올릴 수 있어야 한다.
 			const UStaticMeshComponent* Board = Director->GetPropForTesting(FName(TEXT("Storage.Board")));
-			UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_RESUME fallen stage=%s board=%s rot=%s"),
+			UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_RESUME fallen stage=%s board=%s rot=%s wedge=%s"),
 				*Director->GetStorageStage().ToString(),
 				Board ? *Board->GetComponentLocation().ToCompactString() : TEXT("none"),
-				Board ? *Board->GetComponentRotation().ToCompactString() : TEXT("none"));
+				Board ? *Board->GetComponentRotation().ToCompactString() : TEXT("none"), *State.WedgeSocket.ToString());
 			Check(Director->GetStorageStage() == FName(TEXT("Fallen")), TEXT("resume_board_still_fallen"));
+			if (HintScenario == TEXT("fallenbracedsave"))
+			{
+				// 쐐기만 끼우고 세우지 않은 판. 정우가 저절로 나오지 않고, 끼운 쐐기 그대로 판을 세우는 데서 이어 간다.
+				const UStaticMeshComponent* Wedge = Director->GetPropForTesting(FName(TEXT("Storage.Wedge")));
+				Check(State.WedgeSocket == FName(TEXT("Brace")) && State.bBoardFallen, TEXT("resume_fallen_wedge_still_braced"));
+				Check(Wedge && Wedge->IsVisible() && FVector::Dist2D(Wedge->GetComponentLocation(), FVector(51.0f, 60.0f, 600.0f)) < 5.0,
+					TEXT("resume_fallen_wedge_mesh_in_socket"));
+			}
 			DumpHint(TEXT("resume_fallen_where_loaded"));
 			Stand(DoorwayFeet, DoorwayLook);
 			Next(595);
@@ -2819,8 +2839,11 @@ void AIGLeftoverProbe::TickHints(AIGMissingFloorLeftoverDirector* Director, UIGM
 			return;
 		}
 		DumpHint(TEXT("resume_fallen_inside"));
-		Check(Use(Target(TEXT("Storage.WedgePick"))), TEXT("resume_fallen_pick_wedge"));
-		Check(Use(Target(TEXT("Storage.Socket0"))), TEXT("resume_fallen_wedge_socket"));
+		if (HintScenario != TEXT("fallenbracedsave"))
+		{
+			Check(Use(Target(TEXT("Storage.WedgePick"))), TEXT("resume_fallen_pick_wedge"));
+			Check(Use(Target(TEXT("Storage.Socket0"))), TEXT("resume_fallen_wedge_socket"));
+		}
 		DumpHint(TEXT("resume_fallen_braced"));
 		Check(CanUse(Target(TEXT("Storage.Lift"))), TEXT("resume_fallen_lift_available"));
 		Use(Target(TEXT("Storage.Lift")));

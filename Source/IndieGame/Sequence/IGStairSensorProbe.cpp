@@ -265,18 +265,21 @@ void AIGStairSensorProbe::Tick(const float DeltaSeconds)
 		{
 			Check(!Lights->IsLampOn(1), TEXT("lamp_goes_out_after_hold"));
 			Check(Lights->GetLampIntensity(1) <= 0.0f, TEXT("dark_lamp_gives_no_light"));
+			// 1층 계량기함에서 복도등을 내린다(P1을 풀며 복도등을 꺼 둔 밤). 3층 참의 소개까지 내린 채로 간다.
+			Building->SetCommonInspectionLightsEnabled(false);
+			Check(Building->AreCommonInspectionLightsOff(), TEXT("common_lights_all_off"));
 			Next(4);
 		}
 		break;
 	case 4:
-		// 1층 공용 차단기를 내리면 센서등도 죽는다.
+		// 센서등은 복도등과 회로가 따로라 복도등을 내려도 움직이면 켜진다.
 		Walk(FVector(0.0f, -1.0f, 0.0f));
 		if (PhaseSeconds > 0.4f)
 		{
-			Check(Lights->IsLampOn(1), TEXT("lamp_back_on_when_she_moves"));
-			Building->SetCommonInspectionLightsEnabled(false);
-			Check(!Lights->IsAnyLampOn(), TEXT("common_breaker_kills_sensors"));
-			Check(Building->AreCommonInspectionLightsOff(), TEXT("common_lights_all_off"));
+			Check(Lights->IsLampOn(1) && Lights->GetLampIntensity(1) > 500.0f, TEXT("corridor_breaker_leaves_sensors_working"));
+			// 넷째 밤 관리인이 내리는 건물 차단기는 센서등까지 끊는다.
+			Building->SetMissingFloorAnnexPower(false);
+			Check(!Lights->IsAnyLampOn(), TEXT("night_four_breaker_kills_sensors"));
 			Next(5);
 		}
 		break;
@@ -285,28 +288,21 @@ void AIGStairSensorProbe::Tick(const float DeltaSeconds)
 		if (PhaseSeconds > 0.8f)
 		{
 			Check(!Lights->IsAnyLampOn(), TEXT("no_power_no_light"));
-			Building->SetCommonInspectionLightsEnabled(true);
-			Building->SetMissingFloorAnnexPower(false);
+			Building->SetMissingFloorAnnexPower(true);
 			Next(6);
 		}
 		break;
 	case 6:
-		// 넷째 밤 관리인이 내리는 차단기도 같다.
-		Walk(FVector(0.0f, PhaseSeconds < 0.4f ? 1.0f : -1.0f, 0.0f));
-		if (PhaseSeconds > 0.8f)
+		// 복도등은 내린 채다. 예전에는 복도등을 끄면 센서등도 죽어서 이 소개가 나오지 않았다.
+		Check(Narrative && !Narrative->HasBeatPlayed(AIGNightThreatDirector::SensorIntroBeat),
+			TEXT("intro_not_yet_played"));
+		Place(IGStairSensorProbe::ThirdFloorStart, 0.0f);
+		if (bShots && Character->GetFlashlight())
 		{
-			Check(!Lights->IsAnyLampOn(), TEXT("night_four_breaker_kills_sensors"));
-			Building->SetMissingFloorAnnexPower(true);
-			Check(Narrative && !Narrative->HasBeatPlayed(AIGNightThreatDirector::SensorIntroBeat),
-				TEXT("intro_not_yet_played"));
-			Place(IGStairSensorProbe::ThirdFloorStart, 0.0f);
-			if (bShots && Character->GetFlashlight())
-			{
-				// 어둑시니는 손전등 빛 속의 구멍처럼 보인다. 그 모습을 찍는다.
-				Character->GetFlashlight()->SetOn(true);
-			}
-			Next(7);
+			// 어둑시니는 손전등 빛 속의 구멍처럼 보인다. 그 모습을 찍는다.
+			Character->GetFlashlight()->SetOn(true);
 		}
+		Next(7);
 		break;
 	case 7:
 		// 3층 참. 동쪽으로 몇 걸음 걷고 남쪽 창을 보고 선다.
@@ -336,6 +332,7 @@ void AIGStairSensorProbe::Tick(const float DeltaSeconds)
 			Check(FigureAt.Z < Feet().Z - 60.0f, TEXT("it_stands_below_the_landing"));
 			Check(Narrative && Narrative->HasBeatPlayed(AIGNightThreatDirector::SensorIntroBeat),
 				TEXT("intro_marked_played"));
+			Check(!Building->AreCommonInspectionLightsEnabled(), TEXT("intro_comes_with_corridor_breaker_down"));
 			Next(9);
 		}
 		else if (PhaseSeconds > 9.0f)
@@ -378,6 +375,7 @@ void AIGStairSensorProbe::Tick(const float DeltaSeconds)
 		{
 			Check(Lights->IsLampOn(2), TEXT("lamp_comes_back_on"));
 			Check(!Threat->IsEoduksiniManifested(), TEXT("light_dismisses_it"));
+			Building->SetCommonInspectionLightsEnabled(true);
 			Next(11);
 		}
 		break;

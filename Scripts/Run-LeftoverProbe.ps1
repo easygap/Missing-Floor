@@ -8,9 +8,10 @@ param(
 	# night3av: input에 이어 계단·옥상·5층(밸브, 벽 듣기, 수첩, 박자 두드리기, 벽의 대답)과 복도의 그를 지나
 	# 403호까지 실제 입력으로 간다. -Record와 같이 쓰면 믹스를 녹음한다.
 	# hints: 밤3 302호 구출의 H 힌트 세 단계를 상태마다 남긴다(-HintScenario). save는 받친 판과 밀어 둔 장롱을
-	# 자동 저장에 남기고, 같은 사용자 폴더로 다시 켜서 이어 한 밤을 본다.
+	# 자동 저장에 남기고, 같은 사용자 폴더로 다시 켜서 이어 한 밤을 본다. fallensave는 누운 판을,
+	# fallenbracedsave는 누운 판 밑동에 쐐기만 끼우고 세우지 않은 채로 저장한다.
 	[ValidateSet('full', 'dawn', 'dawnbrace', 'night2', 'wall', 'input', 'lines', 'night3av', 'hints')][string]$Variant = 'full',
-	[ValidateSet('named', 'unnamed', 'talk', 'fallen', 'remote', 'save', 'fallensave')][string]$HintScenario = 'named',
+	[ValidateSet('named', 'unnamed', 'talk', 'fallen', 'remote', 'save', 'fallensave', 'fallenbracedsave')][string]$HintScenario = 'named',
 	# 스피커로 내지 않고 마스터 믹스를 녹음한다(-DeterministicAudio). 오프스크린 D3D로 그린다.
 	[switch]$Record,
 	[switch]$Shots,
@@ -75,7 +76,7 @@ Select-String -LiteralPath $logPath -Pattern $probePattern | ForEach-Object { Wr
 if ($exitCode -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
 	throw "남은 짐 검사에 실패했습니다: $logPath"
 }
-if ($Variant -eq 'hints' -and $HintScenario -in @('save', 'fallensave')) {
+if ($Variant -eq 'hints' -and $HintScenario -in @('save', 'fallensave', 'fallenbracedsave')) {
 	# 같은 사용자 폴더로 다시 켜면 방금 남긴 밤 저장을 불러와 이어 한다.
 	$resumeLog = Join-Path (Split-Path -Parent $probeUser) "Leftover-$tag-resume-$FrameRate.log"
 	& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen @audio @render `

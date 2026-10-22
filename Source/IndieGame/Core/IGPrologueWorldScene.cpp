@@ -994,18 +994,14 @@ void AIGPrologueWorldScene::SetCommonInspectionLightsEnabled(const bool bEnabled
 	bCommonInspectionLightsEnabled = bEnabled;
 	for (int32 Index = 0; Index < LobbyLights.Num(); ++Index) SetFixtureLive(Index, true, false);
 	for (int32 Index = 0; Index < CorridorLights.Num(); ++Index) SetFixtureLive(Index, true, true);
+	// 계단 센서등은 이 회로가 아니다. 넷째 밤 건물 차단기에만 물린다(AIGStairSensorLights::IsPowered).
 	ApplyServiceLights();
-	if (StairSensorLights)
-	{
-		StairSensorLights->ApplyPower();
-	}
 }
 
 bool AIGPrologueWorldScene::AreCommonInspectionLightsOff() const
 {
 	for (const UPointLightComponent* Light : LobbyLights) if (Light && Light->Intensity > 0.f) return false;
 	for (const UPointLightComponent* Light : CorridorLights) if (Light && Light->Intensity > 0.f) return false;
-	if (StairSensorLights && StairSensorLights->IsAnyLampOn()) return false;
 	for (const UPointLightComponent* Light : LowerFloorLights) if (Light && Light->Intensity > 0.f) return false;
 	for (const UStaticMeshComponent* Disc : LobbyLightDiscs) if (Disc && Disc->GetMaterial(0) == LightPanelMaterial) return false;
 	for (const UStaticMeshComponent* Disc : CorridorLightDiscs) if (Disc && Disc->GetMaterial(0) == LightPanelMaterial) return false;

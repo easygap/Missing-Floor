@@ -12,6 +12,7 @@
 #include "Entity/IGNightThreatDirector.h"
 #include "Entity/IGShadowFigure.h"
 #include "EngineUtils.h"
+#include "Environment/IGStairSensorLights.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
@@ -300,7 +301,10 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 		if (ThirdStageSeconds >= 0.0f && PhaseSeconds >= ThirdStageSeconds + 1.6f)
 		{
 			Check(Struck == 3 && !Building->IsMissingFloorAnnexPowered(), TEXT("third_strike_cuts_the_power"));
-			Check(Building->AreCommonInspectionLightsOff(), TEXT("corridor_lobby_and_sensor_lights_die"));
+			// 계단 센서등은 복도등과 회로가 따로라 공용 등 판정에 들지 않는다. 건물 차단기에는 같이 죽는다.
+			const AIGStairSensorLights* Sensors = Building->GetStairSensorLights();
+			Check(Building->AreCommonInspectionLightsOff() && Sensors && !Sensors->IsAnyLampOn(),
+				TEXT("corridor_lobby_and_sensor_lights_die"));
 			UE_LOG(LogIndieGame, Display, TEXT("NIGHT4HAMMER drift=%.1f"), MaxDrift);
 			Check(MaxDrift < MaxHammerDrift && !IsCapturedSince(CaptureBaseline), TEXT("lining_passes_the_hammer_spot"));
 			Next(2);
