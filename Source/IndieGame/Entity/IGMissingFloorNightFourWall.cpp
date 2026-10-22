@@ -141,9 +141,27 @@ namespace IGNightFourWall
 		return FTransform(FRotationMatrix::MakeFromXZ(FVector::UpVector, Along).Rotator(), BattenFallen[Index]);
 	}
 
+	/** 방금 친 자리나 버팀에 대한 짧은 반응. 밀려서 늦게 뜨면 지난 일이라 버린다. */
 	void Think(UObject* Context, const FText& Line, const float Seconds = 2.8f)
 	{
-		AIGHorrorHUD::PushThought(Context, Line, Seconds);
+		FIGDialogueScope Scope;
+		Scope.Context = FName(TEXT("Night4.WallReaction"));
+		Scope.Owner = Context;
+		Scope.Lifetime = EIGDialogueLifetime::Reaction;
+		AIGHorrorHUD::PushThoughtScoped(Context, Line, Seconds, MoveTemp(Scope));
+	}
+
+	/**
+	 * 벽을 뜯으며 알게 된 것(어디를 고정했는지, 무엇이 나왔는지, 덧댄 것이 어떻게 됐는지). 밸브 반응이나
+	 * 물소리 속말과 겹쳐 줄이 차도 버리지 않는다. 화면 렌더 검사에서 「테이프 밑에 나사가 박혀 있어」가
+	 * 줄이 찼다고 버려지고, 「덧판 밑이 뚫려 있었어」는 15초 밀려 버려졌다.
+	 */
+	void ThinkClue(UObject* Context, const FText& Line, const float Seconds = 2.8f)
+	{
+		FIGDialogueScope Scope;
+		Scope.Context = FName(TEXT("Night4.Wall"));
+		Scope.Owner = Context;
+		AIGHorrorHUD::PushThoughtScoped(Context, Line, Seconds, MoveTemp(Scope));
 	}
 
 	void ShowProp(UStaticMeshComponent* Component, const bool bShow)
@@ -403,13 +421,13 @@ void AIGMissingFloorNightFourDirector::HandleWallTarget(AIGMissingFloorEvidence*
 		{
 			AddWallLayer(LayerSurvey);
 			// P6에서 덮개를 제자리에 대 봤으면 남쪽 덧판 밑을 이미 안다. 몰라도 여기서 보이는 것만으로 풀린다.
-			Think(this, State.bSiteMatched
+			ThinkClue(this, State.bSiteMatched
 				? NSLOCTEXT("IGMissingFloor", "WallSurveyKnown", "가운데 칸에만 판을 한 겹 더 댔어. 구석 쪽 작은 덧판 밑은 점검구였고.")
 				: NSLOCTEXT("IGMissingFloor", "WallSurvey", "가운데 칸에만 판을 한 겹 더 댔어. 이음매에 테이프를 발랐네."),
 				3.6f);
 			GetWorldTimerManager().SetTimer(WallThoughtTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
-				Think(this, NSLOCTEXT("IGMissingFloor", "WallSurveyFixings", "덧판을 각재에 대고 박아 놨어."), 3.4f);
+				ThinkClue(this, NSLOCTEXT("IGMissingFloor", "WallSurveyFixings", "덧판을 각재에 대고 박아 놨어."), 3.4f);
 			}), 3.8f, false);
 		}
 		break;
@@ -605,12 +623,12 @@ void AIGMissingFloorNightFourDirector::AdvanceWallStage(const int32 Stage, const
 				Leftover->OpenAnnexSeam();
 			}
 		}
-		Think(this, NSLOCTEXT("IGMissingFloor", "WallStageJoint", "테이프 밑에 나사가 박혀 있어."));
+		ThinkClue(this, NSLOCTEXT("IGMissingFloor", "WallStageJoint", "테이프 밑에 나사가 박혀 있어."));
 		const bool bSeenBefore = Narrative->HasBeatPlayed(SeenMoveBeat)
 			|| Narrative->HasBeatPlayed(FName(TEXT("Leftover.N2.FirstMove")));
 		GetWorldTimerManager().SetTimer(WallThoughtTimer, FTimerDelegate::CreateWeakLambda(this, [this, bSeenBefore]()
 		{
-			Think(this, bSeenBefore
+			ThinkClue(this, bSeenBefore
 				? NSLOCTEXT("IGMissingFloor", "WallStageJointSeen", "여기도 그게 붙어 있었어.")
 				: NSLOCTEXT("IGMissingFloor", "LeftoverFirstMove", "벽에 붙어 있던 게… 움직였어."), 3.0f);
 		}), 2.6f, false);
@@ -633,7 +651,7 @@ void AIGMissingFloorNightFourDirector::AdvanceWallStage(const int32 Stage, const
 			SceneActor->SetMissingFloorInspectionOverlayRemoved(true);
 		}
 		BeginNeighbor303Call();
-		Think(this, State.bSiteMatched
+		ThinkClue(this, State.bSiteMatched
 			? NSLOCTEXT("IGMissingFloor", "WallStageOverlayKnown", "점검구가 나왔어.")
 			: NSLOCTEXT("IGMissingFloor", "WallStageOverlay", "덧판 밑이 뚫려 있었어."));
 		bSpreadNoticed = false;
@@ -868,7 +886,7 @@ void AIGMissingFloorNightFourDirector::PollAnnexSpread()
 	bSpreadNoticed = true;
 	GetWorldTimerManager().ClearTimer(AnnexSpreadPollTimer);
 	// 보이는 것만 말한다. 틀을 쓰는 법은 H로 물을 때 떠올린다(시간이 지났다고 답을 주지 않는다).
-	Think(this, NSLOCTEXT("IGMissingFloor", "WallSpread", "천장까지 몸을 폈어."), 2.6f);
+	ThinkClue(this, NSLOCTEXT("IGMissingFloor", "WallSpread", "천장까지 몸을 폈어."), 2.6f);
 	RefreshPresentation();
 }
 

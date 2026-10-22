@@ -2322,7 +2322,13 @@ void AIGMissingFloorNightFourDirector::ActivateControl(
 		: ControlId == IGNightFour::FloatBypassId
 			? NSLOCTEXT("IGMissingFloor", "FloatBypassThought", "급수관에서도 물소리가 난다.")
 			: NSLOCTEXT("IGMissingFloor", "TransferPumpThought", "펌프가 돌아가네.");
-	AIGHorrorHUD::PushThought(this, Result, 3.0f);
+	// 방금 돌린 밸브의 결과다. 밸브를 잇달아 돌리고 바로 망치를 들면 이 줄들이 벽 단서 앞을 막았다.
+	// 밀려서 늦게 뜨면 이미 지난 일이니 짧은 반응으로 낸다.
+	FIGDialogueScope ResultScope;
+	ResultScope.Context = FName(TEXT("Night4.Valve"));
+	ResultScope.Owner = this;
+	ResultScope.Lifetime = EIGDialogueLifetime::Reaction;
+	AIGHorrorHUD::PushThoughtScoped(this, Result, 3.0f, MoveTemp(ResultScope));
 	StartWaterMaskIfReady();
 	RefreshPresentation();
 }
@@ -2590,25 +2596,38 @@ void AIGMissingFloorNightFourDirector::StartWaterMaskIfReady()
 	}
 	if (bHourCurrentlyActive)
 	{
-		AIGHorrorHUD::PushThought(
+		// 물소리가 나는 동안에만 맞는 말이다. 줄이 차도 버리지 않고, 물소리가 멎으면 거둔다.
+		FIGDialogueScope MaskScope;
+		MaskScope.Context = FName(TEXT("Night4.WaterMask"));
+		MaskScope.Owner = this;
+		MaskScope.StillValid = [WeakThis = TWeakObjectPtr<AIGMissingFloorNightFourDirector>(this)]()
+		{
+			return WeakThis.IsValid() && WeakThis->IsWaterMaskPlaying();
+		};
+		AIGHorrorHUD::PushThoughtScoped(
 			this,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"P5MaskReady",
 				"물소리가 꽤 커. 지금 치면 덜 들리겠어."),
-			4.0f);
+			4.0f,
+			MoveTemp(MaskScope));
 		// §8 4-5b의 심기. 망치를 들기 전에 폰 녹음을 켠다. 그 시간의 소리는
 		// 담기지 않는다는 것을 밤2에 배웠어도 증거를 만들 생각은 그대로다. 벽이
 		// 열리는 순간 규칙이 풀리고, 대치가 끝난 뒤 그 녹음이 처음으로 무언가를
 		// 담고 있다.
 		StartWallRecording();
-		AIGHorrorHUD::PushThought(
+		FIGDialogueScope RecordingScope;
+		RecordingScope.Context = FName(TEXT("Night4.Recording"));
+		RecordingScope.Owner = this;
+		AIGHorrorHUD::PushThoughtScoped(
 			this,
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"NightFourRecordingArmed",
 				"폰 녹음 켜 두자. 이번엔 뭐라도 남겨야 해."),
-			3.6f);
+			3.6f,
+			MoveTemp(RecordingScope));
 	}
 }
 
@@ -2980,11 +2999,16 @@ void AIGMissingFloorNightFourDirector::PlayNeighbor303Call()
 		// 녹음이 있으면 그 목소리가 계단을 타고 올라온다. 없으면 말은 자막이 맡고 귀에는 계단을 타고
 		// 오는 웅얼거림만 온다(확장 계획 §3.3과 같은 규칙).
 		const bool bVoiced = IGVoice::Find(IGVoice::LineIdOf(Line)) != nullptr;
+		// 303호는 벽 단서가 나오는 그 순간에 말한다. 장면 이름을 달아 두지 않으면 줄이 찼을 때
+		// 이 말이 먼저 버려졌다(화면 렌더 망치 검사, 10-21).
+		FIGDialogueScope CallScope;
+		CallScope.Context = FName(TEXT("Night4.Neighbor303"));
+		CallScope.Owner = this;
 		IGVoice::Say(
 			this,
 			NSLOCTEXT("IGMissingFloor", "Neighbor303Speaker", "303호"),
 			Line,
-			FIGDialogueScope(),
+			MoveTemp(CallScope),
 			[]() { return IGNightFour::Neighbor303Voice; },
 			IGVoice::ESource::PersonAcrossFloors,
 			EIGDialogueChannel::Conversation,

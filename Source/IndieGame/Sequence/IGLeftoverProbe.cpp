@@ -95,6 +95,7 @@ void AIGLeftoverProbe::Configure(AIGPrologueWorldScene* InScene, AIGPlayerCharac
 	bLinesVariant = Variant == TEXT("lines");
 	bHintsVariant = Variant == TEXT("hints");
 	FParse::Value(FCommandLine::Get(), TEXT("IGHintScenario="), HintScenario);
+	bAlleyNearMiss = FParse::Param(FCommandLine::Get(), TEXT("IGLeftoverNearMiss"));
 	if (UIGGameInstance* GameInstance = Cast<UIGGameInstance>(GetGameInstance()))
 	{
 		GameInstance->SetRuntimeProfileStage(0);
@@ -744,6 +745,11 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Next(400);
 			return;
 		}
+		if (bAlleyNearMiss)
+		{
+			// 입주 저녁(밤 번호 0)에 골목에서 오토바이와 스쳤다. 동네 연출이 남기는 기록과 같다.
+			Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.ScooterNearMiss")));
+		}
 		Narrative->SetNightIndex(1);
 		Director->SetHourActive(false);
 		Silence();
@@ -770,6 +776,18 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			}
 			Shoot(TEXT("day1_at_fire_door"));
 			Check(Narrative->HasBeatPlayed(FName(TEXT("Day.Jeongwoo.Intro"))), TEXT("day1_name_heard_at_door"));
+			// 문 앞 첫마디는 입주 저녁 골목 일을 겪었으면 사과, 아니면 처음 보는 이웃끼리의 인사다.
+			// 방금 줄을 선 말이라 아직 떠 있거나 대기 중이다.
+			{
+				const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+				const AIGHorrorHUD* Hud = PC ? Cast<AIGHorrorHUD>(PC->GetHUD()) : nullptr;
+				const bool bSorry = Hud && Hud->HasDialogueLineForTesting(NSLOCTEXT("IGMissingFloor", "LeftoverBoxesIntro",
+					"어, 어제 골목에서 뵌… 진짜 죄송했어요. 저 202호 정우예요.").ToString());
+				const bool bHello = Hud && Hud->HasDialogueLineForTesting(NSLOCTEXT("IGMissingFloor", "LeftoverBoxesHello",
+					"안녕하세요. 저 202호 사는 정우예요.").ToString());
+				Check(bAlleyNearMiss ? bSorry && !bHello : bHello && !bSorry,
+					bAlleyNearMiss ? TEXT("day1_door_greeting_apologizes") : TEXT("day1_door_greeting_hello"));
+			}
 			Check(Use(Target(TEXT("Day.HoldDoor"))), TEXT("day1_hold_door"));
 		}
 		if (Step == 2 && Director->GetJeongwoo() && !Director->GetJeongwoo()->IsWalking() && PhaseSeconds > 4.0f

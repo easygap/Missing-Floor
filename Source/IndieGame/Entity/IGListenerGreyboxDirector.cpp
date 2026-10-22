@@ -427,7 +427,43 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 				FailProbe(TEXT("다시 실행한 게임에서 입주 조사와 취침 상태가 복구되지 않음"));
 				return;
 			}
-			RequestExit(false);
+			// 입주 저녁에 골목에서 오토바이와 스친 뒤 저장했다면 그 일도 이어져야 한다. 같은 일이 다시
+			// 일어나지 않고, 정우의 오토바이는 공동현관 옆 연석에 서 있다(연석은 2초마다 다시 맞춘다).
+			// 예전 판 저장에는 이 기록이 없을 수 있다. -IGArrivalExpectNearMiss는 기록이 꼭 있어야 하는 실행이다.
+			if (!Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.ScooterNearMiss"))))
+			{
+				if (FParse::Param(FCommandLine::Get(), TEXT("IGArrivalExpectNearMiss")))
+				{
+					FailProbe(TEXT("입주 저녁 골목 오토바이 기록이 저장에서 돌아오지 않음"));
+					return;
+				}
+				RequestExit(false);
+				return;
+			}
+			const double WaitStartedAt = GetWorld()->GetTimeSeconds();
+			GetWorldTimerManager().SetTimer(SetupTimer, FTimerDelegate::CreateWeakLambda(this, [this, WaitStartedAt]()
+			{
+				const AIGNeighborhoodLifeDirector* Neighborhood =
+					WorldScene.IsValid() ? WorldScene->GetNeighborhoodLifeDirector() : nullptr;
+				const bool bParked = Neighborhood && Neighborhood->HasParkedScooterForTesting();
+				if (!bParked && GetWorld()->GetTimeSeconds() - WaitStartedAt < 6.0)
+				{
+					return;
+				}
+				const bool bRemembered = Neighborhood && Neighborhood->HasNearMissPlayedForTesting();
+				UE_LOG(LogTemp, Display, TEXT("MISSINGFLOOR_ARRIVAL_RESUME near_miss=1 remembered=%d parked=%d"),
+					bRemembered ? 1 : 0, bParked ? 1 : 0);
+				if (bRemembered && bParked)
+				{
+					RequestExit(false);
+				}
+				else
+				{
+					FailProbe(TEXT("입주 저녁 골목 오토바이 일이 이어 하기에서 이어지지 않음"));
+				}
+				// 자기 타이머를 지우는 순간 이 람다와 캡처가 해제된다. 지우기는 맨 끝에 둔다.
+				GetWorldTimerManager().ClearTimer(SetupTimer);
+			}), 0.2f, true);
 			return;
 		}
 		// 위층 사람이 층을 오가며 쫓고 뒤지는지 재는 검사. 다른 괴이와 관리인은 세워
@@ -10022,17 +10058,48 @@ void AIGListenerGreyboxDirector::RunArrivalProbe()
 		TEXT("MISSINGFLOOR_ARRIVAL PASS props=7 night=0 hour_sealed=0 cardboard_pbr=1 free_order=1 delivery_branch=1"));
 	if (FParse::Param(FCommandLine::Get(), TEXT("IGArrivalSaveWrite")))
 	{
+		// 저장하기 전에 첫 외출을 한다. 공동현관을 나서 골목 동쪽으로 걸어가면 샛길에서 오토바이가
+		// 튀어나온다. 동네 연출이 실제로 띄운 일이 밤 번호 0에서 기록되고 입주 자동 저장에 들어가야
+		// 한다. 다시 실행한 게임(-IGArrivalSaveRead)이 그 기록과 연석의 오토바이를 본다.
+		AIGNeighborhoodLifeDirector* Neighborhood =
+			WorldScene.IsValid() ? WorldScene->GetNeighborhoodLifeDirector() : nullptr;
+		if (!Neighborhood || !Player.IsValid())
+		{
+			UE_LOG(LogTemp, Error, TEXT("MISSINGFLOOR_ARRIVAL FAIL near_miss_setup"));
+			FailProbe(TEXT("첫 외출을 볼 동네 연출이나 플레이어가 없음"));
+			return;
+		}
+		// 앞의 단서 확인이 플레이어를 편의점까지 옮기면서 첫 외출이 이미 걸렸다가 「샛길을 지났다」로
+		// 접혔다. 실제로는 현관에서 동쪽으로 걸어가는 길이라 그 사이에 오토바이가 나온다. 다시 건다.
+		Neighborhood->RearmOutdoorSequenceForTesting();
+		// 공동현관(X 643)에서 동쪽으로 몇 걸음, 골목 가운데다. 오토바이는 X 820~1500에서 띄운다.
+		// 캡슐 중심을 바닥 1 m 위에 두면 몇 프레임 안에 내려선다.
+		Player->SetActorLocation(FVector(1000.0f, -540.0f, 100.0f), false, nullptr, ETeleportType::TeleportPhysics);
+		UE_LOG(LogTemp, Display, TEXT("MISSINGFLOOR_ARRIVAL near_miss_setup at=%s"), *Player->GetActorLocation().ToCompactString());
 		// 마지막 단서까지 비동기 저장이 끝난 뒤 프로세스를 종료한다.
 		const double StartedAt = FPlatformTime::Seconds();
-		GetWorldTimerManager().SetTimer(SetupTimer, FTimerDelegate::CreateWeakLambda(this, [this, StartedAt]()
+		const TSharedRef<bool> bNearMissSaveRequested = MakeShared<bool>(false);
+		GetWorldTimerManager().SetTimer(SetupTimer, FTimerDelegate::CreateWeakLambda(this, [this, StartedAt, bNearMissSaveRequested]()
 		{
 			UIGSaveSubsystem* Save = GetGameInstance()->GetSubsystem<UIGSaveSubsystem>();
 			const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 			// 자기 타이머를 지우는 순간 이 람다와 캡처가 해제된다. 지우기는 갈래마다 맨 끝에 둔다.
 			if (!Save || !Narrative || FPlatformTime::Seconds() - StartedAt > 30.0)
 			{
-				FailProbe(TEXT("입주 조사 결과의 자동 저장이 끝나지 않음"));
+				UE_LOG(LogTemp, Error, TEXT("MISSINGFLOOR_ARRIVAL FAIL near_miss=%d at=%s"), *bNearMissSaveRequested ? 1 : 0,
+					Player.IsValid() ? *Player->GetActorLocation().ToCompactString() : TEXT("none"));
+				FailProbe(*bNearMissSaveRequested ? TEXT("입주 조사 결과의 자동 저장이 끝나지 않음")
+					: TEXT("첫 외출에서 오토바이가 나오지 않음"));
 				GetWorldTimerManager().ClearTimer(SetupTimer);
+			}
+			else if (!*bNearMissSaveRequested)
+			{
+				if (Narrative->HasBeatPlayed(FName(TEXT("Neighborhood.ScooterNearMiss"))))
+				{
+					UE_LOG(LogTemp, Display, TEXT("MISSINGFLOOR_ARRIVAL near_miss=1 night=%d"), Narrative->GetNightIndex());
+					*bNearMissSaveRequested = true;
+					RequestArrivalAutosave();
+				}
 			}
 			else if (!Save->IsBusy())
 			{

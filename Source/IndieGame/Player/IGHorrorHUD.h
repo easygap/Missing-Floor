@@ -327,6 +327,11 @@ public:
 		const FText& Thought,
 		float DurationSeconds,
 		FIGDialogueScope Scope);
+	/**
+	 * H로 청한 힌트. 유담의 속말로 내지만, 플레이어가 직접 청한 말이라 떠 있는 말을 잠깐 미루고 바로 띄우고
+	 * 줄이 차도 버리지 않는다. 녹음된 말이 떠 있으면 그 말은 끊긴다.
+	 */
+	static void PushHint(const UObject* WorldContext, const FText& Hint, float DurationSeconds = 3.2f);
 	/** 범위를 붙인 소리 자막. CancelDialogue가 같은 이름의 대사와 함께 거둔다. */
 	static void PushAudioCaptionScoped(
 		const UObject* WorldContext,

@@ -23,7 +23,9 @@ param(
 	# -Shots와 함께: 덧댄 것이 움직이는 구간을 30fps로 이어 찍는다(Saved/LeftoverFrames, 검수용 영상 재료).
 	[switch]$Frames,
 	# -Shots와 함께: 덧댄 것의 몸판·다리·패드 충돌 모양을 선으로 그려 보이는 몸과 맞춰 본다.
-	[switch]$Collision
+	[switch]$Collision,
+	# 입주 저녁에 골목에서 정우의 오토바이와 스친 회차로 본다. 첫째 낮 302호 문 앞 첫마디가 사과여야 한다.
+	[switch]$NearMiss
 )
 
 # 「302호에 남은 짐」을 실제 감독·관리인·덧댄 것·정우로 한 실행에서 겪는다. 낮1 짐 장면, 밤2 안쪽 방과
@@ -39,7 +41,7 @@ try {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $projectRoot 'IndieGame.uproject'
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
-$tag = $Variant + $(if ($Variant -eq 'hints') { "-$HintScenario" } else { '' }) + $(if ($Culture) { "-$Culture" } else { '' }) + $(if ($TextScale -gt 1) { "-x$TextScale" } else { '' }) + $(if ($Clean) { '-clean' } else { '' }) + $(if ($Collision) { '-collision' } else { '' })
+$tag = $Variant + $(if ($Variant -eq 'hints') { "-$HintScenario" } else { '' }) + $(if ($Culture) { "-$Culture" } else { '' }) + $(if ($TextScale -gt 1) { "-x$TextScale" } else { '' }) + $(if ($Clean) { '-clean' } else { '' }) + $(if ($Collision) { '-collision' } else { '' }) + $(if ($NearMiss) { '-nearmiss' } else { '' })
 $probeUser = Join-Path $projectRoot ('Saved/Validation/Leftover-' + $tag + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
 # 로그는 실행 폴더 안에 둔다. 예전에는 Saved/Logs의 같은 이름을 썼는데, 두 작업이 같은 변형을 동시에
 # 돌리면 엔진이 한쪽 이름을 _2로 바꿔서 이 스크립트가 남의 실행 로그를 읽고 판정했다(10-19).
@@ -51,6 +53,7 @@ if ($TextScale -gt 1) { $extra += ('-IGCaptionScale=' + $TextScale) }
 if ($Shots -and $Frames) { $extra += '-IGLeftoverFrames' }
 if ($Shots -and $Collision) { $extra += '-IGLiningDrawCollision' }
 if ($Variant -eq 'hints') { $extra += ('-IGHintScenario=' + $HintScenario) }
+if ($NearMiss) { $extra += '-IGLeftoverNearMiss' }
 $audio = @('-nosound')
 if ($Record) {
 	# 숨긴 창은 초점이 없어 엔진이 소리를 줄인다. 녹음할 때는 열어 둔다.

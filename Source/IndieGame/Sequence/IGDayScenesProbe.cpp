@@ -78,6 +78,7 @@ void AIGDayScenesProbe::Configure(AIGPrologueWorldScene* InScene, AIGPlayerChara
 	Listener = InListener;
 	bDoorStill = FParse::Param(FCommandLine::Get(), TEXT("IGEpilogueDoorStill"));
 	bShots = bDoorStill || FParse::Param(FCommandLine::Get(), TEXT("IGDayScenesShots"));
+	bNoNearMiss = FParse::Param(FCommandLine::Get(), TEXT("IGDayScenesNoNearMiss"));
 }
 
 void AIGDayScenesProbe::Check(const bool bCondition, const TCHAR* Name)
@@ -268,7 +269,12 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			TEXT("only_first_note_on_arrival"));
 		Check(SaidLine(NSLOCTEXT("IGMissingFloor", "Hwang401DarkWarning", "새벽에 깜깜한 데서 뭐가 보이거든 쳐다보지 말아요.")),
 			TEXT("hwang_warns_about_the_dark_on_arrival"));
-		// 첫째 밤. 이사 온 날 골목에서 정우와 스쳤다고 치고, 403호 안에서 밤을 채운다.
+		// 같은 입주 저녁에 골목에서 정우의 오토바이와 스쳤다고 친다. 동네 연출도 이때 이 기록을 남긴다.
+		if (!bNoNearMiss)
+		{
+			Narrative->MarkBeatPlayed(FName(TEXT("Neighborhood.ScooterNearMiss")));
+		}
+		// 첫째 밤. 403호 안에서 밤을 채운다.
 		Narrative->SetNightIndex(1);
 		HomeDoor->ForceOpenState(false);
 		Stand(HomeFeet + Floor4, FVector(131.0f, -237.0f, 100.0f) + Floor4);
@@ -334,6 +340,13 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 				&& SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooIntro",
 					"저 202호 사는 정우예요. 새벽에 오토바이 소리 나면 저예요. 죄송해요.")),
 				TEXT("jeongwoo_introduces_himself_day1"));
+			// 첫마디는 입주 저녁 골목 일을 겪었는지에 따라 사과이거나 처음 보는 이웃끼리의 인사다.
+			{
+				const bool bSorry = SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooSorry", "어, 어제 골목에서… 진짜 죄송했어요. 많이 놀라셨죠."));
+				const bool bHello = SaidLine(NSLOCTEXT("IGMissingFloor", "JeongwooHello", "아, 403호 새로 오신 분이죠?"));
+				Check(bNoNearMiss ? bHello && !bSorry : bSorry && !bHello,
+					bNoNearMiss ? TEXT("jeongwoo_greets_as_a_stranger_day1") : TEXT("jeongwoo_apologizes_for_the_alley_day1"));
+			}
 			if (!bShots)
 			{
 				// 쪽지 붙이는 소리는 403호 안에서만 들린다. 렌더 실행은 오토바이 앞을 찍고 나서 돌아간다.
@@ -1012,6 +1025,26 @@ void AIGDayScenesProbe::Tick(const float DeltaSeconds)
 			Hud->AdvanceDialogueForTesting(Hud->GetDialogueEndTimeForTesting() + 0.01);
 			Check(PagedEnded == 1 && PagedReason == EIGDialogueEndReason::Completed && IsPagedLineRecorded(),
 				TEXT("paged_line_completes_and_records_once"));
+			Hud->ClearDialogueForTesting();
+		}
+
+		// H로 청한 힌트는 장면 붙은 말 일곱 줄이 밀려 있어도 바로 뜨고, 아무것도 버리지 않는다.
+		{
+			AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineA, EIGDialogueChannel::Conversation, 0.0f,
+				EIGDialoguePriority::Story, Scoped(TEXT("Rule.Busy"), EIGDialogueLifetime::Story));
+			for (int32 Index = 0; Index < 7; ++Index)
+			{
+				AIGHorrorHUD::PushDialogueScoped(this, Speaker, LineB, EIGDialogueChannel::Conversation, 0.0f,
+					EIGDialoguePriority::Story,
+					Scoped(FName(*FString::Printf(TEXT("Rule.Busy.%d"), Index)), EIGDialogueLifetime::Story));
+			}
+			const int32 QueuedBefore = Hud->GetQueuedDialogueCountForTesting();
+			const FText HintLine = FText::FromString(TEXT("규칙 검사 힌트."));
+			AIGHorrorHUD::PushHint(this, HintLine);
+			Check(Hud->GetActiveDialogueLineForTesting().ToString() == HintLine.ToString()
+				&& Hud->GetQueuedDialogueCountForTesting() == QueuedBefore + 1
+				&& Hud->HasDialogueInContextForTesting(TEXT("Rule.Busy.6")),
+				TEXT("hint_shows_at_once_over_busy_queue"));
 			Hud->ClearDialogueForTesting();
 		}
 

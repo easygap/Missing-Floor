@@ -105,7 +105,8 @@ if ($saveFiles.Count -lt 1 -or $saveFiles.Count -gt 2) { throw '자동 저장 �
 foreach ($save in $saveFiles) {
     if ($save.Length -le 0) { throw "자동 저장 파일이 비어 있습니다: $($save.Name)" }
 }
-Invoke-GameCase 'ArrivalResume' @('-IGMissingFloor', '-IGArrivalSaveRead', '-d3d12') -UserDirectory $saveUser
+# 저장 쓰기 단계는 입주 조사 뒤 첫 외출에서 골목 오토바이와 스친다. 그 기록이 이어져야 한다.
+Invoke-GameCase 'ArrivalResume' @('-IGMissingFloor', '-IGArrivalSaveRead', '-IGArrivalExpectNearMiss', '-d3d12') -UserDirectory $saveUser
 $seedSave = $saveFiles | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
 & (Join-Path $PSScriptRoot 'Run-MissingFloor-SaveRecoveryProbe.ps1') -ArchiveDirectory $archiveRoot `
     -SeedSaveFile $seedSave.FullName -EvidenceDirectory (Join-Path $EvidenceDirectory 'SaveRecovery')

@@ -2663,7 +2663,7 @@ void AIGPlayerController::RequestManualHint()
 		}
 		bHintAnswerRevealed = true;
 	}
-	AIGHorrorHUD::PushThought(this, Step.Tiers[Tier], 3.2f);
+	AIGHorrorHUD::PushHint(this, Step.Tiers[Tier]);
 	HintTier = FMath::Min(Tier + 1, Step.Tiers.Num() - 1);
 }
 

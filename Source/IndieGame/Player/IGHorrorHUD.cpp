@@ -1050,6 +1050,20 @@ void AIGHorrorHUD::PushThoughtScoped(
 	}
 }
 
+void AIGHorrorHUD::PushHint(const UObject* WorldContext, const FText& Hint, const float DurationSeconds)
+{
+	if (AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext))
+	{
+		// 예전에는 다른 속말 뒤에 줄을 섰다. 말이 몰린 자리에서 H를 누르면 늦게 뜨거나, 줄이 찼을 때 버려진 채
+		// 힌트 단계만 넘어갔다.
+		FIGDialogueScope Scope;
+		Scope.Context = FName(TEXT("Hint"));
+		Scope.Owner = WorldContext;
+		HorrorHUD->ShowDialogueScoped(FText::GetEmpty(), Hint, EIGDialogueChannel::InnerVoice, DurationSeconds,
+			EIGDialoguePriority::Critical, MoveTemp(Scope));
+	}
+}
+
 void AIGHorrorHUD::CancelDialogue(const UObject* WorldContext, const FName Context, const EIGDialogueEndReason Reason)
 {
 	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);

@@ -63,6 +63,15 @@ public:
 	void SetParkedRiderPresent(bool bPresent);
 	/** 정우가 오토바이에 앉아 있으면 그 오토바이 차체 중심(바닥)을 준다. */
 	bool GetSeatedRiderLocation(FVector& OutLocation) const;
+	/** 검사용. 첫 외출의 오토바이가 이미 지나갔는가. */
+	bool HasNearMissPlayedForTesting() const { return HasNearMissPlayed(); }
+	/** 검사용. 연석에 세워 둔 오토바이가 있는가. */
+	bool HasParkedScooterForTesting() const;
+	/**
+	 * 검사용. 첫 외출을 다시 건다. 검사가 플레이어를 골목 너머로 옮겨 이미 접힌 경우에 쓴다.
+	 * 오토바이가 이미 지나간 회차면 걸지 않는다.
+	 */
+	void RearmOutdoorSequenceForTesting();
 
 protected:
 	virtual void BeginPlay() override;

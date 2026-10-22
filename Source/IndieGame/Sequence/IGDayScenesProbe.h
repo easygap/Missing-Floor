@@ -65,6 +65,8 @@ private:
 	float TotalSeconds = 0.0f;
 	bool bShots = false;
 	bool bDoorStill = false;
+	/** -IGDayScenesNoNearMiss. 입주 저녁에 골목에서 오토바이와 스치지 않은 회차다. */
+	bool bNoNearMiss = false;
 	bool bActed = false;
 	/** 영수증이 계산대에 나온 때(편의점 장면). */
 	float PrintedAt = -1.0f;

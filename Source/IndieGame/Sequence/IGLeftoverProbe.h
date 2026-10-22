@@ -91,6 +91,8 @@ private:
 	int32 StorageViewStep = 0;
 	float StorageViewClock = 0.0f;
 	bool bHintsVariant = false;
+	/** -IGLeftoverNearMiss. 입주 저녁에 골목에서 정우의 오토바이와 스친 회차다(첫째 낮 문 앞 첫인사가 사과다). */
+	bool bAlleyNearMiss = false;
 	FString HintScenario;
 
 	TWeakObjectPtr<AIGPrologueWorldScene> Scene;

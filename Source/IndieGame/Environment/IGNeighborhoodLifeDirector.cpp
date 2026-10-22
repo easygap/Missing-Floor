@@ -973,10 +973,9 @@ void AIGNeighborhoodLifeDirector::PollNearMissTrigger()
 		bNearMissArmed = false;
 		bNearMissPlayed = true;
 		GetWorldTimerManager().ClearTimer(NearMissPollHandle);
-		// 서사 기록에 남기면 저장이 「없는 층」 저장으로 분류된다. 이미 밤이 시작된
-		// 회차에서만 남기고, 그 전에는 이번 실행 안에서만 기억한다.
-		if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-			Narrative && Narrative->GetNightIndex() > 0)
+		// 입주 저녁에 겪은 일도 남긴다. 다음 날 정우가 사과할지는 이 기록을 보고 정한다.
+		// 자동 저장은 늘 「없는 층」 챕터로 써지니, 이 기록 때문에 이어 하는 자리가 바뀌지는 않는다.
+		if (UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative())
 		{
 			Narrative->MarkBeatPlayed(FName(IGNeighborhoodLife::NearMissBeat));
 		}
@@ -992,6 +991,17 @@ bool AIGNeighborhoodLifeDirector::HasNearMissPlayed() const
 	}
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 	return Narrative && Narrative->HasBeatPlayed(FName(IGNeighborhoodLife::NearMissBeat));
+}
+
+bool AIGNeighborhoodLifeDirector::HasParkedScooterForTesting() const
+{
+	return ScooterRuntime.ContainsByPredicate([](const FScooterRuntime& Runtime) { return Runtime.bParked; });
+}
+
+void AIGNeighborhoodLifeDirector::RearmOutdoorSequenceForTesting()
+{
+	bOutdoorSequencePrimed = false;
+	PrimeOutdoorSequence();
 }
 
 bool AIGNeighborhoodLifeDirector::LaunchAlleyNearMiss()
@@ -1678,14 +1688,16 @@ void AIGNeighborhoodLifeDirector::RefreshParkedScooterPresence()
 	{
 		return;
 	}
-	const bool bShouldBeParked = HasNearMissPlayed() && !Narrative->IsHourSealed();
+	// 입주 저녁에는 골목에서 스쳐 간 오토바이가 들어와 선 뒤에만 있다. 첫째 낮부터는 그 일을 겪지 않은
+	// 회차에도 정우가 늘 세워 두는 자리다. 그래야 오토바이 앞에서 처음 보는 이웃끼리 인사할 수 있다.
+	const bool bShouldBeParked = (HasNearMissPlayed() || Narrative->GetNightIndex() > 0) && !Narrative->IsHourSealed();
 	int32 ParkedSlot = ScooterRuntime.IndexOfByPredicate(
 		[](const FScooterRuntime& Runtime) { return Runtime.bParked; });
 	const bool bNearMissRunning = ScooterRuntime.ContainsByPredicate(
 		[](const FScooterRuntime& Runtime) { return Runtime.bActive && Runtime.bNearMissPass; });
 	if (bShouldBeParked && ParkedSlot == INDEX_NONE && !bNearMissRunning)
 	{
-		// 이어하기로 들어온 저녁. 정우의 오토바이는 이미 공동현관 옆 연석에 서 있다.
+		// 이어 하기로 들어왔거나 새 낮이 밝았다. 정우의 오토바이는 이미 공동현관 옆 연석에 서 있다.
 		ParkedSlot = ScooterRuntime.IndexOfByPredicate(
 			[](const FScooterRuntime& Runtime) { return !Runtime.bActive; });
 		if (ParkedSlot != INDEX_NONE)
