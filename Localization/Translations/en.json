@@ -315,7 +315,7 @@
  "IGMissingFloor,Notebook1": "Mon  Seocho concert hall  ·  tuning after the show, 02:30",
  "IGMissingFloor,Notebook2": "Wed  Daechi-dong academy  ·  4 uprights  ·  access after 22:00",
  "IGMissingFloor,Notebook3": "Rooftop walls: hollow sections give a low, lingering echo.",
- "IGMissingFloor,Notebook4": "Over a stud it’s short and dull. Check again when the pipes stop.",
+ "IGMissingFloor,Notebook4": "Over a stud it’s short and dull. Listen again while the water runs.",
  "IGMissingFloor,Notebook5": "●●  —  ●",
  "IGMissingFloor,Notebook6": "Sat 11:00  ·  book Yudam a practice room",
  "IGMissingFloor,Notebook7": "Yudam’s piano savings  1,800,000 / 2,000,000 won",
@@ -1528,5 +1528,9 @@
  "IGHint,NightThreeStorageGap1": "The thing stuck to the wall is pressing on the board.",
  "IGHint,NightThreeStorageGap3Wardrobe": "Push the wardrobe and check the wall behind it.",
  "IGHint,NightThreeStorageHatch1": "There was an access hatch behind the wardrobe.",
- "IGHint,NightThreeStorageGap3Hatch": "Open the hatch behind the wardrobe. If the thing pressing on the board moves in there, the board should come free."
+ "IGHint,NightThreeStorageGap3Hatch": "Open the hatch behind the wardrobe. If the thing pressing on the board moves in there, the board should come free.",
+ "IGHint,AssemblySite1": "The cover frame had four holes around its rim.",
+ "IGHint,AssemblySite2": "This overlay board has four screws set in a rectangle too. Are they in the same places?",
+ "IGHint,AssemblySite3": "I’ll hold the cover up to the overlay board.",
+ "IGMissingFloor,NotebookCriterionRecall": "If the notebook’s right, that wall with the long echo is hollow."
 }

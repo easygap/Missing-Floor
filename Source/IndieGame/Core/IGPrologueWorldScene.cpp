@@ -4902,8 +4902,10 @@ void AIGPrologueWorldScene::BuildFifthFloorAnnex()
 	CreateBlock(FVector(257.5f, 523, 1265), FVector(15, 2, 70), AnnexWallY);
 	if (UStaticMesh* Overlay = PropMesh(TEXT("SM_InspectionOverlayBoard")))
 	{
+		// 덧판은 제 크기(가로 80 cm)로 점검 자리 양옆 벽 면에 걸쳐 박았다. 예전에는 가로를 0.8배로 줄여 깔아서
+		// 나사 넷이 덮개 틀 날개 구멍(가로 ±20 cm)보다 안쪽(±16 cm)에 박혀, 대 보면 맞는다는 말과 화면이 달랐다.
 		MissingFloorInspectionOverlay = CreateBlock(
-			FVector(250, 492, 1265), FVector(100, 80, 100), nullptr, true, Overlay, FRotator(0, 180, 0));
+			FVector(250, 492, 1265), FVector(100, 100, 100), nullptr, true, Overlay, FRotator(0, 180, 0));
 		if (MissingFloorInspectionOverlay)
 		{
 			MissingFloorInspectionOverlay->SetMobility(EComponentMobility::Movable);

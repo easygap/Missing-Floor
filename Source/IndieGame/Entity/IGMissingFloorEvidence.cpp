@@ -181,6 +181,15 @@ bool AIGMissingFloorEvidence::ConfigureProgressReveal(UMaterialInterface* Materi
 				bExamined = true;
 				InteractionPrompt = RevealFinishedPrompt;
 			}
+			else if (!StageBeatPrefix.IsEmpty())
+			{
+				// 문지르다 만 단계도 되살린다.
+				while (CompletedStages < StageThoughts.Num() && Narrative->HasBeatPlayed(
+					FName(*FString::Printf(TEXT("%s.%d"), *StageBeatPrefix, CompletedStages + 1))))
+				{
+					++CompletedStages;
+				}
+			}
 		}
 	}
 	RefreshReveal();
@@ -328,6 +337,15 @@ void AIGMissingFloorEvidence::CompleteInteraction_Implementation(
 		++CompletedStages;
 		PartialStageProgress = 0.f;
 		RefreshReveal();
+		if (!StageBeatPrefix.IsEmpty())
+		{
+			if (UIGMissingFloorNarrativeSubsystem* Narrative = GetGameInstance()
+				? GetGameInstance()->GetSubsystem<UIGMissingFloorNarrativeSubsystem>()
+				: nullptr)
+			{
+				Narrative->MarkBeatPlayed(FName(*FString::Printf(TEXT("%s.%d"), *StageBeatPrefix, CompletedStages)));
+			}
+		}
 		if (UWorld* World = GetWorld())
 		{
 			if (ExamineNoiseLoudness > 0.0f)

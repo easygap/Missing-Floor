@@ -315,7 +315,7 @@
  "IGMissingFloor,Notebook1": "周一  瑞草演出厅  ·  散场后调音 02:30",
  "IGMissingFloor,Notebook2": "周三  大峙洞补习班  ·  立式钢琴四台  ·  22点后进场",
  "IGMissingFloor,Notebook3": "检查楼顶房间的墙：空心处声音低沉，回声久久不散。",
- "IGMissingFloor,Notebook4": "有立柱的一侧声音短、发闷。水管停了再查一次。",
+ "IGMissingFloor,Notebook4": "有立柱的一侧声音短、发闷。水流着的时候再听一次。",
  "IGMissingFloor,Notebook5": "●●  —  ●",
  "IGMissingFloor,Notebook6": "周六 11点  ·  给侑潭订琴房",
  "IGMissingFloor,Notebook7": "侑潭钢琴存款  180万 / 200万",
@@ -1528,5 +1528,9 @@
  "IGHint,NightThreeStorageGap1": "贴在墙上的那东西正压着板子。",
  "IGHint,NightThreeStorageGap3Wardrobe": "把衣柜推开，看看后面的墙。",
  "IGHint,NightThreeStorageHatch1": "衣柜后面有个检修口。",
- "IGHint,NightThreeStorageGap3Hatch": "打开衣柜后面的检修口。压着板子的东西要是移过去，板子应该就松了。"
+ "IGHint,NightThreeStorageGap3Hatch": "打开衣柜后面的检修口。压着板子的东西要是移过去，板子应该就松了。",
+ "IGHint,AssemblySite1": "盖板框的边上有四个孔。",
+ "IGHint,AssemblySite2": "这块封板上也有四颗螺丝，排成一个方框。位置一样吗？",
+ "IGHint,AssemblySite3": "把盖板贴到封板前面比一比。",
+ "IGMissingFloor,NotebookCriterionRecall": "照笔记本上说的，刚才回声拖得很长的那面墙，里面是空的。"
 }

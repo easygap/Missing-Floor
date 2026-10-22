@@ -28,6 +28,9 @@ public:
 	AIGMissingFloorEvidence* GetMeterAction() const { return MeterDialEvidence; }
 	AIGMissingFloorEvidence* GetBreakerAction() const { return BreakerAction; }
 	AIGMissingFloorEvidence* GetCommonLightAction() const { return CommonLightAction; }
+	/** 검사용. 이름표 없는 회로가 올라가 있고 안정기 소리가 나는 중인가. */
+	bool IsBreakerThrownForTesting() const { return bBreakerThrown; }
+	bool IsBallastHumAudibleForTesting() const { return bBallastHumAudible; }
 
 	/** Spawns the puzzle's interactables against an already-built lobby. */
 	bool Configure(AIGPrologueWorldScene* InScene);

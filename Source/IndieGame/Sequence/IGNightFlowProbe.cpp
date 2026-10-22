@@ -6,6 +6,8 @@
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGMissingFloorEvidence.h"
+#include "Entity/IGMissingFloorPuzzleOneDirector.h"
+#include "Entity/IGMissingFloorPuzzleTwoDirector.h"
 #include "Entity/IGNightPhaseDirector.h"
 #include "Entity/IGNightThreatDirector.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -191,6 +193,24 @@ bool AIGNightFlowProbe::IsDay() const
 	return NightPhase.IsValid() && !NightPhase->IsHourActive() && !NightPhase->IsDawnTransitionInProgress();
 }
 
+int32 AIGNightFlowProbe::GetNightTwoPapersState() const
+{
+	for (TActorIterator<AIGMissingFloorPuzzleTwoDirector> It(GetWorld()); It; ++It)
+	{
+		const AIGMissingFloorEvidence* Ledger = It->GetCarbonLedger();
+		const AIGReadableNote* Message = It->GetAgentMessageNote();
+		if (!Ledger || !Message)
+		{
+			return -1;
+		}
+		const bool bLedger = Ledger->IsInteractionEnabled();
+		const bool bMessage = Message->IsInteractionEnabled() && !Message->IsHidden();
+		// 둘이 따로 열리면 그것도 결함이다(-1로 실패시킨다).
+		return bLedger == bMessage ? (bLedger ? 1 : 0) : -1;
+	}
+	return -1;
+}
+
 void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -221,6 +241,9 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 		if (Hour->IsHourActive() && Narrative->GetNightIndex() == 1 && PhaseSeconds > 1.0f)
 		{
 			Check(Bed && !Bed->IsInteractionEnabled(), TEXT("night_bed_closed_before_goal"));
+			// 첫째 밤에도 관리실은 열려 있지만 밑장과 문자 사본은 밤2부터 손에 든다. 먼저 풀면 밤2 안쪽 방
+			// 장면이 통째로 빠졌다.
+			Check(GetNightTwoPapersState() == 0, TEXT("p2_papers_closed_on_night_one"));
 			Hour->CompleteNightGoal();
 			Next(1);
 		}
@@ -383,6 +406,7 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 			Entity->SetDormant(true);
 		}
 		Check(Bed && !Bed->IsInteractionEnabled(), TEXT("night_two_bed_closed_before_goal"));
+		Check(GetNightTwoPapersState() == 1, TEXT("p2_papers_open_on_night_two"));
 		// 문서를 읽는 동안 이야기 시계가 서는가.
 		{
 			AIGReadableNote* Note = FindNote();
@@ -497,8 +521,32 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 		Hour->ResumeTheHour(2, 120.0f);
 		Check(Hour->IsHourActive() && Hour->IsGoalComplete(), TEXT("resume_restores_goal"));
 		Check(Bed && Bed->IsInteractionEnabled(), TEXT("resume_reopens_night_bed"));
+		Hour->ConcludeNight();
+		Next(13);
+		return;
+	case 13:
+	{
+		if (!IsDay())
+		{
+			return;
+		}
+		// P1을 풀고 저장한 첫째 밤을 이어 연다. 예전에는 회로가 꺼진 채 시작해서, 천장 듣기와
+		// 「형광등 소리야」가 나지 않는 소리를 말했다.
+		Narrative->MarkPuzzleSolved(FName(TEXT("P1")));
+		Hour->ResumeTheHour(1, 120.0f);
+		AIGMissingFloorPuzzleOneDirector* PuzzleOne = nullptr;
+		for (TActorIterator<AIGMissingFloorPuzzleOneDirector> It(GetWorld()); It; ++It)
+		{
+			PuzzleOne = *It;
+			break;
+		}
+		Check(PuzzleOne && PuzzleOne->IsBreakerThrownForTesting() && PuzzleOne->IsBallastHumAudibleForTesting(),
+			TEXT("p1_resume_restores_circuit"));
+		Check(PuzzleOne && PuzzleOne->GetBreakerAction() && !PuzzleOne->GetBreakerAction()->IsInteractionEnabled(),
+			TEXT("p1_resume_keeps_breaker_locked"));
 		Finish();
 		return;
+	}
 	default:
 		Finish();
 		return;

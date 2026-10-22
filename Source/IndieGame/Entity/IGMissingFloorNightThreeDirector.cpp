@@ -550,7 +550,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			NSLOCTEXT("IGMissingFloor", "Notebook2", "수  대치동 학원  ·  업라이트 네 대  ·  22시 이후 출입"),
 			FText::GetEmpty(),
 			NSLOCTEXT("IGMissingFloor", "Notebook3", "옥탑 벽 확인: 빈 곳은 낮게 울리고 소리가 오래 감."),
-			NSLOCTEXT("IGMissingFloor", "Notebook4", "기둥 있는 쪽은 짧고 둔함. 배관 멈추면 다시 확인."),
+			NSLOCTEXT("IGMissingFloor", "Notebook4", "기둥 있는 쪽은 짧고 둔함. 물 흐를 때 다시 들어 볼 것."),
 			FText::GetEmpty(),
 			NSLOCTEXT("IGMissingFloor", "Notebook5", "●●  —  ●"),
 			NSLOCTEXT("IGMissingFloor", "Notebook6", "토요일 11시  ·  유담 연습실 예약"),
@@ -1267,14 +1267,19 @@ void AIGMissingFloorNightThreeDirector::PushThoughtAfter(
 		false);
 }
 
+bool AIGMissingFloorNightThreeDirector::IsInFifthFloorAnnex(const FVector& Location)
+{
+	return Location.X > -390.0f && Location.X < 390.0f
+		&& Location.Y > 460.0f && Location.Y < 940.0f
+		&& Location.Z > 1150.0f && Location.Z < 1450.0f;
+}
+
 void AIGMissingFloorNightThreeDirector::NoteEarlyRhythmTap(const FVector& PlayerLocation)
 {
 	const UWorld* World = GetWorld();
 	const bool bTargetReady = AnswerTarget && AnswerTarget->IsInteractionEnabled() && !AnswerTarget->IsHidden();
-	// 5층 증축부 안(씬 BuildFifthFloorAnnex)에서 친 것만 본다.
-	const bool bInAnnex = PlayerLocation.X > -390.0f && PlayerLocation.X < 390.0f
-		&& PlayerLocation.Y > 460.0f && PlayerLocation.Y < 940.0f
-		&& PlayerLocation.Z > 1150.0f && PlayerLocation.Z < 1450.0f;
+	// 5층 증축부 안에서 친 것만 본다.
+	const bool bInAnnex = IsInFifthFloorAnnex(PlayerLocation);
 	if (!World || !bHourCurrentlyActive || bAnswerPending || bAnswerDelivered || bTargetReady || !bInAnnex)
 	{
 		EarlyRhythmTaps.Reset();
@@ -2324,6 +2329,12 @@ void AIGMissingFloorNightThreeDirector::PlayWallAnswerKnocks(AActor* Owner, FTim
 				Knock->SetLowPassFilterEnabled(true);
 				Knock->SetLowPassFilterFrequency(IGNightThree::AnswerHitLowPassHz);
 			}
+			// §19.8. 소리로 못 듣는 손에게도 벽의 대답이 닿아야 한다(노크 파문과 진동). 위층 사람의 대답 노크는
+			// 이 신호를 냈는데 벽의 대답은 빠져 있었다. 그의 귀와 녹음으로는 가지 않는다.
+			if (UIGNoiseSubsystem* Noise = Source->GetWorld() ? Source->GetWorld()->GetSubsystem<UIGNoiseSubsystem>() : nullptr)
+			{
+				Noise->BroadcastPresentationCue(InsideWall, IGNightThree::AnswerHitVolumes[HitIndex], Source);
+			}
 		};
 		Hit(0);
 		for (int32 HitIndex = 1; HitIndex < 3; ++HitIndex)
@@ -2350,6 +2361,10 @@ void AIGMissingFloorNightThreeDirector::PlayWallAnswerKnocks(AActor* Owner, FTim
 			140.0f,
 			1200.0f,
 			EIGAudioBus::Entity);
+		if (UIGNoiseSubsystem* Noise = Owner->GetWorld()->GetSubsystem<UIGNoiseSubsystem>())
+		{
+			Noise->BroadcastPresentationCue(InsideWall, 0.85f, Owner);
+		}
 	}
 }
 
@@ -2496,6 +2511,7 @@ void AIGMissingFloorNightThreeDirector::HandleNotebookRead(
 				"아빠가 문 두드리던 박자잖아. 오빠가 내 방문에 하던 거."),
 			4.4f);
 	}
+	const bool bWallKnownBefore = Narrative->HasTruth(EIGMissingFloorTruth::SomeoneInTheWall);
 	// The mother lode: the cover names him, the schedule explains the dawn
 	// noise, the margin teaches the criterion, and the doodle carries the
 	// rhythm she grew up with.
@@ -2511,6 +2527,17 @@ void AIGMissingFloorNightThreeDirector::HandleNotebookRead(
 	Narrative->RegisterTruthSource(
 		EIGMissingFloorTruth::WaitingForAnAnswer,
 		EIGMissingFloorSource::AnswerRhythmNotebook);
+	// 벽을 먼저 견줘 보고 수첩을 나중에 읽으면 벽이 이 자리에서 특정되는데, 그것을 맺는 말이 없었다.
+	if (!bWallKnownBefore && Narrative->HasTruth(EIGMissingFloorTruth::SomeoneInTheWall))
+	{
+		AIGHorrorHUD::PushThought(
+			this,
+			NSLOCTEXT(
+				"IGMissingFloor",
+				"NotebookCriterionRecall",
+				"수첩대로라면 아까 소리가 길게 울린 그 벽이 속이 빈 거야."),
+			4.0f);
+	}
 	RefreshAnswerTargetAvailability();
 }
 
@@ -3031,13 +3058,15 @@ void AIGMissingFloorNightThreeDirector::RefreshAnswerTargetAvailability()
 		// 지금이 리듬인지 잔향 시험인지 알 길이 없다. 다만 박자와 할 일은 적지
 		// 않는다(§7 P4). 수첩에서 이미 알아본 노크를 오빠의 음성메시지가 불러낸다.
 		bAnswerTargetAnnounced = true;
-		AIGHorrorHUD::PushThought(
-			this,
+		// 벽을 견줘 특정하는 순간이면 공동 칸이 아직 울리고, 그 결론은 울림이 끝난 뒤(1.5초)에 뜬다. 이 말이
+		// 결론을 앞질러 뜨지 않게 그 뒤에 줄을 세운다.
+		PushThoughtAfter(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"AnswerTargetReady",
 				"“문 두드리면 알지?”"),
-			3.4f);
+			3.4f,
+			IGNightThree::HollowThoughtDelaySeconds + 0.2f);
 	}
 }
 

@@ -193,6 +193,28 @@ void AIGGameplayRealismProbe::Tick(const float DeltaSeconds)
 			Noise->ReportNoiseUnmasked(At, AIGPlayerCharacter::KnockLoudness, Player.Get());
 			Check(Hud->IsNoiseRippleActive(), TEXT("knock_draws_ripple"));
 		}
+		// 박자 앞에서 시험 삼아 한 번 친 뒤 「둘, 쉬고, 하나」를 친다. 예전에는 박자의 둘째 탭에서 잠겨
+		// 쉬었다 치는 셋째 탭(쉼 0.68~0.9초)이 소리 없이 버려졌다.
+		Player->RegisterKnockTapForTesting();
+		Phase = 31; Seconds = 0;
+	}
+	else if (Phase == 31 && Seconds > 1.0f)
+	{
+		Player->RegisterKnockTapForTesting();
+		Phase = 32; Seconds = 0;
+	}
+	else if (Phase == 32 && Seconds > 0.3f)
+	{
+		Player->RegisterKnockTapForTesting();
+		Check(Player->GetKnockInputLockedUntilForTesting() < GetWorld()->GetTimeSeconds(),
+			TEXT("test_tap_before_rhythm_does_not_lock_pair"));
+		Phase = 33; Seconds = 0;
+	}
+	else if (Phase == 33 && Seconds > 0.75f)
+	{
+		Player->RegisterKnockTapForTesting();
+		Check(Player->GetKnockInputLockedUntilForTesting() > GetWorld()->GetTimeSeconds(),
+			TEXT("rhythm_third_tap_arms_lock"));
 		UE_LOG(LogIndieGame, Display, TEXT("REALISM_PROBE %s failures=%d"), Failures ? TEXT("FAIL") : TEXT("PASS"), Failures);
 		Phase = 9;
 		FPlatformMisc::RequestExitWithStatus(false, Failures ? 1 : 0);

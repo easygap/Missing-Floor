@@ -174,8 +174,9 @@ namespace IGLeftoverStorage
 	 */
 	const FTransform SiteHold(FRotator(0.0f, 180.0f, 0.0f), FVector(245.85f, 492.0f, 1265.0f));
 	const FTransform SiteLean(FRotator(-12.0f, 180.0f, 0.0f), SiteLeanSpot + FVector(0.0f, 0.0f, 37.0f));
-	/** 대 보고 있는 시간과 기대 두러 옮기는 시간. */
+	/** 대 보고 있는 시간과 기대 두러 옮기는 시간. 그 말이 늦게 뜨면 말이 끝날 때까지, 길어도 12초까지 든다. */
 	constexpr float SiteHoldSeconds = 5.5f;
+	constexpr float SiteHoldMaxSeconds = 12.0f;
 	constexpr float SiteSetDownSeconds = 0.8f;
 
 	UStaticMesh* Mesh(const TCHAR* Name)
@@ -653,6 +654,13 @@ void AIGMissingFloorLeftoverDirector::PollStorage()
 		// 불러온 밤. 갇힌 채 저장됐다.
 		BeginStorageTrap();
 	}
+	else if ((State.JeongwooState == Freed || State.JeongwooState == LeftTogether) && StorageStage == EStorage::Idle)
+	{
+		// 불러온 밤. 정우를 꺼낸 뒤에 저장됐다. 판은 꺼낼 때 비켜 둔 자리에 두고, 정우는 이미 내려갔다.
+		// 예전에는 판이 갇혔을 때 자리에 다시 섰고, 마대도 그 밤에는 열리지 않았다.
+		StorageStage = EStorage::Gone;
+		SetBoardPose(3, false);
+	}
 	// 방에 들어서면 비스듬히 넘어온 판과 그 너머 구석, 벽을 누르는 것이 다 눈에 든다. 힌트는 이 뒤에야
 	// 판을 누르는 것이 있다고 말한다.
 	if (State.JeongwooState == Trapped && StorageRoomBoxContainsPlayer())
@@ -666,7 +674,9 @@ void AIGMissingFloorLeftoverDirector::PollStorage()
 		const FVector Voice = JeongwooTrapSpot + FVector(0.0f, 0.0f, 150.0f);
 		PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, true), Voice, 0.5f, 0.9f, 120.0f, 1400.0f);
 		CaptionIn(IGLeftoverDialogue::Trapped, NSLOCTEXT("IGMissingFloor", "LeftoverBoardKnockCaption", "[302호 안에서 판을 두드리는 소리]"), Voice, 2.6f);
-		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverTrappedCall", "거기 누구 있어요? 판에 끼었어요."));
+		// 이 부름이 이 밤 302호의 목표다. 비트는 이미 찍혔으니 짧은 반응으로 냈다가 문자 뒤에 밀려 버려지면
+		// 다시 나오지 않았다.
+		SayIn(IGLeftoverDialogue::Trapped, StorageVoice(), NSLOCTEXT("IGMissingFloor", "LeftoverTrappedCall", "거기 누구 있어요? 판에 끼었어요."), true);
 	}
 }
 
@@ -878,8 +888,10 @@ void AIGMissingFloorLeftoverDirector::TickWardrobeMove()
 		WardrobeMoveStart = -1.0;
 		// 정우가 아직 판 뒤에 있을 때의 발견이다. 그를 꺼낸 뒤에는 이 말이 뒤늦게 뜨지 않는다. 그 점검구가
 		// 판을 누르던 틈보다 크다는 것, 그래서 무엇이 옮겨 갈지는 보고 듣는 사람이 잇는다.
-		if (const AIGAccessHatch* LargeHatch = Hatches.FindRef(GapLarge))
+		if (AIGAccessHatch* LargeHatch = Hatches.FindRef(GapLarge))
 		{
+			// 닫힌 점검구는 바람 소리를 내지 않아서 예전에는 자막만 떴다. 둘레 틈으로 새는 소리를 실제로 낸다.
+			LargeHatch->PlayDraftThroughSeams(2.6f);
 			Caption(NSLOCTEXT("IGMissingFloor", "LeftoverHatchDraftCaption", "[점검구 안으로 바람이 빨려 드는 소리]"),
 				LargeHatch->GetActorLocation(), 2.6f);
 		}
@@ -1535,7 +1547,9 @@ void AIGMissingFloorLeftoverDirector::RefreshAssembly()
 			continue;
 		}
 		const bool bHave = HasTaken(PieceIds[Piece]);
-		const bool bShow = bTable && bHave && !bTaken;
+		// 집으려면 틀이 있어야 한다. 둘째 밤에 챙긴 조각이 마대를 열기 전부터 바닥에 보이면, 보이는데 안
+		// 집히는 물건이 된다. 틀과 함께 꺼내 놓는다.
+		const bool bShow = bTable && bHave && bHaveFrame && !bTaken;
 		PieceMesh->SetVisibility(bShow, true);
 		PieceMesh->SetHiddenInGame(!bShow, true);
 		if (!bShow)
@@ -1740,13 +1754,14 @@ void AIGMissingFloorLeftoverDirector::TryFit(const int32 Slot)
 	}
 	PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, false), AssemblyCenter + FVector(0.0f, 0.0f, 4.0f), 0.4f, 1.6f);
 	Caption(NSLOCTEXT("IGMissingFloor", "LeftoverClampLiftCaption", "[고정쇠가 덜컥 들뜨는 소리]"), AssemblyCenter, 1.8f);
-	// 어디가 어긋났는지 보이는 대로만 말한다. 틀은 뒷면이 위라 얼룩은 안 보인다. 자리가 틀리면
-	// 잘린 면이 바깥으로 나오고, 막 쪽이 위면 고정쇠가 막에서 미끄러지고, 돌아가 있으면 구멍이
-	// 어긋난다. 몇 번 틀렸다고 답을 대신 말하지 않는다(H로 물으면 단계별로 떠올린다).
-	const FText Hint = Piece != Slot
-		? NSLOCTEXT("IGMissingFloor", "LeftoverFitWrongSlot", "잘린 면이 바깥으로 나와.")
-		: bHeldFlipped
-			? NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막 위에서 미끄러져.")
+	// 어디가 어긋났는지 보이는 대로만 말한다. 틀은 뒷면이 위라 얼룩은 안 보인다. 막 쪽이 위면
+	// 고정쇠가 막에서 미끄러지고, 자리가 틀리면 잘린 면이 바깥으로 나오고, 돌아가 있으면 구멍이
+	// 어긋난다. 뒤집힘을 먼저 본다. 뒤집힌 B를 반 바퀴 돌려 C 자리에 대면 윤곽은 맞는데, 예전에는
+	// 잘린 면 탓을 했다. 몇 번 틀렸다고 답을 대신 말하지 않는다(H로 물으면 단계별로 떠올린다).
+	const FText Hint = bHeldFlipped
+		? NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막 위에서 미끄러져.")
+		: Piece != Slot
+			? NSLOCTEXT("IGMissingFloor", "LeftoverFitWrongSlot", "잘린 면이 바깥으로 나와.")
 			: NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "자리는 맞는데 구멍 위치가 어긋나.");
 	ThinkIn(IGLeftoverDialogue::Fit, Hint, 3.0f);
 	if (WrongFits >= 3)
@@ -1925,6 +1940,7 @@ void AIGMissingFloorLeftoverDirector::HandleSiteMatch(AIGLeftoverTarget* Target)
 	// 잇고, 넷째 밤 관리인 앞에서 그녀가 처음 입 밖에 낸다.
 	PlaySound(UIGToneSequenceSoundWave::CreateKickedPropKnock(this, true), SiteMatchSpot, 0.4f, 0.9f);
 	SiteHoldStart = GetWorld()->GetTimeSeconds();
+	SiteSetDownStart = -1.0;
 	bSiteLinePending = true;
 	GetWorldTimerManager().SetTimer(SiteHoldTimer, this, &AIGMissingFloorLeftoverDirector::TickSiteHold, 1.0f / 60.0f, true);
 	// 대는 순간부터 덧판 앞에 있다(첫 타이머를 기다리면 한 프레임 벽 밑에 기댄 채 보인다).
@@ -1935,21 +1951,31 @@ void AIGMissingFloorLeftoverDirector::HandleSiteMatch(AIGLeftoverTarget* Target)
 void AIGMissingFloorLeftoverDirector::TickSiteHold()
 {
 	// 멤버 함수로 건 타이머다(끝에 자기 타이머를 지우고 멤버를 계속 쓴다).
-	const float Seconds = static_cast<float>(GetWorld()->GetTimeSeconds() - SiteHoldStart);
+	const double Now = GetWorld()->GetTimeSeconds();
+	const float Seconds = static_cast<float>(Now - SiteHoldStart);
 	if (bSiteLinePending && Seconds >= 1.8f)
 	{
 		bSiteLinePending = false;
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch1", "덧판 나사 네 개가 틀 구멍에 딱 맞네."), 3.6f);
+		ThinkIn(IGLeftoverDialogue::SiteMatch,
+			NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch1", "덧판 나사 네 개가 틀 구멍에 딱 맞네."), 3.6f, true);
+	}
+	// 그 말이 다른 말 뒤에 밀리면 덮개를 내려놓은 뒤에야 「딱 맞네」가 떴다. 말이 떠 있거나 기다리는 동안은
+	// 덧판 앞에 든 채로 둔다.
+	if (SiteSetDownStart < 0.0 && Seconds >= SiteHoldSeconds
+		&& (Seconds >= SiteHoldMaxSeconds || !AIGHorrorHUD::HasDialogueInContext(this, IGLeftoverDialogue::SiteMatch)))
+	{
+		SiteSetDownStart = Now;
 	}
 	FTransform Where = SiteHold;
-	if (Seconds >= SiteHoldSeconds)
+	if (SiteSetDownStart >= 0.0)
 	{
-		const float Alpha = FMath::Clamp((Seconds - SiteHoldSeconds) / SiteSetDownSeconds, 0.0f, 1.0f);
+		const float Alpha = FMath::Clamp(static_cast<float>(Now - SiteSetDownStart) / SiteSetDownSeconds, 0.0f, 1.0f);
 		Where.Blend(SiteHold, SiteLean, Alpha * Alpha * (3.0f - 2.0f * Alpha));
 		if (Alpha >= 1.0f)
 		{
 			GetWorldTimerManager().ClearTimer(SiteHoldTimer);
 			SiteHoldStart = -1.0;
+			SiteSetDownStart = -1.0;
 		}
 	}
 	for (const TCHAR* Key : {TEXT("Annex.CoverLean"), TEXT("Annex.CoverLeanA"), TEXT("Annex.CoverLeanB"), TEXT("Annex.CoverLeanC")})
@@ -1973,6 +1999,11 @@ bool AIGMissingFloorLeftoverDirector::IsPlayerAtAssemblyTable() const
 	return IsPlayerNear(AssemblyCenter, 260.0f, 160.0f);
 }
 
+bool AIGMissingFloorLeftoverDirector::IsPlayerAtInspectionSite() const
+{
+	return IsPlayerNear(SiteMatchSpot, 220.0f, 160.0f);
+}
+
 bool AIGMissingFloorLeftoverDirector::IsPlayerNearStorage() const
 {
 	// 302호 안이거나 문 앞 복도(문 길 X -30, 문 Y -230 둘레).
@@ -1982,9 +2013,14 @@ bool AIGMissingFloorLeftoverDirector::IsPlayerNearStorage() const
 int32 AIGMissingFloorLeftoverDirector::GetAssemblyHintStage() const
 {
 	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-	if (!Narrative || IsLegacyRun() || GetNightIndex() < 3 || !HasTaken(StorageFrame) || HasTaken(Cover))
+	if (!Narrative || IsLegacyRun() || GetNightIndex() < 3 || !HasTaken(StorageFrame))
 	{
 		return -1;
+	}
+	if (HasTaken(Cover))
+	{
+		// 챙긴 뒤에도 덧판에 대 보는 일이 남는다. 예전에는 여기서 힌트가 끊겼다.
+		return !Narrative->GetLeftover().bSiteMatched && IsInspectionOverlayOn() ? 4 : -1;
 	}
 	const bool bAll = HasBeat(FName(TEXT("Leftover.Assembly.A"))) && HasBeat(FName(TEXT("Leftover.Assembly.B")))
 		&& HasBeat(FName(TEXT("Leftover.Assembly.C")));

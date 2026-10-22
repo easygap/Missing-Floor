@@ -76,6 +76,8 @@ public:
 
 	/** 바람 소리 자리(틈이 열렸을 때 빨려 드는 소리). */
 	void SetAirSound(bool bEnabled);
+	/** 닫힌 문짝 둘레로 새는 바람을 잠깐 낸다. 막혀 있던 점검구가 처음 드러날 때. */
+	void PlayDraftThroughSeams(float Seconds);
 
 	FIGAccessHatchEvent OnOpened;
 	FIGAccessHatchEvent OnClosed;
@@ -99,6 +101,8 @@ private:
 	void RefreshSealVisual();
 	void RefreshAirMotes(float DeltaSeconds);
 	void PlayHatchSound(const TCHAR* SampleName, float Volume, float Pitch) const;
+	void EnsureAirLoop();
+	void EndDraftThroughSeams();
 	FVector GetHingeWorld() const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Hatch")
@@ -124,6 +128,8 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> AirLoop;
+
+	FTimerHandle DraftTimer;
 
 	FVector2D OpeningSize = FVector2D(45.0f, 45.0f);
 	FText OpenPrompt;

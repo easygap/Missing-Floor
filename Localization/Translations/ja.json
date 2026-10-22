@@ -315,7 +315,7 @@
  "IGMissingFloor,Notebook1": "月  ソチョのホール  ·  公演後に調律 02:30",
  "IGMissingFloor,Notebook2": "水  テチ洞の教室  ·  アップライト4台  ·  22時以降入館",
  "IGMissingFloor,Notebook3": "屋上の部屋の壁を確認：空洞は低く響き、音が長く残る。",
- "IGMissingFloor,Notebook4": "柱のある所は短く鈍い。配管が止まったら再確認。",
+ "IGMissingFloor,Notebook4": "柱のある所は短く鈍い。水が流れている間に聞き直すこと。",
  "IGMissingFloor,Notebook5": "●●  —  ●",
  "IGMissingFloor,Notebook6": "土曜11時  ·  ユダムの練習室を予約",
  "IGMissingFloor,Notebook7": "ユダムのピアノ積立  180万 / 200万",
@@ -1528,5 +1528,9 @@
  "IGHint,NightThreeStorageGap1": "壁に貼りついたものが、板を押してる。",
  "IGHint,NightThreeStorageGap3Wardrobe": "たんすを押して、後ろの壁を調べよう。",
  "IGHint,NightThreeStorageHatch1": "たんすの後ろに点検口があった。",
- "IGHint,NightThreeStorageGap3Hatch": "たんすの後ろの点検口を開けよう。板を押してたものがそっちへ移れば、板が外れるはず。"
+ "IGHint,NightThreeStorageGap3Hatch": "たんすの後ろの点検口を開けよう。板を押してたものがそっちへ移れば、板が外れるはず。",
+ "IGHint,AssemblySite1": "ふたの枠のふちに、穴が四つあったよね。",
+ "IGHint,AssemblySite2": "この当て板にも、四角く打たれたネジが四本ある。位置が同じかな。",
+ "IGHint,AssemblySite3": "当て板の前に、ふたを当ててみよう。",
+ "IGMissingFloor,NotebookCriterionRecall": "手帳のとおりなら、さっき長く響いたあの壁の中が空洞なんだ。"
 }

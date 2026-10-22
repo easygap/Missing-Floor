@@ -6272,16 +6272,16 @@ FText AIGListenerGreyboxDirector::GetHwangDoorLine() const
 	// 밤1을 채운 다음 낮(NightIndex 1)부터 관리실 대장을 가리킨다. P3·P5 힌트가
 	// 다음 밤을 앞서 가리키는데 P2만 한 칸 늦어서, 밤2를 한 번 실패한 뒤에야
 	// 관리실로 갈 이유가 생겼다. 관리실은 낮에 잠겨 있으니 밤의 일이 된다.
-	if (NightIndex >= 2
-		|| (NightIndex == 1 && Narrative->HasTruth(EIGMissingFloorTruth::LivedUpstairs)))
+	// 위층에 누가 살았다는 것(T1)만 알고 밤을 못 채워 밤1이 되풀이되는 낮에는 아직 계량기함을 가리킨다.
+	const bool bNightOneDone = Narrative->HasBeatPlayed(AIGNightPhaseDirector::GoalBeatId(1));
+	if (NightIndex >= 2 || (NightIndex == 1 && bNightOneDone))
 	{
 		return NSLOCTEXT(
 			"IGMissingFloor",
 			"Hwang401HintP2",
 			"몇 번을 전화했는데 맨날 배관 소리래요. 장부에 적기는 했나 좀 봐 줘요.");
 	}
-	if (NightIndex == 1
-		&& !Narrative->HasTruth(EIGMissingFloorTruth::LivedUpstairs))
+	if (NightIndex == 1 && !bNightOneDone)
 	{
 		return NSLOCTEXT(
 			"IGMissingFloor",

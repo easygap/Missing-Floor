@@ -315,7 +315,7 @@
  "IGMissingFloor,Notebook1": "週一  瑞草表演廳  ·  散場後調音 02:30",
  "IGMissingFloor,Notebook2": "週三  大峙洞補習班  ·  直立式鋼琴四台  ·  22點後可進入",
  "IGMissingFloor,Notebook3": "檢查頂樓加蓋的牆：空心處聲音低沉，回音持續較久。",
- "IGMissingFloor,Notebook4": "有柱子的地方聲音短而悶。水管停了再確認一次。",
+ "IGMissingFloor,Notebook4": "有柱子的地方聲音短而悶。水在流的時候再聽一次。",
  "IGMissingFloor,Notebook5": "●●  —  ●",
  "IGMissingFloor,Notebook6": "週六 11點  ·  侑潭練琴室預約",
  "IGMissingFloor,Notebook7": "侑潭鋼琴基金  180萬 / 200萬",
@@ -1528,5 +1528,9 @@
  "IGHint,NightThreeStorageGap1": "黏在牆上的那東西正壓著板子。",
  "IGHint,NightThreeStorageGap3Wardrobe": "把衣櫃推開，看看後面的牆。",
  "IGHint,NightThreeStorageHatch1": "衣櫃後面有個檢修口。",
- "IGHint,NightThreeStorageGap3Hatch": "打開衣櫃後面的檢修口。壓著板子的東西要是移過去，板子應該就鬆了。"
+ "IGHint,NightThreeStorageGap3Hatch": "打開衣櫃後面的檢修口。壓著板子的東西要是移過去，板子應該就鬆了。",
+ "IGHint,AssemblySite1": "蓋板框的邊上有四個孔。",
+ "IGHint,AssemblySite2": "這塊補板上也有四顆螺絲，排成一個方框。位置一樣嗎？",
+ "IGHint,AssemblySite3": "把蓋板貼到補板前面比一比。",
+ "IGMissingFloor,NotebookCriterionRecall": "照筆記本上寫的，剛才回音拖很長的那面牆，裡面是空的。"
 }

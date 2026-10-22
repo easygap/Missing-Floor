@@ -23,6 +23,8 @@ namespace IGLeftoverDialogue
 	inline const FName Wedge(TEXT("Leftover.Wedge"));
 	/** 덮개가 안 맞는 까닭. 조각이 자리에 물리면 거둔다. */
 	inline const FName Fit(TEXT("Leftover.Assembly.Fit"));
+	/** 5층 덧판에 덮개를 대 보고 하는 말. 이 말이 떠 있는 동안 덮개를 덧판 앞에 든다. */
+	inline const FName SiteMatch(TEXT("Leftover.Annex.SiteMatch"));
 }
 
 struct FIGDialogueScope;
@@ -112,13 +114,23 @@ public:
 	static bool IsHoldingDawn(const UWorld* World);
 	/** 힌트용: 그녀가 302호 조립대 곁에 있다. */
 	bool IsPlayerAtAssemblyTable() const;
+	/** 힌트용: 그녀가 5층 배관 점검 자리(덧판) 앞에 있다. */
+	bool IsPlayerAtInspectionSite() const;
+	/**
+	 * 검사용. 이 밤 302호를 불러온 직후처럼 되돌리고(판은 처음 자리, 단계는 Idle) 곧바로 한 번 살핀다. 서사 기록은
+	 * 그대로다. 기다리면 그사이 관리인이 문간의 플레이어를 보고 쫓아와 뒤 검사가 엉킨다.
+	 */
+	void SimulateStorageReloadForTesting() { StorageStage = EStorage::Idle; SetBoardPose(0, false); PollStorage(); }
 	/** 힌트용: 그녀가 3층 302호 안이나 문 앞 복도에 있다. */
 	bool IsPlayerNearStorage() const;
 	/** 힌트용: 그녀가 지금 302호 방 안에 있다(판과 덧댄 것이 눈에 드는 자리). */
 	bool IsPlayerInStorageRoom() const { return StorageRoomBoxContainsPlayer(); }
 	/** 셋째 밤 갇힌 정우가 있는 302호에 들어가 판과 그 너머 구석을 본 적이 있다. 힌트가 이것을 보고 말을 고른다. */
 	static const FName SawStorageRoomBeat;
-	/** 힌트용 조립 단계. -1 맞출 것이 없음, 0 조각을 맞추는 중, 1 다 맞춤, 2 뒤집음, 3 막을 들춤. */
+	/**
+	 * 힌트용 조립 단계. -1 맞출 것이 없음, 0 조각을 맞추는 중, 1 다 맞춤, 2 뒤집음, 3 막을 들춤,
+	 * 4 덮개를 챙겼고 아직 5층 덧판에 대 보지 않음(덧판이 붙어 있을 때만).
+	 */
 	int32 GetAssemblyHintStage() const;
 	/**
 	 * 그녀가 실제로 본 자리. 대사와 힌트를 고를 때만 쓰고 진행 조건으로 쓰지 않는다. 저장에 남고,
@@ -423,6 +435,8 @@ private:
 	/** 덧판에 덮개를 대 보기 시작한 시각(아니면 -1). */
 	FTimerHandle SiteHoldTimer;
 	double SiteHoldStart = -1.0;
+	/** 대 본 덮개를 내려놓기 시작한 시각(아니면 -1). */
+	double SiteSetDownStart = -1.0;
 	/** 대 본 지 1.8초에 보이는 것을 한 번 말한다. 장면 타이머는 다음 장면이 다시 걸어서 따로 둔다. */
 	bool bSiteLinePending = false;
 	FVector BoxSlideFrom = FVector::ZeroVector;

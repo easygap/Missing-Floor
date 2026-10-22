@@ -147,6 +147,8 @@ public:
 	 * 대답하지 않지만 그 밤에 한 번 짧게 알아챈다. 진실과 대답 조건은 바꾸지 않는다.
 	 */
 	void NoteEarlyRhythmTap(const FVector& PlayerLocation);
+	/** 5층 증축부 안(씬 BuildFifthFloorAnnex)인지. 이른 박자와 힌트가 같은 범위를 쓴다. */
+	static bool IsInFifthFloorAnnex(const FVector& Location);
 	/** True once she has walked past him while he was waiting on an answer. */
 	bool HasPassedWhileWaiting() const { return bPassedWhileWaiting; }
 	FVector GetReturnPassPoint() const;

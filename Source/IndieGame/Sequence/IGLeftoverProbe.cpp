@@ -7,6 +7,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
@@ -1469,6 +1470,12 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		if (Narrative->GetLeftover().JeongwooState == FName(TEXT("LeftTogether")))
 		{
 			Check(true, TEXT("n3_left_together"));
+			// 꺼낸 뒤 저장한 밤을 불러온 것처럼 302호를 되돌린다. 예전에는 판이 갇혔을 때 자리로 다시 섰다.
+			if (Director)
+			{
+				Director->SimulateStorageReloadForTesting();
+			}
+			Check(Director && Director->GetStorageStage() == FName(TEXT("Gone")), TEXT("n3_reload_after_rescue_keeps_board_aside"));
 			Next(40);
 			return;
 		}
@@ -1478,7 +1485,6 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Next(40);
 		}
 		return;
-
 	// -- 덮개 조립 -------------------------------------------------------------------
 	case 40:
 	{
@@ -1575,8 +1581,30 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 				return;
 			}
 			Stand(FVector(170.0f, 492.0f, 1200.0f), FVector(250.0f, 492.0f, 1265.0f));
+			// 덧판 나사 넷과 덮개 틀 날개 구멍 넷은 둘 다 가로 ±20 cm에 있다. 덧판을 가로로 줄여 깔면 나사가
+			// 안쪽(±16 cm)으로 몰려서, 「딱 맞네」라는 말과 화면이 달랐다.
+			const UStaticMeshComponent* Overlay = nullptr;
+			if (AIGPrologueWorldScene* SceneActor = Scene.Get())
+			{
+				TArray<UStaticMeshComponent*> Meshes;
+				SceneActor->GetComponents(Meshes);
+				for (const UStaticMeshComponent* Mesh : Meshes)
+				{
+					if (Mesh && Mesh->GetStaticMesh() && Mesh->GetStaticMesh()->GetName() == TEXT("SM_InspectionOverlayBoard"))
+					{
+						Overlay = Mesh;
+						break;
+					}
+				}
+			}
+			Check(Overlay && FMath::IsNearlyEqual(Overlay->GetComponentScale().Y, 1.0f, 0.01f),
+				TEXT("site_screws_line_up_with_frame_holes"));
+			// 덮개를 챙긴 뒤 덧판 앞에서 H를 누르면 대 보라고 떠올린다. 예전에는 덮개를 챙기면 힌트가 끊겼다.
+			Check(Director && Director->GetAssemblyHintStage() == 4 && Director->IsPlayerAtInspectionSite(),
+				TEXT("site_hint_offered_at_board"));
 			Check(Use(Target(TEXT("Annex.SiteMatch"))), TEXT("site_match_use"));
 			Check(Narrative->GetLeftover().bSiteMatched, TEXT("site_matched"));
+			Check(Director && Director->GetAssemblyHintStage() == -1, TEXT("site_hint_done_after_match"));
 			Check(Narrative->HasWitness(EIGMissingFloorWitness::InspectionCoverMatched), TEXT("site_match_witness"));
 			Shoot(TEXT("site_match"));
 			Step = 1;

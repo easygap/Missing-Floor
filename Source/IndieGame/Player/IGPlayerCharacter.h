@@ -283,6 +283,9 @@ private:
 	void EndCrouchInput();
 	void ToggleCrouch();
 	void Knock();
+	/** 검사용. 노크 한 번을 박자 잠금 셈에만 넣는다(소리·소음 없이). */
+	void RegisterKnockTapForTesting() { RegisterKnockSequenceTap(); }
+	double GetKnockInputLockedUntilForTesting() const { return KnockInputLockedUntil; }
 	void BeginListen();
 	void EndListen();
 	void BeginHoldBreath();
@@ -429,6 +432,8 @@ private:
 	double KnockInputLockedUntil = -1.0;
 	int32 LastStepIndex = 0;
 	int32 KnockSequenceTapCount = 0;
+	/** 지금 세는 탭 묶음에서 첫 탭과 둘째 탭 사이. 박자 앞의 시험 탭을 가려낸다. */
+	double KnockSequenceFirstGap = -1.0;
 	bool bCameraMotionEnabled = false;
 	bool bSprintInputHeld = false;
 	bool bSprinting = false;

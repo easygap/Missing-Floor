@@ -65,6 +65,11 @@ public:
 	 * OnExamined. The pencil has to cross the page more than once.
 	 */
 	void SetProgressiveStages(TArray<FText> InStageThoughts);
+	/**
+	 * 끝낸 중간 단계를 서사 비트(<Prefix>.<단계>)로 남기고, ConfigureProgressReveal에서 되살린다. 비워 두면
+	 * 남기지 않는다. 그전에는 문지르다 만 단계가 저장되지 않아 이어 하면 처음부터 다시 해야 했다.
+	 */
+	void SetStageBeatPrefix(const FString& Prefix) { StageBeatPrefix = Prefix; }
 	/** 살펴본 뒤 떠올릴 속말을 바꾼다. 다른 문서를 읽었는지에 따라 견줄 말이 달라지는 단서에 쓴다. */
 	void SetExamineThought(const FText& InThought) { ExamineThought = InThought; }
 
@@ -151,6 +156,7 @@ private:
 	TArray<FText> StageThoughts;
 
 	int32 CompletedStages = 0;
+	FString StageBeatPrefix;
 	bool bExamined = false;
 	FVector LastInteractionPoint = FVector::ZeroVector;
 };

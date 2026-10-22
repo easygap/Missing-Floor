@@ -38,6 +38,8 @@ private:
 	AIGReadableNote* FindNote() const;
 	UIGMissingFloorNarrativeSubsystem* GetNarrative() const;
 	bool IsDay() const;
+	/** 관리실 책상의 밑장과 문자 사본: -1 감독 없음, 0 손에 들 수 없음, 1 둘 다 손에 든다. */
+	int32 GetNightTwoPapersState() const;
 
 	TWeakObjectPtr<AIGPlayerCharacter> Player;
 	TWeakObjectPtr<AIGNightPhaseDirector> NightPhase;

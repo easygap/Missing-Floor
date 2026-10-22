@@ -2374,10 +2374,22 @@ void AIGPlayerCharacter::RegisterKnockSequenceTap()
 		: 1.0f;
 	const float ResetWindow =
 		IGPlayerNoise::KnockSequenceResetSeconds * WindowScale;
-	if (LastKnockInputSeconds < 0.0
-		|| Now - LastKnockInputSeconds > ResetWindow)
+	const double Gap = LastKnockInputSeconds < 0.0 ? -1.0 : Now - LastKnockInputSeconds;
+	if (Gap < 0.0 || Gap > ResetWindow)
 	{
 		KnockSequenceTapCount = 0;
+	}
+	// 「둘, 쉬고, 하나」의 둘은 붙어서 온다. 셋째로 세는 탭이 바로 앞 탭에 짧게 붙었는데 그 앞이 길게
+	// 떨어져 있었다면, 맨 앞 탭은 박자를 치기 전에 시험 삼아 친 것이다. 그 탭을 빼고 다시 센다. 그러지
+	// 않으면 박자의 둘째 탭 뒤에 잠겨서, 쉬었다 치는 마지막 탭이 소리 없이 버려졌다.
+	const double PairMax = AIGListenerEntity::AnswerPairMaxSeconds * WindowScale;
+	if (KnockSequenceTapCount == 2 && KnockSequenceFirstGap > PairMax && Gap <= PairMax)
+	{
+		KnockSequenceTapCount = 1;
+	}
+	if (KnockSequenceTapCount == 1)
+	{
+		KnockSequenceFirstGap = Gap;
 	}
 	LastKnockInputSeconds = Now;
 	++KnockSequenceTapCount;

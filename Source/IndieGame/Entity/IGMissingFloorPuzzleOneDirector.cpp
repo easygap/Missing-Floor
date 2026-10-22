@@ -457,6 +457,20 @@ void AIGMissingFloorPuzzleOneDirector::SetHourActive(const bool bActive)
 	}
 	bHourActive = bActive;
 	if (!bActive) bBreakerThrown = false;
+	// 밤1을 풀고 난 뒤의 저장에서 이어 붙이면 회로가 꺼진 채 시작했다. 천장 듣기와 「형광등 소리야」는
+	// 켜져 있는데 위에서 아무 소리도 안 났다. 그 밤에 켜 둔 회로, 잠근 손잡이, 안정기 소리를 되살린다.
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const bool bResumeSolvedNight = bActive && Narrative && Narrative->GetNightIndex() == 1
+		&& Narrative->IsPuzzleSolved(IGPuzzleOne::PuzzleId);
+	if (bResumeSolvedNight)
+	{
+		bBreakerThrown = true;
+		bSolvedAnnounced = true;
+		if (BreakerAction)
+		{
+			BreakerAction->SetInteractionEnabled(false);
+		}
+	}
 	if (Scene.IsValid()) IGPuzzleOne::SetToggle(Scene->GetUnnamedBreakerToggle(), bBreakerThrown);
 	UpdateMeterMotion();
 	if (BallastHum)

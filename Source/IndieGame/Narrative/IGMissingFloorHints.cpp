@@ -4,7 +4,10 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Entity/IGMissingFloorLeftoverDirector.h"
+#include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "GameplayTagContainer.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
 #include "Narrative/IGStoryHelpers.h"
@@ -47,11 +50,17 @@ namespace
 	bool ResolveAssembly(const UObject* WorldContext, FIGHintStep& Out)
 	{
 		const AIGMissingFloorLeftoverDirector* Leftover = FindLeftover(WorldContext);
-		if (!Leftover || !Leftover->IsPlayerAtAssemblyTable())
+		if (!Leftover)
 		{
 			return false;
 		}
-		switch (Leftover->GetAssemblyHintStage())
+		// 맞추는 동안은 조립대 곁에서, 챙긴 덮개를 대 보는 일은 5층 덧판 앞에서만 꺼낸다.
+		const int32 Stage = Leftover->GetAssemblyHintStage();
+		if (Stage == 4 ? !Leftover->IsPlayerAtInspectionSite() : !Leftover->IsPlayerAtAssemblyTable())
+		{
+			return false;
+		}
+		switch (Stage)
 		{
 		case 0:
 			Out = Make(TEXT("Hint.Leftover.Assembly"), {
@@ -72,6 +81,12 @@ namespace
 		case 3:
 			Out = Make(TEXT("Hint.Leftover.AssemblyTake"), {
 				NSLOCTEXT("IGHint", "AssemblyTake1", "덮개를 챙겨서 어디에 붙어 있던 건지 찾아보자.") });
+			return true;
+		case 4:
+			Out = Make(TEXT("Hint.Leftover.AssemblySite"), {
+				NSLOCTEXT("IGHint", "AssemblySite1", "덮개 틀 날개에 구멍이 네 개 있었지."),
+				NSLOCTEXT("IGHint", "AssemblySite2", "이 덧판에도 나사 네 개가 네모나게 박혀 있어. 자리가 같을까."),
+				NSLOCTEXT("IGHint", "AssemblySite3", "덧판 앞에 덮개를 대 보자.") });
 			return true;
 		default:
 			return false;
@@ -296,9 +311,17 @@ namespace
 				NSLOCTEXT("IGHint", "NightThreeKey2", "관리실 책상 위에 열쇠 꾸러미가 있었지."),
 				NSLOCTEXT("IGHint", "NightThreeKey3", "1층 관리실에서 열쇠 꾸러미를 챙겨서 옥상으로 올라가자.") });
 		}
+		// 수첩이나 렌치를 안 만지고 벽부터 견줘 본 사람, 철문을 열고 막 들어선 사람도 5층에 온 것이다.
+		// 예전에는 그 사람에게도 옥상 철문을 찾으라고 했다.
+		const UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+		const APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
+		const APawn* Pawn = Controller ? Controller->GetPawn() : nullptr;
 		const bool bReachedFifth = N->HasSource(ETruth::TenantIdentity, ESource::TunerNotebookName)
 			|| N->HasSource(ETruth::SomeoneInTheWall, ESource::PipeAuditionCriterion)
-			|| Beat(N, TEXT("Night3.WrenchTaken"));
+			|| N->HasSource(ETruth::SomeoneInTheWall, ESource::PipeWaterComparison)
+			|| N->HasSource(ETruth::SomeoneInTheWall, ESource::WallEchoByHand)
+			|| Beat(N, TEXT("Night3.WrenchTaken"))
+			|| (Pawn && AIGMissingFloorNightThreeDirector::IsInFifthFloorAnnex(Pawn->GetActorLocation()));
 		if (!bReachedFifth)
 		{
 			return Make(TEXT("Hint.Night3.Door"), {

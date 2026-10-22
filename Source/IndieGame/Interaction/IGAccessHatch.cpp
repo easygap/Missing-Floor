@@ -9,6 +9,7 @@
 #include "Engine/StaticMesh.h"
 #include "IndieGame.h"
 #include "Materials/MaterialInterface.h"
+#include "TimerManager.h"
 #include "Entity/IGNoiseSubsystem.h"
 
 namespace IGAccessHatch
@@ -215,24 +216,56 @@ void AIGAccessHatch::SetAirSound(const bool bEnabled)
 		}
 		return;
 	}
-	if (!AirLoop)
-	{
-		if (USoundBase* Sound = IGAudio::Sample(TEXT("Lining_AirLoop")))
-		{
-			AirLoop = NewObject<UAudioComponent>(this, TEXT("AirLoop"));
-			AirLoop->SetupAttachment(HatchRoot);
-			AirLoop->SetRelativeLocation(FVector(-6.0f, 0.0f, 0.0f));
-			AirLoop->bAutoActivate = false;
-			AirLoop->bAutoDestroy = false;
-			AirLoop->SetSound(Sound);
-			AirLoop->AttenuationSettings = IGAudio::MakeAttenuation(this, 60.0f, 700.0f, EIGAudioBus::World);
-			AirLoop->bOverrideAttenuation = false;
-			AirLoop->RegisterComponent();
-		}
-	}
+	EnsureAirLoop();
 	if (AirLoop && !AirLoop->IsPlaying())
 	{
 		AirLoop->FadeIn(0.8f, 0.55f);
+	}
+}
+
+void AIGAccessHatch::EnsureAirLoop()
+{
+	if (AirLoop)
+	{
+		return;
+	}
+	if (USoundBase* Sound = IGAudio::Sample(TEXT("Lining_AirLoop")))
+	{
+		AirLoop = NewObject<UAudioComponent>(this, TEXT("AirLoop"));
+		AirLoop->SetupAttachment(HatchRoot);
+		AirLoop->SetRelativeLocation(FVector(-6.0f, 0.0f, 0.0f));
+		AirLoop->bAutoActivate = false;
+		AirLoop->bAutoDestroy = false;
+		AirLoop->SetSound(Sound);
+		AirLoop->AttenuationSettings = IGAudio::MakeAttenuation(this, 60.0f, 700.0f, EIGAudioBus::World);
+		AirLoop->bOverrideAttenuation = false;
+		AirLoop->RegisterComponent();
+	}
+}
+
+void AIGAccessHatch::PlayDraftThroughSeams(const float Seconds)
+{
+	// 열린 틈이면 이미 제 소리가 난다. 닫힌 문짝은 둘레 틈으로 새는 만큼만, 열린 때보다 작게 낸다.
+	if (IsGapOpen())
+	{
+		return;
+	}
+	EnsureAirLoop();
+	if (!AirLoop)
+	{
+		return;
+	}
+	AirLoop->FadeIn(0.5f, 0.3f);
+	GetWorldTimerManager().SetTimer(
+		DraftTimer, this, &AIGAccessHatch::EndDraftThroughSeams, FMath::Max(Seconds, 0.1f), false);
+}
+
+void AIGAccessHatch::EndDraftThroughSeams()
+{
+	// 그사이 문짝을 열었으면 열린 틈의 소리로 이어진다.
+	if (AirLoop && !(bAirSound && IsGapOpen()))
+	{
+		AirLoop->FadeOut(0.8f, 0.0f);
 	}
 }
 

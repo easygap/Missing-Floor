@@ -289,6 +289,7 @@ bool AIGMissingFloorPuzzleTwoDirector::Configure(AIGPrologueWorldScene* InScene)
 			"P2CarbonStage2",
 			"29일 새벽에도 들렸고, 30일엔 직접 와 달라고 했네."),
 	});
+	CarbonLedger->SetStageBeatPrefix(TEXT("P2.Carbon.Stage"));
 	CarbonLedger->ConfigureProgressReveal(
 		LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/M_ComplaintImpression.M_ComplaintImpression")),
 		FVector(0, 0, .56f), FVector2D(20.9f, 29.6f),
@@ -897,12 +898,19 @@ void AIGMissingFloorPuzzleTwoDirector::CloseBoothValve()
 
 void AIGMissingFloorPuzzleTwoDirector::RefreshAgentNoteAvailability()
 {
+	// 밑장과 문자 사본은 밤2부터 손에 든다. 첫째 밤에도 관리실은 열려 있어서 둘을 먼저 읽을 수 있었는데,
+	// 그러면 장부가 맞춰졌다는 신호가 밤 번호에서 걸러져 밤2 안쪽 방 장면(그가 깨고, 덧댄 것과 처음
+	// 마주치는 일)이 통째로 빠졌다.
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const bool bPresent = Narrative != nullptr && Narrative->GetNightIndex() >= 2;
+	if (CarbonLedger)
+	{
+		CarbonLedger->SetInteractionEnabled(bPresent);
+	}
 	if (!AgentMessageNote)
 	{
 		return;
 	}
-	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-	const bool bPresent = Narrative != nullptr;
 	AgentMessageNote->SetActorHiddenInGame(!bPresent);
 	AgentMessageNote->SetActorEnableCollision(bPresent);
 	AgentMessageNote->SetInteractionEnabled(bPresent);
