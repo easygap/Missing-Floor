@@ -24,7 +24,10 @@ $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $logPath = Join-Path $projectRoot "Saved/Logs/Lining-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ('Saved/Validation/Lining-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
 Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
-$render = if ($Shots) { @('-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLiningShots') } else { @('-nullrhi') }
+# 기본도 오프스크린으로 그린다. 처음에는 else에서 @('-nullrhi')를 돌려줬는데, if 식이 원소 하나짜리 배열을 문자열로 풀어
+# @render가 글자를 하나씩 넘겼고(- n u l l r h i) 엔진은 그걸 모르는 인자로 버렸다. 이 검사의 기준은 모두 그려 가며 돈
+# 실행에서 잡혔다.
+$render = @(if ($Shots) { '-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLiningShots' })
 if ($Shots -and $Collision) { $render += '-IGLiningDrawCollision' }
 if ($Shots -and $Frames) { $render += '-IGLiningFrames' }
 & $editor $projectPath -game -unattended -nosplash -nosound -NoLoadingScreen -RenderOffscreen @render `

@@ -59,9 +59,12 @@ if ($Record) {
 	# 숨긴 창은 초점이 없어 엔진이 소리를 줄인다. 녹음할 때는 열어 둔다.
 	$audio = @('-DeterministicAudio', '-AudioMixer', '-IGLeftoverRecord', '-ini:Engine:[Audio]:UnfocusedVolumeMultiplier=1.0')
 }
-$render = if ($Record) { @('-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes') }
-	elseif ($Shots -and $Clean) { @('-d3d12', '-Windowed', '-ResX=1920', '-ResY=1080', '-ForceRes', '-IGLeftoverShots', '-IGLeftoverCleanShots') }
-	elseif ($Shots) { @('-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLeftoverShots') } else { @('-nullrhi') }
+# 기본도 오프스크린으로 그린다. 처음에는 else에서 @('-nullrhi')를 돌려줬는데, if 식이 원소 하나짜리 배열을 문자열로 풀어
+# @render가 글자를 하나씩 넘겼고(- n u l l r h i) 엔진은 그걸 모르는 인자로 버렸다. 이 검사의 기준은 모두 그려 가며 돈
+# 실행에서 잡혔다.
+$render = @(if ($Record) { '-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes' }
+	elseif ($Shots -and $Clean) { '-d3d12', '-Windowed', '-ResX=1920', '-ResY=1080', '-ForceRes', '-IGLeftoverShots', '-IGLeftoverCleanShots' }
+	elseif ($Shots) { '-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLeftoverShots' })
 $probeArg = if ($Variant -eq 'full') { '-IGLeftoverProbe' } else { "-IGLeftoverProbe=$Variant" }
 & $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen @audio @render `
 	-IGListenerGreybox $probeArg -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
