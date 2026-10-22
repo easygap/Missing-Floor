@@ -222,6 +222,12 @@ private:
 		float PlantKick = 0.0f;
 		/** 옮길 때 패드를 드는 높이 배율. 틈 둘레를 더듬을 때는 낮게 든다. */
 		float LiftScale = 1.0f;
+		/**
+		 * 걷다가 옮기는 발이 제 엉덩이 밑을 지나가게 되면 몸 면을 따라 그만큼 비켜 돈다(가장 많이 비킬 때의 방향과
+		 * 거리). 비키는 몫은 스윙 비율 SwingDetourPeak에서 가장 크고 처음과 끝에서는 0이다.
+		 */
+		FVector SwingDetour = FVector::ZeroVector;
+		float SwingDetourPeak = 0.5f;
 		/** 마지막으로 푼 관절 자리(검사·충돌용). */
 		FVector Hip = FVector::ZeroVector;
 		FVector Knee = FVector::ZeroVector;
@@ -282,7 +288,17 @@ private:
 	float LegReach(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
 	/** 이 다리로 Pad(면 법선 Normal)를 짚으려면 얼마나 뻗어야 하는가(1이면 다 뻗음). SolveLeg와 같은 수다. */
 	float ReachTo(int32 Leg, const FVector& Pad, const FVector& Normal, const FVector& Center, const FQuat& Rotation) const;
+	/** 엉덩이가 Hip일 때 이 다리로 Pad(면 법선 Normal)를 짚는 발목 자리. SolveLeg와 같은 수다. */
+	FVector AnkleFor(int32 Leg, const FVector& Pad, const FVector& Normal, const FVector& Hip, const FQuat& Rotation) const;
 	void StartSwing(int32 Leg, const FVector& Pad, const FVector& Normal, float FoldTarget);
+	/** 옮기는 패드가 스윙 비율 T(부드럽게 한 값)에 있을 자리. Detour만큼 비켜 돌고 Peak에서 가장 많이 비킨다. */
+	FVector SwingPadAt(const FLeg& Leg, float T, const FVector& Detour, float Peak) const;
+	/**
+	 * 걷는 동안 옮기는 발이 제 엉덩이 밑을 지나가 무릎이 SwingKneeSpeed보다 빨리 튀게 되면 몸 면을 따라 비켜 돌 쪽과
+	 * 거리를 정한다. 그 빠르기 안에 드는 길 가운데 가장 덜 비켜 도는 것을 고르고, 벽·천장·바닥을 뚫는 길은 버린다.
+	 * 맞는 길이 없으면 그대로 옮긴다.
+	 */
+	void PlanSwingDetour(int32 Leg);
 	bool FindContact(int32 Leg, const FVector& FutureBody, const FQuat& FutureRotation, const FVector& Travel, FVector& OutPad, FVector& OutNormal) const;
 	FVector HipWorld(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
 	void PoseBody();
