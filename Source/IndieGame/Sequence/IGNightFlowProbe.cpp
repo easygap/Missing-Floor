@@ -384,7 +384,7 @@ void AIGNightFlowProbe::Tick(const float DeltaSeconds)
 			const FText Prompt = Bed && Player.IsValid()
 				? IIGInteractable::Execute_GetInteractionPrompt(Bed, Player.Get()) : FText::GetEmpty();
 			Check(Bed && Bed->IsInteractionEnabled()
-				&& Prompt.ToString() == NSLOCTEXT("IGMissingFloor", "SleepPrompt", "침대에 눕기").ToString(),
+				&& Prompt.ToString() == NSLOCTEXT("IGMissingFloor", "SleepPrompt", "눕기").ToString(),
 				TEXT("day_bed_prompt_is_sleep"));
 		}
 		// 낮의 침대로 둘째 밤을 연다.

@@ -764,7 +764,7 @@ private:
 	int32 TrailerShotFrame = 0;
 	int32 TrailerNight = 0;
 	int32 TrailerDroppedFrames = 0;
-	/** 장면별 프레임 폴더의 부모. -IGTrailerOut=로 실행마다 새 폴더를 준다. 없으면 Saved/Trailer. */
+	/** 장면별 프레임 폴더의 부모. 촬영 스크립트가 -IGTrailerOut=로 실행마다 새 폴더를 준다. 없으면 찍지 않는다. */
 	FString TrailerOutputRoot;
 	/** 화면 잡티 원인 촬영(-IGScreenNoiseReview). 같은 카메라에서 설정을 하나씩 바꿔 찍는다. */
 	bool AdvanceScreenNoiseReview();

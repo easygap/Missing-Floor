@@ -77,6 +77,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Interaction")
 	FText GetFocusedPrompt() const;
 
+	/** 겨눈 대상을 길게 눌러야 하는 시간(초). 0이면 한 번 누르는 동작이다. HUD가 「길게」 표시를 고른다. */
+	UFUNCTION(BlueprintPure, Category = "Interaction")
+	float GetFocusedHoldDuration() const;
+
 	UFUNCTION(BlueprintPure, Category = "Interaction")
 	FGameplayTag GetFocusedInteractionTag() const;
 
@@ -191,4 +195,15 @@ private:
 	/** A hold that continues after the physical key is released. */
 	bool bToggleHoldLatched = false;
 	bool bFinalizingInteraction = false;
+	/**
+	 * 지금 초점을 넘겨받으려고 기다리는 다른 대상과 처음 잡힌 시각. 가까이 붙은 두 대상의 경계에 조준점이
+	 * 걸리면 스캔마다 초점이 번갈아 안내가 깜빡였다. 새 대상은 잠깐 이어서 잡혀야 넘겨받는다.
+	 */
+	TWeakObjectPtr<AActor> PendingFocusActor;
+	double PendingFocusSince = 0.0;
+	/**
+	 * 주기 스캔(HandleUpdateTimer)일 때만 새 대상을 잠깐 기다렸다 넘긴다. 버튼을 누른 순간이나 입력이 다시 켜진 때,
+	 * 검사가 부르는 RefreshFocus는 기다리지 않고 지금 조준한 대상을 잡는다.
+	 */
+	bool bFocusDwellAllowed = false;
 };

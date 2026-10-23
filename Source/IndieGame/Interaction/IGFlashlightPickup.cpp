@@ -23,7 +23,7 @@ AIGFlashlightPickup::AIGFlashlightPickup()
 	MeshComponent->SetCanEverAffectNavigation(false);
 	MeshComponent->SetMobility(EComponentMobility::Movable);
 	InteractionHoldDuration = 0.25f;
-	InteractionPrompt = NSLOCTEXT("IGFlashlight", "PickupPrompt", "손전등 챙기기");
+	InteractionPrompt = NSLOCTEXT("IGFlashlight", "PickupPrompt", "챙기기");
 }
 
 void AIGFlashlightPickup::ConfigureVisuals(UStaticMesh* Mesh, UMaterialInterface* Material, const bool bFallbackCylinder)

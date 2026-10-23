@@ -102,6 +102,17 @@ namespace IGAudio
 		bool bPlayWhenPaused = false);
 
 	/**
+	 * 그 자리 가까이에서 방금 낸 소리(이 도우미로 낸 원샷). 소리 자막이 설명하는 실제 소리를 찾아 묶을 때
+	 * HUD가 쓴다. 지금 울고 있는 것 가운데 가장 최근 것을 돌려주고, 없으면 nullptr.
+	 */
+	INDIEGAME_API UAudioComponent* FindRecentSoundNear(
+		const UObject* WorldContext,
+		const FVector& Location,
+		float Radius,
+		float MaxAgeSeconds,
+		float* OutAgeSeconds = nullptr);
+
+	/**
 	 * SpawnOneShotAt과 같되 소리를 낸 액터를 오클루전 트레이스에서 뺀다. 문의
 	 * 걸쇠·경첩·닫힘은 문짝 두께 안에서 나서, 그냥 내면 제 문짝에 가려 먹먹해진다.
 	 * 다른 벽과 바닥은 그대로 가린다. 엘리베이터처럼 제 몸이 가려야 맞는 소리에는

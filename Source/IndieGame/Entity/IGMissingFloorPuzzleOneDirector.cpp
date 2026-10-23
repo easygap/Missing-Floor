@@ -156,7 +156,7 @@ bool AIGMissingFloorPuzzleOneDirector::Configure(AIGPrologueWorldScene* InScene)
 		CubeMesh,
 		nullptr,
 		FVector(15.0f, 3.0f, 15.0f),
-		NSLOCTEXT("IGMissingFloor", "P1MeterPrompt", "계량기 원판 보기"),
+		NSLOCTEXT("IGMissingFloor", "P1MeterPrompt", "살펴보기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -222,7 +222,7 @@ bool AIGMissingFloorPuzzleOneDirector::Configure(AIGPrologueWorldScene* InScene)
 		SheetMaterial,
 		FVector(21.0f, 0.08f, 29.7f));
 	ReadingSheet->SetInteractionPrompt(
-		NSLOCTEXT("IGMissingFloor", "P1SheetPrompt", "검침 기록지"));
+		NSLOCTEXT("IGMissingFloor", "P1SheetPrompt", "읽기"));
 	ReadingSheet->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "P1SheetTitle", "달빛빌라 검침 기록"),
 		{

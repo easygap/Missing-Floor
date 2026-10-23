@@ -20,6 +20,11 @@ namespace IGInteraction
 	// 봐준다. 둘이 엇비슷할 때 프레임마다 번갈아 잡히면 브래킷이 떤다.
 	constexpr float SweepDistanceWeight = 0.125f;
 	constexpr float SweepStickyBonus = 6.0f;
+	// 다른 대상이 이만큼 이어서 잡혀야 초점을 넘긴다(30Hz 스캔 네 번). 조준점이 두 대상의 경계에서
+	// 흔들릴 때 안내가 번갈아 깜빡이지 않게 한다.
+	constexpr double FocusSwitchDelaySeconds = 0.12;
+	// 지금 대상이 조준선에서 이만큼 안에 있을 때만 넘기기를 미룬다. 고개를 돌려 벗어났으면 바로 넘긴다.
+	constexpr float FocusHoldDeviation = 20.0f;
 }
 
 bool UIGInteractionComponent::IsDormantInteractable(AActor* Actor, AActor* Interactor)
@@ -114,6 +119,7 @@ void UIGInteractionComponent::PressInteraction()
 	}
 
 	bInteractionPressed = true;
+	// 누른 순간에는 기다리던 초점 넘기기를 미루지 않는다(주기 스캔이 아니다). 화면에서 벗어난 앞 대상을 누르면 안 된다.
 	RefreshFocus();
 	if (!bInteractionPressed || !bInteractionInputEnabled)
 	{
@@ -445,6 +451,32 @@ void UIGInteractionComponent::RefreshFocus()
 		Candidate = nullptr;
 	}
 
+	// 주기 스캔에서 다른 대상으로 넘어갈 때는 그 대상이 잠깐 이어서 잡혀야 한다. 지금 대상을 더 쓸 수 없거나
+	// 조준선에서 벗어났거나, 버튼을 누른 순간처럼 주기 스캔이 아니면 바로 넘긴다. 아무것도 겨누지 않게 된 때도 바로 내린다.
+	AActor* Current = FocusedActor.Get();
+	if (Candidate && Current && Candidate != Current && bFocusDwellAllowed
+		&& Current->GetClass()->ImplementsInterface(UIGInteractable::StaticClass())
+		&& IIGInteractable::Execute_CanInteract(Current, OwnerActor))
+	{
+		const FVector ToCurrent = FocusedHitResult.ImpactPoint - TraceStart;
+		const FVector ViewDirection = ViewRotation.Vector();
+		const float Along = FVector::DotProduct(ToCurrent, ViewDirection);
+		const float Deviation = (ToCurrent - ViewDirection * Along).Size();
+		if (Along > 0.0f && Along <= TraceDistance && Deviation <= IGInteraction::FocusHoldDeviation)
+		{
+			const double Now = World->GetTimeSeconds();
+			if (PendingFocusActor.Get() != Candidate)
+			{
+				PendingFocusActor = Candidate;
+				PendingFocusSince = Now;
+			}
+			if (Now - PendingFocusSince < IGInteraction::FocusSwitchDelaySeconds)
+			{
+				return;
+			}
+		}
+	}
+	PendingFocusActor.Reset();
 	SetFocusedActor(Candidate, Candidate ? CandidateHit : FHitResult());
 }
 
@@ -476,6 +508,16 @@ FText UIGInteractionComponent::GetFocusedPrompt() const
 	}
 
 	return IIGInteractable::Execute_GetInteractionPrompt(Target, GetOwner());
+}
+
+float UIGInteractionComponent::GetFocusedHoldDuration() const
+{
+	AActor* Target = FocusedActor.Get();
+	if (!IsValid(Target) || !Target->GetClass()->ImplementsInterface(UIGInteractable::StaticClass()))
+	{
+		return 0.0f;
+	}
+	return FMath::Max(0.0f, IIGInteractable::Execute_GetInteractionHoldDuration(Target, GetOwner()));
 }
 
 FGameplayTag UIGInteractionComponent::GetFocusedInteractionTag() const
@@ -538,7 +580,9 @@ void UIGInteractionComponent::HandleUpdateTimer()
 		FinishActiveInteraction(EIGInteractionEndReason::Cancelled, false);
 	}
 
+	bFocusDwellAllowed = true;
 	RefreshFocus();
+	bFocusDwellAllowed = false;
 	TryConsumeBufferedPress();
 }
 

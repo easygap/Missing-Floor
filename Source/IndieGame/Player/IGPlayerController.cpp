@@ -211,6 +211,7 @@ void AIGPlayerController::BeginPlay()
 		// 고지가 먼저다. 무엇이 나오는지 모른 채로 소리부터 맞추게 할 수 없다.
 		ShowContentNoticeIfNeeded();
 		StartHeadphoneRecommendationIfNeeded();
+		ShowSoundCaptionConfirmationIfNeeded();
 		if (bNightFiveProbeRequested)
 		{
 			StartNightFiveProbe();
@@ -551,6 +552,7 @@ void AIGPlayerController::StartFrontendShippingProbe()
 	bFrontendProbeCompilationDrained = false;
 	FrontendProbeAwaitFrameSerial = 0;
 	FrontendProbeDefaultScreenshotPath.Reset();
+	FrontendProbeCaptionScreenshotPath.Reset();
 	FrontendProbeScreenshotPath.Reset();
 	FrontendProbeTitleScreenshotPath.Reset();
 	FrontendProbeBoundsMin = FVector2D(
@@ -898,9 +900,16 @@ void AIGPlayerController::TickFrontendShippingProbe()
 		if (UIGAccessibilitySubsystem* Accessibility =
 			GetAccessibilitySubsystem())
 		{
+			// 이 화면은 새 프로필의 기본 화면이다. 소리 설명은 켜지 않는다. 새 프로필에서 꺼져 있지 않으면
+			// 기본값이 바뀐 것이라 실패로 남긴다. 대사 자막과 글자 크기·배경·영역은 기본값 그대로다.
 			FIGAccessibilitySettings Settings = Accessibility->GetSettings();
+			if (Settings.bSoundCaptionsEnabled || Settings.bBackgroundSoundCaptions
+				|| Accessibility->NeedsSoundCaptionConfirmation())
+			{
+				FailFrontendShippingProbe(TEXT("fresh_profile_sound_captions_on"));
+				return;
+			}
 			Settings.bSubtitlesEnabled = true;
-			Settings.bSoundCaptionsEnabled = true;
 			if (FParse::Param(FCommandLine::Get(), TEXT("IGCaptionLifecycleReview")))
 			{
 				Settings.CaptionDurationScale = 1.0f;
@@ -926,12 +935,15 @@ void AIGPlayerController::TickFrontendShippingProbe()
 				EIGDialogueChannel::Device,
 				5.0f,
 				EIGDialoguePriority::Story);
-			HorrorHUD->ShowAudioCaption(
+			// 같은 순간 천장에서 노크가 난다. 게임과 같은 입구로 내므로 설정이 꺼져 있으면 글로 뜨지 않아야 한다.
+			AIGHorrorHUD::PushAudioCaptionAt(
+				this,
 				NSLOCTEXT(
 					"IGFrontendProbe",
 					"SoundCaption",
 					"[천장에서 세 번 두드리는 소리]"),
-				5.0f);
+				5.0f,
+				GetFrontendProbeCeilingLocation());
 		}
 		else
 		{
@@ -946,9 +958,10 @@ void AIGPlayerController::TickFrontendShippingProbe()
 		FrontendProbeNextActionTime = Now + 0.30;
 		return;
 	case 22:
+		// 새 프로필 기본 화면에는 대사 상자·화자·문장 셋만 오른다(소리 설명은 꺼져 있다).
 		if (!TryCaptureFrontendProbeLayout(
 			TEXT("dialogue_default_scale"),
-			5,
+			3,
 			false)
 			|| !TryVerifyFrontendDialogueLayout(
 				TEXT("dialogue_default"),
@@ -958,13 +971,12 @@ void AIGPlayerController::TickFrontendShippingProbe()
 		{
 			return;
 		}
-		// 소리 자막은 플레이 화면에서 실제로 그려져야 한다. 타이틀의 자막을
-		// 없애는 변경이 접근성 기능까지 꺼 버리지 않았는지 먼저 확인한다.
+		// 기본 화면에는 대사만 오른다. 대사 자막이 켜져 있다고 효과음 설명까지 따라 켜지면 안 된다.
 		if (const AIGHorrorHUD* HorrorHUD = Cast<AIGHorrorHUD>(GetHUD()))
 		{
-			if (!HorrorHUD->WasAudioCaptionDrawnInLastHudFrame())
+			if (HorrorHUD->WasAudioCaptionDrawnInLastHudFrame() || HorrorHUD->HasPendingAudioCaption())
 			{
-				FailFrontendShippingProbe(TEXT("gameplay_sound_caption_not_drawn"));
+				FailFrontendShippingProbe(TEXT("default_screen_sound_caption_drawn"));
 				return;
 			}
 		}
@@ -989,6 +1001,113 @@ void AIGPlayerController::TickFrontendShippingProbe()
 				FrontendProbeDefaultScreenshotPath,
 				true,
 				false);
+		}
+		FrontendProbeStep = 42;
+		FrontendProbeNextActionTime = Now + 0.08;
+		FrontendProbeStepDeadline = Now + 5.0;
+		return;
+	case 42:
+	{
+		if (!FrontendProbeDefaultScreenshotPath.IsEmpty()
+			&& !FPaths::FileExists(FrontendProbeDefaultScreenshotPath))
+		{
+			FrontendProbeNextActionTime = Now + 0.05;
+			return;
+		}
+		// 설정 다섯 가지(새 프로필·직접 끔·중요한 소리·모든 소리·예전 프로필)를 같은 입구로 확인한다.
+		FString CaptionSettingsReceipt;
+		const FString CaptionSettingsFailure = VerifySoundCaptionSettingCases(CaptionSettingsReceipt);
+		if (!CaptionSettingsFailure.IsEmpty())
+		{
+			FailFrontendShippingProbe(CaptionSettingsFailure);
+			return;
+		}
+		if (!FrontendProbeDefaultScreenshotPath.IsEmpty()
+			&& !FFileHelper::SaveStringToFile(
+				CaptionSettingsReceipt,
+				*(FPaths::GetPath(FrontendProbeDefaultScreenshotPath) / TEXT("caption-settings.txt")),
+				FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
+		{
+			FailFrontendShippingProbe(TEXT("caption_settings_receipt_write_failed"));
+			return;
+		}
+		// 접근성 시연 화면. 소리 설명을 「중요한 소리」로 직접 고른 프로필에서 같은 순간을 다시 띄운다.
+		UIGAccessibilitySubsystem* Accessibility = GetAccessibilitySubsystem();
+		AIGHorrorHUD* HorrorHUD = Cast<AIGHorrorHUD>(GetHUD());
+		if (!Accessibility || !HorrorHUD)
+		{
+			FailFrontendShippingProbe(TEXT("caption_demo_setup_missing"));
+			return;
+		}
+		FIGAccessibilitySettings Settings = Accessibility->GetSettings();
+		Settings.bSoundCaptionsEnabled = true;
+		Settings.bBackgroundSoundCaptions = false;
+		Accessibility->ApplySettings(Settings);
+		Accessibility->MarkSoundCaptionsChosen();
+		AIGHorrorHUD::ResetDialogueForSceneChange(this);
+		HorrorHUD->ShowDialogue(
+			NSLOCTEXT("IGFrontendProbe", "DialogueSpeaker", "휴대폰"),
+			NSLOCTEXT(
+				"IGFrontendProbe",
+				"DialogueDefaultKorean",
+				"문자 신고가 접수되었습니다. 곧 담당 경찰관이 연락드리겠습니다."),
+			EIGDialogueChannel::Device,
+			5.0f,
+			EIGDialoguePriority::Story);
+		AIGHorrorHUD::PushAudioCaptionAt(
+			this,
+			NSLOCTEXT("IGFrontendProbe", "SoundCaption", "[천장에서 세 번 두드리는 소리]"),
+			5.0f,
+			GetFrontendProbeCeilingLocation());
+		FrontendProbeStep = 43;
+		AwaitFrontendProbeFrame();
+		FrontendProbeNextActionTime = Now + 0.30;
+		return;
+	}
+	case 43:
+		if (!TryCaptureFrontendProbeLayout(TEXT("dialogue_sound_captions"), 5, false, false))
+		{
+			return;
+		}
+		// 접근성 설정으로 고르면 소리 설명이 실제로 그려져야 한다. 기본 화면을 바꾼 것이 기능까지 꺼 버리지
+		// 않았는지 본다.
+		if (const AIGHorrorHUD* HorrorHUD = Cast<AIGHorrorHUD>(GetHUD()))
+		{
+			if (!HorrorHUD->WasAudioCaptionDrawnInLastHudFrame())
+			{
+				FailFrontendShippingProbe(TEXT("gameplay_sound_caption_not_drawn"));
+				return;
+			}
+		}
+		else
+		{
+			FailFrontendShippingProbe(TEXT("dialogue_hud_missing"));
+			return;
+		}
+		if (FParse::Value(FCommandLine::Get(), TEXT("IGFrontendCaptionScreenshotPath="), FrontendProbeCaptionScreenshotPath))
+		{
+			FrontendProbeCaptionScreenshotPath.TrimQuotesInline();
+			FrontendProbeCaptionScreenshotPath = FPaths::ConvertRelativePathToFull(FrontendProbeCaptionScreenshotPath);
+		}
+		else if (!FrontendProbeDefaultScreenshotPath.IsEmpty())
+		{
+			FrontendProbeCaptionScreenshotPath =
+				FPaths::GetPath(FrontendProbeDefaultScreenshotPath) / TEXT("dialogue-sound-captions.png");
+		}
+		if (!FrontendProbeCaptionScreenshotPath.IsEmpty())
+		{
+			IFileManager::Get().MakeDirectory(*FPaths::GetPath(FrontendProbeCaptionScreenshotPath), true);
+			FScreenshotRequest::RequestScreenshot(FrontendProbeCaptionScreenshotPath, true, false);
+		}
+		FrontendProbeStep = 44;
+		FrontendProbeNextActionTime = Now + 0.08;
+		FrontendProbeStepDeadline = Now + 5.0;
+		return;
+	case 44:
+		if (!FrontendProbeCaptionScreenshotPath.IsEmpty() && !FPaths::FileExists(FrontendProbeCaptionScreenshotPath))
+		{
+			FrontendProbeNextActionTime = Now + 0.05;
+			return;
 		}
 		FrontendProbeStep = FParse::Param(FCommandLine::Get(), TEXT("IGCaptionLifecycleReview"))
 			? 38 : 23;
@@ -1111,8 +1230,8 @@ void AIGPlayerController::TickFrontendShippingProbe()
 		FrontendProbeStepDeadline = Now + 5.0;
 		return;
 	case 23:
-		if (!FrontendProbeDefaultScreenshotPath.IsEmpty()
-			&& !FPaths::FileExists(FrontendProbeDefaultScreenshotPath))
+		if (!FrontendProbeCaptionScreenshotPath.IsEmpty()
+			&& !FPaths::FileExists(FrontendProbeCaptionScreenshotPath))
 		{
 			FrontendProbeNextActionTime = Now + 0.05;
 			return;
@@ -1614,6 +1733,125 @@ bool AIGPlayerController::TryCaptureFrontendProbeLayout(
 	if (bIncludeInReceiptCoverage) ++FrontendProbeLayoutSampleCount;
 	FrontendProbeAwaitFrameSerial = FrameSerial;
 	return true;
+}
+
+FVector AIGPlayerController::GetFrontendProbeCeilingLocation() const
+{
+	const APawn* ProbePawn = GetPawn();
+	return (ProbePawn ? ProbePawn->GetActorLocation() : FVector::ZeroVector) + FVector(0.0f, 0.0f, 260.0f);
+}
+
+FString AIGPlayerController::VerifySoundCaptionSettingCases(FString& OutReceipt)
+{
+	UIGAccessibilitySubsystem* Accessibility = GetAccessibilitySubsystem();
+	AIGHorrorHUD* HorrorHUD = Cast<AIGHorrorHUD>(GetHUD());
+	if (!Accessibility || !HorrorHUD || !GConfig)
+	{
+		return TEXT("caption_settings_setup_missing");
+	}
+	const TCHAR* Section = TEXT("IndieGame.Accessibility");
+	const FVector Ceiling = GetFrontendProbeCeilingLocation();
+	const FText ImportantCaption = NSLOCTEXT("IGFrontendProbe", "SoundCaption", "[천장에서 세 번 두드리는 소리]");
+	const FText BackgroundCaption = NSLOCTEXT("IGFrontendProbe", "BackgroundSoundCaption", "[배관에 물 흐르는 소리]");
+	// 그 프로필의 값을 설정 파일에 써 넣고 게임이 처음 읽을 때와 같은 길로 다시 읽는다. 없는 키는 지운다.
+	const auto Load = [&](const TOptional<bool> Enabled, const TOptional<bool> Background, const TOptional<bool> Chosen)
+	{
+		const auto Put = [&](const TCHAR* Key, const TOptional<bool>& Value)
+		{
+			if (Value.IsSet())
+			{
+				GConfig->SetBool(Section, Key, Value.GetValue(), GGameUserSettingsIni);
+			}
+			else
+			{
+				GConfig->RemoveKey(Section, Key, GGameUserSettingsIni);
+			}
+		};
+		Put(TEXT("SoundCaptionsEnabled"), Enabled);
+		Put(TEXT("BackgroundSoundCaptions"), Background);
+		Put(TEXT("SoundCaptionsChosen"), Chosen);
+		Accessibility->ReloadPersistedSettingsForTesting();
+	};
+	// 게임이 쓰는 입구(PushAudioCaptionAt, PushBackgroundAudioCaptionAt)로 낸 설명이 줄에 들어가는지 본다.
+	const auto Shows = [&](const bool bBackground)
+	{
+		AIGHorrorHUD::ResetDialogueForSceneChange(this);
+		if (bBackground)
+		{
+			AIGHorrorHUD::PushBackgroundAudioCaptionAt(this, BackgroundCaption, 3.0f, Ceiling);
+		}
+		else
+		{
+			AIGHorrorHUD::PushAudioCaptionAt(this, ImportantCaption, 3.0f, Ceiling);
+		}
+		const bool bQueued = HorrorHUD->HasPendingAudioCaption();
+		AIGHorrorHUD::ResetDialogueForSceneChange(this);
+		return bQueued;
+	};
+
+	// 직접 끈 프로필.
+	Load(false, false, true);
+	if (Accessibility->AreSoundCaptionsEnabled() || Accessibility->NeedsSoundCaptionConfirmation() || Shows(false))
+	{
+		return TEXT("caption_settings_explicit_off");
+	}
+	// 중요한 소리만 고른 프로필. 생활 소리는 뜨지 않는다.
+	Load(true, false, true);
+	if (!Accessibility->AreSoundCaptionsEnabled() || Accessibility->AreBackgroundSoundCaptionsEnabled()
+		|| Accessibility->NeedsSoundCaptionConfirmation() || !Shows(false) || Shows(true))
+	{
+		return TEXT("caption_settings_important");
+	}
+	// 모든 소리를 고른 프로필.
+	Load(true, true, true);
+	if (!Accessibility->AreBackgroundSoundCaptionsEnabled() || !Shows(false) || !Shows(true))
+	{
+		return TEXT("caption_settings_all");
+	}
+	// 0.10.0까지 저장한 프로필의 「켬」. 직접 고른 것인지 알 수 없어 켜 둔 채 타이틀에서 묻는다. 다른 칸을
+	// 바꾼다고 고른 것으로 치지 않는다.
+	Load(true, TOptional<bool>(), TOptional<bool>());
+	if (!Accessibility->AreSoundCaptionsEnabled() || Accessibility->AreBackgroundSoundCaptionsEnabled()
+		|| !Accessibility->NeedsSoundCaptionConfirmation() || !Shows(false))
+	{
+		return TEXT("caption_settings_legacy_on");
+	}
+	{
+		FIGAccessibilitySettings Changed = Accessibility->GetSettings();
+		Changed.CaptionSizeScale = 1.1f;
+		Accessibility->ApplySettings(Changed);
+		bool bChosen = false;
+		GConfig->GetBool(Section, TEXT("SoundCaptionsChosen"), bChosen, GGameUserSettingsIni);
+		if (bChosen || !Accessibility->NeedsSoundCaptionConfirmation())
+		{
+			return TEXT("caption_settings_legacy_marked_chosen");
+		}
+		Changed.CaptionSizeScale = 1.0f;
+		Accessibility->ApplySettings(Changed);
+	}
+	// 예전 프로필의 「끔」은 기본이 켬이던 때 사람이 끈 것이다. 그대로 꺼 두고 묻지 않는다.
+	Load(false, TOptional<bool>(), TOptional<bool>());
+	if (Accessibility->AreSoundCaptionsEnabled() || Accessibility->NeedsSoundCaptionConfirmation() || Shows(false))
+	{
+		return TEXT("caption_settings_legacy_off");
+	}
+	// 조작 키 표시는 예전 기본(익힐 때까지)으로 저장된 값을 고른 것으로 보지 않는다.
+	GConfig->SetBool(Section, TEXT("AlwaysShowPromptKeys"), false, GGameUserSettingsIni);
+	GConfig->RemoveKey(Section, TEXT("PromptKeysChosen"), GGameUserSettingsIni);
+	Accessibility->ReloadPersistedSettingsForTesting();
+	if (!Accessibility->GetSettings().bAlwaysShowPromptKeys)
+	{
+		return TEXT("prompt_keys_legacy_default_kept");
+	}
+	// 새 프로필 상태(소리 설명 끔, 고른 적 없음)로 되돌린다.
+	Load(TOptional<bool>(), TOptional<bool>(), TOptional<bool>());
+	if (Accessibility->AreSoundCaptionsEnabled() || Accessibility->NeedsSoundCaptionConfirmation())
+	{
+		return TEXT("caption_settings_restore");
+	}
+	OutReceipt = TEXT("MISSINGFLOOR_CAPTION_SETTINGS PASS fresh=off explicit_off=off important=important_only ")
+		TEXT("all=all legacy_on=kept_and_asked legacy_on_other_change=not_chosen legacy_off=off prompt_keys_legacy=always\n");
+	return FString();
 }
 
 bool AIGPlayerController::TryVerifyFrontendDialogueLayout(
@@ -2307,6 +2545,16 @@ void AIGPlayerController::CloseAccessibilityMenu()
 		return;
 	}
 	bAccessibilityMenuVisible = false;
+	if (bSoundCaptionConfirmationOpen)
+	{
+		// 이전 버전 기본값으로 켜져 있던 소리 자막을 보여 주고 물은 자리다. 바꿨든 그대로 두었든 지금 값이
+		// 이 사람이 고른 값이다.
+		bSoundCaptionConfirmationOpen = false;
+		if (UIGAccessibilitySubsystem* Accessibility = GetAccessibilitySubsystem())
+		{
+			Accessibility->MarkSoundCaptionsChosen();
+		}
+	}
 	const bool bReturnsToSystemMenu =
 		AccessibilityReturnMode == EIGSystemMenuMode::Title
 		|| AccessibilityReturnMode == EIGSystemMenuMode::Pause
@@ -2833,6 +3081,15 @@ void AIGPlayerController::ChangeAccessibilitySetting(
 		return;
 	}
 	Accessibility->ApplySettings(Settings);
+	// 소리 자막과 조작 키 표시는 기본값이 바뀐 칸이다. 사람이 직접 고른 값만 다음에도 그대로 읽는다.
+	if (AccessibilitySelection == IGSettingsMenuLayout::SoundCaptions)
+	{
+		Accessibility->MarkSoundCaptionsChosen();
+	}
+	else if (AccessibilitySelection == IGSettingsMenuLayout::PromptKeys)
+	{
+		Accessibility->MarkPromptKeysChosen();
+	}
 	if (AIGPlayerCharacter* PlayerCharacter =
 		Cast<AIGPlayerCharacter>(GetPawn()))
 	{
@@ -4581,6 +4838,26 @@ void AIGPlayerController::ShowContentNoticeIfNeeded()
 		return;
 	}
 	SetSystemMenuMode(EIGSystemMenuMode::ContentNotice);
+}
+
+void AIGPlayerController::ShowSoundCaptionConfirmationIfNeeded()
+{
+	const UIGAccessibilitySubsystem* Accessibility = GetAccessibilitySubsystem();
+	if (!IsLocalController()
+		|| !Accessibility
+		|| !Accessibility->NeedsSoundCaptionConfirmation()
+		|| SystemMenuMode != EIGSystemMenuMode::Title
+		|| bAccessibilityMenuVisible
+		|| FParse::Param(FCommandLine::Get(), TEXT("IGFrontendShippingProbe"))
+		|| FParse::Param(FCommandLine::Get(), TEXT("IGAudioCalibrationPreview"))
+		|| FParse::Param(FCommandLine::Get(), TEXT("IGNightFiveProbe")))
+	{
+		return;
+	}
+	// 첫 실행 고지나 소리 맞추기가 떠 있으면 이번에는 묻지 않는다. 다음 실행의 타이틀에서 묻는다.
+	AccessibilitySelection = IGSettingsMenuLayout::SoundCaptions;
+	bSoundCaptionConfirmationOpen = true;
+	ToggleAccessibilityMenu();
 }
 
 void AIGPlayerController::DismissContentNotice()

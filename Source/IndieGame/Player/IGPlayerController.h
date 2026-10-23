@@ -61,6 +61,19 @@ public:
 	 */
 	void ShowContentNoticeIfNeeded();
 	void DismissContentNotice();
+	/**
+	 * 소리 자막이 예전 기본값으로 켜져 있던 프로필이면 타이틀에서 접근성 설정을 그 줄에 맞춰 연다. 닫으면
+	 * 그때의 값을 직접 고른 것으로 남긴다. 일괄로 끄거나 고른 것으로 치지 않고 한 번 묻는 자리다.
+	 */
+	void ShowSoundCaptionConfirmationIfNeeded();
+	/**
+	 * 화면 검사. 설정 파일에 소리 자막 값을 차례로 써 넣고 다시 읽어, 직접 끔·중요한 소리·모든 소리·예전
+	 * 프로필(켬과 끔)이 각각 어떻게 읽히고 같은 입구로 낸 소리 설명이 뜨는지 본다. 실패하면 이유를,
+	 * 통과하면 빈 문자열을 돌려주고 OutReceipt에 결과 한 줄을 쓴다.
+	 */
+	FString VerifySoundCaptionSettingCases(FString& OutReceipt);
+	/** 화면 검사에서 천장 노크를 낼 자리. 플레이어 머리 위 한 층이다. */
+	FVector GetFrontendProbeCeilingLocation() const;
 
 	/** §19.8 키 재설정 화면. 열림·이동·바인딩 대기·되돌리기. */
 	void OpenKeyBindings();
@@ -290,6 +303,8 @@ private:
 	int32 PreviousDisplayQualityLevel = 2;
 	int32 DisplayConfirmationSecondsRemaining = 0;
 	bool bAccessibilityMenuVisible = false;
+	/** 예전 프로필에 소리 자막을 묻느라 연 접근성 설정이다. 닫으면 지금 값을 고른 것으로 남긴다. */
+	bool bSoundCaptionConfirmationOpen = false;
 	bool bMenuWorldRenderingSuspended = false;
 	bool bWorldRenderingWasDisabled = false;
 	bool bGameWasPausedBeforeAccessibility = false;
@@ -398,6 +413,8 @@ private:
 	FVector2D FrontendProbeBoundsMin = FVector2D::ZeroVector;
 	FVector2D FrontendProbeBoundsMax = FVector2D::ZeroVector;
 	FString FrontendProbeDefaultScreenshotPath;
+	/** 소리 설명을 직접 켠 접근성 시연 화면. 기본 화면과 따로 남긴다. */
+	FString FrontendProbeCaptionScreenshotPath;
 	FString FrontendProbeScreenshotPath;
 	FString FrontendProbeTitleScreenshotPath;
 	FString AudioCalibrationPreviewScreenshotPath;

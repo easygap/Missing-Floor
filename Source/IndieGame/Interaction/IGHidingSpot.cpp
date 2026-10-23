@@ -50,7 +50,7 @@ AIGHidingSpot::AIGHidingSpot()
 	FocusBox->SetCanEverAffectNavigation(false);
 	FocusBox->SetGenerateOverlapEvents(false);
 
-	InteractionPrompt = NSLOCTEXT("IGMissingFloor", "HideWardrobePrompt", "장롱에 숨기");
+	InteractionPrompt = NSLOCTEXT("IGMissingFloor", "HideWardrobePrompt", "숨기");
 }
 
 void AIGHidingSpot::Configure(
@@ -72,8 +72,8 @@ void AIGHidingSpot::Configure(
 	FocusBox->SetRelativeLocation(InFocusCenterLocal);
 	FocusBox->SetBoxExtent(InFocusExtent);
 	InteractionPrompt = View == EIGHidingView::UnderBed
-		? NSLOCTEXT("IGMissingFloor", "HideUnderBedPrompt", "침대 밑에 숨기")
-		: NSLOCTEXT("IGMissingFloor", "HideWardrobePrompt", "장롱에 숨기");
+		? NSLOCTEXT("IGMissingFloor", "HideUnderBedPrompt", "숨기")
+		: NSLOCTEXT("IGMissingFloor", "HideWardrobePrompt", "숨기");
 }
 
 bool AIGHidingSpot::CanInteract_Implementation(AActor* Interactor) const

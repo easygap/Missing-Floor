@@ -20,8 +20,8 @@ AIGRoomLightSwitch::AIGRoomLightSwitch()
 	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	InteractionBox->SetGenerateOverlapEvents(false);
 	InteractionBox->SetCanEverAffectNavigation(false);
-	OnPrompt = NSLOCTEXT("IGRoomLight", "On", "방 불 켜기");
-	OffPrompt = NSLOCTEXT("IGRoomLight", "Off", "방 불 끄기");
+	OnPrompt = NSLOCTEXT("IGRoomLight", "On", "켜기");
+	OffPrompt = NSLOCTEXT("IGRoomLight", "Off", "끄기");
 }
 
 void AIGRoomLightSwitch::ConfigureSwitch(

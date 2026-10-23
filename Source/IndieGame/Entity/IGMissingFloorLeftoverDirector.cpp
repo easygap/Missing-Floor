@@ -355,6 +355,34 @@ void AIGMissingFloorLeftoverDirector::ThinkIn(const FName Context, const FText& 
 	AIGHorrorHUD::PushThoughtScoped(this, Line, Seconds, MoveTemp(Scope));
 }
 
+void AIGMissingFloorLeftoverDirector::ThinkAboutItem(const FText& Line, const float Seconds)
+{
+	AIGHorrorHUD::CancelDialogue(this, IGLeftoverDialogue::Examine);
+	FIGDialogueScope Scope;
+	Scope.Context = IGLeftoverDialogue::Examine;
+	Scope.Owner = this;
+	// 쪽지를 펴거나 급한 말이 끼어들면 잠깐 물러났다가 남은 시간만큼 다시 뜬다. 오래 가려지면 지난 일이라 버린다.
+	Scope.Lifetime = EIGDialogueLifetime::Reaction;
+	Scope.Interruption = EIGDialogueInterruption::Resume;
+	AIGHorrorHUD::PushDialogueScoped(this, FText::GetEmpty(), Line, EIGDialogueChannel::InnerVoice, Seconds,
+		EIGDialoguePriority::Critical, MoveTemp(Scope));
+}
+
+void AIGMissingFloorLeftoverDirector::ThinkUrgent(const FName Context, const FText& Line, const float Seconds,
+	TFunction<bool()> StillValid)
+{
+	// 물건 속말은 지금 할 일 앞에서 접는다.
+	AIGHorrorHUD::CancelDialogue(this, IGLeftoverDialogue::Examine);
+	FIGDialogueScope Scope;
+	Scope.Context = Context;
+	Scope.Owner = this;
+	Scope.Lifetime = EIGDialogueLifetime::Reaction;
+	Scope.Interruption = EIGDialogueInterruption::Drop;
+	Scope.StillValid = MoveTemp(StillValid);
+	AIGHorrorHUD::PushDialogueScoped(this, FText::GetEmpty(), Line, EIGDialogueChannel::InnerVoice, Seconds,
+		EIGDialoguePriority::Critical, MoveTemp(Scope));
+}
+
 void AIGMissingFloorLeftoverDirector::CaptionIn(const FName Context, const FText& Line, const FVector& Where, const float Seconds)
 {
 	AIGHorrorHUD::PushAudioCaptionScoped(this, Line, Seconds, Where, Context);
@@ -663,7 +691,7 @@ void AIGMissingFloorLeftoverDirector::RefreshHomePouch()
 		const FVector Spot(-58.0f, -172.0f, Scene->GetDeskSurfaceWorldZ() + 0.2f);
 		SpawnProp(PropKey, IGLeftover::Mesh(TEXT("SM_ToolPouch")), FTransform(FRotator(0.0f, 200.0f, 0.0f), Spot), true);
 		if (AIGLeftoverTarget* Look = SpawnTarget(TargetKey, Spot + FVector(0.0f, 0.0f, 5.0f), FRotator(0.0f, 200.0f, 0.0f),
-				FVector(16.0f, 10.0f, 6.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHomePouchPrompt", "공구 주머니 살펴보기"), 0.0f, 0.04f))
+				FVector(16.0f, 10.0f, 6.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHomePouchPrompt", "살펴보기"), 0.0f, 0.04f))
 		{
 			Look->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleHomePouch);
 		}
@@ -1067,8 +1095,8 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 		Hatch->Configure(
 			Size, bHingeLeft, FrameMesh, IGLeftover::Mesh(Door), FrameMesh ? FrameMesh->GetMaterial(0) : nullptr,
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_HatchSealPlug.MI_HatchSealPlug"), nullptr, LOAD_NoWarn),
-			NSLOCTEXT("IGMissingFloor", "HatchOpenPrompt", "점검구 열기"),
-			NSLOCTEXT("IGMissingFloor", "HatchClosePrompt", "점검구 닫기"));
+			NSLOCTEXT("IGMissingFloor", "HatchOpenPrompt", "열기"),
+			NSLOCTEXT("IGMissingFloor", "HatchClosePrompt", "닫기"));
 		Hatch->OnOpened.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleHatchOpened);
 		Hatch->OnClosed.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleHatchClosed);
 		Hatch->OnReopened.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleHatchReopened);
@@ -1085,7 +1113,7 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 
 	// 작업대의 덮개 조각(A). 방수막 쪽이 위로 누워 있다.
 	if (AIGLeftoverTarget* Piece = SpawnTarget(IGLeftover::PieceA, FVector(-62.0f, 62.0f, 84.0f), FRotator::ZeroRotator,
-			FVector(18.0f, 36.0f, 3.0f), NSLOCTEXT("IGMissingFloor", "LeftoverPieceAPrompt", "작업대 위 조각 챙기기"), 1.2f, 0.12f))
+			FVector(18.0f, 36.0f, 3.0f), NSLOCTEXT("IGMissingFloor", "LeftoverPieceAPrompt", "챙기기"), 1.2f, 0.12f))
 	{
 		Piece->SetVisual(IGLeftover::Mesh(TEXT("SM_CoverPieceA")),
 			FTransform(FRotator(90.0f, 90.0f, 0.0f), FVector(-14.5f, 0.0f, -2.0f)));
@@ -1093,7 +1121,7 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 	}
 	// 벽 방수막에 붙은 조각(B). 자리는 덧댄 것의 아래 패드 밑이다(PlaceCoverPieceOnWall).
 	if (AIGLeftoverTarget* Piece = SpawnTarget(IGLeftover::PieceB, FVector(20.0f, 166.0f, 60.0f), FRotator(0.0f, -90.0f, 0.0f),
-			FVector(3.0f, 18.0f, 18.0f), NSLOCTEXT("IGMissingFloor", "LeftoverPieceBPrompt", "막에 붙은 조각 떼어 내기"), 1.2f, 0.12f))
+			FVector(3.0f, 18.0f, 18.0f), NSLOCTEXT("IGMissingFloor", "LeftoverPieceBPrompt", "떼어 내기"), 1.2f, 0.12f))
 	{
 		Piece->SetVisual(IGLeftover::Mesh(TEXT("SM_CoverPieceB")),
 			FTransform(FRotator::ZeroRotator, FVector(1.0f, -14.0f, -17.5f)));
@@ -1106,12 +1134,12 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 	SpawnProp(FName(TEXT("Inner.GloveBoxLabel")), IGLeftover::Mesh(TEXT("SM_LeftoverLabelJeongwoo")),
 		FTransform(FRotator(0.0f, 95.0f, 0.0f), FVector(-32.0f, 128.0f, 0.0f)), false);
 	if (AIGLeftoverTarget* Box = SpawnTarget(FName(TEXT("Inner.GloveBoxOpen")), FVector(-32.0f, 128.0f, 20.0f), FRotator::ZeroRotator,
-			FVector(22.0f, 27.0f, 18.0f), NSLOCTEXT("IGMissingFloor", "LeftoverGloveBoxPrompt", "상자 열어 보기"), 0.8f, 0.10f))
+			FVector(22.0f, 27.0f, 18.0f), NSLOCTEXT("IGMissingFloor", "LeftoverGloveBoxPrompt", "열어 보기"), 0.8f, 0.10f))
 	{
 		Box->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
 	}
 	if (AIGLeftoverTarget* Pouch = SpawnTarget(IGLeftover::Gloves, FVector(-30.0f, 126.0f, 38.0f), FRotator(0.0f, 20.0f, 0.0f),
-			FVector(14.0f, 9.0f, 7.0f), NSLOCTEXT("IGMissingFloor", "LeftoverGlovesPrompt", "장갑 주머니 챙기기"), 0.0f, 0.04f))
+			FVector(14.0f, 9.0f, 7.0f), NSLOCTEXT("IGMissingFloor", "LeftoverGlovesPrompt", "챙기기"), 0.0f, 0.04f))
 	{
 		Pouch->SetVisual(IGLeftover::Mesh(TEXT("SM_GlovePouch")), FTransform(FRotator::ZeroRotator, FVector(0.0f, 0.0f, -4.5f)));
 		Pouch->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
@@ -1129,7 +1157,7 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 			LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")),
 			CabinetMesh ? CabinetMesh->GetMaterial(0) : nullptr, FVector(1.0f, 40.0f, 60.0f));
 		CabinetLedger->HidePresentation();
-		CabinetLedger->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "LeftoverLedgerPrompt", "보관함 열어 보기"));
+		CabinetLedger->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "LeftoverLedgerPrompt", "열어 보기"));
 		CabinetLedger->SetNoteText(
 			NSLOCTEXT("IGMissingFloor", "LeftoverLedgerTitle", "맡긴 짐 대장"),
 			{
@@ -1143,19 +1171,19 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 	}
 	// 둘러볼 것. 간이침대, 떼어 낸 판재, 벽에 접힌 더미.
 	if (AIGLeftoverTarget* Cot = SpawnTarget(FName(TEXT("Inner.Cot")), FVector(10.0f, -30.0f, 48.0f), FRotator::ZeroRotator,
-			FVector(80.0f, 30.0f, 10.0f), NSLOCTEXT("IGMissingFloor", "LeftoverCotPrompt", "간이침대 보기"), 0.0f, 0.03f))
+			FVector(80.0f, 30.0f, 10.0f), NSLOCTEXT("IGMissingFloor", "LeftoverCotPrompt", "살펴보기"), 0.0f, 0.03f))
 	{
 		Cot->SetThought(NSLOCTEXT("IGMissingFloor", "LeftoverCotThought", "여기서 먹고 자나 봐. 베개 밑에 귀마개가 있어."));
 		Cot->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
 	}
 	if (AIGLeftoverTarget* Boards = SpawnTarget(FName(TEXT("Inner.Boards")), FVector(258.0f, 30.0f, 85.0f), FRotator::ZeroRotator,
-			FVector(14.0f, 40.0f, 60.0f), NSLOCTEXT("IGMissingFloor", "LeftoverBoardsPrompt", "떼어 낸 판재 보기"), 0.0f, 0.06f))
+			FVector(14.0f, 40.0f, 60.0f), NSLOCTEXT("IGMissingFloor", "LeftoverBoardsPrompt", "살펴보기"), 0.0f, 0.06f))
 	{
 		Boards->SetThought(NSLOCTEXT("IGMissingFloor", "LeftoverBoardsThought", "벽에서 뜯어낸 판이야. 뒷면마다 방수 시트가 붙어 있어."));
 		Boards->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
 	}
 	if (AIGLeftoverTarget* Heap = SpawnTarget(FName(TEXT("Inner.Heap")), FVector(50.0f, 150.0f, 112.0f), FRotator::ZeroRotator,
-			FVector(14.0f, 58.0f, 42.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHeapPrompt", "벽에 붙은 더미 보기"), 0.0f, 0.03f))
+			FVector(14.0f, 58.0f, 42.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHeapPrompt", "살펴보기"), 0.0f, 0.03f))
 	{
 		Heap->SetThought(NSLOCTEXT("IGMissingFloor", "LeftoverHeapThought", "방음재랑 방수 시트를 겹겹이 덧대 놨어. 철골까지 같이 붙어 있네."));
 		Heap->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
@@ -1190,7 +1218,7 @@ void AIGMissingFloorLeftoverDirector::HandleLedgerRead(AIGReadableNote* Note, co
 		AIGNightThreatDirector::HoldQuietAfterDiscovery(this, 60.0f);
 		GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverLedgerThought", "오빠 이름까지 적어 놓고 주인이 없대."), 4.0f);
+			ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverLedgerThought", "오빠 이름까지 적어 놓고 주인이 없대."), 4.0f);
 		}), 0.6f, false);
 	}
 }
@@ -1206,7 +1234,7 @@ void AIGMissingFloorLeftoverDirector::LockInnerDoor(const bool bLocked)
 	{
 		FIGDoorRequirement& Requirement = Requirements.AddDefaulted_GetRef();
 		Requirement.RequiredState = FGameplayTag::RequestGameplayTag(FName(TEXT("State.MissingFloor.InnerRoomOpen")), false);
-		Requirement.LockedPrompt = NSLOCTEXT("IGMissingFloor", "LeftoverInnerLockedPrompt", "안쪽 방 문 열기");
+		Requirement.LockedPrompt = NSLOCTEXT("IGMissingFloor", "LeftoverInnerLockedPrompt", "열기");
 		Requirement.LockedThought = NSLOCTEXT("IGMissingFloor", "LeftoverInnerLockedThought", "안에서 잠겼어.");
 	}
 	InnerDoor->SetRequirements(MoveTemp(Requirements));
@@ -1336,7 +1364,7 @@ void AIGMissingFloorLeftoverDirector::HandleInnerTarget(AIGLeftoverTarget* Targe
 	if (Key == IGLeftover::PieceA)
 	{
 		Take(IGLeftover::PieceA);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverPieceAThought", "점검구 덮개 조각이야. 방수막째로 잘려 나왔어."), 3.6f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceAThought", "점검구 덮개 조각이야. 방수막째로 잘려 나왔어."), 3.6f);
 	}
 	else if (Key == IGLeftover::PieceB)
 	{
@@ -1344,22 +1372,22 @@ void AIGMissingFloorLeftoverDirector::HandleInnerTarget(AIGLeftoverTarget* Targe
 		if (Lining && CurrentSpace == IGLeftover::SpaceInner && Lining->GetState() == EIGLiningState::Folded
 			&& !Lining->HasMovedOnce())
 		{
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverPieceBStuck", "뭔가에 눌려서 안 떨어져."), 2.6f);
+			ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceBStuck", "뭔가에 눌려서 안 떨어져."), 2.6f);
 			return;
 		}
 		Take(IGLeftover::PieceB);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "이것도 방수막째 잘린 조각이야."), 3.4f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "이것도 방수막째 잘린 조각이야."), 3.4f);
 	}
 	else if (Key == FName(TEXT("Inner.GloveBoxOpen")))
 	{
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverGloveBoxThought", "202호 정우 씨 짐이네. 주인 없음 딱지가 붙어 있어."), 3.6f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverGloveBoxThought", "202호 정우 씨 짐이네. 주인 없음 딱지가 붙어 있어."), 3.6f);
 		PlaySound(UIGToneSequenceSoundWave::CreateCardboardDrag(this), Target->GetActorLocation(), 0.4f);
 	}
 	else if (Key == IGLeftover::Gloves)
 	{
 		Take(IGLeftover::Gloves);
 		// 이름표에는 「202 정우」뿐이다. 그가 공동현관 옆 오토바이 기사라는 건 낮에 소개받은 회차만 안다.
-		Think(HasBeat(IGLeftover::JeongwooIntroBeat)
+		ThinkAboutItem(HasBeat(IGLeftover::JeongwooIntroBeat)
 			? NSLOCTEXT("IGMissingFloor", "LeftoverGlovesThought", "낮에 정우 씨한테 보여 주자.")
 			: NSLOCTEXT("IGMissingFloor", "LeftoverGlovesThought202", "낮에 202호에 가져다주자."), 3.0f);
 	}
@@ -1401,7 +1429,11 @@ void AIGMissingFloorLeftoverDirector::PlayInnerRoomWake()
 			Scene->SetInnerRoomBulbOn(true);
 		}
 		Caption(NSLOCTEXT("IGMissingFloor", "LeftoverWakeSwitch", "[스위치 켜는 소리]"), FVector(220.0f, -60.0f, 130.0f), 1.8f);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverWakeThought", "아저씨가 깼어. 숨어야 해."), 2.8f);
+		ThinkUrgent(IGLeftoverDialogue::Wake, NSLOCTEXT("IGMissingFloor", "LeftoverWakeThought", "아저씨가 깼어. 숨어야 해."), 2.8f,
+			[WeakThis = TWeakObjectPtr<AIGMissingFloorLeftoverDirector>(this)]()
+			{
+				return WeakThis.IsValid() && WeakThis->NightTwoStage == ENightTwo::Waking;
+			});
 		GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			PlaySound(UIGToneSequenceSoundWave::CreateSlipperScuff(this), FVector(200.0f, 0.0f, 10.0f), 0.5f);
@@ -1451,7 +1483,11 @@ void AIGMissingFloorLeftoverDirector::HandleErrandReturning()
 	{
 		return;
 	}
-	Think(NSLOCTEXT("IGMissingFloor", "LeftoverErrandBack", "손수레 소리가 이쪽으로 와. 나가야 해."), 3.4f);
+	ThinkUrgent(IGLeftoverDialogue::CartBack, NSLOCTEXT("IGMissingFloor", "LeftoverErrandBack", "손수레 소리가 이쪽으로 와. 나가야 해."), 3.4f,
+		[WeakThis = TWeakObjectPtr<AIGMissingFloorLeftoverDirector>(this)]()
+		{
+			return WeakThis.IsValid() && WeakThis->NightTwoStage == ENightTwo::Errand;
+		});
 }
 
 void AIGMissingFloorLeftoverDirector::HandleErrandFinished(const bool bCaught)
@@ -1568,7 +1604,7 @@ void AIGMissingFloorLeftoverDirector::BuildDayProps()
 			SpawnProp(FName(TEXT("Day.NoticePrint")), Print,
 				FTransform(FRotator(0.0f, 0.0f, 0.0f), IGLeftover::CollectionNoticeSpot - FVector(0.0f, 0.0f, 14.85f)), false);
 		}
-		CollectionNotice->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "LeftoverNoticePrompt", "수거 안내 읽기"));
+		CollectionNotice->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "LeftoverNoticePrompt", "읽기"));
 		CollectionNotice->SetNoteText(
 			NSLOCTEXT("IGMissingFloor", "LeftoverNoticeTitle", "대형 폐기물 수거 안내"),
 			{
@@ -1599,7 +1635,7 @@ void AIGMissingFloorLeftoverDirector::BuildDayProps()
 	// 낮1 3층 방화문 앞의 「문 잡아 주기」. 문짝보다 앞에 얇게 둔다.
 	if (AIGLeftoverTarget* Hold = SpawnTarget(FName(TEXT("Day.HoldDoor")),
 			AIGPrologueWorldScene::GetStairDoorwayFeet(2) + FVector(-6.0f, 0.0f, 110.0f), FRotator::ZeroRotator,
-			FVector(4.0f, 50.0f, 40.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHoldDoorPrompt", "문 잡아 주기"), 0.0f, 0.08f))
+			FVector(4.0f, 50.0f, 40.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHoldDoorPrompt", "잡아 주기"), 0.0f, 0.08f))
 	{
 		Hold->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleDayTarget);
 		SetTargetLive(Hold, false);
@@ -1616,7 +1652,7 @@ void AIGMissingFloorLeftoverDirector::HandleNoticeRead(AIGReadableNote* Note, co
 	{
 		GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverNoticeThought", "월요일이던 걸 목요일로 당겼어. 주인 없는 짐이라니, 누구 짐인데."), 4.0f);
+			ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverNoticeThought", "월요일이던 걸 목요일로 당겼어. 주인 없는 짐이라니, 누구 짐인데."), 4.0f);
 		}), 0.6f, false);
 	}
 }

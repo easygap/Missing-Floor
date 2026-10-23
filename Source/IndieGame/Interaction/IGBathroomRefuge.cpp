@@ -102,7 +102,7 @@ FText AIGBathroomRefuge::GetInteractionPrompt_Implementation(AActor* Interactor)
 	const AIGSwingDoor* RoomDoor = Door.Get();
 	return RoomDoor && RoomDoor->IsLatched()
 		? NSLOCTEXT("IGMissingFloor", "BathroomUnlockPrompt", "잠금 풀기")
-		: NSLOCTEXT("IGMissingFloor", "BathroomLockPrompt", "문 잠그기");
+		: NSLOCTEXT("IGMissingFloor", "BathroomLockPrompt", "잠그기");
 }
 
 void AIGBathroomRefuge::CompleteInteraction_Implementation(const FIGInteractionContext& Context)

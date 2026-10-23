@@ -100,6 +100,7 @@ $requiredFiles = @(
 	'Content/Prototype/Textures/T_PrintAtlas0_D.uasset',
 	'Content/Prototype/Textures/T_PrintAtlas2_D.uasset',
 	'Docs/Media/dialogue-hud-default-1080.png',
+	'Docs/Media/dialogue-hud-sound-captions-1080.png',
 	'Docs/Media/dialogue-hud-accessibility-200-1080.png',
 	'Docs/Media/title-menu-first-run-1080.png',
 	'Docs/Media/m65-capture-mercy-note.png',

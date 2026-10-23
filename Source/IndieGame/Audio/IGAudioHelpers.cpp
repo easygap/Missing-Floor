@@ -72,6 +72,18 @@ namespace IGAudio
 		// 험은 배경이다. 이 위로 올리면 발소리를 가리는 게 아니라 덮는다.
 		constexpr float HumVolumeMultiplier = 0.34f;
 
+		// 최근에 낸 원샷 몇 개를 자리·시각과 함께 기억한다. 소리 자막이 그 소리를 찾아 묶어, 소리가 거둬지면
+		// 자막도 같이 내린다. 오래된 칸은 덮어쓴다.
+		struct FRecentSound
+		{
+			TWeakObjectPtr<UAudioComponent> Component;
+			TWeakObjectPtr<UWorld> World;
+			FVector Location = FVector::ZeroVector;
+			double StartedAt = -1.0;
+		};
+		FRecentSound RecentSounds[32];
+		int32 NextRecentSound = 0;
+
 		UAudioComponent* SpawnOneShotInternal(
 			const UObject* WorldContext,
 			USoundBase* Sound,
@@ -129,6 +141,12 @@ namespace IGAudio
 			if (Component)
 			{
 				Component->SetUISound(bPlayWhenPaused);
+				FRecentSound& Slot = RecentSounds[NextRecentSound];
+				NextRecentSound = (NextRecentSound + 1) % UE_ARRAY_COUNT(RecentSounds);
+				Slot.Component = Component;
+				Slot.World = World;
+				Slot.Location = Location;
+				Slot.StartedAt = World->GetTimeSeconds();
 			}
 			// 상시 소리는 처음부터 상시로 건다. 일반 소리로 먼저 들어오면 상한을
 			// 세는 그 순간에 대본 소리 하나를 밀어낸다.
@@ -146,6 +164,42 @@ namespace IGAudio
 			}
 			return Component;
 		}
+	}
+
+	UAudioComponent* FindRecentSoundNear(
+		const UObject* WorldContext,
+		const FVector& Location,
+		const float Radius,
+		const float MaxAgeSeconds,
+		float* OutAgeSeconds)
+	{
+		const UWorld* World = GEngine && WorldContext
+			? GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull)
+			: nullptr;
+		if (!World)
+		{
+			return nullptr;
+		}
+		const double Now = World->GetTimeSeconds();
+		UAudioComponent* Best = nullptr;
+		double BestStartedAt = -1.0;
+		for (const FRecentSound& Slot : RecentSounds)
+		{
+			UAudioComponent* Component = Slot.Component.Get();
+			if (!Component || Slot.World.Get() != World || !Component->IsPlaying()
+				|| Now - Slot.StartedAt > MaxAgeSeconds || Slot.StartedAt <= BestStartedAt
+				|| FVector::DistSquared(Slot.Location, Location) > FMath::Square(Radius))
+			{
+				continue;
+			}
+			Best = Component;
+			BestStartedAt = Slot.StartedAt;
+		}
+		if (OutAgeSeconds)
+		{
+			*OutAgeSeconds = Best ? static_cast<float>(Now - BestStartedAt) : 0.0f;
+		}
+		return Best;
 	}
 
 	void SetOutputMode(const EIGOutputMode Mode)

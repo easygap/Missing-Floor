@@ -25,6 +25,12 @@ namespace IGLeftoverDialogue
 	inline const FName Fit(TEXT("Leftover.Assembly.Fit"));
 	/** 5층 덧판에 덮개를 대 보고 하는 말. 이 말이 떠 있는 동안 덮개를 덧판 앞에 든다. */
 	inline const FName SiteMatch(TEXT("Leftover.Annex.SiteMatch"));
+	/** 살피거나 집어 든 물건에 대한 속말. 다른 것을 또 살피면 앞 말을 거둔다. */
+	inline const FName Examine(TEXT("Leftover.Examine"));
+	/** 밤2 관리인이 깼다(숨어야 한다). 손수레 심부름을 나가면 거둔다. */
+	inline const FName Wake(TEXT("Leftover.N2.Wake"));
+	/** 밤2 손수레가 돌아온다(나가야 한다). 심부름이 끝나면 거둔다. */
+	inline const FName CartBack(TEXT("Leftover.N2.CartBack"));
 }
 
 struct FIGDialogueScope;
@@ -215,6 +221,13 @@ private:
 	/** 사건 이름을 붙인 대사. bStory면 상황이 바뀌어도 남는 이야기 대사, 아니면 지금 행동에 대한 짧은 반응이다. */
 	void SayIn(FName Context, const FText& Speaker, const FText& Line, bool bStory = false);
 	void ThinkIn(FName Context, const FText& Line, float Seconds = 3.6f, bool bStory = false);
+	/**
+	 * 살피거나 집어 든 물건에 대한 속말. 플레이어가 한 일의 대답이라 떠 있는 말을 잠깐 미루고 바로 뜬다. 다른 것을
+	 * 또 살피면 앞 말은 거둔다. 여럿을 잇달아 살피면 속말이 줄을 서서 십여 초 뒤에 뜨거나 버려졌다.
+	 */
+	void ThinkAboutItem(const FText& Line, float Seconds = 3.6f);
+	/** 지금 해야 할 일을 알리는 속말(숨어야 해, 나가야 해). 바로 뜨고, StillValid가 깨지면(상황이 지나면) 거둔다. */
+	void ThinkUrgent(FName Context, const FText& Line, float Seconds, TFunction<bool()> StillValid);
 	void CaptionIn(FName Context, const FText& Line, const FVector& Where, float Seconds = 2.4f);
 	/**
 	 * 말이 화면에서 끝나면(또는 거둬지면) Then을 부른다. 화면이 없는 실행이나 큐가 막힌 때를 위해 FallbackSeconds 뒤에도

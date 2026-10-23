@@ -91,7 +91,7 @@ AIGFridge::AIGFridge()
 	HumAudioComponent->SetRelativeLocation(FVector(24.0f, 0.0f, 28.0f));
 	HumAudioComponent->bAutoActivate = false;
 
-	InteractionPrompt = NSLOCTEXT("IGFridge", "OpenPrompt", "냉장고 열기");
+	InteractionPrompt = NSLOCTEXT("IGFridge", "OpenPrompt", "열기");
 	InspectionThought = NSLOCTEXT("IGFridge", "NoWater", "텅 비었네. 물이라도 좀 사다 놔야겠다.");
 	InteriorShelfLocalCenter = FVector(4.0f, 0.0f, IGFridge::BodyHeight * 0.52f);
 }
@@ -472,8 +472,8 @@ bool AIGFridge::CanInteract_Implementation(AActor* Interactor) const
 FText AIGFridge::GetInteractionPrompt_Implementation(AActor* Interactor) const
 {
 	return bDoorOpen
-		? NSLOCTEXT("IGFridge", "ClosePrompt", "냉장고 닫기")
-		: NSLOCTEXT("IGFridge", "OpenPrompt", "냉장고 열기");
+		? NSLOCTEXT("IGFridge", "ClosePrompt", "닫기")
+		: NSLOCTEXT("IGFridge", "OpenPrompt", "열기");
 }
 
 void AIGFridge::CompleteInteraction_Implementation(const FIGInteractionContext& Context)

@@ -3,6 +3,7 @@
 #include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/Parse.h"
+#include "UObject/UnrealType.h"
 
 namespace IGAccessibility
 {
@@ -39,7 +40,18 @@ void UIGAccessibilitySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UIGAccessibilitySubsystem::ApplySettings(
 	const FIGAccessibilitySettings& NewSettings)
 {
-	PersistedSettings = Sanitize(NewSettings);
+	// 부르는 쪽은 GetSettings()(이번 실행의 명령줄 덮어쓰기가 들어간 값)를 고쳐서 넘긴다. 그대로 저장하면
+	// 검사가 명령줄로 켠 소리 자막 같은 값이 다른 칸 하나를 바꾸는 순간 설정 파일에 남았다. 바뀐 칸만
+	// 저장값에 옮긴다.
+	const FIGAccessibilitySettings Requested = Sanitize(NewSettings);
+	for (TFieldIterator<FProperty> It(FIGAccessibilitySettings::StaticStruct()); It; ++It)
+	{
+		if (!It->Identical_InContainer(&Requested, &EffectiveSettings))
+		{
+			It->CopyCompleteValue_InContainer(&PersistedSettings, &Requested);
+		}
+	}
+	PersistedSettings = Sanitize(PersistedSettings);
 	SavePersistedSettings();
 	RebuildEffectiveSettings();
 }
@@ -47,8 +59,25 @@ void UIGAccessibilitySubsystem::ApplySettings(
 void UIGAccessibilitySubsystem::ResetToDefaults()
 {
 	PersistedSettings = FIGAccessibilitySettings();
+	// 기본값으로 돌리면 소리 자막도 끈 상태다. 새 설치와 같아서 따로 물어볼 것이 없다.
+	bSoundCaptionsChosen = false;
+	bSoundCaptionConfirmationPending = false;
+	bPromptKeysChosen = false;
 	SavePersistedSettings();
 	RebuildEffectiveSettings();
+}
+
+void UIGAccessibilitySubsystem::MarkSoundCaptionsChosen()
+{
+	bSoundCaptionsChosen = true;
+	bSoundCaptionConfirmationPending = false;
+	SavePersistedSettings();
+}
+
+void UIGAccessibilitySubsystem::MarkPromptKeysChosen()
+{
+	bPromptKeysChosen = true;
+	SavePersistedSettings();
 }
 
 float UIGAccessibilitySubsystem::GetKnockWindowScale() const
@@ -141,15 +170,25 @@ void UIGAccessibilitySubsystem::LoadPersistedSettings()
 		TEXT("SubtitlesEnabled"),
 		PersistedSettings.bSubtitlesEnabled,
 		GGameUserSettingsIni);
-	GConfig->GetBool(
+	const bool bHasSavedSoundCaptions = GConfig->GetBool(
 		IGAccessibility::ConfigSection,
 		TEXT("SoundCaptionsEnabled"),
 		PersistedSettings.bSoundCaptionsEnabled,
 		GGameUserSettingsIni);
-	// 0.10.0까지는 켜고 끄는 것뿐이었다. 그때 저장한 「켬」은 설명대로 진행에 필요한 소리를
-	// 뜻했으므로 이 값이 없으면 「중요한 소리」로 읽는다. 끈 사람은 그대로 꺼져 있다.
-	// 위의 SoundCaptionsEnabled도 저장된 값이 있으면 그 값을 따른다. 기본을 끔으로 바꾼 것은
-	// 아직 아무것도 저장하지 않은 새 설치에만 닿는다.
+	bSoundCaptionsChosen = false;
+	GConfig->GetBool(
+		IGAccessibility::ConfigSection,
+		TEXT("SoundCaptionsChosen"),
+		bSoundCaptionsChosen,
+		GGameUserSettingsIni);
+	// 0.10.0까지는 기본이 켬이었고 설정을 하나라도 바꾸면 모든 칸을 함께 저장했다. 그래서 「끔」은 사람이 끈
+	// 것이지만, 「켬」은 직접 켠 것인지 기본값이 저장된 것인지 알 수 없다. 그런 프로필은 저장된 대로 켜 두고
+	// 타이틀에서 한 번 묻는다(NeedsSoundCaptionConfirmation). 일괄로 끄지도, 고른 것으로 치지도 않는다.
+	bSoundCaptionConfirmationPending = bHasSavedSoundCaptions
+		&& PersistedSettings.bSoundCaptionsEnabled
+		&& !bSoundCaptionsChosen;
+	// 그때는 켜고 끄는 것뿐이었다. 그때 저장한 「켬」은 진행에 필요한 소리를 뜻했으므로 아래 값이 없으면
+	// 「중요한 소리」로 읽는다.
 	GConfig->GetBool(
 		IGAccessibility::ConfigSection,
 		TEXT("BackgroundSoundCaptions"),
@@ -240,11 +279,20 @@ void UIGAccessibilitySubsystem::LoadPersistedSettings()
 		TEXT("AlwaysShowCenterDot"),
 		PersistedSettings.bAlwaysShowCenterDot,
 		GGameUserSettingsIni);
+	bPromptKeysChosen = false;
 	GConfig->GetBool(
 		IGAccessibility::ConfigSection,
-		TEXT("AlwaysShowPromptKeys"),
-		PersistedSettings.bAlwaysShowPromptKeys,
+		TEXT("PromptKeysChosen"),
+		bPromptKeysChosen,
 		GGameUserSettingsIni);
+	if (bPromptKeysChosen)
+	{
+		GConfig->GetBool(
+			IGAccessibility::ConfigSection,
+			TEXT("AlwaysShowPromptKeys"),
+			PersistedSettings.bAlwaysShowPromptKeys,
+			GGameUserSettingsIni);
+	}
 	GConfig->GetBool(
 		IGAccessibility::ConfigSection,
 		TEXT("HintsEnabled"),
@@ -285,6 +333,22 @@ void UIGAccessibilitySubsystem::SavePersistedSettings() const
 		TEXT("SoundCaptionsEnabled"),
 		PersistedSettings.bSoundCaptionsEnabled,
 		GGameUserSettingsIni);
+	// 직접 고른 적이 있을 때만 남긴다. 다른 칸을 바꿀 때마다 같이 저장되는 값과 구분하는 근거다.
+	if (bSoundCaptionsChosen)
+	{
+		GConfig->SetBool(
+			IGAccessibility::ConfigSection,
+			TEXT("SoundCaptionsChosen"),
+			true,
+			GGameUserSettingsIni);
+	}
+	else
+	{
+		GConfig->RemoveKey(
+			IGAccessibility::ConfigSection,
+			TEXT("SoundCaptionsChosen"),
+			GGameUserSettingsIni);
+	}
 	GConfig->SetBool(
 		IGAccessibility::ConfigSection,
 		TEXT("BackgroundSoundCaptions"),
@@ -380,6 +444,21 @@ void UIGAccessibilitySubsystem::SavePersistedSettings() const
 		TEXT("AlwaysShowPromptKeys"),
 		PersistedSettings.bAlwaysShowPromptKeys,
 		GGameUserSettingsIni);
+	if (bPromptKeysChosen)
+	{
+		GConfig->SetBool(
+			IGAccessibility::ConfigSection,
+			TEXT("PromptKeysChosen"),
+			true,
+			GGameUserSettingsIni);
+	}
+	else
+	{
+		GConfig->RemoveKey(
+			IGAccessibility::ConfigSection,
+			TEXT("PromptKeysChosen"),
+			GGameUserSettingsIni);
+	}
 	GConfig->SetBool(
 		IGAccessibility::ConfigSection,
 		TEXT("HintsEnabled"),

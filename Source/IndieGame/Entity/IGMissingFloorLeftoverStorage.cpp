@@ -308,12 +308,12 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 		}
 	};
 	Bind(SpawnTarget(FName(TEXT("Storage.WedgePick")), WedgePickup + FVector(0.0f, 0.0f, 4.0f), FRotator::ZeroRotator,
-		FVector(14.0f, 14.0f, 6.0f), NSLOCTEXT("IGMissingFloor", "LeftoverWedgePickPrompt", "나무 쐐기 줍기"), 0.0f, 0.03f));
+		FVector(14.0f, 14.0f, 6.0f), NSLOCTEXT("IGMissingFloor", "LeftoverWedgePickPrompt", "줍기"), 0.0f, 0.03f));
 	for (int32 Socket = 0; Socket < 3; ++Socket)
 	{
 		if (AIGLeftoverTarget* Target = SpawnTarget(FName(*FString::Printf(TEXT("Storage.Socket%d"), Socket)),
 				WedgeSockets[Socket] + FVector(0.0f, 0.0f, 3.0f), FRotator(0.0f, -45.0f, 0.0f), FVector(10.0f, 14.0f, 6.0f),
-				NSLOCTEXT("IGMissingFloor", "LeftoverWedgePlacePrompt", "판 밑에 쐐기 끼우기"), 0.9f, 0.12f))
+				NSLOCTEXT("IGMissingFloor", "LeftoverWedgePlacePrompt", "쐐기 끼우기"), 0.9f, 0.12f))
 		{
 			Target->Index = Socket;
 			Bind(Target);
@@ -323,25 +323,25 @@ void AIGMissingFloorLeftoverDirector::BuildStorage()
 	// 셋째 밤에 장롱에 숨으려고 겨누면 늘 「장롱 밀기」가 잡혔다(숨으려다 시끄럽게 밀었다). 북쪽 옆면은 그때
 	// 덧댄 것이 북벽 틈을 누르고 있어 설 자리가 없다. 가운데와 남쪽을 겨누면 숨는 자리가 잡힌다.
 	Bind(SpawnTarget(FName(TEXT("Storage.Wardrobe")), FVector(-112.0f, 30.5f, StorageZ + 100.0f), FRotator::ZeroRotator,
-		FVector(4.0f, 10.5f, 60.0f), NSLOCTEXT("IGMissingFloor", "LeftoverWardrobePrompt", "장롱 밀기"), 1.6f, 0.45f));
+		FVector(4.0f, 10.5f, 60.0f), NSLOCTEXT("IGMissingFloor", "LeftoverWardrobePrompt", "밀기"), 1.6f, 0.45f));
 	Bind(SpawnTarget(FName(TEXT("Storage.Lift")), BoardBase + FVector(-18.0f, -18.0f, 95.0f), FRotator(0.0f, -45.0f, 0.0f),
-		FVector(6.0f, 46.0f, 40.0f), NSLOCTEXT("IGMissingFloor", "LeftoverBoardLiftPrompt", "판 세워 받치기"), 1.2f, 0.3f));
+		FVector(6.0f, 46.0f, 40.0f), NSLOCTEXT("IGMissingFloor", "LeftoverBoardLiftPrompt", "세워 받치기"), 1.2f, 0.3f));
 	Bind(SpawnTarget(FName(TEXT("Storage.Sack")), PartsSack + FVector(0.0f, 0.0f, 40.0f), FRotator::ZeroRotator,
-		FVector(24.0f, 20.0f, 38.0f), NSLOCTEXT("IGMissingFloor", "LeftoverSackPrompt", "마대 열어 보기"), 0.8f, 0.10f));
+		FVector(24.0f, 20.0f, 38.0f), NSLOCTEXT("IGMissingFloor", "LeftoverSackPrompt", "열어 보기"), 0.8f, 0.10f));
 	{
 		const FTransform PulledBox = PushedAside(DohaBoxUnderBoard);
 		Bind(SpawnTarget(FName(TEXT("Storage.DohaPull")), PulledBox.TransformPosition(FVector(-31.0f, 0.0f, 17.0f)),
-			PulledBox.Rotator(), FVector(8.0f, 20.0f, 14.0f), NSLOCTEXT("IGMissingFloor", "LeftoverDohaPullPrompt", "끼인 상자 당기기"),
+			PulledBox.Rotator(), FVector(8.0f, 20.0f, 14.0f), NSLOCTEXT("IGMissingFloor", "LeftoverDohaPullPrompt", "당기기"),
 			1.6f, 0.25f));
 	}
 	Bind(SpawnTarget(FName(TEXT("Storage.Jeongwoo")), JeongwooTrapSpot + FVector(0.0f, 0.0f, 120.0f), FRotator::ZeroRotator,
-		FVector(30.0f, 30.0f, 50.0f), NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPrompt", "정우에게 말 걸기"), 0.0f, 0.04f));
+		FVector(30.0f, 30.0f, 50.0f), NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPrompt", "말 걸기"), 0.0f, 0.04f));
 	// 303호 상자의 딱지. 이름표 앞면(상자 원점에서 X 12, Y -19.3, Z 18.7 cm를 상자 방향으로 돌린 자리).
 	Bind(SpawnTarget(FName(TEXT("Storage.Label303")), PileTop.TransformPosition(Label303Local), PileTop.Rotator(),
-		FVector(10.0f, 4.0f, 7.0f), NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Prompt", "딱지 들춰 보기"), 0.0f, 0.03f));
+		FVector(10.0f, 4.0f, 7.0f), NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Prompt", "들춰 보기"), 0.0f, 0.03f));
 	// 낮1 302호의 오빠 상자(이름을 보는 자리).
 	Bind(SpawnTarget(FName(TEXT("Storage.DohaName")), PileDoha.GetLocation() + FVector(0.0f, 0.0f, 20.0f), FRotator::ZeroRotator,
-		FVector(28.0f, 22.0f, 20.0f), NSLOCTEXT("IGMissingFloor", "LeftoverDohaNamePrompt", "상자 이름표 보기"), 0.0f, 0.03f));
+		FVector(28.0f, 22.0f, 20.0f), NSLOCTEXT("IGMissingFloor", "LeftoverDohaNamePrompt", "읽기"), 0.0f, 0.03f));
 }
 
 FName AIGMissingFloorLeftoverDirector::GetStorageStage() const
@@ -472,8 +472,8 @@ void AIGMissingFloorLeftoverDirector::RefreshStorage()
 	if (AIGLeftoverTarget* Talk = FindTarget(FName(TEXT("Storage.Jeongwoo"))))
 	{
 		Talk->SetInteractionPrompt(HasBeat(JeongwooIntroBeat)
-			? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPrompt", "정우에게 말 걸기")
-			: NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPromptUnknown", "판 너머에 말 걸기"));
+			? NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPrompt", "말 걸기")
+			: NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooPromptUnknown", "말 걸기"));
 	}
 	const bool bAssemblyTable = !bLegacy && Night >= 3;
 	ShowProp(FName(TEXT("Storage.Table1")), bAssemblyTable);
@@ -707,7 +707,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 	if (Key == FName(TEXT("Storage.DohaName")))
 	{
 		// 낮1, 정우가 옮겨 온 짐 더미의 맨 아래 상자.
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverDohaNameThought", "백도하. 오빠 글씨야."), 2.6f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverDohaNameThought", "백도하. 오빠 글씨야."), 2.6f);
 		if (DayOneStage == EDayOne::Talking && Jeongwoo && Jeongwoo->IsShown())
 		{
 			Say(YudamName(), NSLOCTEXT("IGMissingFloor", "LeftoverKeepBox", "잠깐만요. 이 상자는 두세요. 오빠 이름이 있어요."));
@@ -770,7 +770,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 		if (PlayBeat(BeatLabel303Peeled))
 		{
 			PlaySound(UIGToneSequenceSoundWave::CreatePackingTapeRip(this), FVector(-146.3f, -170.7f, StorageZ + 52.9f), 0.3f, 1.3f);
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Thought", "303호에서 맡긴 짐이네. 겨울까지만 보관해 달라고 적혀 있어."), 3.6f);
+			ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverLabel303Thought", "303호에서 맡긴 짐이네. 겨울까지만 보관해 달라고 적혀 있어."), 3.6f);
 		}
 		RefreshStorage();
 		return;
@@ -1140,7 +1140,7 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 	Take(ToolPouch);
 	AIGNightThreatDirector::HoldQuietAfterDiscovery(this, 60.0f);
 	PlaySound(UIGToneSequenceSoundWave::CreateToolRollClink(this), PushedAside(DohaBoxUnderBoard).TransformPosition(FVector(-40.0f, 0.0f, 20.0f)), 0.55f);
-	Think(NSLOCTEXT("IGMissingFloor", "LeftoverPouchThought", "오빠 공구 주머니야. 집에 가져가자."), 3.2f);
+	ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPouchThought", "오빠 공구 주머니야. 집에 가져가자."), 3.2f);
 	StorageStage = EStorage::Freed;
 	bBraceHeld = false;
 	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), JeongwooOutSpot}, false, AIGJeongwooFigure::EPose::Idle, 90.0f);
@@ -1441,15 +1441,17 @@ void AIGMissingFloorLeftoverDirector::BuildAssembly()
 	for (int32 Piece = 0; Piece < 3; ++Piece)
 	{
 		if (AIGLeftoverTarget* Target = SpawnTarget(FName(*FString::Printf(TEXT("Assembly.Pick%d"), Piece)), PieceFloor[Piece] + FVector(0.0f, 0.0f, 3.0f),
-				FRotator::ZeroRotator, FVector(20.0f, 22.0f, 4.0f), NSLOCTEXT("IGMissingFloor", "LeftoverPiecePickPrompt", "조각 집어 들기"), 0.0f, 0.03f))
+				FRotator::ZeroRotator, FVector(20.0f, 22.0f, 4.0f), NSLOCTEXT("IGMissingFloor", "LeftoverPiecePickPrompt", "집기"), 0.0f, 0.03f))
 		{
 			Target->Index = Piece;
 			Bind(Target, false);
 		}
 	}
 	if (AIGLeftoverTarget* Held = SpawnTarget(FName(TEXT("Assembly.Held")), AssemblyHover, FRotator::ZeroRotator,
-			FVector(22.0f, 22.0f, 14.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHeldPrompt", "돌려 보기 · 길게 눌러 뒤집기"), 0.55f, 0.02f))
+			FVector(22.0f, 22.0f, 14.0f), NSLOCTEXT("IGMissingFloor", "LeftoverHeldPrompt", "돌리기\n뒤집기"), 0.55f, 0.02f))
 	{
+		// 누르면 돌리고 길게 누르면 뒤집는다. 안내의 둘째 줄이 길게 눌러 하는 동작이다.
+		Held->Tags.AddUnique(FName(TEXT("MissingFloor.Prompt.HoldAlternative")));
 		Bind(Held, true);
 	}
 	const FVector2D SlotCenter[3] = {FVector2D(-14.5f, 0.0f), FVector2D(14.0f, 17.5f), FVector2D(14.0f, -17.5f)};
@@ -1460,21 +1462,21 @@ void AIGMissingFloorLeftoverDirector::BuildAssembly()
 		const FVector World = AssemblyCenter + FVector(SlotCenter[Slot].Y, SlotCenter[Slot].X, 3.0f);
 		if (AIGLeftoverTarget* Target = SpawnTarget(FName(*FString::Printf(TEXT("Assembly.Slot%d"), Slot)), World,
 				FRotator::ZeroRotator, FVector(SlotHalf[Slot].Y, SlotHalf[Slot].X, 2.0f),
-				NSLOCTEXT("IGMissingFloor", "LeftoverSlotPrompt", "테두리에 대 보기"), 0.0f, 0.04f))
+				NSLOCTEXT("IGMissingFloor", "LeftoverSlotPrompt", "대 보기"), 0.0f, 0.04f))
 		{
 			Target->Index = Slot;
 			Bind(Target, false);
 		}
 	}
 	Bind(SpawnTarget(FName(TEXT("Assembly.Flip")), AssemblyCenter + FVector(0.0f, 0.0f, 4.0f), FRotator::ZeroRotator,
-		FVector(36.0f, 32.0f, 3.0f), NSLOCTEXT("IGMissingFloor", "LeftoverAssemblyFlipPrompt", "맞춘 덮개 뒤집어 보기"), 0.6f, 0.06f), false);
+		FVector(36.0f, 32.0f, 3.0f), NSLOCTEXT("IGMissingFloor", "LeftoverAssemblyFlipPrompt", "뒤집어 보기"), 0.6f, 0.06f), false);
 	Bind(SpawnTarget(FName(TEXT("Assembly.Membrane")), AssemblyCenter + FVector(29.0f, 0.0f, 4.0f), FRotator::ZeroRotator,
-		FVector(8.0f, 30.0f, 3.0f), NSLOCTEXT("IGMissingFloor", "LeftoverMembranePrompt", "방수막 들춰 보기"), 0.9f, 0.05f), false);
+		FVector(8.0f, 30.0f, 3.0f), NSLOCTEXT("IGMissingFloor", "LeftoverMembranePrompt", "들춰 보기"), 0.9f, 0.05f), false);
 	Bind(SpawnTarget(FName(TEXT("Assembly.Take")), AssemblyCenter + FVector(0.0f, 0.0f, 5.0f), FRotator::ZeroRotator,
-		FVector(36.0f, 32.0f, 4.0f), NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakePrompt", "덮개 챙기기"), 0.0f, 0.06f), false);
+		FVector(36.0f, 32.0f, 4.0f), NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakePrompt", "챙기기"), 0.0f, 0.06f), false);
 	// 5층 원래 자리. 덧판 앞에서 대 본다.
 	if (AIGLeftoverTarget* Site = SpawnTarget(FName(TEXT("Annex.SiteMatch")), SiteMatchSpot, FRotator::ZeroRotator,
-			FVector(4.0f, 32.0f, 45.0f), NSLOCTEXT("IGMissingFloor", "LeftoverSitePrompt", "떼어 낸 덮개 대 보기"), 1.0f, 0.06f))
+			FVector(4.0f, 32.0f, 45.0f), NSLOCTEXT("IGMissingFloor", "LeftoverSitePrompt", "대 보기"), 1.0f, 0.06f))
 	{
 		Site->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleSiteMatch);
 	}
@@ -1679,7 +1681,7 @@ void AIGMissingFloorLeftoverDirector::HandleAssemblyTarget(AIGLeftoverTarget* Ta
 		HoldPiece(Target->Index);
 		if (PlayBeat(FName(TEXT("Leftover.Assembly.FirstPick"))))
 		{
-			Think(NSLOCTEXT("IGMissingFloor", "LeftoverFirstPickThought", "조각 셋에 틀 하나."), 2.6f);
+			ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverFirstPickThought", "조각 셋에 틀 하나."), 2.6f);
 		}
 		return;
 	}
@@ -1808,7 +1810,7 @@ void AIGMissingFloorLeftoverDirector::SeatPiece(const int32 Piece)
 	if (bAll)
 	{
 		Narrative->MutableLeftover().AssemblyStage = FMath::Max(Narrative->GetLeftover().AssemblyStage, 1);
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverAssembledThought", "다 맞았어. 한 장짜리 덮개였네."), 3.0f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverAssembledThought", "다 맞았어. 한 장짜리 덮개였네."), 3.0f);
 	}
 	RefreshAssembly();
 }
@@ -1820,7 +1822,7 @@ void AIGMissingFloorLeftoverDirector::FinishAssemblyFlip()
 		return;
 	}
 	PlaySound(UIGToneSequenceSoundWave::CreatePickupRustle(this), AssemblyCenter, 0.45f, 0.8f);
-	Think(NSLOCTEXT("IGMissingFloor", "LeftoverFlipThought", "얼룩이 대각선으로 이어져. 물이 위에서 새어 내려온 자국이야."), 3.6f);
+	ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverFlipThought", "얼룩이 대각선으로 이어져. 물이 위에서 새어 내려온 자국이야."), 3.6f);
 	RefreshAssembly();
 }
 
@@ -1837,7 +1839,7 @@ void AIGMissingFloorLeftoverDirector::LiftMembrane()
 	GetWorldTimerManager().SetTimer(MembraneTimer, this, &AIGMissingFloorLeftoverDirector::TickMembraneLift, 1.0f / 60.0f, true);
 	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverVentThought", "통풍구를 방음재로 쑤셔 막고 그 위에 방수막을 덮었어."), 4.0f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverVentThought", "통풍구를 방음재로 쑤셔 막고 그 위에 방수막을 덮었어."), 4.0f);
 	}), 1.2f, false);
 	RefreshAssembly();
 }
@@ -1925,7 +1927,7 @@ void AIGMissingFloorLeftoverDirector::TakeAssembledCover()
 	Take(Cover);
 	PlaySound(UIGToneSequenceSoundWave::CreatePickupRustle(this), AssemblyCenter, 0.5f, 0.9f);
 	// 5층 구석을 본 적이 있을 때만 그 자리를 떠올린다. 못 봤으면 손에 든 것만 말한다.
-	Think(HasBeat(SeenAnnexInspectionBeat)
+	ThinkAboutItem(HasBeat(SeenAnnexInspectionBeat)
 		? NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakeThought", "이만한 덧판을 어디서 봤는데.")
 		: NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakeUnseen", "네 귀퉁이에 나사 구멍이 있어. 어딘가에 박혀 있던 거야."), 3.6f);
 	RefreshAssembly();
@@ -2081,7 +2083,7 @@ void AIGMissingFloorLeftoverDirector::RefreshDeliveredBox()
 		SpawnProp(FName(TEXT("Home.DeliveredBoxMark")), Mesh(TEXT("SM_LeftoverLabelMarked")), DeliveredBoxSpot, false);
 		if (AIGLeftoverTarget* Take = SpawnTarget(TargetKey, DeliveredBoxSpot.GetLocation() + FVector(0.0f, 0.0f, 22.0f),
 				DeliveredBoxSpot.Rotator(), FVector(26.0f, 22.0f, 20.0f),
-				NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxPrompt", "상자 들여놓기"), 0.6f, 0.04f))
+				NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxPrompt", "들여놓기"), 0.6f, 0.04f))
 		{
 			Take->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleDeliveredBox);
 		}
@@ -2103,6 +2105,6 @@ void AIGMissingFloorLeftoverDirector::HandleDeliveredBox(AIGLeftoverTarget* Targ
 	Take(ToolPouch);
 	AIGNightThreatDirector::HoldQuietAfterDiscovery(this, 60.0f);
 	PlaySound(UIGToneSequenceSoundWave::CreateToolRollClink(this), DeliveredBoxSpot.GetLocation() + FVector(0.0f, 0.0f, 20.0f), 0.5f);
-	Think(NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxThought", "오빠 상자야. 안에 공구 주머니가 들어 있어."), 3.8f);
+	ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxThought", "오빠 상자야. 안에 공구 주머니가 들어 있어."), 3.8f);
 	RefreshDeliveredBox();
 }

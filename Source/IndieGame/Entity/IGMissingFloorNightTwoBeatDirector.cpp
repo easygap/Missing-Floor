@@ -249,7 +249,7 @@ bool AIGMissingFloorNightTwoBeatDirector::Configure(
 		CubeMesh,
 		nullptr,
 		FVector(3.0f, 2.4f, 3.0f),
-		NSLOCTEXT("IGMissingFloor", "N2PeepholePrompt", "문구멍으로 내다보기"),
+		NSLOCTEXT("IGMissingFloor", "N2PeepholePrompt", "내다보기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,

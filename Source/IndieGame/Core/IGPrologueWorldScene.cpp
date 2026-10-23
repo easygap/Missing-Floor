@@ -255,7 +255,7 @@ namespace IGPrologueWorld
 			NSLOCTEXT(
 				"IGReceipt",
 				"CheckoutPrompt",
-				"{0} {1}병 계산하기 ({2})"),
+				"계산하기 ({2})"),
 			Spec.ProductName,
 			FText::AsNumber(Spec.Quantity),
 			FormatWon(Spec.Quantity * Spec.UnitPrice));
@@ -5299,7 +5299,7 @@ void AIGPrologueWorldScene::SetTheHourSealed(const bool bSealed)
 				FName(TEXT("State.MissingFloor.Night.MorningCame")),
 				false);
 			Seal.LockedPrompt = NSLOCTEXT(
-				"IGMissingFloor", "EntranceSealedPrompt", "공동현관 열어 보기");
+				"IGMissingFloor", "EntranceSealedPrompt", "열어 보기");
 			// '그 시간'의 규칙 1(§1)은 게임 안에서 여기서 배운다. 문은 잠긴 게 아니라
 			// 붙들려 있다 — 걸쇠 소리 없이 밀리다 선다. 폰은 그 뒤에 따로 운다.
 			// 그레이박스 디렉터가 첫 시도에 통화 실패음을 내고 「폰도 안 터진다.」를
@@ -7207,7 +7207,7 @@ void AIGPrologueWorldScene::SpawnInteractables()
 			FVector(6, 84, 204));
 		BuildingDoor->SetOpenYaw(-95.0f);
 		BuildingDoor->SetInteractionPrompt(
-			NSLOCTEXT("IGPrologue", "BuildingDoorPrompt", "공동현관 열기"));
+			NSLOCTEXT("IGPrologue", "BuildingDoorPrompt", "열기"));
 	}
 
 	// 현관 신발장 위의 손전등. 나가기 전에 E로 챙긴다. 챙긴 기록은 저장되고, 놓고 자면
@@ -7343,7 +7343,7 @@ void AIGPrologueWorldScene::SpawnInteractables()
 			LightsOutNotice->ConfigurePrototypeVisuals(
 				LightsOutNoticeMesh, LightsOutNoticeMesh->GetMaterial(0), FVector(100.0f, 100.0f, 100.0f));
 			LightsOutNotice->SetInteractionPrompt(
-				NSLOCTEXT("IGMissingFloor", "LightsOutNoticePrompt", "공지 읽기"));
+				NSLOCTEXT("IGMissingFloor", "LightsOutNoticePrompt", "읽기"));
 			LightsOutNotice->SetNoteText(
 				NSLOCTEXT("IGMissingFloor", "LightsOutNoticeTitle", "복도 소등 안내"),
 				{
@@ -7374,7 +7374,7 @@ void AIGPrologueWorldScene::SpawnInteractables()
 			Door202Note->ConfigurePrototypeVisuals(
 				Door202NoteMesh, Door202NoteMesh->GetMaterial(0), FVector(100.0f, 100.0f, 100.0f));
 			Door202Note->SetInteractionPrompt(
-				NSLOCTEXT("IGMissingFloor", "Door202NotePrompt", "쪽지 읽기"));
+				NSLOCTEXT("IGMissingFloor", "Door202NotePrompt", "읽기"));
 			Door202Note->SetNoteText(
 				NSLOCTEXT("IGMissingFloor", "Door202NoteTitle", "기사님 죄송해요ㅠ"),
 				{
@@ -7399,7 +7399,7 @@ void AIGPrologueWorldScene::SpawnInteractables()
 			Door303Sign->ConfigurePrototypeVisuals(
 				Door303SignMesh, Door303SignMesh->GetMaterial(0), FVector(100.0f, 100.0f, 100.0f));
 			Door303Sign->SetInteractionPrompt(
-				NSLOCTEXT("IGMissingFloor", "Door303SignPrompt", "안내문 읽기"));
+				NSLOCTEXT("IGMissingFloor", "Door303SignPrompt", "읽기"));
 			Door303Sign->SetNoteText(
 				NSLOCTEXT("IGMissingFloor", "Door303SignTitle", "벨 누르지 마세요"),
 				{
@@ -7432,7 +7432,7 @@ void AIGPrologueWorldScene::SpawnInteractables()
 		{
 			NightViewSurfaces.Add(Glass);
 		}
-		Window->SetInteractionPrompt(NSLOCTEXT("IGPrologue", "WindowPrompt", "창문"));
+		Window->SetInteractionPrompt(NSLOCTEXT("IGPrologue", "WindowPrompt", "내다보기"));
 		Window->ThoughtText = NSLOCTEXT("IGPrologue", "WindowThought", "건너편 불빛이 방까지 들어오네.");
 	}
 	if (AIGInspectable* WindowRight = World->SpawnActor<AIGInspectable>(
@@ -7444,7 +7444,7 @@ void AIGPrologueWorldScene::SpawnInteractables()
 		{
 			NightViewSurfaces.Add(Glass);
 		}
-		WindowRight->SetInteractionPrompt(NSLOCTEXT("IGPrologue", "WindowPrompt", "창문"));
+		WindowRight->SetInteractionPrompt(NSLOCTEXT("IGPrologue", "WindowPrompt", "내다보기"));
 		WindowRight->ThoughtText = NSLOCTEXT("IGPrologue", "WindowThought", "건너편 불빛이 방까지 들어오네.");
 	}
 	// 유담이 창 앞에서 하는 말 그대로, 그 시간에도 건너편 벽의 보안등 빛이 방까지 든다. 창 아래에서
@@ -7696,7 +7696,7 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 			15.0f,
 			true);
 		BoothDesk->SetInteractionPrompt(
-			NSLOCTEXT("IGMissingFloor", "HideUnderDeskPrompt", "책상 밑에 숨기"));
+			NSLOCTEXT("IGMissingFloor", "HideUnderDeskPrompt", "숨기"));
 	}
 	// 201호 북동쪽 구석. 세워 둔 석고보드와 각목에 건 비닐 사이에 사람 하나가
 	// 선다. 비닐 선(Y 25)이 앞면이고 남쪽을 본다. 비닐 끝과 보드 사이로 방이 보인다.
@@ -7712,7 +7712,7 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 			15.0f,
 			false);
 		BoardNook->SetInteractionPrompt(
-			NSLOCTEXT("IGMissingFloor", "HideBehindSheetPrompt", "비닐 뒤에 숨기"));
+			NSLOCTEXT("IGMissingFloor", "HideBehindSheetPrompt", "숨기"));
 	}
 	// 302호 장롱. 403호 장롱과 같은 메시라 같은 자리에서 본다(앞면 X -114.4).
 	Wardrobe302Hide = SpawnHidingSpot(FVector(-114.4f, 0.0f, 600.0f), 0.0f);
@@ -7760,7 +7760,7 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 		StoreBattery->ConfigurePrototypeVisuals(
 			CubeMesh, SnackYellowMaterial, FVector(0.09f, 0.06f, 0.016f), false);
 		StoreBattery->SetInteractionPrompt(
-			NSLOCTEXT("IGMissingFloor", "BatteryBuyPrompt", "건전지 한 팩 사기"));
+			NSLOCTEXT("IGMissingFloor", "BatteryBuyPrompt", "한 팩 사기"));
 	}
 
 	// 2·3·4층 계단 목의 방화문. 늘 고임목으로 괴어 열려 있다. 경첩은 남쪽 문설주 모서리,
@@ -7859,8 +7859,8 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 	{
 		BathroomSwitch->ConfigureSwitch(
 			TEXT("State.MissingFloor.BathroomLightOn"),
-			NSLOCTEXT("IGRoomLight", "BathroomOn", "욕실 불 켜기"),
-			NSLOCTEXT("IGRoomLight", "BathroomOff", "욕실 불 끄기"),
+			NSLOCTEXT("IGRoomLight", "BathroomOn", "켜기"),
+			NSLOCTEXT("IGRoomLight", "BathroomOff", "끄기"),
 			600.0f);
 		BathroomSwitch->BindLight(BathroomLight);
 	}

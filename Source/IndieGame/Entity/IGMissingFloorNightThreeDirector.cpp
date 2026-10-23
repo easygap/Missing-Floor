@@ -405,7 +405,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		KeyLock.RequiredState = FGameplayTag::RequestGameplayTag(
 			FName(TEXT("State.MissingFloor.HasStairKey")), false);
 		KeyLock.LockedPrompt =
-			NSLOCTEXT("IGMissingFloor", "StairGatePrompt", "잠긴 옥상 철문");
+			NSLOCTEXT("IGMissingFloor", "StairGatePrompt", "열어 보기");
 		KeyLock.LockedThought = NSLOCTEXT(
 			"IGMissingFloor",
 			"StairGateThought",
@@ -439,7 +439,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		KeyLock.RequiredState = FGameplayTag::RequestGameplayTag(
 			FName(TEXT("State.MissingFloor.HasStairKey")), false);
 		KeyLock.LockedPrompt = NSLOCTEXT(
-			"IGMissingFloor", "AnnexGatePrompt", "잠긴 5층 철문");
+			"IGMissingFloor", "AnnexGatePrompt", "열어 보기");
 		KeyLock.LockedThought = NSLOCTEXT(
 			"IGMissingFloor", "AnnexGateThought", "창고 열쇠가 있어야 열 수 있겠다.");
 		AnnexGate->SetRequirements(MoveTemp(GateRequirements));
@@ -460,12 +460,12 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 				BoltHousing,
 				LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Meshes/SM_DoorBarrelBoltPin.SM_DoorBarrelBoltPin")),
 				IGNightThree::AnnexBoltTravelCm,
-				NSLOCTEXT("IGMissingFloor", "AnnexBoltClosePrompt", "빗장 걸기"),
-				NSLOCTEXT("IGMissingFloor", "AnnexBoltOpenPrompt", "빗장 풀기"));
+				NSLOCTEXT("IGMissingFloor", "AnnexBoltClosePrompt", "걸기"),
+				NSLOCTEXT("IGMissingFloor", "AnnexBoltOpenPrompt", "풀기"));
 			// 403호 현관은 같은 메시를 쓰지만 걸쇠라고 부른다. 빗장 문구는 이 철문에만 단다.
 			if (AnnexGate)
 			{
-				AnnexGate->SetLatchedOpenPrompt(NSLOCTEXT("IGMissingFloor", "BoltedOpenPrompt", "빗장 풀고 문 열기"));
+				AnnexGate->SetLatchedOpenPrompt(NSLOCTEXT("IGMissingFloor", "BoltedOpenPrompt", "빗장 풀고 열기"));
 			}
 		}
 	}
@@ -502,7 +502,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		KeyringMesh,
 		LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_BoothKeyring.MI_BoothKeyring")),
 		FVector::ZeroVector,
-		NSLOCTEXT("IGMissingFloor", "KeyringPrompt", "옥상·창고 열쇠 꾸러미"),
+		NSLOCTEXT("IGMissingFloor", "KeyringPrompt", "챙기기"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"KeyringThought",
@@ -542,7 +542,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		NotebookMesh ? nullptr : AgedPaperMaterial,
 		NotebookMesh ? FVector(100) : FVector(16, 22, 1.4f), true);
 	TunerNotebook->SetInteractionPrompt(
-		NSLOCTEXT("IGMissingFloor", "NotebookPrompt", "조율 수첩"));
+		NSLOCTEXT("IGMissingFloor", "NotebookPrompt", "읽기"));
 	TunerNotebook->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "NotebookTitle", "백도하 조율 수첩"),
 		{
@@ -582,7 +582,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		TuningHammerMesh
 			? FVector::ZeroVector
 			: FVector(3.0f, 3.0f, 26.0f),
-		NSLOCTEXT("IGMissingFloor", "TuningHammerPrompt", "튜닝 해머"),
+		NSLOCTEXT("IGMissingFloor", "TuningHammerPrompt", "챙기기"),
 		// 입주한 날 연 공구 상자에는 이것만 없었다. 여기서 챙겨 가서 밤4에
 		// 유해 곁에 돌려놓는다(§7 소지품 인과 장부).
 		NSLOCTEXT(
@@ -614,7 +614,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			GloveMesh ? GloveMesh : CubeMesh,
 			GloveMesh ? nullptr : AgedPaperMaterial,
 			GloveMesh ? FVector::ZeroVector : FVector(24.0f, 11.0f, 2.4f),
-			NSLOCTEXT("IGMissingFloor", "WorkGlovePrompt", "작업 장갑 한 짝"),
+			NSLOCTEXT("IGMissingFloor", "WorkGlovePrompt", "살펴보기"),
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"WorkGloveThought",
@@ -663,7 +663,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 				CubeMesh,
 				nullptr,
 				FVector(45.0f, 34.0f, 78.0f),
-				NSLOCTEXT("IGMissingFloor", "TunerCartPrompt", "공구 카트 밀어 보기"),
+				NSLOCTEXT("IGMissingFloor", "TunerCartPrompt", "밀기"),
 				FText::GetEmpty(),
 				EIGMissingFloorTruth::None,
 				EIGMissingFloorSource::None,
@@ -695,7 +695,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 				12.0f,
 				true);
 			CartHidingSpot->SetInteractionPrompt(
-				NSLOCTEXT("IGMissingFloor", "HideBehindCartPrompt", "카트 뒤에 숨기"));
+				NSLOCTEXT("IGMissingFloor", "HideBehindCartPrompt", "숨기"));
 		}
 	}
 
@@ -717,7 +717,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		RiserValveMesh ? RiserValveMesh : CylinderMesh,
 		RiserValveMesh && RiserValveMetal ? RiserValveMetal : AnnexMetalMaterial,
 		RiserValveMesh ? FVector::ZeroVector : FVector(16.0f, 16.0f, 5.0f),
-		NSLOCTEXT("IGMissingFloor", "ValvePrompt", "배관 밸브 열기"),
+		NSLOCTEXT("IGMissingFloor", "ValvePrompt", "열기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -739,7 +739,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		CubeMesh,
 		nullptr,
 		FVector(22.0f, 10.0f, 6.0f),
-		NSLOCTEXT("IGMissingFloor", "ImpactPrompt", "자재 모서리 얼룩 보기"),
+		NSLOCTEXT("IGMissingFloor", "ImpactPrompt", "살펴보기"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ImpactThought",
@@ -790,7 +790,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			CubeMesh,
 			nullptr,
 			FVector(3.0f, 26.0f, 26.0f),
-			NSLOCTEXT("IGMissingFloor", "WallListenPrompt", "벽에 귀 대기"),
+			NSLOCTEXT("IGMissingFloor", "WallListenPrompt", "귀 대기"),
 			FText::GetEmpty(),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
@@ -823,7 +823,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			CubeMesh,
 			nullptr,
 			FVector(3.0f, 26.0f, 26.0f),
-			NSLOCTEXT("IGMissingFloor", "WallKnockPrompt", "벽 두드리기"),
+			NSLOCTEXT("IGMissingFloor", "WallKnockPrompt", "두드리기"),
 			FText::GetEmpty(),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
@@ -856,7 +856,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"AnswerPrompt",
-			"벽에 대고 박자 맞춰 두드리기"),
+			"박자 맞춰 두드리기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -890,7 +890,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			CubeMesh,
 			nullptr,
 			FVector(3.0f, 20.0f, 26.0f),
-			NSLOCTEXT("IGMissingFloor", "PlasterDatingPrompt", "벽 이음매 살펴보기"),
+			NSLOCTEXT("IGMissingFloor", "PlasterDatingPrompt", "살펴보기"),
 			FText::GetEmpty(),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
@@ -931,7 +931,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		CubeMesh,
 		nullptr,
 		FVector(24.0f, 1.0f, 14.0f),
-		NSLOCTEXT("IGMissingFloor", "TankAuditionPrompt", "물탱크 살펴보기"),
+		NSLOCTEXT("IGMissingFloor", "TankAuditionPrompt", "귀 대기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -968,7 +968,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 	LabelsNote->SetReadingArtwork(LoadObject<UTexture2D>(nullptr,
 		TEXT("/Game/UI/Reading/T_ShippingLabelRead_D.T_ShippingLabelRead_D")));
 	LabelsNote->SetInteractionPrompt(
-		NSLOCTEXT("IGMissingFloor", "LabelsPrompt", "배송 라벨 뭉치"));
+		NSLOCTEXT("IGMissingFloor", "LabelsPrompt", "읽기"));
 	LabelsNote->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "LabelsTitle", "공방 창고에서 온 상자"),
 		{
@@ -998,7 +998,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 		CubeMesh, LoadObject<UMaterialInterface>(nullptr,
 			TEXT("/Game/Prototype/Materials/M_LobbyForumPrint.M_LobbyForumPrint")), FVector(21.0f, 0.08f, 29.7f));
 	ForumNote->SetInteractionPrompt(
-		NSLOCTEXT("IGMissingFloor", "ForumPrompt", "층간소음 게시글 인쇄본"));
+		NSLOCTEXT("IGMissingFloor", "ForumPrompt", "읽기"));
 	ForumNote->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "ForumTitle", "관리인께 드립니다"),
 		{
@@ -1033,7 +1033,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			: FVector(17.0f, 1.4f, 24.0f),
 		CalendarJournalMesh != nullptr);
 	JournalNote->SetInteractionPrompt(
-		NSLOCTEXT("IGMissingFloor", "JournalPrompt", "달력 뒷장 소리 일지"));
+		NSLOCTEXT("IGMissingFloor", "JournalPrompt", "읽기"));
 	JournalNote->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "JournalTitle", "401호 황순금 소리 일지"),
 		{

@@ -121,9 +121,9 @@ FText AIGDoorLatch::GetInteractionPrompt_Implementation(AActor* Interactor) cons
 	const AIGSwingDoor* LatchedDoor = Door.Get();
 	if (LatchedDoor && LatchedDoor->IsLatched())
 	{
-		return UnlockPrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "DoorLatchOpenPrompt", "걸쇠 풀기") : UnlockPrompt;
+		return UnlockPrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "DoorLatchOpenPrompt", "풀기") : UnlockPrompt;
 	}
-	return LockPrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "DoorLatchClosePrompt", "걸쇠 걸기") : LockPrompt;
+	return LockPrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "DoorLatchClosePrompt", "걸기") : LockPrompt;
 }
 
 void AIGDoorLatch::CompleteInteraction_Implementation(const FIGInteractionContext& Context)

@@ -27,6 +27,9 @@ AIGSwingDoor::AIGSwingDoor()
 	DoorPivot = CreateDefaultSubobject<USceneComponent>(TEXT("DoorPivot"));
 	DoorPivot->SetupAttachment(HingeRoot);
 
+	// 누르면 열고 길게 누르면 조용히 연다. 안내의 둘째 줄이 길게 눌러 하는 동작이라 HUD가 「길게」를 붙인다.
+	Tags.AddUnique(FName(TEXT("MissingFloor.Prompt.HoldAlternative")));
+
 	DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
 	DoorMesh->SetupAttachment(DoorPivot);
 	DoorMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
@@ -41,9 +44,9 @@ AIGSwingDoor::AIGSwingDoor()
 	HandleMesh->SetCanEverAffectNavigation(false);
 	HandleMesh->SetMobility(EComponentMobility::Movable);
 
-	OpenPrompt = NSLOCTEXT("IGSwingDoor", "OpenPrompt", "문 열기");
-	ClosePrompt = NSLOCTEXT("IGSwingDoor", "ClosePrompt", "문 닫기");
-	LatchedOpenPrompt = NSLOCTEXT("IGSwingDoor", "LatchedOpenPrompt", "걸쇠 풀고 문 열기");
+	OpenPrompt = NSLOCTEXT("IGSwingDoor", "OpenPrompt", "열기");
+	ClosePrompt = NSLOCTEXT("IGSwingDoor", "ClosePrompt", "닫기");
+	LatchedOpenPrompt = NSLOCTEXT("IGSwingDoor", "LatchedOpenPrompt", "걸쇠 풀고 열기");
 }
 
 void AIGSwingDoor::ConfigurePrototypeVisuals(
@@ -501,8 +504,8 @@ FText AIGSwingDoor::GetInteractionPrompt_Implementation(AActor* Interactor) cons
 		return BasePrompt;
 	}
 	return FText::Format(bOpen
-		? NSLOCTEXT("IGSwingDoor", "HoldHintCloseFormat", "{0}\n길게 누르면 조용히 닫기")
-		: NSLOCTEXT("IGSwingDoor", "HoldHintOpenFormat", "{0}\n길게 누르면 조용히 열기"),
+		? NSLOCTEXT("IGSwingDoor", "HoldHintCloseFormat", "{0}\n조용히 닫기")
+		: NSLOCTEXT("IGSwingDoor", "HoldHintOpenFormat", "{0}\n조용히 열기"),
 		BasePrompt);
 }
 

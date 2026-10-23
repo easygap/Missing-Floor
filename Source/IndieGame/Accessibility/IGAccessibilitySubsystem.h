@@ -158,11 +158,11 @@ struct INDIEGAME_API FIGAccessibilitySettings
 	bool bAlwaysShowCenterDot = false;
 
 	/**
-	 * 조사 안내에 키 이름을 늘 붙인다. 꺼 두면(기본) 같은 동작을 세 번 해 본
-	 * 뒤로는 「[ E ]  문 열기」가 「문 열기」로 줄어든다.
+	 * 조사 안내에 키 이름을 늘 붙인다(기본). 꺼 두면 같은 동작을 세 번 해 본 뒤로는 키 표시를 떼고
+	 * 동사만 남긴다. 길게 누르는 동작은 진행이 키 테두리로 보이므로 그래도 키를 붙인다.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Accessibility")
-	bool bAlwaysShowPromptKeys = false;
+	bool bAlwaysShowPromptKeys = true;
 
 	/**
 	 * 힌트 키(H). 켜 두면 누를 때마다 지금 볼 곳을 한 단계씩 더 구체적으로
@@ -242,6 +242,26 @@ public:
 	bool AreBackgroundSoundCaptionsEnabled() const
 	{
 		return EffectiveSettings.bSoundCaptionsEnabled && EffectiveSettings.bBackgroundSoundCaptions;
+	}
+
+	/**
+	 * 소리 자막을 사람이 직접 고르지 않았는데 켜져 있는 예전 프로필인가. 0.10.0까지는 기본이 켬이라 그때
+	 * 저장된 「켬」만으로는 직접 고른 것인지 기본값이 저장된 것인지 알 수 없다. 그런 프로필은 꺼 버리지도
+	 * 고른 것으로 치지도 않고, 타이틀에서 한 번 물어본다. 그동안은 저장된 대로 켜 둔다.
+	 */
+	bool NeedsSoundCaptionConfirmation() const { return bSoundCaptionConfirmationPending; }
+
+	/** 설정 화면에서 소리 자막 칸을 직접 바꿨거나, 물어본 화면에서 지금 값을 확인했다. */
+	void MarkSoundCaptionsChosen();
+
+	/** 설정 화면에서 조작 키 표시 칸을 직접 바꿨다. */
+	void MarkPromptKeysChosen();
+
+	/** 검사용. 설정 파일에 지금 적힌 값으로 다시 읽는다. 예전 프로필을 흉내 낸 뒤 쓴다. */
+	void ReloadPersistedSettingsForTesting()
+	{
+		LoadPersistedSettings();
+		RebuildEffectiveSettings();
 	}
 
 	UFUNCTION(BlueprintPure, Category = "Accessibility|Subtitles")
@@ -342,4 +362,13 @@ private:
 
 	FIGAccessibilitySettings PersistedSettings;
 	FIGAccessibilitySettings EffectiveSettings;
+	/** 소리 자막 칸을 사람이 직접 골랐다(SoundCaptionsChosen). 고른 적이 없으면 키를 남기지 않는다. */
+	bool bSoundCaptionsChosen = false;
+	bool bSoundCaptionConfirmationPending = false;
+	/**
+	 * 조작 키 표시 칸을 사람이 직접 골랐다(PromptKeysChosen). 0.10.0까지는 기본이 「익힐 때까지」라 그때
+	 * 저장된 값은 고른 것으로 보지 않고, 키를 늘 보이는 새 기본을 쓴다. 보이는 쪽이 더 친절한 쪽이라
+	 * 물어보지 않는다.
+	 */
+	bool bPromptKeysChosen = false;
 };

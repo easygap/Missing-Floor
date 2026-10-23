@@ -50,7 +50,7 @@ AIGDroppedFlashlight::AIGDroppedFlashlight()
 	Beam->SetVisibility(false);
 
 	InteractionHoldDuration = 0.25f;
-	InteractionPrompt = NSLOCTEXT("IGFlashlight", "DroppedPrompt", "손전등 줍기");
+	InteractionPrompt = NSLOCTEXT("IGFlashlight", "DroppedPrompt", "줍기");
 }
 
 void AIGDroppedFlashlight::Configure(const bool bInLit)

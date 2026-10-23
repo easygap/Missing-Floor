@@ -875,11 +875,11 @@ FText AIGElevator::GetButtonPrompt(const EIGElevatorButtonKind Kind, const int32
 	switch (Kind)
 	{
 	case EIGElevatorButtonKind::HallCall:
-		return NSLOCTEXT("IGElevator", "CallPrompt", "엘리베이터 부르기");
+		return NSLOCTEXT("IGElevator", "CallPrompt", "부르기");
 	case EIGElevatorButtonKind::Open:
-		return NSLOCTEXT("IGElevator", "OpenPrompt", "열림 버튼 누르기");
+		return NSLOCTEXT("IGElevator", "OpenPrompt", "열림 누르기");
 	case EIGElevatorButtonKind::Close:
-		return NSLOCTEXT("IGElevator", "ClosePrompt", "닫힘 버튼 누르기");
+		return NSLOCTEXT("IGElevator", "ClosePrompt", "닫힘 누르기");
 	case EIGElevatorButtonKind::Alarm:
 		return NSLOCTEXT("IGElevator", "AlarmPrompt", "비상 버튼 누르기");
 	default:

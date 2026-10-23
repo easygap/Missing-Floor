@@ -455,7 +455,7 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 		CubeMesh,
 		PaperMaterial,
 		FVector(21.0f, 1.0f, 29.7f),
-		NSLOCTEXT("IGMissingFloor", "EvictionNoticePrompt", "퇴거 통보문 읽기"),
+		NSLOCTEXT("IGMissingFloor", "EvictionNoticePrompt", "읽기"),
 		// 종이에서 읽는 것은 사유와 기한이다(§8 3-8). 아침 일곱 시 보수와 석고보드는
 		// 이어서 담당 수사관에게 보내는 사진 문자가 말한다 — 그레이박스 감독의
 		// 신고 문자 줄기가 이 종이를 읽은 뒤에 민다.
@@ -474,7 +474,7 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 		LargeValveMesh ? LargeValveMesh : CylinderMesh,
 		MetalMaterial,
 		LargeValveMesh ? FVector::ZeroVector : FVector(18.0f, 18.0f, 5.0f),
-		NSLOCTEXT("IGMissingFloor", "CleaningDrainPrompt", "세척 배수 밸브 열기"),
+		NSLOCTEXT("IGMissingFloor", "CleaningDrainPrompt", "배수 밸브 열기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -507,7 +507,7 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 		nullptr,
 		FVector::ZeroVector,
 		NSLOCTEXT(
-			"IGMissingFloor", "TransferPumpPrompt", "이송 펌프 수동으로 돌리기"),
+			"IGMissingFloor", "TransferPumpPrompt", "펌프 손으로 돌리기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -530,7 +530,7 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 		CubeMesh, LoadObject<UMaterialInterface>(nullptr,
 			TEXT("/Game/Prototype/Materials/M_PumpProcedure.M_PumpProcedure")), FVector(21.0f, 0.08f, 29.7f));
 	ProcedureSheet->SetInteractionPrompt(
-		NSLOCTEXT("IGMissingFloor", "ProcedureSheetPrompt", "저수조 점검 메모"));
+		NSLOCTEXT("IGMissingFloor", "ProcedureSheetPrompt", "읽기"));
 	ProcedureSheet->SetNoteText(
 		NSLOCTEXT("IGMissingFloor", "ProcedureSheetTitle", "저수조 점검 메모 (2019.03)"),
 		{
@@ -591,7 +591,7 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 		// 시신 벽 칸 전체(각재 바깥까지, 바닥에서 천장까지). 확장판에서는 고정되지 않은
 		// 자리를 친 것을 받는다. 단계마다 칠 자리는 그 앞에 따로 선다(BuildWallStage).
 		FVector(3.0f, 116.0f, 276.0f),
-		NSLOCTEXT("IGMissingFloor", "WallBreakPrompt", "벽을 망치로 두드리기"),
+		NSLOCTEXT("IGMissingFloor", "WallBreakPrompt", "망치로 내려치기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,

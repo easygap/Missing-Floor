@@ -1628,7 +1628,7 @@ bool AIGListenerGreyboxDirector::SetupStage()
 				CubeMesh,
 				nullptr,
 				FVector(88.0f, 180.0f, 18.0f),
-				NSLOCTEXT("IGMissingFloor", "SleepPrompt", "침대에 눕기"),
+				NSLOCTEXT("IGMissingFloor", "SleepPrompt", "눕기"),
 				FText::GetEmpty(),
 				EIGMissingFloorTruth::None,
 				EIGMissingFloorSource::None,
@@ -1652,7 +1652,7 @@ bool AIGListenerGreyboxDirector::SetupStage()
 				CubeMesh,
 				nullptr,
 				FVector(70.0f, 55.0f, 8.0f),
-				NSLOCTEXT("IGMissingFloor", "NightOneCeilingListenPrompt", "천장 소리에 귀 기울이기"),
+				NSLOCTEXT("IGMissingFloor", "NightOneCeilingListenPrompt", "귀 기울이기"),
 				FText::GetEmpty(),
 				EIGMissingFloorTruth::None,
 				EIGMissingFloorSource::None,
@@ -1683,7 +1683,7 @@ bool AIGListenerGreyboxDirector::SetupStage()
 				CubeMesh,
 				nullptr,
 				FVector(50.0f, 3.0f, 60.0f),
-				NSLOCTEXT("IGMissingFloor", "Unit401Prompt", "401호 문 두드리기"),
+				NSLOCTEXT("IGMissingFloor", "Unit401Prompt", "두드리기"),
 				FText::GetEmpty(),
 				EIGMissingFloorTruth::None,
 				EIGMissingFloorSource::None,
@@ -1718,7 +1718,7 @@ bool AIGListenerGreyboxDirector::SetupStage()
 				CubeMesh, PhoneMaterial, FVector(7.0f, 14.0f, 1.6f));
 			UsedListingNote->SetPhoneNotificationPresentation();
 			UsedListingNote->SetInteractionPrompt(
-				NSLOCTEXT("IGMissingFloor", "UsedListingPrompt", "휴대폰 보기"));
+				NSLOCTEXT("IGMissingFloor", "UsedListingPrompt", "보기"));
 			UsedListingNote->SetNoteText(
 				NSLOCTEXT("IGMissingFloor", "UsedListingTitle", "달빛  ·  동네 중고 거래"),
 				{
@@ -1827,7 +1827,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 		NeighborhoodDeliveryNote->ConfigurePrototypeVisuals(CubeMesh,
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/M_NeighborhoodDelivery.M_NeighborhoodDelivery")),
 			FVector(36, 0.5, 48));
-		NeighborhoodDeliveryNote->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "DeliveryPrompt", "택배 안내문 읽기"));
+		NeighborhoodDeliveryNote->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "DeliveryPrompt", "읽기"));
 		// 읽기 화면은 벽의 인쇄물(T_NeighborhoodDelivery_D, Create-RetailGraphics.ps1)과 같은 줄을 옮긴다.
 		NeighborhoodDeliveryNote->SetNoteText(NSLOCTEXT("IGMissingFloor", "DeliveryTitle", "택배 배송 안내"), {
 			NSLOCTEXT("IGMissingFloor", "Delivery1", "달빛빌라 옥탑"),
@@ -1848,7 +1848,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 		StoreParcelReceipt->ConfigurePrototypeVisuals(CubeMesh,
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/M_PaperClean.M_PaperClean")),
 			FVector(8.0f, 19.0f, 0.12f));
-		StoreParcelReceipt->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "StoreReceiptPrompt", "택배 수령 내역 보기"));
+		StoreParcelReceipt->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "StoreReceiptPrompt", "보기"));
 		StoreParcelReceipt->SetNoteText(NSLOCTEXT("IGMissingFloor", "StoreReceiptTitle", "새벽24  ·  택배 보관 조회"), {
 			NSLOCTEXT("IGMissingFloor", "StoreReceipt1", "받는 분: 달빛빌라 옥탑 백도하"),
 			NSLOCTEXT("IGMissingFloor", "StoreReceipt2", "보관 접수  2024.07.29  소형 1"),
@@ -1873,7 +1873,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			BowlMesh,
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_WitnessWaterBowl.MI_WitnessWaterBowl")),
 			FVector::ZeroVector,
-			NSLOCTEXT("IGMissingFloor", "WitnessBowlPrompt", "물그릇"),
+			NSLOCTEXT("IGMissingFloor", "WitnessBowlPrompt", "살펴보기"),
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"WitnessBowlThought",
@@ -1900,7 +1900,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			EnvelopeMesh,
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_WitnessPrescriptionEnvelope.MI_WitnessPrescriptionEnvelope")),
 			FVector::ZeroVector,
-			NSLOCTEXT("IGMissingFloor", "WitnessPillsPrompt", "떨어진 약봉투"),
+			NSLOCTEXT("IGMissingFloor", "WitnessPillsPrompt", "살펴보기"),
 			// 독백은 주울 때 고른다. 녹음기를 들었는지에 따라 같은 이름이 다르게 읽힌다.
 			FText::GetEmpty(),
 			EIGMissingFloorTruth::None,
@@ -1928,7 +1928,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			ButtsMesh,
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_WitnessCigaretteButts.MI_WitnessCigaretteButts")),
 			FVector::ZeroVector,
-			NSLOCTEXT("IGMissingFloor", "WitnessPackPrompt", "담배꽁초"),
+			NSLOCTEXT("IGMissingFloor", "WitnessPackPrompt", "살펴보기"),
 			// 대치의 「우리 오빠 여기 살았잖아요. 아저씨도 알았잖아요.」와 에필로그의
 			// 「오빠가 쉬던 자리」가 이 한 줄에 기댄다.
 			NSLOCTEXT(
@@ -1957,7 +1957,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			RosterMesh,
 			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Prototype/Materials/MI_WitnessStoreRoster.MI_WitnessStoreRoster")),
 			FVector::ZeroVector,
-			NSLOCTEXT("IGMissingFloor", "WitnessRosterPrompt", "야간 근무표"),
+			NSLOCTEXT("IGMissingFloor", "WitnessRosterPrompt", "읽기"),
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"WitnessRosterThought",
@@ -2002,7 +2002,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 			nullptr,
 			FVector(30.0f, 3.0f, 22.0f),
 			NSLOCTEXT(
-				"IGMissingFloor", "WitnessRadioPrompt", "401호 문에 귀 대기"),
+				"IGMissingFloor", "WitnessRadioPrompt", "귀 대기"),
 			FText::GetEmpty(),
 			EIGMissingFloorTruth::None,
 			EIGMissingFloorSource::None,
@@ -2052,7 +2052,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 		FVector(-30.0f, -237.15f, 1052.0f),
 		FVector(38.0f, 0.2f, 30.0f),
 		NSLOCTEXT(
-			"IGMissingFloor", "WitnessUnit402Prompt", "402호 문에 귀 대기"));
+			"IGMissingFloor", "WitnessUnit402Prompt", "귀 대기"));
 	if (Unit402Listen)
 	{
 		Unit402Listen->OnExamined.AddUObject(
@@ -2066,7 +2066,7 @@ void AIGListenerGreyboxDirector::SpawnOptionalWitnesses(UStaticMesh* CubeMesh)
 		FVector(-300.0f, 250.0f, 1290.0f),
 		FVector(40.0f, 40.0f, 60.0f),
 		NSLOCTEXT(
-			"IGMissingFloor", "WitnessRoofWindPrompt", "옥상 문에 귀 대기"));
+			"IGMissingFloor", "WitnessRoofWindPrompt", "귀 대기"));
 	if (RoofDoorListen)
 	{
 		RoofDoorListen->OnExamined.AddUObject(
@@ -2413,7 +2413,7 @@ void AIGListenerGreyboxDirector::SpawnArrivalInteractables(UStaticMesh* CubeMesh
 		FVector(21.0f, 29.7f, 0.12f),
 		CubeMesh,
 		Contract ? Contract : Paper,
-		NSLOCTEXT("IGMissingFloor", "ArrivalContractPrompt", "임대차계약서 보기"),
+		NSLOCTEXT("IGMissingFloor", "ArrivalContractPrompt", "읽기"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ArrivalContractThought",
@@ -2432,7 +2432,7 @@ void AIGListenerGreyboxDirector::SpawnArrivalInteractables(UStaticMesh* CubeMesh
 		FVector(48.0f, 38.0f, 48.0f),
 		MovingBoxMesh,
 		Cardboard,
-		NSLOCTEXT("IGMissingFloor", "ArrivalParcelPrompt", "반송된 택배 상자 열기"),
+		NSLOCTEXT("IGMissingFloor", "ArrivalParcelPrompt", "열기"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ArrivalParcelThought",
@@ -2445,7 +2445,7 @@ void AIGListenerGreyboxDirector::SpawnArrivalInteractables(UStaticMesh* CubeMesh
 		FVector(56.0f, 42.0f, 36.0f),
 		MovingBoxMesh,
 		Cardboard,
-		NSLOCTEXT("IGMissingFloor", "ArrivalNotebookPrompt", "조율 공구 상자 열기"),
+		NSLOCTEXT("IGMissingFloor", "ArrivalNotebookPrompt", "열기"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ArrivalNotebookThought",
@@ -2460,7 +2460,7 @@ void AIGListenerGreyboxDirector::SpawnArrivalInteractables(UStaticMesh* CubeMesh
 		FVector(42.0f, 34.0f, 26.0f),
 		MovingBoxMesh,
 		Cardboard,
-		NSLOCTEXT("IGMissingFloor", "ArrivalVoicemailPrompt", "예전 휴대폰 상자 열기"),
+		NSLOCTEXT("IGMissingFloor", "ArrivalVoicemailPrompt", "열기"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ArrivalVoicemailThought",
@@ -2473,7 +2473,7 @@ void AIGListenerGreyboxDirector::SpawnArrivalInteractables(UStaticMesh* CubeMesh
 		FVector(8.6f, 8.6f, 5.1f),
 		LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Meshes/SM_ServiceBell.SM_ServiceBell")),
 		nullptr,
-		NSLOCTEXT("IGMissingFloor", "ArrivalStoreBellPrompt", "계산대 호출벨 누르기"),
+		NSLOCTEXT("IGMissingFloor", "ArrivalStoreBellPrompt", "누르기"),
 		FText::GetEmpty(),
 		0.0f,
 		0.10f);
@@ -2483,7 +2483,7 @@ void AIGListenerGreyboxDirector::SpawnArrivalInteractables(UStaticMesh* CubeMesh
 		FVector::ZeroVector,
 		LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Meshes/SM_NeighborMemo402.SM_NeighborMemo402")),
 		nullptr,
-		NSLOCTEXT("IGMissingFloor", "Arrival402Prompt", "402호 문에 붙은 메모 읽기"),
+		NSLOCTEXT("IGMissingFloor", "Arrival402Prompt", "읽기"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"Arrival402Thought",
@@ -2518,7 +2518,7 @@ void AIGListenerGreyboxDirector::SpawnArrivalInteractables(UStaticMesh* CubeMesh
 		FVector(8.0f, 4.0f, 18.0f),
 		CubeMesh,
 		Metal,
-		NSLOCTEXT("IGMissingFloor", "ArrivalRoofLockPrompt", "옥상 문 자물쇠 보기"),
+		NSLOCTEXT("IGMissingFloor", "ArrivalRoofLockPrompt", "살펴보기"),
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ArrivalRoofLockThought",
@@ -2587,7 +2587,7 @@ void AIGListenerGreyboxDirector::SpawnDoor403Notes()
 			continue;
 		}
 		Note->ConfigurePrototypeVisuals(Mesh, Mesh->GetMaterial(0), FVector(100.0f, 100.0f, 100.0f));
-		Note->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "Door403NotePrompt", "쪽지 읽기"));
+		Note->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "Door403NotePrompt", "읽기"));
 		Note->SetNoteText(Spec.Title, Spec.Lines);
 		if (UStaticMeshComponent* Surface = Cast<UStaticMeshComponent>(Note->GetRootComponent()))
 		{
@@ -2830,25 +2830,25 @@ void AIGListenerGreyboxDirector::UpdateArrivalSequence()
 	if (ArrivalContract)
 	{
 		ArrivalContract->SetInteractionEnabled(true);
-		if (bContract) ArrivalContract->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalContractAgain", "임대차계약서 다시 보기"));
+		if (bContract) ArrivalContract->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalContractAgain", "다시 읽기"));
 	}
 	if (ArrivalParcelBox)
 	{
 		ArrivalParcelBox->SetInteractionEnabled(true);
 		if (Narrative->HasBeatPlayed(FName(TEXT("Arrival.Box.Parcel"))))
-			ArrivalParcelBox->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalParcelAgain", "송장 주소 다시 확인하기"));
+			ArrivalParcelBox->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalParcelAgain", "다시 보기"));
 	}
 	if (ArrivalNotebookBox)
 	{
 		ArrivalNotebookBox->SetInteractionEnabled(true);
 		if (Narrative->HasBeatPlayed(FName(TEXT("Arrival.Box.Notebook"))))
-			ArrivalNotebookBox->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalNotebookAgain", "조율 공구 다시 보기"));
+			ArrivalNotebookBox->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalNotebookAgain", "다시 보기"));
 	}
 	if (ArrivalVoicemailBox)
 	{
 		ArrivalVoicemailBox->SetInteractionEnabled(true);
 		if (Narrative->HasBeatPlayed(FName(TEXT("Arrival.Box.Voicemail"))))
-			ArrivalVoicemailBox->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalVoicemailAgain", "음성 메시지 다시 듣기"));
+			ArrivalVoicemailBox->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "ArrivalVoicemailAgain", "다시 듣기"));
 	}
 	if (ArrivalStoreBell)
 	{
@@ -2861,7 +2861,7 @@ void AIGListenerGreyboxDirector::UpdateArrivalSequence()
 	if (ArrivalUnit402Note)
 	{
 		ArrivalUnit402Note->SetInteractionEnabled(true);
-		if (bUnit402) ArrivalUnit402Note->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "Arrival402Again", "402호 메모 다시 읽기"));
+		if (bUnit402) ArrivalUnit402Note->SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "Arrival402Again", "다시 읽기"));
 	}
 	if (ArrivalRoofLock)
 	{
@@ -4474,7 +4474,7 @@ void AIGListenerGreyboxDirector::RefreshSleepTarget()
 	const bool bRest = bNight && NightPhase->IsGoalComplete();
 	SleepTarget->SetInteractionPrompt(bRest
 		? NSLOCTEXT("IGMissingFloor", "NightRestPrompt", "아침까지 쉬기")
-		: NSLOCTEXT("IGMissingFloor", "SleepPrompt", "침대에 눕기"));
+		: NSLOCTEXT("IGMissingFloor", "SleepPrompt", "눕기"));
 	SleepTarget->SetInteractionEnabled(!bNight || bRest);
 }
 
@@ -10129,11 +10129,16 @@ void AIGListenerGreyboxDirector::StartArrivalCapture()
 	if (FParse::Param(FCommandLine::Get(), TEXT("IGTrailerCapture")))
 	{
 		// 트레일러는 프레임마다 카메라를 옮기고 한 장씩 찍는다. -UseFixedTimeStep과 함께 돌린다.
-		// 예고편 만들기(Build-Trailer.ps1)는 실행마다 새 폴더를 주어 자동 정리가 그 폴더만 맡게 한다.
+		// 프레임은 촬영 스크립트가 실행마다 만들어 주는 폴더(-IGTrailerOut)에만 쓴다. 예전에는 폴더를
+		// 안 주면 Saved/Trailer 한 곳에 덮어쓰며 쌓여서 어느 촬영의 프레임인지 알 수 없었고 자동 정리도
+		// 그 폴더를 맡지 못했다.
 		if (!FParse::Value(FCommandLine::Get(), TEXT("IGTrailerOut="), TrailerOutputRoot) || TrailerOutputRoot.IsEmpty())
 		{
-			TrailerOutputRoot = FPaths::Combine(FPaths::ProjectDir(), TEXT("Saved/Trailer"));
+			UE_LOG(LogTemp, Error, TEXT("TRAILER_CAPTURE FAIL reason=no_output_directory"));
+			RequestExit(true);
+			return;
 		}
+		TrailerOutputRoot.TrimQuotesInline();
 		TrailerOutputRoot = FPaths::ConvertRelativePathToFull(TrailerOutputRoot);
 		TWeakObjectPtr<AIGListenerGreyboxDirector> WeakThis(this);
 		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([WeakThis](float)
@@ -10236,6 +10241,21 @@ bool AIGListenerGreyboxDirector::AdvanceTrailerCapture()
 	FParse::Value(FCommandLine::Get(), TEXT("IGTrailerShot="), Only, false);
 	TArray<FString> OnlyNames;
 	Only.ParseIntoArray(OnlyNames, TEXT(","));
+	// 표에 없는 이름은 아무것도 찍지 않고 통과로 끝났다. 이름을 잘못 쓴 촬영은 실패로 남긴다.
+	for (const FString& Name : OnlyNames)
+	{
+		bool bKnown = false;
+		for (const FTrailerShot& Candidate : Shots)
+		{
+			bKnown |= Name.Equals(Candidate.Name);
+		}
+		if (!bKnown)
+		{
+			UE_LOG(LogTemp, Error, TEXT("TRAILER_CAPTURE FAIL reason=unknown_shot name=%s"), *Name);
+			RequestExit(true);
+			return false;
+		}
+	}
 	while (TrailerShotIndex < UE_ARRAY_COUNT(Shots)
 		&& OnlyNames.Num() > 0 && !OnlyNames.Contains(Shots[TrailerShotIndex].Name))
 	{
@@ -12492,7 +12512,7 @@ void AIGListenerGreyboxDirector::SpawnJeongwooTalk(UStaticMesh* CubeMesh)
 		CubeMesh,
 		nullptr,
 		FVector(46.0f, 46.0f, 70.0f),
-		NSLOCTEXT("IGMissingFloor", "RiderTalkPrompt", "배달 기사에게 말 걸기"),
+		NSLOCTEXT("IGMissingFloor", "RiderTalkPrompt", "말 걸기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,
@@ -12528,8 +12548,8 @@ void AIGListenerGreyboxDirector::RefreshJeongwoo()
 		{
 			Talk->SetActorLocation(ScooterAt + FVector(0.0f, 0.0f, IGListenerGreybox::JeongwooChestHeight));
 			Talk->SetInteractionPrompt(Narrative->HasBeatPlayed(IGListenerGreybox::JeongwooIntroBeat)
-				? NSLOCTEXT("IGMissingFloor", "JeongwooTalkPrompt", "정우에게 말 걸기")
-				: NSLOCTEXT("IGMissingFloor", "RiderTalkPrompt", "배달 기사에게 말 걸기"));
+				? NSLOCTEXT("IGMissingFloor", "JeongwooTalkPrompt", "말 걸기")
+				: NSLOCTEXT("IGMissingFloor", "RiderTalkPrompt", "말 걸기"));
 		}
 		Talk->SetActorEnableCollision(bSeated);
 		Talk->SetInteractionEnabled(bSeated);

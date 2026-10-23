@@ -33,6 +33,8 @@ AIGFireDoorWedge::AIGFireDoorWedge()
 {
 	WedgeRoot = CreateDefaultSubobject<USceneComponent>(TEXT("WedgeRoot"));
 	SetRootComponent(WedgeRoot);
+	// 누르면 고임목을 빼고, 길게 누르면 문을 잡고 천천히 닫는다. 안내의 둘째 줄이 길게 눌러 하는 동작이다.
+	Tags.AddUnique(FName(TEXT("MissingFloor.Prompt.HoldAlternative")));
 
 	// 고임목은 발밑의 손바닥만 한 나무다. 내려다보기만 해도 잡히게 상자를 키운다.
 	FocusBox = CreateDefaultSubobject<UBoxComponent>(TEXT("FocusBox"));
@@ -93,7 +95,7 @@ bool AIGFireDoorWedge::CanInteract_Implementation(AActor* Interactor) const
 
 FText AIGFireDoorWedge::GetInteractionPrompt_Implementation(AActor* Interactor) const
 {
-	return NSLOCTEXT("IGMissingFloor", "FireDoorWedgePrompt", "고임목 빼기\n길게 누르면 문을 잡고 천천히 닫기");
+	return NSLOCTEXT("IGMissingFloor", "FireDoorWedgePrompt", "고임목 빼기\n천천히 닫기");
 }
 
 void AIGFireDoorWedge::CompleteInteraction_Implementation(const FIGInteractionContext& Context)

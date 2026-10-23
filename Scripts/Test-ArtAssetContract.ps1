@@ -894,7 +894,8 @@ foreach ($token in @(
 	'Feet sit exactly on Z=0',
 	'RefreshDistantSeoVisibility',
 	'SM_TuningHammer.SM_TuningHammer',
-	'튜닝 해머',
+	# 안내는 이제 물건 이름 대신 행동(챙기기)이라 문구 대신 그 문구의 키로 본다.
+	'TuningHammerPrompt',
 	'SM_TunerToolCart.SM_TunerToolCart',
 	'SM_CalendarJournal.SM_CalendarJournal'
 )) {

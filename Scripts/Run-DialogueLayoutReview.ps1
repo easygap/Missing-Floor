@@ -90,6 +90,7 @@ try {
             "-IGFrontendDisplayScreenshotPath=$(Join-Path $screenshotsRoot 'settings-display.png')",
             "-IGFrontendTitleScreenshotPath=$(Join-Path $screenshotsRoot 'title-first-run.png')",
             "-IGFrontendDefaultScreenshotPath=$(Join-Path $screenshotsRoot 'dialogue-default.png')",
+            "-IGFrontendCaptionScreenshotPath=$(Join-Path $screenshotsRoot 'dialogue-sound-captions.png')",
             "-IGFrontendScreenshotPath=$(Join-Path $screenshotsRoot 'dialogue.png')"
         )
         # 프로브 이름에 Shipping이 들어가지만 이 실행의 증거는 Editor Development에만 해당한다.
@@ -118,11 +119,14 @@ try {
             }
             $process.Dispose()
         }
-        foreach ($required in @($receiptPath, $logPath, (Join-Path $screenshotsRoot 'settings-layout.txt'))) {
+        foreach ($required in @($receiptPath, $logPath, (Join-Path $screenshotsRoot 'settings-layout.txt'),
+            (Join-Path $screenshotsRoot 'caption-settings.txt'))) {
             if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "검사 결과 파일이 없습니다: $required" }
         }
         $receipt = (Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8).Trim()
         $settingsReceipt = (Get-Content -LiteralPath (Join-Path $screenshotsRoot 'settings-layout.txt') -Raw -Encoding UTF8).Trim()
+        # 기본 화면(새 프로필)에는 소리 설명이 없고, 직접 끔·중요한 소리·모든 소리·예전 프로필이 각각 맞게 읽히는지.
+        $captionReceipt = (Get-Content -LiteralPath (Join-Path $screenshotsRoot 'caption-settings.txt') -Raw -Encoding UTF8).Trim()
         $logText = Get-Content -LiteralPath $logPath -Raw -Encoding UTF8
         $outOfBounds = [regex]::Matches($logText, 'TEXT_AUDIT OFFSCREEN\b').Count
         $outOfContainer = [regex]::Matches($logText, 'TEXT_AUDIT OUTSIDE_PANEL\b').Count
@@ -131,6 +135,7 @@ try {
             resolution = "${width}x${height}"
             receipt = $receipt
             settingsReceipt = $settingsReceipt
+            captionReceipt = $captionReceipt
             textAudit = @{ out_of_bounds = $outOfBounds; out_of_container = $outOfContainer; overlaps = $overlaps }
             screenshots = @()
         }
@@ -141,19 +146,23 @@ try {
             $receipt -notmatch '\bsamples=11\b') {
             throw "대사·메뉴 검사 결과가 통과 조건과 다릅니다: $receipt"
         }
+        if ($captionReceipt -notmatch '^MISSINGFLOOR_CAPTION_SETTINGS PASS fresh=off explicit_off=off important=important_only all=all legacy_on=kept_and_asked ') {
+            throw "소리 설명 설정 확인 결과가 다릅니다: $captionReceipt"
+        }
         if ($settingsReceipt -cne 'MISSINGFLOOR_SETTINGS_LAYOUT PASS samples=158 text_failures=0' -or
             $outOfBounds -ne 0 -or $outOfContainer -ne 0 -or $overlaps -ne 0) {
             throw "글자 배치를 확인해 주세요: $resolution, 화면 밖=$outOfBounds, 영역 밖=$outOfContainer, 겹침=$overlaps"
         }
         foreach ($name in @('settings-accessibility.png', 'settings-display.png', 'title-first-run.png',
-            'dialogue-default.png', 'dialogue.png', 'notice.png', 'audio-brightness.png', 'night-difficulty.png', 'key-settings.png')) {
+            'dialogue-default.png', 'dialogue-sound-captions.png', 'dialogue.png', 'notice.png', 'audio-brightness.png',
+            'night-difficulty.png', 'key-settings.png')) {
             $path = Join-Path $screenshotsRoot $name
             if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "화면 캡처가 없습니다: $path" }
             $actualWidth, $actualHeight = Get-ReviewPngSize $path
             if ($actualWidth -ne $width -or $actualHeight -ne $height) { throw "화면 캡처 크기가 다릅니다: $path" }
             $case.screenshots += @{ name = $name; sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash }
         }
-        # 전체 항목 검사에 쓴 79장은 성공한 실행에서만 지운다. 대표 화면 9장과 실패 화면은 남긴다.
+        # 전체 항목 검사에 쓴 79장은 성공한 실행에서만 지운다. 대표 화면 10장과 실패 화면은 남긴다.
         $rowCaptures = @(
             foreach ($index in 0..78) {
                 $path = [IO.Path]::GetFullPath((Join-Path $screenshotsRoot ('settings-row-{0:D2}.png' -f $index)))

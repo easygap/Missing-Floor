@@ -172,9 +172,33 @@ struct FIGDialogueMessage
 	double VoiceExpectedEnd = -1.0;
 };
 
+/** 소리 자막의 무게. 설정이 「중요한 소리」면 배경 소리는 글로 띄우지 않는다. */
+enum class EIGSoundCaptionWeight : uint8
+{
+	/** 위협이 다가오거나, 대답이 오거나, 사건이 일어난 소리. 진행에 필요하다. */
+	Important,
+	/** 건물과 동네의 평범한 소리, 같은 몸이 되풀이하는 소리. 「모든 소리」에서만 보인다. */
+	Background
+};
+
 /** Queued non-dialogue audio description; authored timings remain the source of truth. */
 struct FIGAudioCaptionMessage
 {
+	/** 설정을 「중요한 소리」로 내리면 떠 있는 배경 소리 자막과 밀린 것도 같이 내린다. */
+	EIGSoundCaptionWeight Weight = EIGSoundCaptionWeight::Important;
+	/**
+	 * 이 자막이 설명하는 실제 소리. 묶여 있으면 그 소리가 나는 동안 떠 있고, 제 길이를 다 내기 전에
+	 * 멎으면(사건이 끊겨 소리를 거뒀으면) 바로 내린다. 다 울린 소리는 읽을 시간만큼만 남는다.
+	 */
+	TWeakObjectPtr<UAudioComponent> Sound;
+	bool bBoundToSound = false;
+	/**
+	 * 자리를 아는데 소리를 넘겨받지 못한 자막. 같은 자리에서 막 난 소리를 찾아 묶는다. 자막을 소리보다
+	 * 먼저 내는 곳이 있어 떠오른 뒤 잠깐 더 찾는다.
+	 */
+	bool bSeekSound = false;
+	/** 묶인 소리가 제 길이대로 끝나는 자막 시계 시각. 반복하는 소리면 음수라 멎는 순간이 끝이다. */
+	double SoundExpectedEnd = -1.0;
 	/** 방향 딱지를 붙이기 전의 문구. 딱지는 그릴 때마다 지금 시점으로 다시 잰다. */
 	FText Caption;
 	float DurationSeconds = 0.0f;
@@ -190,15 +214,6 @@ struct FIGAudioCaptionMessage
 	TFunction<bool()> Audible;
 	/** 긴 자막을 나눈 다음 쪽. 앞쪽이 떠 있던 동안 밀렸다고 버리지 않는다. */
 	bool bContinuation = false;
-};
-
-/** 소리 자막의 무게. 설정이 「중요한 소리」면 배경 소리는 글로 띄우지 않는다. */
-enum class EIGSoundCaptionWeight : uint8
-{
-	/** 위협이 다가오거나, 대답이 오거나, 사건이 일어난 소리. 진행에 필요하다. */
-	Important,
-	/** 건물과 동네의 평범한 소리, 같은 몸이 되풀이하는 소리. 「모든 소리」에서만 보인다. */
-	Background
 };
 
 /** Snapshot of controller-owned front-end state consumed by the native HUD. */
@@ -352,6 +367,25 @@ public:
 		FName Context,
 		TFunction<bool()> Audible,
 		EIGSoundCaptionWeight Weight = EIGSoundCaptionWeight::Important);
+	/**
+	 * 실제로 낸 소리에 묶은 자막. 그 소리가 지금 나고 있을 때만 세우고, 나는 동안은 떠 있다가 제 길이를
+	 * 다 내기 전에 멎으면 거둔다. 다 울린 짧은 소리는 읽을 시간만큼 남는다. 앞부분만 쓰고 페이드로
+	 * 거두는 소리는 PlannedSoundSeconds에 쓸 길이를 준다(0이면 소리 길이). 들리는 곳은 Audible이 있으면
+	 * 그것으로, 없으면 AudibleRadius로 본다(0이면 소리 감쇠에 맡긴다). 오디오 장치가 아예 없는 PC에서는
+	 * 소리를 낼 수 없으니 SourceLocation에서 난 소리로 보고 읽을 시간만큼 띄운다. 듣지 못하는 사람에게
+	 * 자막까지 빼앗지 않는다.
+	 */
+	static void PushAudioCaptionForSound(
+		const UObject* WorldContext,
+		UAudioComponent* Sound,
+		const FVector& SourceLocation,
+		const FText& Caption,
+		float DurationSeconds,
+		EIGSoundCaptionWeight Weight = EIGSoundCaptionWeight::Important,
+		FName Context = NAME_None,
+		float AudibleRadius = 0.0f,
+		float PlannedSoundSeconds = 0.0f,
+		TFunction<bool()> Audible = nullptr);
 	/** 그 사건의 대사와 소리 자막(떠 있는 것과 밀린 것)을 거둔다. */
 	static void CancelDialogue(
 		const UObject* WorldContext,
@@ -540,7 +574,22 @@ public:
 		const TOptional<FVector>& SourceLocation = TOptional<FVector>(),
 		float AudibleRadius = 0.0f,
 		bool bShowBearing = false,
-		TFunction<bool()> Audible = nullptr);
+		TFunction<bool()> Audible = nullptr,
+		EIGSoundCaptionWeight Weight = EIGSoundCaptionWeight::Important,
+		UAudioComponent* Sound = nullptr,
+		float PlannedSoundSeconds = 0.0f);
+	/**
+	 * 묶인 소리가 지금 자막을 세워도 되는 상태인가. 묶이지 않은 자막은 늘 그렇다. 소리가 제 길이를 다
+	 * 내기 전에 멎었으면(거둔 소리) 거짓이다.
+	 */
+	bool IsAudioCaptionSoundAlive(const FIGAudioCaptionMessage& Message, double CurrentTime) const;
+	/**
+	 * 떠 있는 자막이 아직 소리에 묶이지 않았으면 같은 자리에서 막 난 소리를 찾아 묶는다. 떠오른 뒤
+	 * 0.35초까지 찾고, 그래도 없으면 소리 없이 뜬 자막으로 기록에 한 번 남긴다.
+	 */
+	void TryBindCurrentAudioCaptionSound(double CurrentTime);
+	/** 소리 없이 뜬 것으로 이미 기록한 자막. 같은 줄을 되풀이해 남기지 않는다. */
+	TSet<FString> LoggedUnboundAudioCaptions;
 	/** 그 소리를 지금 플레이어가 들을 수 있는가. 조건이 있으면 조건, 없으면 거리. 자리나 거리를 모르면 들린다고 본다. */
 	bool IsAudioCaptionInRange(const TOptional<FVector>& SourceLocation, float AudibleRadius,
 		const TFunction<bool()>& Audible = nullptr) const;
@@ -985,6 +1034,8 @@ private:
 	/**
 	 * 조준점 아래의 조사 안내. 키 표시(얇은 테두리 안의 키 이름)와 동사 한 줄, 그 아래 작은 보조 줄.
 	 * 길게 누르는 동안 키 표시의 테두리가 네 모서리부터 이어져 닫힌다. KeyLabel이 비면 동사만 둔다.
+	 * bHoldAction이면 키 옆에 작은 「길게」를 붙이고, bHintIsHoldAction이면 보조 줄이 길게 눌러 하는
+	 * 다른 동작이라 그 앞에 붙인다. 긴 조작 설명 문장 대신 쓰는 표시다.
 	 */
 	void DrawInteractionPrompt(
 		const FText& Action,
@@ -993,7 +1044,9 @@ private:
 		float HoldProgress,
 		float Top,
 		float TextScale,
-		float Alpha);
+		float Alpha,
+		bool bHoldAction = false,
+		bool bHintIsHoldAction = false);
 	/** 글자 둘레에 흐린 그림자를 여러 번 겹쳐 그린다. 굵은 외곽선 없이 밝은 바닥 위에서도 읽힌다. */
 	void DrawPromptHalo(const FText& Text, const FVector2D& Position, EIGHudTextRole TextRole, float TextScale, float Alpha);
 	/** 카메라 페이드가 화면을 거의 덮었다. 검은 화면 위에는 조준점도 안내도 두지 않는다. */
@@ -1140,6 +1193,8 @@ private:
 	bool bCurrentDialogueHasContinuation = false;
 	double DialogueStartTime = 0.0;
 	double DialogueEndTime = -1.0;
+	/** 대사 시계를 마지막으로 본 시각. 끝난 줄이 화면에 몇 초 있었는지 로그에 남길 때 쓴다. */
+	double LastDialogueClock = 0.0;
 	double DialogueOccludedAt = -1.0;
 	float DialogueLayoutScale = -1.0f;
 	float DialogueLayoutWidth = -1.0f;
@@ -1169,6 +1224,12 @@ private:
 	TFunction<bool()> CurrentAudioCaptionAudible;
 	/** 떠 있는 자막을 이미 화면 폭에 맞춰 나눴다. 나눈 앞쪽을 다시 나누지 않는다. */
 	bool bCurrentAudioCaptionPaged = false;
+	/** 떠 있는 자막의 무게와 묶인 소리. 다음 쪽도 같은 소리라 그대로 물려받는다. */
+	EIGSoundCaptionWeight CurrentAudioCaptionWeight = EIGSoundCaptionWeight::Important;
+	TWeakObjectPtr<UAudioComponent> CurrentAudioCaptionSound;
+	bool bCurrentAudioCaptionBound = false;
+	bool bCurrentAudioCaptionSeekSound = false;
+	double CurrentAudioCaptionSoundEnd = -1.0;
 	/** 자막 시계. 시작·끝·대기열이 모두 이 값으로 재진다. */
 	double AudioCaptionClockSeconds = 0.0;
 	/** 자막 시계를 마지막으로 흘린 월드의 멈춤 무관 시각. */

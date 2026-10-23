@@ -12,7 +12,7 @@ namespace IGBattery
 AIGBatteryPickup::AIGBatteryPickup()
 {
 	PickupMode = EIGPickupMode::Pocket;
-	SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "BatteryPickupPrompt", "건전지 챙기기"));
+	SetInteractionPrompt(NSLOCTEXT("IGMissingFloor", "BatteryPickupPrompt", "챙기기"));
 }
 
 void AIGBatteryPickup::CompleteInteraction_Implementation(const FIGInteractionContext& Context)

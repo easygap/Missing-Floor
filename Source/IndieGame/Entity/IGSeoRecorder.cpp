@@ -104,7 +104,7 @@ bool AIGSeoRecorder::Configure()
 		CubeMesh,
 		nullptr,
 		FVector(16.0f, 16.0f, 6.0f),
-		NSLOCTEXT("IGMissingFloor", "SeoRecorderPrompt", "판재 밑 녹음기"),
+		NSLOCTEXT("IGMissingFloor", "SeoRecorderPrompt", "꺼내기"),
 		FText::GetEmpty(),
 		EIGMissingFloorTruth::None,
 		EIGMissingFloorSource::None,

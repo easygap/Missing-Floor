@@ -4,6 +4,7 @@
 #include "Accessibility/IGAccessibilitySubsystem.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
 #include "UnrealClient.h"
 #include "Audio/IGAudioHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -1248,9 +1249,11 @@ namespace IGDialogueLog
 void AIGHorrorHUD::EndDialogueMessage(FIGDialogueMessage& Message, const EIGDialogueEndReason Reason)
 {
 	// 이어 보기 검사가 화면에 오른 줄과 끝난 까닭을 짝지어 빠진 말과 겹친 말을 찾는다.
-	UE_LOG(LogIndieGame, Log, TEXT("DIALOGUE_ENDED serial=%llu reason=%d cont=%d ctx=%s line=\"%s\""),
+	// shown은 화면에 떠 있던 시간(초)이고, 화면에 오르지 못하고 거둔 줄은 -1이다.
+	const double Shown = bHasCurrentDialogue && &Message == &CurrentDialogue ? LastDialogueClock - DialogueStartTime : -1.0;
+	UE_LOG(LogIndieGame, Log, TEXT("DIALOGUE_ENDED serial=%llu reason=%d cont=%d ctx=%s shown=%.2f at=%.2f line=\"%s\""),
 		Message.MessageSerial, static_cast<int32>(Reason), Message.bContinuation ? 1 : 0,
-		*Message.Scope.Context.ToString(), *IGDialogueLog::Flat(Message.Line));
+		*Message.Scope.Context.ToString(), Shown, LastDialogueClock, *IGDialogueLog::Flat(Message.Line));
 	// 끝까지 간 소리는 그대로 두고, 거두거나 밀어낸 줄의 소리는 같이 멈춘다.
 	if (Reason != EIGDialogueEndReason::Completed)
 	{
@@ -1319,6 +1322,8 @@ void AIGHorrorHUD::CancelAudioCaptionsIn(const FName Context)
 		CurrentAudioCaptionSource.Reset();
 		CurrentAudioCaptionAudible = nullptr;
 		bCurrentAudioCaptionPaged = false;
+		bCurrentAudioCaptionBound = false;
+		CurrentAudioCaptionSound.Reset();
 		AudioCaptionEndTime = -1.0;
 	}
 }
@@ -1456,6 +1461,8 @@ void AIGHorrorHUD::ClearAllDialogueAndCaptions()
 	CurrentAudioCaptionSource.Reset();
 	CurrentAudioCaptionAudible = nullptr;
 	bCurrentAudioCaptionPaged = false;
+	bCurrentAudioCaptionBound = false;
+	CurrentAudioCaptionSound.Reset();
 	AudioCaptionEndTime = -1.0;
 	FlushDialogueEndCallbacks();
 }
@@ -1695,10 +1702,6 @@ void AIGHorrorHUD::ActivateDialogue(
 {
 	CurrentDialogue = MoveTemp(Message);
 	bHasCurrentDialogue = true;
-	UE_LOG(LogIndieGame, Log, TEXT("DIALOGUE_SHOWN serial=%llu cont=%d channel=%d ctx=%s speaker=\"%s\" line=\"%s\""),
-		CurrentDialogue.MessageSerial, CurrentDialogue.bContinuation ? 1 : 0, static_cast<int32>(CurrentDialogue.Channel),
-		*CurrentDialogue.Scope.Context.ToString(), *IGDialogueLog::Flat(CurrentDialogue.Speaker),
-		*IGDialogueLog::Flat(CurrentDialogue.Line));
 	// 긴급 대사 뒤에 앞쪽을 다시 띄워도 남은 쪽은 그대로 줄 서 있다.
 	// 이 상태를 잃으면 첫 쪽만 읽고도 원문 전체가 「들은 말」에 남았다.
 	bCurrentDialogueHasContinuation = DialogueQueue.ContainsByPredicate([this](const FIGDialogueMessage& Queued)
@@ -1713,6 +1716,14 @@ void AIGHorrorHUD::ActivateDialogue(
 	DialogueEndTime = CurrentTime + CalculateDialogueDuration(
 		CurrentDialogue.Line.ToString(),
 		CurrentDialogue.MinimumDurationSeconds);
+	// wait는 줄을 낸 뒤 화면에 오르기까지 밀린 시간, dur는 읽으라고 준 시간이다(대사 시계, 초). 자막 시간 검수가
+	// 요청·표시·실제로 떠 있던 시간(DIALOGUE_ENDED shown)을 짝짓는다.
+	UE_LOG(LogIndieGame, Log,
+		TEXT("DIALOGUE_SHOWN serial=%llu cont=%d channel=%d prio=%d life=%d ctx=%s wait=%.2f dur=%.2f at=%.2f speaker=\"%s\" line=\"%s\""),
+		CurrentDialogue.MessageSerial, CurrentDialogue.bContinuation ? 1 : 0, static_cast<int32>(CurrentDialogue.Channel),
+		static_cast<int32>(CurrentDialogue.Priority), static_cast<int32>(CurrentDialogue.Scope.Lifetime),
+		*CurrentDialogue.Scope.Context.ToString(), CurrentTime - CurrentDialogue.QueuedAt, DialogueEndTime - CurrentTime, CurrentTime,
+		*IGDialogueLog::Flat(CurrentDialogue.Speaker), *IGDialogueLog::Flat(CurrentDialogue.Line));
 	// 녹음된 말은 화면에 오르는 이때 소리를 낸다. 나눈 줄의 다음 쪽은 같은 소리를 이어 쓴다.
 	if (CurrentDialogue.Scope.StartVoice && !CurrentDialogue.bVoiceStarted)
 	{
@@ -1798,13 +1809,23 @@ void AIGHorrorHUD::EnqueueDialogue(
 		}
 	}
 
+	// 떠 있던 줄을 거둔 바로 그 프레임에는 화면이 비어 있어도 밀린 줄이 있다. 그때 들어온 줄이 바로 뜨면 앞서
+	// 기다리던 줄을 새치기했다(낮1 짐 장면에서 수거 안내문 속말이 정우의 말보다 먼저 떴다). 밀린 줄이 있으면 더 급한
+	// 줄만 앞에 세우고 나머지는 차례를 기다린다.
 	if (!bHasCurrentDialogue)
 	{
-		ActivateDialogue(MoveTemp(Message), CurrentTime);
-		return;
+		if (DialogueQueue.IsEmpty())
+		{
+			ActivateDialogue(MoveTemp(Message), CurrentTime);
+			return;
+		}
+		if (static_cast<uint8>(Message.Priority) > static_cast<uint8>(DialogueQueue[0].Priority))
+		{
+			DialogueQueue.Insert(MoveTemp(Message), 0);
+			return;
+		}
 	}
-
-	if (static_cast<uint8>(Message.Priority)
+	else if (static_cast<uint8>(Message.Priority)
 		> static_cast<uint8>(CurrentDialogue.Priority))
 	{
 		// 녹음된 말은 소리가 계속 나가므로 자막만 뒤로 미루지 않는다. 버리는 줄도 다시 세우지 않는다.
@@ -1945,6 +1966,7 @@ void AIGHorrorHUD::ValidateCurrentDialogue(const double CurrentTime)
 
 void AIGHorrorHUD::AdvanceDialogueQueue(const double CurrentTime)
 {
+	LastDialogueClock = CurrentTime;
 	ValidateCurrentDialogue(CurrentTime);
 	if (bHasCurrentDialogue && CurrentTime < DialogueEndTime)
 	{
@@ -2203,7 +2225,8 @@ void AIGHorrorHUD::PushBackgroundAudioCaptionAt(
 	{
 		return;
 	}
-	HorrorHUD->ShowAudioCaptionInContext(Caption, DurationSeconds, NAME_None, SourceLocation, 0.0f, true);
+	HorrorHUD->ShowAudioCaptionInContext(Caption, DurationSeconds, NAME_None, SourceLocation, 0.0f, true, nullptr,
+		EIGSoundCaptionWeight::Background);
 }
 
 void AIGHorrorHUD::PushAudioCaptionScoped(
@@ -2249,7 +2272,42 @@ void AIGHorrorHUD::PushAudioCaptionWhileAudible(
 	{
 		return;
 	}
-	HorrorHUD->ShowAudioCaptionInContext(Caption, DurationSeconds, Context, SourceLocation, 0.0f, true, MoveTemp(Audible));
+	HorrorHUD->ShowAudioCaptionInContext(Caption, DurationSeconds, Context, SourceLocation, 0.0f, true, MoveTemp(Audible),
+		Weight);
+}
+
+void AIGHorrorHUD::PushAudioCaptionForSound(
+	const UObject* WorldContext,
+	UAudioComponent* Sound,
+	const FVector& SourceLocation,
+	const FText& Caption,
+	const float DurationSeconds,
+	const EIGSoundCaptionWeight Weight,
+	const FName Context,
+	const float AudibleRadius,
+	const float PlannedSoundSeconds,
+	TFunction<bool()> Audible)
+{
+	AIGHorrorHUD* HorrorHUD = FindHorrorHud(WorldContext);
+	if (!HorrorHUD || !IGHorrorHUDCaptions::IsWeightShown(WorldContext, Weight))
+	{
+		return;
+	}
+	const UWorld* World = HorrorHUD->GetWorld();
+	if (!World || !World->GetAudioDeviceRaw())
+	{
+		HorrorHUD->ShowAudioCaptionInContext(Caption, DurationSeconds, Context, SourceLocation, AudibleRadius, true,
+			MoveTemp(Audible), Weight);
+		return;
+	}
+	// 소리를 내지 못했으면(감쇠 밖이거나 발음 상한에 밀렸으면) 글로도 알리지 않는다. 자막만 뜨고 소리가
+	// 없으면 소리를 듣는 사람과 읽는 사람이 서로 다른 일을 겪는다.
+	if (!Sound || !Sound->IsPlaying())
+	{
+		return;
+	}
+	HorrorHUD->ShowAudioCaptionInContext(Caption, DurationSeconds, Context, Sound->GetComponentLocation(),
+		AudibleRadius, true, MoveTemp(Audible), Weight, Sound, PlannedSoundSeconds);
 }
 
 void AIGHorrorHUD::PushAudioCaption(
@@ -2353,7 +2411,10 @@ void AIGHorrorHUD::ShowAudioCaptionInContext(
 	const TOptional<FVector>& SourceLocation,
 	const float AudibleRadius,
 	const bool bShowBearing,
-	TFunction<bool()> Audible)
+	TFunction<bool()> Audible,
+	const EIGSoundCaptionWeight Weight,
+	UAudioComponent* Sound,
+	const float PlannedSoundSeconds)
 {
 	const UWorld* World = GetWorld();
 	if (!World || Caption.IsEmpty())
@@ -2375,6 +2436,18 @@ void AIGHorrorHUD::ShowAudioCaptionInContext(
 	const float ClampedDuration =
 		FMath::Max(0.8f, DurationSeconds) * GetCaptionDurationScale();
 	const FString IncomingCaption = Caption.ToString();
+	// 묶인 소리가 제 길이대로 끝나는 시각. 반복하는 소리는 멎는 순간이 끝이다.
+	double SoundExpectedEnd = -1.0;
+	if (Sound)
+	{
+		const float SoundSeconds = PlannedSoundSeconds > 0.0f
+			? PlannedSoundSeconds
+			: (Sound->Sound ? Sound->Sound->GetDuration() : 0.0f);
+		if (SoundSeconds > 0.0f && SoundSeconds < INDEFINITELY_LOOPING_DURATION)
+		{
+			SoundExpectedEnd = CurrentTime + SoundSeconds / FMath::Max(0.05f, Sound->PitchMultiplier);
+		}
+	}
 	// 떠 있는 줄이 나눈 앞쪽이면 문구가 원문과 다르다. 그때는 늘리지 않고 다음 줄로 세운다.
 	if (!CurrentAudioCaption.IsEmpty()
 		&& CurrentTime < AudioCaptionEndTime
@@ -2385,6 +2458,13 @@ void AIGHorrorHUD::ShowAudioCaptionInContext(
 		AudioCaptionEndTime = FMath::Max(
 			AudioCaptionEndTime,
 			CurrentTime + ClampedDuration);
+		// 같은 자리에서 같은 소리가 다시 났다. 자막은 새 소리를 따라간다.
+		if (Sound)
+		{
+			CurrentAudioCaptionSound = Sound;
+			bCurrentAudioCaptionBound = true;
+			CurrentAudioCaptionSoundEnd = SoundExpectedEnd;
+		}
 		return;
 	}
 
@@ -2397,6 +2477,12 @@ void AIGHorrorHUD::ShowAudioCaptionInContext(
 	Message.AudibleRadius = AudibleRadius;
 	Message.bShowBearing = bShowBearing && SourceLocation.IsSet();
 	Message.Audible = MoveTemp(Audible);
+	Message.Weight = Weight;
+	Message.Sound = Sound;
+	Message.bBoundToSound = Sound != nullptr;
+	Message.SoundExpectedEnd = SoundExpectedEnd;
+	// 소리를 넘겨받지 못한 자리 있는 자막은 그 자리에서 막 난 소리를 찾아 묶는다.
+	Message.bSeekSound = !Sound && SourceLocation.IsSet() && World->GetAudioDeviceRaw();
 	if (CurrentAudioCaption.IsEmpty() || CurrentTime >= AudioCaptionEndTime)
 	{
 		ActivateAudioCaption(MoveTemp(Message), CurrentTime);
@@ -2412,6 +2498,12 @@ void AIGHorrorHUD::ShowAudioCaptionInContext(
 				Queued.DurationSeconds,
 				ClampedDuration);
 			Queued.QueuedAt = CurrentTime;
+			if (Sound)
+			{
+				Queued.Sound = Sound;
+				Queued.bBoundToSound = true;
+				Queued.SoundExpectedEnd = SoundExpectedEnd;
+			}
 			return;
 		}
 	}
@@ -2437,19 +2529,100 @@ void AIGHorrorHUD::ActivateAudioCaption(
 	CurrentAudioCaptionRadius = Message.AudibleRadius;
 	bCurrentAudioCaptionShowsBearing = Message.bShowBearing;
 	CurrentAudioCaptionAudible = MoveTemp(Message.Audible);
+	CurrentAudioCaptionWeight = Message.Weight;
+	CurrentAudioCaptionSound = Message.Sound;
+	bCurrentAudioCaptionBound = Message.bBoundToSound;
+	CurrentAudioCaptionSoundEnd = Message.SoundExpectedEnd;
+	bCurrentAudioCaptionSeekSound = Message.bSeekSound;
 	// 다음 쪽은 이미 화면 폭에 맞춰 나눈 것이다. 다시 나누면 같은 말이 두 번 밀린다.
 	bCurrentAudioCaptionPaged = Message.bContinuation;
 	AudioCaptionStartTime = CurrentTime;
 	AudioCaptionEndTime = CurrentTime + FMath::Max(0.8f, Message.DurationSeconds);
 }
 
+bool AIGHorrorHUD::IsAudioCaptionSoundAlive(
+	const FIGAudioCaptionMessage& Message,
+	const double CurrentTime) const
+{
+	if (!Message.bBoundToSound)
+	{
+		return true;
+	}
+	const UAudioComponent* Sound = Message.Sound.Get();
+	if (Sound && Sound->IsPlaying())
+	{
+		return true;
+	}
+	// 멎었다. 제 길이를 다 냈으면 다 들은 소리라 읽을 시간 동안은 세울 수 있다. 그 전에 멎었거나
+	// 반복하는 소리면 거둔 소리다.
+	return Message.SoundExpectedEnd >= 0.0
+		&& CurrentTime + IGHorrorHUD::VoiceCutToleranceSeconds >= Message.SoundExpectedEnd;
+}
+
+void AIGHorrorHUD::TryBindCurrentAudioCaptionSound(const double CurrentTime)
+{
+	if (CurrentAudioCaption.IsEmpty() || bCurrentAudioCaptionBound || !bCurrentAudioCaptionSeekSound
+		|| !CurrentAudioCaptionSource.IsSet())
+	{
+		return;
+	}
+	float SoundAge = 0.0f;
+	if (UAudioComponent* Sound = IGAudio::FindRecentSoundNear(this, CurrentAudioCaptionSource.GetValue(), 250.0f, 0.6f, &SoundAge))
+	{
+		// 소리가 자막보다 먼저 났을 수 있다. 제 길이대로 끝나는 시각은 소리가 난 때부터 잰다.
+		const float SoundSeconds = Sound->Sound ? Sound->Sound->GetDuration() : 0.0f;
+		CurrentAudioCaptionSound = Sound;
+		bCurrentAudioCaptionBound = true;
+		bCurrentAudioCaptionSeekSound = false;
+		CurrentAudioCaptionSoundEnd = SoundSeconds > 0.0f && SoundSeconds < INDEFINITELY_LOOPING_DURATION
+			? CurrentTime + SoundSeconds / FMath::Max(0.05f, Sound->PitchMultiplier) - SoundAge
+			: -1.0;
+		return;
+	}
+	if (CurrentTime - AudioCaptionStartTime > 0.35)
+	{
+		// 이 자리에서 이 도우미로 낸 소리를 찾지 못했다. 다른 길로 낸 소리일 수도 있어 자막은 그대로 두고,
+		// 소리 없이 뜨는 자막을 찾아 고칠 수 있게 남긴다.
+		bCurrentAudioCaptionSeekSound = false;
+		const FString Key = CurrentAudioCaption.ToString();
+		if (!LoggedUnboundAudioCaptions.Contains(Key))
+		{
+			LoggedUnboundAudioCaptions.Add(Key);
+			UE_LOG(LogTemp, Display, TEXT("AUDIO_CAPTION_UNBOUND \"%s\""), *Key.Replace(TEXT("\n"), TEXT(" ")));
+		}
+	}
+}
+
 void AIGHorrorHUD::AdvanceAudioCaptionQueue(const double CurrentTime)
 {
+	TryBindCurrentAudioCaptionSound(CurrentTime);
 	// 떠 있는 동안 그 소리가 들리는 곳을 벗어났으면 바로 내린다. 다른 장면에 지난 소리 설명이 남지 않게.
 	if (!CurrentAudioCaption.IsEmpty()
 		&& !IsAudioCaptionInRange(CurrentAudioCaptionSource, CurrentAudioCaptionRadius, CurrentAudioCaptionAudible))
 	{
 		AudioCaptionEndTime = CurrentTime;
+	}
+	// 설정을 「중요한 소리」로 내렸으면 떠 있던 생활 소리 자막도 내린다.
+	if (!CurrentAudioCaption.IsEmpty() && !IGHorrorHUDCaptions::IsWeightShown(this, CurrentAudioCaptionWeight))
+	{
+		AudioCaptionEndTime = CurrentTime;
+	}
+	// 묶인 소리가 나는 동안은 자막도 떠 있다. 거둔 소리면 바로 내리고, 다 울린 소리는 읽을 시간만 남긴다.
+	if (!CurrentAudioCaption.IsEmpty() && bCurrentAudioCaptionBound && CurrentTime < AudioCaptionEndTime)
+	{
+		const UAudioComponent* Sound = CurrentAudioCaptionSound.Get();
+		if (Sound && Sound->IsPlaying())
+		{
+			const double PlayingUntil = CurrentAudioCaptionSoundEnd >= 0.0
+				? FMath::Min(CurrentTime + 0.3, CurrentAudioCaptionSoundEnd)
+				: CurrentTime + 0.3;
+			AudioCaptionEndTime = FMath::Max(AudioCaptionEndTime, PlayingUntil);
+		}
+		else if (CurrentAudioCaptionSoundEnd < 0.0
+			|| CurrentTime + IGHorrorHUD::VoiceCutToleranceSeconds < CurrentAudioCaptionSoundEnd)
+		{
+			AudioCaptionEndTime = CurrentTime;
+		}
 	}
 	if (!CurrentAudioCaption.IsEmpty() && CurrentTime < AudioCaptionEndTime)
 	{
@@ -2457,12 +2630,19 @@ void AIGHorrorHUD::AdvanceAudioCaptionQueue(const double CurrentTime)
 	}
 	CurrentAudioCaption = FText::GetEmpty();
 	bCurrentAudioCaptionPaged = false;
+	bCurrentAudioCaptionBound = false;
+	CurrentAudioCaptionSound.Reset();
 	while (!AudioCaptionQueue.IsEmpty())
 	{
 		FIGAudioCaptionMessage Next = MoveTemp(AudioCaptionQueue[0]);
 		AudioCaptionQueue.RemoveAt(0);
 		// 줄 서 있는 사이 그 자리를 떠났으면 그 소리는 이제 들리지 않는다.
 		if (!IsAudioCaptionInRange(Next.SourceLocation, Next.AudibleRadius, Next.Audible))
+		{
+			continue;
+		}
+		// 기다리는 사이 설정을 내렸거나, 묶인 소리를 거뒀으면 세우지 않는다.
+		if (!IGHorrorHUDCaptions::IsWeightShown(this, Next.Weight) || !IsAudioCaptionSoundAlive(Next, CurrentTime))
 		{
 			continue;
 		}
@@ -3749,8 +3929,18 @@ void AIGHorrorHUD::DrawHUD()
 			const UIGAccessibilitySubsystem* PromptAccessibility = GetGameInstance()
 				? GetGameInstance()->GetSubsystem<UIGAccessibilitySubsystem>()
 				: nullptr;
+			// 한 번 누르기와 길게 누르기는 문장 대신 작은 「길게」로 가른다. 누르면 하는 동작과 길게 눌러 하는
+			// 동작이 함께 있는 대상(문, 고임목, 든 조각)은 보조 줄이 길게 눌러 하는 동작이다. 한 번 눌러 두면
+			// 이어지게 설정했으면 길게 누를 일이 없으니 표시하지 않는다.
+			const bool bToggleHolds = PromptAccessibility && PromptAccessibility->UsesToggleHoldInteractions();
+			const bool bHintIsHoldAction = !bToggleHolds && FocusedActor
+				&& FocusedActor->ActorHasTag(FName(TEXT("MissingFloor.Prompt.HoldAlternative")));
+			const bool bHoldAction = !bToggleHolds && !bHintIsHoldAction
+				&& Interaction->GetFocusedHoldDuration() > KINDA_SMALL_NUMBER;
+			// 길게 누르는 동작은 진행이 키 테두리로 보이므로 키를 익힌 뒤에도 키 표시를 남긴다.
 			const bool bShowKey = !IGOnboardingMemory::HasLearnedPrompt(PromptKind)
-				|| (PromptAccessibility && PromptAccessibility->GetSettings().bAlwaysShowPromptKeys);
+				|| (PromptAccessibility && PromptAccessibility->GetSettings().bAlwaysShowPromptKeys)
+				|| bHoldAction || HoldProgress > KINDA_SMALL_NUMBER;
 			const FText KeyLabel = GetBoundKeyLabel(PromptAction, bUsingGamepad);
 			// 대상이 주는 안내는 동사 한 줄이거나 보조 설명을 붙인 두 줄이다. 보조 줄은 한 단계 작고
 			// 흐리게 쓴다.
@@ -3795,7 +3985,9 @@ void AIGHorrorHUD::DrawHUD()
 				HoldProgress,
 				PromptTop,
 				PromptScale,
-				FocusRevealAlpha * (bShowKey ? 1.0f : 0.82f));
+				FocusRevealAlpha * (bShowKey ? 1.0f : 0.82f),
+				bHoldAction,
+				bHintIsHoldAction && !HintLine.IsEmpty());
 		}
 	}
 
@@ -5286,6 +5478,11 @@ bool AIGHorrorHUD::DrawAudioCaption(
 		Continuation.AudibleRadius = CurrentAudioCaptionRadius;
 		Continuation.bShowBearing = bCurrentAudioCaptionShowsBearing;
 		Continuation.Audible = CurrentAudioCaptionAudible;
+		Continuation.Weight = CurrentAudioCaptionWeight;
+		Continuation.Sound = CurrentAudioCaptionSound;
+		Continuation.bBoundToSound = bCurrentAudioCaptionBound;
+		Continuation.SoundExpectedEnd = CurrentAudioCaptionSoundEnd;
+		Continuation.bSeekSound = false;
 		Continuation.bContinuation = true;
 		AudioCaptionQueue.Insert(MoveTemp(Continuation), 0);
 		if (AudioCaptionQueue.Num() > IGHorrorHUD::MaximumAudioCaptionQueueDepth)
@@ -6758,7 +6955,10 @@ void AIGHorrorHUD::DrawAccessibilityPanel()
 		NSLOCTEXT("IGHUD", "A11yKnockHapticDesc", "위층 사람이 소리를 내면 게임패드가 진동합니다. 멀리서 나는 소리일수록 진동도 약해집니다."),
 		NSLOCTEXT("IGHUD", "A11yHeartbeatDesc", "긴장하면 화면 가장자리가 심장 박동에 맞춰 어두워졌다 밝아집니다."),
 		NSLOCTEXT("IGHUD", "A11yKnockAssistDesc", "박자가 조금 늦거나 빨라도 맞은 것으로 칩니다."),
-		NSLOCTEXT("IGHUD", "A11ySoundCaptionsDesc", "소리를 글로 보여 줍니다. ‘중요한 소리’는 두드리는 소리나 다가오는 발소리처럼 진행에 필요한 소리만, ‘모든 소리’는 건물과 동네의 평범한 소리까지 보여 줍니다."),
+		// 이전 버전에서 기본으로 켜져 있던 프로필에는 고를 수 있다는 것부터 말한다. 닫으면 지금 값이 남는다.
+		Accessibility->NeedsSoundCaptionConfirmation()
+			? NSLOCTEXT("IGHUD", "A11ySoundCaptionsConfirmDesc", "이전 버전에서 기본으로 켜 두던 설정입니다. 이제 기본은 ‘끔’입니다. 그대로 쓸지 바꿀지 골라 주세요.")
+			: NSLOCTEXT("IGHUD", "A11ySoundCaptionsDesc", "소리를 글로 보여 줍니다. ‘중요한 소리’는 두드리는 소리나 다가오는 발소리처럼 진행에 필요한 소리만, ‘모든 소리’는 건물과 동네의 평범한 소리까지 보여 줍니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionSizeDesc", "대화와 소리 자막의 글자 크기를 함께 바꿉니다. 아래에서 미리 볼 수 있습니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionBackgroundDesc", "자막 뒤의 검은 배경을 얼마나 진하게 표시할지 정합니다."),
 		NSLOCTEXT("IGHUD", "A11yCaptionSafeAreaDesc", "값을 줄이면 자막이 화면 안쪽에 표시됩니다."),
@@ -9301,7 +9501,9 @@ void AIGHorrorHUD::DrawInteractionPrompt(
 	const float HoldProgress,
 	const float Top,
 	const float TextScale,
-	const float Alpha)
+	const float Alpha,
+	const bool bHoldAction,
+	const bool bHintIsHoldAction)
 {
 	UFont* ActionFont = GetFontForRole(EIGHudTextRole::Prompt);
 	UFont* HintFont = GetFontForRole(EIGHudTextRole::Hint);
@@ -9313,6 +9515,12 @@ void AIGHorrorHUD::DrawInteractionPrompt(
 	const FString HintString = Hint.ToString();
 	const FString KeyString = KeyLabel.ToString();
 	const bool bKey = !KeyString.IsEmpty();
+	// 길게 눌러야 하는 동작에 붙는 작은 표시. 키 옆이나 보조 줄 앞에 쓴다.
+	const FText HoldTag = NSLOCTEXT("IGHUD", "PromptHoldTag", "길게");
+	const FString HoldTagString = HoldTag.ToString();
+	float HoldTagWidth = 0.0f;
+	float HoldTagGap = 0.0f;
+	float HintTagWidth = 0.0f;
 	// 키 이름은 동사보다 한 단계 작게 쓰고, 키 표시 상자는 글줄 높이에 맞춘다. 한 글자 키도
 	// 정사각형보다 좁아지지 않는다. 화면 폭의 90%를 넘으면(큰 글자, 긴 번역) 전체를 줄인다.
 	float Scale = FMath::Max(0.5f, TextScale);
@@ -9334,7 +9542,12 @@ void AIGHorrorHUD::DrawInteractionPrompt(
 		KeyHeight = FMath::RoundToFloat(ActionHeight * 0.96f);
 		KeyWidth = bKey ? FMath::RoundToFloat(FMath::Max(KeyHeight, KeyTextWidth + 12.0f * Scale)) : 0.0f;
 		KeyGap = bKey ? FMath::RoundToFloat(9.0f * Scale) : 0.0f;
-		BlockWidth = KeyWidth + KeyGap + FMath::Max(ActionWidth, HintWidth);
+		HoldTagWidth = bHoldAction ? MeasureTextWidth(HoldTagString, HintFont, Scale * 0.8f) : 0.0f;
+		HoldTagGap = bHoldAction ? FMath::RoundToFloat(7.0f * Scale) : 0.0f;
+		HintTagWidth = bHintIsHoldAction
+			? MeasureTextWidth(HoldTagString, HintFont, Scale * 0.8f) + FMath::RoundToFloat(6.0f * Scale)
+			: 0.0f;
+		BlockWidth = KeyWidth + KeyGap + HoldTagWidth + HoldTagGap + FMath::Max(ActionWidth, HintTagWidth + HintWidth);
 	};
 	Measure();
 	const float MaximumWidth = Canvas->ClipX * 0.9f;
@@ -9344,7 +9557,7 @@ void AIGHorrorHUD::DrawInteractionPrompt(
 		Measure();
 	}
 	const float Left = FMath::RoundToFloat((Canvas->ClipX - BlockWidth) * 0.5f);
-	const float ActionLeft = Left + KeyWidth + KeyGap;
+	const float ActionLeft = Left + KeyWidth + KeyGap + HoldTagWidth + HoldTagGap;
 
 	if (bKey)
 	{
@@ -9391,6 +9604,17 @@ void AIGHorrorHUD::DrawInteractionPrompt(
 			false);
 	}
 	// 밝은 바닥과 벽 위에서도 읽히도록 글자 둘레에 흐린 그림자를 깐다. 굵은 테두리는 쓰지 않는다.
+	FLinearColor TagColor = IGHorrorHUD::PromptHintInk;
+	TagColor.A *= Alpha;
+	if (bHoldAction)
+	{
+		const float TagHeight = MeasureTextHeight(HoldTagString, HintFont, Scale * 0.8f);
+		const FVector2D TagPosition(
+			Left + KeyWidth + KeyGap,
+			FMath::RoundToFloat(Top + (ActionHeight - TagHeight) * 0.5f));
+		DrawPromptHalo(HoldTag, TagPosition, EIGHudTextRole::Hint, Scale * 0.8f, Alpha);
+		DrawLeftAlignedText(HoldTag, TagPosition, TagColor, EIGHudTextRole::Hint, Scale * 0.8f, false, 0.0f);
+	}
 	FLinearColor ActionColor = IGHorrorHUD::PromptInk;
 	ActionColor.A *= Alpha;
 	DrawPromptHalo(Action, FVector2D(ActionLeft, Top), EIGHudTextRole::Prompt, Scale, Alpha);
@@ -9399,7 +9623,16 @@ void AIGHorrorHUD::DrawInteractionPrompt(
 	{
 		FLinearColor HintColor = IGHorrorHUD::PromptHintInk;
 		HintColor.A *= Alpha;
-		const FVector2D HintPosition(ActionLeft, FMath::RoundToFloat(Top + ActionHeight + 3.0f * Scale));
+		const float HintTop = FMath::RoundToFloat(Top + ActionHeight + 3.0f * Scale);
+		if (bHintIsHoldAction)
+		{
+			const float HintHeight = MeasureTextHeight(HintString, HintFont, Scale * 0.9f);
+			const float TagHeight = MeasureTextHeight(HoldTagString, HintFont, Scale * 0.8f);
+			const FVector2D TagPosition(ActionLeft, FMath::RoundToFloat(HintTop + (HintHeight - TagHeight) * 0.5f));
+			DrawPromptHalo(HoldTag, TagPosition, EIGHudTextRole::Hint, Scale * 0.8f, Alpha);
+			DrawLeftAlignedText(HoldTag, TagPosition, TagColor, EIGHudTextRole::Hint, Scale * 0.8f, false, 0.0f);
+		}
+		const FVector2D HintPosition(ActionLeft + HintTagWidth, HintTop);
 		DrawPromptHalo(Hint, HintPosition, EIGHudTextRole::Hint, Scale * 0.9f, Alpha);
 		DrawLeftAlignedText(Hint, HintPosition, HintColor, EIGHudTextRole::Hint, Scale * 0.9f, false, 0.0f);
 	}

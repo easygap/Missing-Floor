@@ -314,23 +314,23 @@ void AIGMissingFloorNightFourDirector::BuildWallStage(UStaticMesh* CubeMesh)
 	};
 	const FTargetSpec Specs[] = {
 		{TEXT("NightFourWallSurvey"), FVector(242.5f, 700.0f, 1320.0f), FVector(2.0f, 116.0f, 236.0f),
-			NSLOCTEXT("IGMissingFloor", "WallSurveyPrompt", "벽 살펴보기"), 0.0f, 0.0f},
+			NSLOCTEXT("IGMissingFloor", "WallSurveyPrompt", "살펴보기"), 0.0f, 0.0f},
 		{TEXT("NightFourWallJoint"), FVector(243.5f, 700.0f, JointZ), FVector(3.0f, 106.0f, 16.0f),
-			NSLOCTEXT("IGMissingFloor", "WallJointPrompt", "덧판 이음매 치기"), 0.8f, 1.0f},
+			NSLOCTEXT("IGMissingFloor", "WallJointPrompt", "이음매 내려치기"), 0.8f, 1.0f},
 		{TEXT("NightFourWallOverlay"), FVector(246.0f, 492.0f, 1265.0f), FVector(3.0f, 64.0f, 90.0f),
-			NSLOCTEXT("IGMissingFloor", "WallOverlayPrompt", "덧판 떼어 내기"), 0.8f, 1.0f},
+			NSLOCTEXT("IGMissingFloor", "WallOverlayPrompt", "떼어 내기"), 0.8f, 1.0f},
 		{TEXT("NightFourWallBrace"), FVector(218.0f, 472.0f, 1310.0f), FVector(66.0f, 14.0f, 200.0f),
-			NSLOCTEXT("IGMissingFloor", "WallBracePrompt", "철골 틀 세우기"), 0.6f, 0.35f},
+			NSLOCTEXT("IGMissingFloor", "WallBracePrompt", "틀 세우기"), 0.6f, 0.35f},
 		{TEXT("NightFourWallOuterScrews"), FVector(243.5f, 700.0f, JointZ + 2.0f), FVector(3.0f, 106.0f, 12.0f),
-			NSLOCTEXT("IGMissingFloor", "WallOuterScrewsPrompt", "드러난 나사 쳐 내기"), 0.8f, 1.0f},
+			NSLOCTEXT("IGMissingFloor", "WallOuterScrewsPrompt", "나사 쳐 내기"), 0.8f, 1.0f},
 		{TEXT("NightFourWallRebrace"), FVector(190.0f, BraceUprightY, 1255.0f), FVector(20.0f, 64.0f, 110.0f),
-			NSLOCTEXT("IGMissingFloor", "WallRebracePrompt", "밀린 틀 다시 세우기"), 0.6f, 0.3f},
+			NSLOCTEXT("IGMissingFloor", "WallRebracePrompt", "다시 세우기"), 0.6f, 0.3f},
 		{TEXT("NightFourWallInnerSouth"), FVector(243.5f, 644.5f, 1300.0f), FVector(3.0f, 14.0f, 210.0f),
-			NSLOCTEXT("IGMissingFloor", "WallInnerScrewsPrompt", "안쪽 판 나사 쳐 내기"), 0.8f, 1.0f},
+			NSLOCTEXT("IGMissingFloor", "WallInnerScrewsPrompt", "나사 쳐 내기"), 0.8f, 1.0f},
 		{TEXT("NightFourWallInnerNorth"), FVector(243.5f, 755.5f, 1300.0f), FVector(3.0f, 14.0f, 210.0f),
-			NSLOCTEXT("IGMissingFloor", "WallInnerScrewsPrompt", "안쪽 판 나사 쳐 내기"), 0.8f, 1.0f},
+			NSLOCTEXT("IGMissingFloor", "WallInnerScrewsPrompt", "나사 쳐 내기"), 0.8f, 1.0f},
 		{TEXT("NightFourWallLastClip"), FVector(244.0f, 700.0f, 1430.0f), FVector(4.0f, 24.0f, 20.0f),
-			NSLOCTEXT("IGMissingFloor", "WallLastClipPrompt", "마지막 철물 쳐 내기"), 0.8f, 1.0f},
+			NSLOCTEXT("IGMissingFloor", "WallLastClipPrompt", "철물 쳐 내기"), 0.8f, 1.0f},
 	};
 	static_assert(UE_ARRAY_COUNT(Specs) == static_cast<int32>(EWallTarget::Count), "벽 표적 표와 EWallTarget 순서가 같아야 한다");
 	FActorSpawnParameters Parameters;

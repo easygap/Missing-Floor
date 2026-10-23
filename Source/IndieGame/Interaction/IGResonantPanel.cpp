@@ -35,7 +35,7 @@ AIGResonantPanel::AIGResonantPanel()
 		TEXT("/Game/Meshes/SM_ServicePressurePanel.SM_ServicePressurePanel"));
 	if (Mesh.Succeeded()) { PanelMesh->SetStaticMesh(Mesh.Object); }
 	InteractionHoldDuration = 0.65f;
-	InteractionPrompt = NSLOCTEXT("IGPanel", "Press", "들뜬 벽판 눌러 보기");
+	InteractionPrompt = NSLOCTEXT("IGPanel", "Press", "눌러 보기");
 }
 
 bool AIGResonantPanel::CanInteract_Implementation(AActor* Interactor) const

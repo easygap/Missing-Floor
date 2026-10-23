@@ -424,13 +424,13 @@ FText AIGAccessHatch::GetInteractionPrompt_Implementation(AActor* Interactor) co
 	// 몸이 누르고 있으면 닫아 보는 것만 된다(다리에 걸려 튕긴다).
 	if (bSealed && bOpen && !bObstructed)
 	{
-		return NSLOCTEXT("IGMissingFloor", "HatchPeelSealPrompt", "막힌 자리 뜯어내기");
+		return NSLOCTEXT("IGMissingFloor", "HatchPeelSealPrompt", "뜯어내기");
 	}
 	if (bOpen)
 	{
-		return ClosePrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "HatchClosePrompt", "점검구 닫기") : ClosePrompt;
+		return ClosePrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "HatchClosePrompt", "닫기") : ClosePrompt;
 	}
-	return OpenPrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "HatchOpenPrompt", "점검구 열기") : OpenPrompt;
+	return OpenPrompt.IsEmpty() ? NSLOCTEXT("IGMissingFloor", "HatchOpenPrompt", "열기") : OpenPrompt;
 }
 
 float AIGAccessHatch::GetInteractionHoldDuration_Implementation(AActor* Interactor) const
