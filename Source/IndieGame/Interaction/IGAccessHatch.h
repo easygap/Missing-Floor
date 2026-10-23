@@ -69,6 +69,18 @@ public:
 	void SetObstructed(bool bInObstructed, float BlockedYawDegrees = 38.0f);
 	bool IsObstructed() const { return bObstructed; }
 
+	/** 문짝(열리면 경첩 쪽 벽 앞에 선다). 덧댄 것이 몸판과 다리를 비킬 때 본다. */
+	UStaticMeshComponent* GetDoorPanel() const { return DoorPanel; }
+	/** 다 연 각(도). */
+	static float GetOpenYaw();
+	/** 문짝을 그 각(도)만큼 열었을 때 문짝 면 위 점들(경첩에서 끝까지, 위아래 셋, 월드). 덧댄 것이 걸리는 각을 잰다. */
+	void GetDoorSamplePoints(float YawDegrees, TArray<FVector>& OutPoints) const;
+	/**
+	 * 문짝을 그 각(도)만큼 열었을 때의 판. 경첩 축 가운데(OutHinge)에서 끝 변 쪽(OutAlong)으로 OutWidth, 위(OutUp)로
+	 * 위아래 OutHeight의 절반씩이다. 덧댄 것이 열리는 중인 문짝 대신 다 열린 문짝을 보고 자리를 정할 때 쓴다.
+	 */
+	void GetDoorPlane(float YawDegrees, FVector& OutHinge, FVector& OutAlong, FVector& OutUp, float& OutWidth, float& OutHeight) const;
+
 	/** 소리와 이벤트 없이 상태만 맞춘다(불러오기·연출 시작). */
 	void ForceOpenState(bool bInOpen);
 	/** 연출이 문짝을 연다(소리는 낸다). */

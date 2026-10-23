@@ -2,6 +2,12 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Core/IGPrologueWorldScene.h"
+#include "Engine/EngineBaseTypes.h"
+#include "Engine/GameViewportClient.h"
+#include "Entity/IGLiningEntity.h"
+#include "GameFramework/HUD.h"
+#include "HAL/IConsoleManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Entity/IGListenerEntity.h"
@@ -63,7 +69,194 @@ void AIGNightFourHammerProbe::Configure(
 	Player = InPlayer;
 	Listener = InListener;
 	bShots = FParse::Param(FCommandLine::Get(), TEXT("IGNightFourHammerShots"));
+	bDiag = FParse::Param(FCommandLine::Get(), TEXT("IGNightFourWallDiag"));
+	bShots |= bDiag;
 	bOpenDoor = FParse::Param(FCommandLine::Get(), TEXT("IGNightFourHammerOpen"));
+	if (bDiag)
+	{
+		// 진단 화면은 세계를 멈춘 채 찍는다. 멈춘 동안에도 이 검사기는 돈다.
+		SetTickableWhenPaused(true);
+	}
+}
+
+namespace IGNightFourWallDiag
+{
+	const TCHAR* ViewNames[] = {
+		TEXT("a_game"), TEXT("b_nohud"), TEXT("c_nolining"), TEXT("d_unlit"),
+		TEXT("e_normal"), TEXT("f_noshadow"), TEXT("g_noaa"), TEXT("h_wire")};
+	constexpr int32 ViewCount = UE_ARRAY_COUNT(ViewNames);
+	/** 한 화면을 고른 뒤 찍기까지 기다리는 프레임. 시간 누적 안티앨리어싱이 멈춘 화면에서 자리 잡는다. */
+	constexpr int32 SettleFrames = 8;
+	/** 움직이며 찍는 프레임 수(30fps): 물러서기 45, 다가가기 45, 왼쪽 30, 오른쪽 30, 왼쪽 보기 20, 오른쪽 보기 20. */
+	constexpr int32 MotionFrames = 190;
+}
+
+float AIGNightFourHammerProbe::MeasureLiningDistance(FString& OutPart) const
+{
+	const AIGLiningEntity* Body = Lining.Get();
+	const APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (!Body || !PC || !PC->PlayerCameraManager)
+	{
+		OutPart = TEXT("none");
+		return -1.0f;
+	}
+	const FVector Eye = PC->PlayerCameraManager->GetCameraLocation();
+	float Best = FVector::Dist(Eye, Body->GetBodyCenter());
+	OutPart = TEXT("body");
+	for (int32 Leg = 0; Leg < AIGLiningEntity::LegCount; ++Leg)
+	{
+		const float Knee = FVector::Dist(Eye, Body->GetKneeLocation(Leg));
+		if (Knee < Best)
+		{
+			Best = Knee;
+			OutPart = FString::Printf(TEXT("knee%d"), Leg);
+		}
+		const float Pad = FVector::Dist(Eye, Body->GetPadLocation(Leg));
+		if (Pad < Best)
+		{
+			Best = Pad;
+			OutPart = FString::Printf(TEXT("pad%d"), Leg);
+		}
+	}
+	return Best;
+}
+
+void AIGNightFourHammerProbe::ApplyWallDiagnosticView(const int32 View, const bool bOn)
+{
+	UGameViewportClient* Viewport = GEngine ? GEngine->GameViewport : nullptr;
+	APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (!Viewport || !PC)
+	{
+		return;
+	}
+	if (AHUD* Hud = PC->GetHUD())
+	{
+		Hud->bShowHUD = !bOn || View == 0;
+	}
+	if (AIGLiningEntity* Body = Lining.Get())
+	{
+		Body->SetActorHiddenInGame(bOn && View == 2);
+	}
+	Viewport->ViewModeIndex = !bOn ? VMI_Lit
+		: View == 3 ? VMI_Unlit
+		: View == 4 ? VMI_VisualizeBuffer
+		: View == 7 ? VMI_Wireframe
+		: VMI_Lit;
+	if (IConsoleVariable* Target = IConsoleManager::Get().FindConsoleVariable(TEXT("r.BufferVisualizationTarget")))
+	{
+		Target->Set(bOn && View == 4 ? TEXT("WorldNormal") : TEXT(""), ECVF_SetByCode);
+	}
+	Viewport->EngineShowFlags.SetDynamicShadows(!(bOn && View == 5));
+	static int32 OriginalAntiAliasing = -1;
+	if (IConsoleVariable* AntiAliasing = IConsoleManager::Get().FindConsoleVariable(TEXT("r.AntiAliasingMethod")))
+	{
+		if (OriginalAntiAliasing < 0)
+		{
+			OriginalAntiAliasing = AntiAliasing->GetInt();
+		}
+		AntiAliasing->Set(bOn && View == 6 ? 0 : OriginalAntiAliasing, ECVF_SetByCode);
+	}
+}
+
+void AIGNightFourHammerProbe::BeginWallDiagnosticMoment(const TCHAR* Name)
+{
+	DiagMoment = Name;
+	DiagView = 0;
+	DiagWaitFrames = IGNightFourWallDiag::SettleFrames;
+	DiagPendingShot.Reset();
+	UGameplayStatics::SetGamePaused(this, true);
+	ApplyWallDiagnosticView(0, true);
+	FString Part;
+	const float Distance = MeasureLiningDistance(Part);
+	const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	const FVector Eye = PC && PC->PlayerCameraManager ? PC->PlayerCameraManager->GetCameraLocation() : FVector::ZeroVector;
+	const AIGLiningEntity* Body = Lining.Get();
+	UE_LOG(LogIndieGame, Display,
+		TEXT("NIGHT4DIAG_MOMENT %s t=%.1f eye=%s lining_state=%d nearest=%.1f part=%s body=%s near_clip=%.1f"),
+		Name, TotalSeconds, *Eye.ToCompactString(), Body ? static_cast<int32>(Body->GetState()) : -1, Distance, *Part,
+		Body ? *Body->GetBodyCenter().ToCompactString() : TEXT("none"), GNearClippingPlane);
+}
+
+bool AIGNightFourHammerProbe::TickWallDiagnostics(const float DeltaSeconds)
+{
+	using namespace IGNightFourWallDiag;
+	const FString Directory = FPaths::ConvertRelativePathToFull(
+		FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("NightFourWallDiag")));
+	// 화면 하나를 찍는 중이다. 파일이 나올 때까지 기다린 뒤 다음 화면으로 간다.
+	if (DiagView >= 0)
+	{
+		if (!DiagPendingShot.IsEmpty())
+		{
+			if (!FPaths::FileExists(DiagPendingShot))
+			{
+				return true;
+			}
+			DiagPendingShot.Reset();
+			ApplyWallDiagnosticView(DiagView, false);
+			++DiagView;
+			if (DiagView >= ViewCount)
+			{
+				DiagView = -1;
+				++DiagMomentsTaken;
+				UGameplayStatics::SetGamePaused(this, false);
+				// 처음으로 덧댄 것이 가까이 온 순간 뒤에 움직이며 찍는다.
+				FString Part;
+				if (DiagMotionFrame < 0 && MeasureLiningDistance(Part) >= 0.0f && MeasureLiningDistance(Part) < 120.0f)
+				{
+					DiagMotionFrame = 0;
+				}
+				return DiagMotionFrame >= 0;
+			}
+			ApplyWallDiagnosticView(DiagView, true);
+			DiagWaitFrames = SettleFrames;
+			return true;
+		}
+		if (--DiagWaitFrames > 0)
+		{
+			return true;
+		}
+		IFileManager::Get().MakeDirectory(*Directory, true);
+		DiagPendingShot = FPaths::Combine(Directory, FString::Printf(TEXT("%s_%s.png"), *DiagMoment, ViewNames[DiagView]));
+		FScreenshotRequest::RequestScreenshot(DiagPendingShot, false, false);
+		return true;
+	}
+	// 움직이며 찍기. 실제 이동 입력을 넣고 프레임마다 남긴다. 순간 이동하지 않는다.
+	if (DiagMotionFrame >= 0 && DiagMotionFrame < MotionFrames)
+	{
+		AIGPlayerCharacter* Character = Player.Get();
+		APlayerController* PC = Character ? Cast<APlayerController>(Character->GetController()) : nullptr;
+		if (!Character || !PC)
+		{
+			DiagMotionFrame = MotionFrames;
+			return false;
+		}
+		const FRotator Yaw(0.0f, PC->GetControlRotation().Yaw, 0.0f);
+		const FVector Forward = Yaw.Vector();
+		const FVector Right = FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y);
+		const int32 F = DiagMotionFrame;
+		const TCHAR* Motion = F < 45 ? TEXT("back") : F < 90 ? TEXT("forward") : F < 120 ? TEXT("left")
+			: F < 150 ? TEXT("right") : F < 170 ? TEXT("turn_left") : TEXT("turn_right");
+		if (F < 45) { Character->AddMovementInput(-Forward, 1.0f); }
+		else if (F < 90) { Character->AddMovementInput(Forward, 1.0f); }
+		else if (F < 120) { Character->AddMovementInput(-Right, 1.0f); }
+		else if (F < 150) { Character->AddMovementInput(Right, 1.0f); }
+		else if (F < 170) { PC->AddYawInput(-1.2f); }
+		else { PC->AddYawInput(1.2f); }
+		FString Part;
+		const float Distance = MeasureLiningDistance(Part);
+		UE_LOG(LogIndieGame, Display, TEXT("NIGHT4DIAG_FRAME %d %s nearest=%.1f part=%s"), F, Motion, Distance, *Part);
+		IFileManager::Get().MakeDirectory(*(Directory / TEXT("motion")), true);
+		FScreenshotRequest::RequestScreenshot(
+			FPaths::Combine(Directory, TEXT("motion"), FString::Printf(TEXT("frame_%04d_%s.png"), F, Motion)), false, false);
+		++DiagMotionFrame;
+		if (DiagMotionFrame == MotionFrames)
+		{
+			// 원래 망치 자리로 돌아간다. 이 뒤의 단계는 평소 검사와 같다.
+			Stand(IGNightFourHammerProbe::WallFeet, IGNightFourHammerProbe::WallFace);
+		}
+		return true;
+	}
+	return false;
 }
 
 void AIGNightFourHammerProbe::Check(const bool bCondition, const TCHAR* Name)
@@ -179,6 +372,10 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 	{
 		return;
 	}
+	if (bDiag && TickWallDiagnostics(DeltaSeconds))
+	{
+		return;
+	}
 	PhaseSeconds += DeltaSeconds;
 	TotalSeconds += DeltaSeconds;
 	if (TotalSeconds > 300.0f)
@@ -270,6 +467,26 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 		}
 		Check(Narrative->IsNightFourMaskRunning(), TEXT("water_mask_running"));
 		Stand(WallFeet, WallFace);
+		if (bDiag)
+		{
+			for (TActorIterator<AIGLiningEntity> It(GetWorld()); It; ++It)
+			{
+				Lining = *It;
+			}
+			const auto CVarText = [](const TCHAR* Name)
+			{
+				const IConsoleVariable* Variable = IConsoleManager::Get().FindConsoleVariable(Name);
+				return Variable ? Variable->GetString() : FString(TEXT("missing"));
+			};
+			UE_LOG(LogIndieGame, Display,
+				TEXT("NIGHT4DIAG_SETTINGS aa=%s screen_percentage=%s gi=%s reflections=%s vsm=%s shadow_quality=%s ")
+				TEXT("post_quality=%s view_distance=%s motion_blur=%s near_clip=%.1f lining=%d"),
+				*CVarText(TEXT("r.AntiAliasingMethod")), *CVarText(TEXT("r.ScreenPercentage")),
+				*CVarText(TEXT("r.DynamicGlobalIlluminationMethod")), *CVarText(TEXT("r.ReflectionMethod")),
+				*CVarText(TEXT("r.Shadow.Virtual.Enable")), *CVarText(TEXT("sg.ShadowQuality")),
+				*CVarText(TEXT("sg.PostProcessQuality")), *CVarText(TEXT("sg.ViewDistanceQuality")),
+				*CVarText(TEXT("r.MotionBlurQuality")), GNearClippingPlane, Lining.IsValid() ? 1 : 0);
+		}
 		CaptureBaseline = NightLoop->GetLastCaptureSeconds();
 		Next(1);
 		break;
@@ -278,7 +495,15 @@ void AIGNightFourHammerProbe::Tick(const float DeltaSeconds)
 	case 1:
 		// 첫째에서 셋째 단계. 덧댄 것이 이음매로 왔다가 점검구로 옮겨 가 몸을 펴고, 틀에 걸린다.
 		// 셋째 뒤 0.7초에 차단기가 내려간다. 그동안 망치 든 사람은 제자리에 있어야 한다.
-		if (Player.IsValid())
+		if (bDiag && DiagMomentsTaken < 5 && PhaseSeconds >= DiagNextMomentSeconds)
+		{
+			// 맨 처음(덧댄 것이 오기 전)과 그 뒤 3초마다 네 순간을 찍는다.
+			DiagNextMomentSeconds = PhaseSeconds + (DiagMomentsTaken == 0 ? 2.0f : 3.0f);
+			BeginWallDiagnosticMoment(*FString::Printf(TEXT("m%d_stage%d"), DiagMomentsTaken + 1,
+				Narrative->GetNightFourWallProgress()));
+			return;
+		}
+		if (Player.IsValid() && !bDiag)
 		{
 			MaxDrift = FMath::Max(MaxDrift, FVector::Dist2D(Player->GetActorLocation(), WallFeet));
 		}

@@ -1413,7 +1413,16 @@ def bake_combined(body, high, name, out_dir, size):
     import shutil
     work = os.path.join(out_dir, "_bake_work")
     os.makedirs(work, exist_ok=True)
+    # AO 광선은 8 cm 안의 가림만 센다. 기본 거리로는 몸에 1~2 cm 떠 덮인 막 판이 전부 가려진 것으로 구워졌다.
+    world = bpy.context.scene.world or bpy.data.worlds.new("LiningBakeWorld")
+    bpy.context.scene.world = world
+    world.light_settings.distance = 0.08
+    # 생성 고밀도 몸통은 저밀도 몸통과 같은 자리에 겹쳐 있다. 부품을 구울 때 렌더에 남으면 AO 광선이 바로
+    # 거기 막혀 막 판과 몸통의 AO가 0으로 구워졌다(2026-10-22, 쓰는 텍셀의 56%). 그러면 엔진이 간접광을
+    # 다 막아 손전등 밖의 막이 검은 구멍처럼 보였다.
+    high.hide_render = True
     parts_maps = ig.bake_textures(body, f"{name}_parts", work, size=size)
+    high.hide_render = False
     # 몸통 면만 남긴 사본에 고밀도에서 굽는다. 다리 면이 몸통 색을 집어 오지 않는다.
     temp = body.copy()
     temp.data = body.data.copy()
@@ -1428,8 +1437,11 @@ def bake_combined(body, high, name, out_dir, size):
     bm.to_mesh(temp.data)
     bm.free()
     temp.modifiers.clear()
+    # 몸통 사본의 AO도 같은 자리의 원래 몸에 막히지 않게 원래 몸을 렌더에서 뺀다.
+    body.hide_render = True
     shell_maps = ig.bake_from_high(temp, high, f"{name}_shell", work, size=size,
                                    cage_extrusion=0.012, max_ray_distance=0.05)
+    body.hide_render = False
     bpy.data.objects.remove(temp, do_unlink=True)
     mask = shell_face_mask(body, size)
     out_paths = {key: os.path.join(out_dir, f"{name}_{key}.png") for key in ("D", "N", "ORM")}
@@ -1445,12 +1457,14 @@ def main():
     out_dir = os.path.join(out_root, name)
     os.makedirs(out_dir, exist_ok=True)
     ig.reset_scene()
-    # 막은 무광 숯색(번들거리는 검은 플라스틱이 아니다), 방음재는 누런 회색, 철골은 둔한 아연도금, 실리콘은
-    # 굳은 회색이다. 반사는 큰 접힘에서만 갈린다.
+    # 막은 숯색 아스팔트 방수막(번들거리는 검은 플라스틱이 아니다), 방음재는 누런 회색, 철골은 둔한
+    # 아연도금, 실리콘은 굳은 회색이다. 막은 타일 색(반사율 5%쯤, 실제 아스팔트 막과 비슷하다)을 조금만
+    # 눌러 4%대로 둔다. 예전에는 0.15를 곱해 1%도 안 됐고, 밤 손전등 아래에서 접힘도 재료도 안 보이는 검은
+    # 다각형이 됐다(2026-10-22 밤4 벽 진단). 거칠기는 큰 접힘에 손전등이 비칠 만큼만 낮춘다.
     mats = {
         "foam": tiled_material("LiningFoam", "T_LiningFoam", 0.45, normal_strength=1.2, contact_grime=0.4),
-        "membrane": tiled_material("LiningMembrane", "T_LiningMembrane", 0.7, normal_strength=1.2, rough_scale=1.35,
-                                   contact_grime=0.3, tint=(0.15, 0.15, 0.145)),
+        "membrane": tiled_material("LiningMembrane", "T_LiningMembrane", 0.7, normal_strength=1.2, rough_scale=1.05,
+                                   contact_grime=0.3, tint=(0.8, 0.8, 0.78)),
         "steel": tiled_material("LiningSteel", "T_LiningSteel", 0.35, metallic=0.3, normal_strength=0.7, rough_scale=1.6,
                                 tint=(0.30, 0.30, 0.29), contact_grime=0.3),
         "sealant": flat_material("LiningSealant", (0.10, 0.10, 0.088), 0.6),

@@ -182,7 +182,54 @@ void AIGAccessHatch::SetSealed(const bool bInSealed)
 void AIGAccessHatch::SetObstructed(const bool bInObstructed, const float BlockedYawDegrees)
 {
 	bObstructed = bInObstructed;
-	BlockedYaw = FMath::Clamp(BlockedYawDegrees, 8.0f, IGAccessHatch::OpenYawDegrees - 10.0f);
+	// 덧댄 것이 경첩 쪽을 비켜 누르면 문짝은 거의 다 연 자리에서 몸판 가장자리에 걸린다.
+	BlockedYaw = FMath::Clamp(BlockedYawDegrees, 8.0f, IGAccessHatch::OpenYawDegrees - 4.0f);
+}
+
+float AIGAccessHatch::GetOpenYaw()
+{
+	return IGAccessHatch::OpenYawDegrees;
+}
+
+void AIGAccessHatch::GetDoorPlane(const float YawDegrees, FVector& OutHinge, FVector& OutAlong, FVector& OutUp, float& OutWidth,
+	float& OutHeight) const
+{
+	OutWidth = 0.0f;
+	OutHeight = 0.0f;
+	if (!DoorPivot || !HatchRoot)
+	{
+		return;
+	}
+	// GetDoorSamplePoints와 같은 축이다.
+	const FTransform Pivot = FTransform(FRotator(0.0f, bHingeOnLeft ? -YawDegrees : YawDegrees, 0.0f), DoorPivot->GetRelativeLocation())
+		* HatchRoot->GetComponentTransform();
+	OutHinge = Pivot.TransformPosition(FVector(IGAccessHatch::LeafThickness * 0.5f, 0.0f, 0.0f));
+	OutAlong = Pivot.TransformVectorNoScale(FVector(0.0f, bHingeOnLeft ? 1.0f : -1.0f, 0.0f));
+	OutUp = Pivot.TransformVectorNoScale(FVector::UpVector);
+	OutWidth = OpeningSize.X - 1.0f;
+	OutHeight = OpeningSize.Y - 1.0f;
+}
+
+void AIGAccessHatch::GetDoorSamplePoints(const float YawDegrees, TArray<FVector>& OutPoints) const
+{
+	OutPoints.Reset();
+	if (!DoorPivot || !HatchRoot)
+	{
+		return;
+	}
+	// ApplyDoorYaw와 같은 축으로 돌린다. 문짝은 경첩 축에서 개구부 반대쪽 변까지 뻗는다(Configure).
+	const FTransform Pivot = FTransform(FRotator(0.0f, bHingeOnLeft ? -YawDegrees : YawDegrees, 0.0f), DoorPivot->GetRelativeLocation())
+		* HatchRoot->GetComponentTransform();
+	const float Dir = bHingeOnLeft ? 1.0f : -1.0f;
+	const float Width = OpeningSize.X - 1.0f;
+	const float Half = OpeningSize.Y * 0.5f - 1.0f;
+	for (int32 Along = 0; Along <= 6; ++Along)
+	{
+		for (const float Z : {-Half, 0.0f, Half})
+		{
+			OutPoints.Add(Pivot.TransformPosition(FVector(IGAccessHatch::LeafThickness * 0.5f, Dir * Width * Along / 6.0f, Z)));
+		}
+	}
 }
 
 void AIGAccessHatch::ForceOpenState(const bool bInOpen)

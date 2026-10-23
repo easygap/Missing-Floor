@@ -4,8 +4,10 @@
 #include "GameFramework/Actor.h"
 #include "IGLeftoverProbe.generated.h"
 
+class ACameraActor;
 class AIGAccessHatch;
 class AIGLeftoverTarget;
+class AIGLiningEntity;
 class AIGManagerPatrol;
 class AIGMissingFloorEvidence;
 class AIGMissingFloorLeftoverDirector;
@@ -14,6 +16,7 @@ class AIGNightPhaseDirector;
 class AIGPlayerCharacter;
 class AIGPrologueWorldScene;
 class UIGMissingFloorNarrativeSubsystem;
+class UPointLightComponent;
 
 /**
  * -IGLeftoverProbe 전용. 「302호에 남은 짐」을 실제 감독과 실제 괴이로 한 실행에서 겪는다.
@@ -221,4 +224,26 @@ private:
 	AActor* FocusedActor() const;
 	FVector CameraLocation() const;
 	FRotator CameraRotation() const;
+
+	/**
+	 * -IGLeftoverShots: 덧댄 것이 틈을 누르기 시작할 때, 막고 자리 잡았을 때, 5층에서 다 폈을 때 몸 양옆에서
+	 * 검수 카메라로 한 장씩 찍는다(관통·뒤집힘 검수, 카메라에 작업등). 찍는 동안 검사 단계는 멈춘다.
+	 */
+	void QueueLiningInspection(AIGLiningEntity* Lining);
+	/** 검수 카메라 차례를 진행한다. 찍는 중이면 true. */
+	bool TickLiningInspection(float DeltaSeconds);
+	struct FLiningShot
+	{
+		FString Name;
+		FVector Eye = FVector::ZeroVector;
+		FVector Look = FVector::ZeroVector;
+	};
+	TArray<FLiningShot> LiningShots;
+	TSet<FString> LiningMoments;
+	float LiningShotWait = -1.0f;
+	bool bLiningShotRequested = false;
+	UPROPERTY(Transient)
+	TObjectPtr<ACameraActor> LiningCamera;
+	UPROPERTY(Transient)
+	TObjectPtr<UPointLightComponent> LiningFill;
 };

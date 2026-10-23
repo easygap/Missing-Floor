@@ -1,9 +1,12 @@
 ﻿#include "Sequence/IGLeftoverProbe.h"
 
 #include "AudioMixerBlueprintLibrary.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Core/IGGameInstance.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -673,10 +676,162 @@ bool AIGLeftoverProbe::Use(AActor* Actor, const bool bTap)
 	return true;
 }
 
+void AIGLeftoverProbe::QueueLiningInspection(AIGLiningEntity* Lining)
+{
+	if (!bShots || bCleanShots || !Lining || !LiningShots.IsEmpty() || Lining->GetState() == EIGLiningState::Hidden)
+	{
+		return;
+	}
+	FString Moment;
+	const EIGLiningState LiningState = Lining->GetState();
+	if (LiningState == EIGLiningState::Pressing && !Lining->GetTargetGap().IsNone())
+	{
+		Moment = TEXT("press_") + Lining->GetTargetGap().ToString();
+	}
+	else if (LiningState == EIGLiningState::Holding && !Lining->GetHeldGap().IsNone())
+	{
+		Moment = TEXT("hold_") + Lining->GetHeldGap().ToString();
+	}
+	else if (LiningState == EIGLiningState::Spread && Leftover.IsValid() && Leftover->IsAnnexSpread())
+	{
+		Moment = TEXT("spread");
+	}
+	if (Moment.IsEmpty() || LiningMoments.Contains(Moment))
+	{
+		return;
+	}
+	LiningMoments.Add(Moment);
+	const FVector Center = Lining->GetBodyCenter();
+	const FVector Up = Lining->GetBodyUp();
+	FVector Side = FVector::CrossProduct(Up, FVector::UpVector);
+	if (!Side.Normalize())
+	{
+		Side = FVector::RightVector;
+	}
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(LeftoverLiningShot), false, Lining);
+	if (Player.IsValid())
+	{
+		Params.AddIgnoredActor(Player.Get());
+	}
+	// 몸에서 방 쪽으로 2.2 m, 벽을 따라 양옆으로 90 cm, 50 cm 위. 다리(150 cm)까지 한 화면에 든다. 그 사이에 벽이나
+	// 소품이 있으면 앞으로 당긴다. 당긴 자리가 다리 속이면(좁은 5층 남쪽 칸) 덜 옆으로, 더 위로 옮겨 본다.
+	const auto InsideLining = [Lining, &Center](const FVector& Eye)
+	{
+		if (FVector::Distance(Eye, Center) < 90.0f)
+		{
+			return true;
+		}
+		// 다리는 마디를 감은 막 판이 뼈에서 28 cm까지 나온다. 넓적다리(몸 가운데→무릎)와 정강이(무릎→패드)를 넉넉히 본다.
+		for (int32 Leg = 0; Leg < AIGLiningEntity::LegCount; ++Leg)
+		{
+			const FVector Knee = Lining->GetKneeLocation(Leg);
+			if (FMath::PointDistToSegment(Eye, Center, Knee) < 55.0f
+				|| FMath::PointDistToSegment(Eye, Knee, Lining->GetPadLocation(Leg)) < 55.0f)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	for (const float Sign : {1.0f, -1.0f})
+	{
+		const FVector From = Center + Up * 30.0f;
+		FVector Eye = FVector::ZeroVector;
+		for (const FVector& Offset : {Up * 220.0f + Side * (90.0f * Sign) + FVector(0.0f, 0.0f, 50.0f),
+				Up * 240.0f + Side * (40.0f * Sign) + FVector(0.0f, 0.0f, 80.0f),
+				Up * 200.0f + Side * (20.0f * Sign) + FVector(0.0f, 0.0f, 130.0f)})
+		{
+			Eye = Center + Offset;
+			FHitResult Hit;
+			if (GetWorld()->LineTraceSingleByChannel(Hit, From, Eye, ECC_Visibility, Params))
+			{
+				Eye = Hit.Location + (From - Eye).GetSafeNormal() * 15.0f;
+			}
+			if (!InsideLining(Eye))
+			{
+				break;
+			}
+		}
+		FLiningShot Shot;
+		Shot.Name = FString::Printf(TEXT("lining_%s_%s"), *Moment, Sign > 0.0f ? TEXT("a") : TEXT("b"));
+		Shot.Eye = Eye;
+		Shot.Look = Center;
+		LiningShots.Add(Shot);
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_LINING_SHOT %s center=%s up=%s"), *Moment, *Center.ToCompactString(),
+		*Up.ToCompactString());
+}
+
+bool AIGLeftoverProbe::TickLiningInspection(const float DeltaSeconds)
+{
+	if (LiningShots.IsEmpty())
+	{
+		return false;
+	}
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (!PC)
+	{
+		LiningShots.Reset();
+		return false;
+	}
+	if (!LiningCamera)
+	{
+		FActorSpawnParameters Parameters;
+		Parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		LiningCamera = GetWorld()->SpawnActor<ACameraActor>(Parameters);
+		LiningCamera->GetCameraComponent()->SetFieldOfView(80.0f);
+		LiningCamera->GetCameraComponent()->bConstrainAspectRatio = false;
+		// 검수 컷이다. 밤 장면은 불이 꺼져 있어 카메라에 붙인 작업등으로 몸과 다리를 비춘다(배치 검사와 같은 등).
+		LiningFill = NewObject<UPointLightComponent>(LiningCamera);
+		LiningFill->SetupAttachment(LiningCamera->GetCameraComponent());
+		LiningFill->SetIntensityUnits(ELightUnits::Candelas);
+		LiningFill->SetIntensity(60.0f);
+		LiningFill->SetAttenuationRadius(900.0f);
+		LiningFill->SetCastShadows(false);
+		LiningFill->SetRelativeLocation(FVector(-10.0f, 0.0f, 25.0f));
+		LiningFill->RegisterComponent();
+	}
+	const FLiningShot& Shot = LiningShots[0];
+	if (LiningShotWait < 0.0f)
+	{
+		LiningCamera->SetActorLocationAndRotation(Shot.Eye, (Shot.Look - Shot.Eye).Rotation());
+		LiningFill->SetVisibility(true);
+		PC->SetViewTarget(LiningCamera);
+		LiningShotWait = 0.45f;
+		bLiningShotRequested = false;
+		return true;
+	}
+	LiningShotWait -= DeltaSeconds;
+	if (LiningShotWait > 0.0f)
+	{
+		return true;
+	}
+	if (!bLiningShotRequested)
+	{
+		Shoot(*Shot.Name);
+		bLiningShotRequested = true;
+		LiningShotWait = 0.25f;
+		return true;
+	}
+	LiningShots.RemoveAt(0);
+	LiningShotWait = -1.0f;
+	if (!LiningShots.IsEmpty())
+	{
+		return true;
+	}
+	LiningFill->SetVisibility(false);
+	PC->SetViewTarget(PC->GetPawn());
+	return false;
+}
+
 void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	if (Phase < 0)
+	{
+		return;
+	}
+	if (TickLiningInspection(DeltaSeconds))
 	{
 		return;
 	}
@@ -716,6 +871,11 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 	}
 	const auto Taken = [Narrative](const FName Item) { return Narrative->HasLeftover(EIGLeftoverList::Taken, Item); };
 	AIGLiningEntity* Lining = Director->GetLining();
+	QueueLiningInspection(Lining);
+	if (!LiningShots.IsEmpty())
+	{
+		return;
+	}
 	switch (Phase)
 	{
 	// -- 낮1: 짐 장면 ------------------------------------------------------------

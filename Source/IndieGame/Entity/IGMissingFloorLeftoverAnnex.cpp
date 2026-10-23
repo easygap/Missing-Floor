@@ -50,8 +50,11 @@ namespace IGLeftoverAnnex
 	/** 철골 틀 위 런너에 걸리는 무릎. 위 남쪽 다리(0)의 무릎이고 엉덩이에서 첫 마디(80 cm)만큼 떨어졌다. */
 	constexpr int32 PinnedLeg = 0;
 	const FVector KneePin(200.0f, 470.0f, 1430.0f);
-	/** 밀려나 접혀 붙는 자리. 남동쪽 천장 구석, 작업할 칸에서 한 칸 넘게 떨어졌다. */
-	const FVector PushedRest(195.0f, 525.0f, 1440.0f);
+	/**
+	 * 밀려나 접혀 붙는 자리. 남동쪽 천장 구석, 작업할 칸에서 한 칸 넘게 떨어졌다. Y 525면 몸판이 철문 문틀 덧판(Y 460..472)
+	 * 위 끝에 걸려서 15 cm 북쪽으로 옮겼다.
+	 */
+	const FVector PushedRest(195.0f, 540.0f, 1440.0f);
 	constexpr float SpreadSeconds = 2.2f;
 	constexpr float PushOutSeconds = 3.0f;
 
@@ -114,6 +117,8 @@ void AIGMissingFloorLeftoverDirector::SpreadAnnexLining(const float Seconds)
 		Normals.Add(SpreadNormals[Leg]);
 	}
 	Lining->SpreadTo(SpreadCenter, FVector(-1.0f, 0.0f, 0.0f), FVector::UpVector, Pads, Normals, Seconds);
+	// 틀을 대면 걸릴 무릎이 펴는 동안 미리 런너 쪽으로 굽는다. 그래야 걸릴 때 무릎이 크게 건너뛰지 않는다.
+	Lining->SetKneeHint(PinnedLeg, KneePin);
 }
 
 void AIGMissingFloorLeftoverDirector::PrepareAnnexLining(const int32 WallStage, const bool bBracePlaced)

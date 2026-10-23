@@ -141,6 +141,11 @@ public:
 	FVector GetKneeLocation(int32 Leg) const;
 	/** 검사용. 다리가 엉덩이→무릎→패드 사이에서 벽이나 소품을 뚫으면 뚫은 것과 자리를, 아니면 빈 문자열. */
 	FString FindLegObstruction(int32 Leg) const;
+	/** FindLegObstruction과 같되 어느 마디(0 엉덩이→무릎, 1 무릎→발목, 2 발목→패드)인지와 부딪힌 것의 이름만 준다. */
+	bool FindLegObstructionPart(int32 Leg, int32& OutSegment, FString& OutComponent, FVector* OutImpact = nullptr,
+		FVector* OutNormal = nullptr) const;
+	/** 무릎을 그 자리에 두면 엉덩이→무릎·무릎→발목 마디가 벽·바닥·천장·소품을 지나지 않는가. bThighOnly면 엉덩이→무릎만 본다. */
+	bool IsKneeClear(const FVector& Hip, const FVector& Knee, const FVector& Ankle, bool bThighOnly = false) const;
 	/** 몸 살·물갈퀴·패드 막 뼈가 있는 몸인가(예전 SK_Lining에는 없다). */
 	bool HasSoftBody() const { return bHasSoftBones; }
 	/** 검사용: 몸 사분면(다리와 같은 번호) 살이 쉬는 자리에서 처진 거리(월드 cm). */
@@ -150,6 +155,8 @@ public:
 	float GetSkinStretch(int32 Leg) const;
 	/** 검사용: 몸 둘레 막(치마)이 면을 따라 바깥으로 퍼진 거리와 아래로 처진 거리(cm). 0 앞, 1 뒤, 2 왼쪽, 3 오른쪽. */
 	float GetSkirtSpread(int32 Side) const;
+	/** 검사용: 몸판이 벽·바닥·소품이나 열린 점검구 문짝을 파고드는가(조금 줄인 몸판 상자로 본다). OutComponent에 걸린 것. */
+	bool IsBodyObstructed(FString* OutComponent = nullptr) const;
 	float GetSkirtDroop(int32 Side) const;
 	/** 검사용: 이 발이 면을 누르고 있는가(옮기는 중이 아니거나, 옮길 차례를 기다리고 있다). */
 	bool IsPadHolding(int32 Leg) const;
@@ -164,6 +171,11 @@ public:
 		const TArray<FVector>& Pads,
 		const TArray<FVector>& PadNormals,
 		float Seconds);
+	/**
+	 * 편 몸에서 이 다리 무릎을 둘 쪽(월드). 나중에 그 자리에서 걸릴 무릎(5층 철골 틀 런너)이 미리 그쪽으로 굽어 있어,
+	 * 틀을 댈 때 무릎이 한 프레임에 건너뛰지 않는다. 펴기가 끝나면(물러나기·쉬기·숨기) 지운다.
+	 */
+	void SetKneeHint(int32 Leg, const FVector& KneeWorld);
 	/** 프레임이 다리(Leg)의 무릎에 걸렸다. 무릎이 그 자리에 묶이고 몸을 접지 못한다. */
 	void PinKnee(int32 Leg, const FVector& KneeWorld);
 	void ReleasePin();
@@ -233,6 +245,15 @@ private:
 		FVector Hip = FVector::ZeroVector;
 		FVector Knee = FVector::ZeroVector;
 		FVector Ankle = FVector::ZeroVector;
+		/**
+		 * 무릎이 지난 프레임에 있던 쪽(엉덩이→발목 축에 수직인 단위 방향). 극이 그 축과 나란해져도 무릎이 원을
+		 * 가로질러 반대로 튀지 않게 다음 프레임이 이어받는다. 0이면 이을 것이 없다(처음 놓을 때, 순간 이동).
+		 */
+		FVector KneeBend = FVector::ZeroVector;
+		/** 무릎이 무릎 빠르기에 막혀 IK 자리를 아직 못 따라잡았다. 디딘 뒤에도 따라잡을 때까지 같은 한도로 옮긴다. */
+		bool bKneeCatchUp = false;
+		/** 무릎을 기다리며 디딜 자리 위에 머문 시간(초). */
+		float LandWaitSeconds = 0.0f;
 		/** 마지막으로 놓은 패드 가운데(짚는 면)와 그 틀(X 바깥쪽, Z 짚은 면의 법선). */
 		FVector PadCenter = FVector::ZeroVector;
 		FQuat PadFrame = FQuat::Identity;
@@ -245,11 +266,30 @@ private:
 		FVector Velocity = FVector::ZeroVector;
 	};
 
+	/** 틈을 짚고 누를 몸 자리. 벽 면 위 몸 가운데와 몸 방향(앞 +X가 벽을 따라 향하는 쪽, 위 +Z가 틈 법선). */
+	struct FGapPose
+	{
+		FVector Anchor = FVector::ZeroVector;
+		FQuat Rotation = FQuat::Identity;
+		/** 몸 앞쪽과 옆쪽(벽 면 위 단위 방향)과 그 쪽으로 잰 틈 반치수(cm). */
+		FVector Forward = FVector::UpVector;
+		FVector Side = FVector::RightVector;
+		FVector2D GapHalf = FVector2D::ZeroVector;
+		/** 몸을 벽 면 위에서 90도 돌려 짧은 쪽을 가로로 댔다(감독이 정한 아래 다리 접기는 돌리지 않은 몸 기준이다). */
+		bool bTurned = false;
+		bool bValid = false;
+	};
+
 	void SetState(EIGLiningState NewState);
 	void StartTicking();
 	bool ChooseTarget();
 	void BeginTravelTo(FName GapId);
 	void BuildPath(const FVector& Start, const FVector& StartUp, const FVector& Goal, const FVector& GoalNormal);
+	/**
+	 * 다른 면으로 건너가는 길을 몇 가지(방 쪽으로 더 부풀기, 위로 돌기) 그려 보고 몸판이 벽·소품·열린 문짝을 덜 지나는
+	 * 것을 고른다. PathStartRotation·PathGoalRotation이 정해진 뒤에 부른다.
+	 */
+	int32 CountPathObstruction(const TArray<FVector>& Points, const AIGAccessHatch* Hatch) const;
 	FVector PathPoint(float Distance) const;
 	float PathLength() const { return PathDistances.IsEmpty() ? 0.0f : PathDistances.Last(); }
 	FQuat BodyRotationAt(float Alpha) const;
@@ -301,6 +341,35 @@ private:
 	 */
 	void PlanSwingDetour(int32 Leg);
 	bool FindContact(int32 Leg, const FVector& FutureBody, const FQuat& FutureRotation, const FVector& Travel, FVector& OutPad, FVector& OutNormal) const;
+	/**
+	 * 틈을 덮을 몸 자리를 정한다. 틈 가운데에 몸판(80×120)을 대면 옆 소품·이웃 벽·열린 점검구 문짝을 파고드는 자리가
+	 * 있다(302호 큰 점검구 옆 밀어 둔 장롱과 북쪽 문짝, 안쪽 방 큰 점검구 옆 보관함과 서쪽 문짝, 5층 배관 점검 자리
+	 * 남벽). 그러면 몸판이 틈을 덮는 만큼 안에서 벽 면을 따라 가장 덜 비키고, 그래도 막히면 몸을 벽 면 위에서 90도
+	 * 돌려 짧은 쪽을 가로로 대 본다. 빈 자리가 없으면 틈 가운데 그대로 둔다.
+	 */
+	FGapPose FitGapPose(const FIGLiningGap& Gap) const;
+	/** 접은 다리의 패드가 이 몸 자리에서 놓일 곳(월드). */
+	FVector FoldedPadWorld(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
+	/** 몸판(조금 줄인 상자)을 벽에서 띄운 그 자리에 두면 벽·바닥·소품·이 틈의 열린 문짝과 겹치지 않는가. */
+	bool IsBodySpaceFree(const FIGLiningGap& Gap, const FVector& Anchor, const FQuat& Rotation) const;
+	/** 그 자리 몸판이 겹치는 것들의 깊이 합(cm). 빈 자리가 없을 때 가장 덜 파고드는 자리를 고른다. OutNames에 무엇=깊이를 붙인다. */
+	float BodySpacePenetration(const FIGLiningGap& Gap, const FVector& Anchor, const FQuat& Rotation, FString* OutNames) const;
+	/**
+	 * 틈을 짚고 버틸 때 이 다리가 짚을 자리. 틈 둘레(BraceMargin 바깥)의 벽을 먼저 보고, 그 자리가 바닥 밑·벽 속·옆 소품
+	 * 속이거나 엉덩이에서 막혀 있으면 엉덩이에서 둘레 쪽으로 부채꼴로 쏴서 닿는 면(옆 소품의 옆면, 바닥, 이웃 벽, 천장)
+	 * 가운데 둘레에 가장 가까운 곳을 고른다. 없으면 false이고 다리를 몸 밑에 접는다.
+	 */
+	bool ChooseBracePad(int32 Leg, const FIGLiningGap& Gap, const FGapPose& Pose, FVector& OutPad, FVector& OutNormal) const;
+	/**
+	 * 엉덩이 Hip에서 이 다리로 Pad를 짚을 때 패드 덩어리가 옆 벽·바닥·소품이나 Hatch의 열린 문짝을 파고들지 않고, 무릎을
+	 * 둘 빈 쪽이 엉덩이→발목 원 위에 한 군데는 있는가(SolveLeg가 거기로 비킨다). 틈을 짚을 때와 걸을 때 다 쓴다.
+	 */
+	bool IsPadPlaceable(int32 Leg, const FVector& Hip, const FQuat& Rotation, const FVector& Pad, const FVector& Normal,
+		const AIGAccessHatch* Hatch) const;
+	/** 이 다리가 버티는 자리(짚을 때와 누를 때 몸)에서 그 자리를 짚을 수 있는가. 마디가 막히거나 패드가 옆 면을 파고들면 안 된다. */
+	bool IsBracePadUsable(int32 Leg, const FIGLiningGap& Gap, const FGapPose& Pose, const FVector& Pad, const FVector& Normal) const;
+	/** 틈을 막고 있을 때 플레이어가 덮개를 닫으면 문짝이 몸판이나 다리에 걸리는 각(도). */
+	float FindBlockedHatchYaw(const FIGLiningGap& Gap, const FGapPose& Pose) const;
 	FVector HipWorld(int32 Leg, const FVector& Center, const FQuat& Rotation) const;
 	void PoseBody();
 	void SolveLeg(int32 Leg);
@@ -316,7 +385,10 @@ private:
 	/** 몸판·다리·패드 충돌을 한꺼번에 켜거나 끈다. */
 	void SetBlockersEnabled(bool bEnabled);
 	void CheckGrip();
-	void SetObstructions(FName GapId, bool bObstructed);
+	/** 틈 덮개에 몸이 걸렸다고 알린다. Pose를 주면 닫히던 문짝이 몸판·다리에 걸리는 각을 그 자리로 잰다. */
+	void SetObstructions(FName GapId, bool bObstructed, const FGapPose* Pose = nullptr);
+	/** 지금 짚거나 막고 있는 틈의 열린 문짝. 다리와 몸판이 비켜야 한다. */
+	UStaticMeshComponent* ActiveHatchDoor() const;
 	void SealGap(FName GapId);
 	void PlayCue(const TCHAR* Sample, int32 Variants, const FVector& Where, float Volume, float Pitch);
 	/**
@@ -381,6 +453,28 @@ private:
 	FSoftPoint Skirt[SkirtCount];
 	bool bSkinStuck[LegCount] = {};
 	float MaxPadSlip = 0.0f;
+	/**
+	 * 검사 실행에서만 센다(-IGLiningProbe·-IGLeftoverProbe·-IGNightFourHammerProbe). 다리마다 무릎이 한 프레임에
+	 * 움직인 가장 큰 거리와 15 cm를 넘은 프레임, 마디가 벽·바닥·천장을 지난 프레임. 끝날 때 LINING_LEGS로 남긴다.
+	 */
+	bool bMeasureLegs = false;
+	/** 무릎 방향을 프레임 사이에 잇는다. 비교 검사에서 -IGLiningKneeBaseline으로 예전처럼 끌 수 있다. */
+	bool bKneeContinuity = true;
+	float MaxKneeStep[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+	int32 KneeJumpFrames[4] = {0, 0, 0, 0};
+	int32 ObstructedFrames[4] = {0, 0, 0, 0};
+	int32 MeasuredFrames = 0;
+	FString WorstKneeStep;
+	/** SetKneeHint로 무릎 쪽을 정한 다리와 그 자리. 없으면 INDEX_NONE. */
+	int32 HintLeg = INDEX_NONE;
+	FVector KneeHint = FVector::ZeroVector;
+	/** 무릎이 걸린 자리로 옮겨 가는 몫(0~1). 걸리는 순간 0에서 짧게 차오른다. */
+	float PinBlend = 1.0f;
+	/** 관통 프레임을 다리·상태·마디·부딪힌 것으로 나눈 수. 어디를 고칠지 정할 때 본다. */
+	TMap<FString, int32> ObstructionBreakdown;
+	/** 몸판이 벽·소품·문짝을 파고든 프레임(상태별). */
+	int32 BodyObstructedFrames = 0;
+	TMap<int32, int32> BodyObstructionByState;
 	/** 끌려간 거리가 이만큼을 넘으면 어디서 그랬는지 로그로 남기고 두 배로 올린다. */
 	float NextSlipLog = 3.0f;
 	/** 걷거나 틈 둘레를 짚는 동안 면을 누르고 있던 발의 가장 적은 수(끝날 때 로그로 남긴다). */
@@ -401,6 +495,9 @@ private:
 	EIGLiningState StateBeforeGrip = EIGLiningState::Hidden;
 	FName TargetGap;
 	FName HeldGap;
+	/** 가고 있는 틈에서 짚고 누를 몸 자리(BeginTravelTo가 정한다)와 막고 있는 틈의 몸 자리. */
+	FGapPose TargetPose;
+	FGapPose HeldPose;
 	FVector BodyCenter = FVector::ZeroVector;
 	FQuat BodyRotation = FQuat::Identity;
 	float StateSeconds = 0.0f;
