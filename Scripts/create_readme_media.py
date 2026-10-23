@@ -96,11 +96,13 @@ def build_chase() -> None:
     # 추격 GIF는 예고편과 같은 촬영분의 연속 프레임을 쓴다. 4층 참에 귀를 댄 몸, 복도
     # 끝에서 기어 와 발밑에서 붙잡고, 바닥 빛 속에 얼굴을 들이민 채 듣다가 끊기기까지
     # (listener-approach 0~116, 끊김은 111). 화면은 흔들리지 않는다.
+    # 예고편 만들기의 실행 폴더(Saved/Trailer/Runs/<시각>)를 IG_TRAILER_DIR로 준다.
+    if not os.environ.get('IG_TRAILER_DIR'):
+        raise SystemExit('IG_TRAILER_DIR에 예고편 실행 폴더를 지정해 주세요.')
     motion = []
     for shot, start, end in (('stair-landing', 0, 60), ('listener-approach', 0, 117)):
         for index in range(start, end, 3):
-            # 예고편 만들기의 실행 폴더를 IG_TRAILER_DIR로 줄 수 있다. 없으면 예전 자리다.
-            trailer = Path(os.environ.get('IG_TRAILER_DIR') or PROJECT_ROOT / 'Saved/Trailer')
+            trailer = Path(os.environ['IG_TRAILER_DIR'])
             with Image.open(trailer / shot / f'frame_{index:04d}.png') as source:
                 motion.append(source.convert('RGB').resize(FRAME_SIZE, Image.Resampling.LANCZOS))
     motion_palette = build_global_palette(motion[::5])

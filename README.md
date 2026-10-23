@@ -103,9 +103,7 @@
 
 ## 출처
 
-효과음은 OpenGameArt와 Kenney, 바닥과 벽 텍스처는 ambientCG, 실물을 스캔한 소품은 Poly Haven의 CC0 자료입니다. 글꼴은 Pretendard와 고운바탕, 일본어·중국어 화면에는 Noto Sans CJK를 씁니다(모두 SIL Open Font License 1.1).
-
-AI로 만든 것도 들어 있습니다. 인쇄물과 표지, 일부 텍스처는 AI로 만든 이미지를 손본 것입니다. 위층 사람과 검은 형체, 관리인, 303호와 202호 이웃 같은 사람과 괴이의 몸, 골목 고양이와 배달 오토바이는 AI 이미지를 3D로 바꾼 뒤 Blender에서 다듬어 움직이게 했습니다. 벽에 붙어 있는 것은 AI로 뽑은 시안과 텍스처 타일을 보고 Blender에서 직접 짰습니다. 다른 소품도 상당수는 AI로 뽑은 시안을 보고 Blender에서 만들었습니다. 자세한 출처와 사용 조건은 [에셋 대장](Docs/ASSET_POLICY.md)에 있습니다.
+효과음은 OpenGameArt와 Kenney, 바닥과 벽 텍스처는 ambientCG, 실물을 스캔한 소품은 Poly Haven의 CC0 자료입니다. 글꼴은 Pretendard와 고운바탕, 일본어·중국어 화면에는 Noto Sans CJK를 씁니다(모두 SIL Open Font License 1.1). 자세한 출처와 사용 조건은 [에셋 대장](Docs/ASSET_POLICY.md)에 있습니다.
 
 ## 제보
 

@@ -11,13 +11,17 @@ from pathlib import Path
 import json
 import os
 import subprocess
+import sys
 import wave
 import numpy as np
 from scipy.signal import butter, sosfilt
 
 ROOT = Path(__file__).resolve().parents[2]
-# 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 없으면 예전 자리다.
-HERE = Path(os.environ.get('IG_TRAILER_DIR') or ROOT / 'Saved/Trailer')
+# 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 따로 돌릴 때도 쓸 실행 폴더를
+# 지정한다. 예전에는 비워 두면 Saved/Trailer 한 곳에 덮어써서 어느 촬영의 결과인지 알 수 없었다.
+if not os.environ.get('IG_TRAILER_DIR'):
+    sys.exit('IG_TRAILER_DIR에 예고편 실행 폴더(Saved/Trailer/Runs/<시각>)를 지정해 주세요.')
+HERE = Path(os.environ['IG_TRAILER_DIR'])
 AUDIO = ROOT / 'Content/SourceArt/Audio'
 SR = 48000
 EDL = json.loads((HERE / 'edl.json').read_text(encoding='utf-8'))

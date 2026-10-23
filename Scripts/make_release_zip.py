@@ -59,7 +59,9 @@ def main(argv=None):
     parser.add_argument("version")
     parser.add_argument("--edition", choices=sorted(EDITIONS), default="playtest")
     parser.add_argument("--date", default=datetime.date.today().isoformat())
-    parser.add_argument("--trailer", default=os.path.join(ROOT, "Saved", "Trailer", "MissingFloor-Trailer-hq.mp4"))
+    # 예고편은 Build-Trailer.ps1 실행 폴더의 배포용 영상(MissingFloor-Trailer-hq.mp4)을 직접 준다. 예전에는 기본값이
+    # 옛 Saved/Trailer의 영상이라, 지정을 빠뜨리면 지난 예고편이 조용히 들어갔다.
+    parser.add_argument("--trailer", default="")
     args = parser.parse_args(argv)
 
     archive = os.path.abspath(args.archive)
@@ -114,9 +116,14 @@ def main(argv=None):
                 return 1
 
     assets = [zip_name]
-    if args.trailer and os.path.exists(args.trailer):
+    if args.trailer:
+        if not os.path.isfile(args.trailer):
+            print(f"예고편 영상이 없습니다: {args.trailer}")
+            return 1
         shutil.copyfile(args.trailer, os.path.join(out, "MissingFloor-Trailer.mp4"))
         assets.append("MissingFloor-Trailer.mp4")
+    else:
+        print("예고편 없이 묶습니다(--trailer로 실행 폴더의 -hq 영상을 줄 수 있다).")
     sums = [f"{sha256(os.path.join(out, name))}  {name}" for name in assets]
     with open(os.path.join(out, "SHA256SUMS.txt"), "w", encoding="utf-8", newline="\n") as handle:
         handle.write("\n".join(sums) + "\n")

@@ -12,8 +12,6 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
-# 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 없으면 예전 자리다.
-OUT = Path(os.environ.get('IG_TRAILER_DIR') or ROOT / 'Saved/Trailer') / 'cards'
 FONTS = ROOT / 'Source/IndieGame/UI/Fonts'
 SIZE = (1920, 1080)
 
@@ -120,8 +118,13 @@ def social(path):
 
 
 def main():
+    # 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 따로 돌릴 때도 쓸 실행 폴더를
+    # 지정한다. 소셜 미리보기(--social)는 받은 경로에만 쓰므로 실행 폴더가 없어도 된다.
+    if not os.environ.get('IG_TRAILER_DIR'):
+        sys.exit('IG_TRAILER_DIR에 예고편 실행 폴더(Saved/Trailer/Runs/<시각>)를 지정해 주세요.')
+    cards = Path(os.environ['IG_TRAILER_DIR']) / 'cards'
     for lang, text in TEXT.items():
-        folder = OUT / lang
+        folder = cards / lang
         folder.mkdir(parents=True, exist_ok=True)
         sound_caption(text['knock']).save(folder / 'knock.png')
         thought(text['topfloor']).save(folder / 'topfloor.png')

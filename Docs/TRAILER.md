@@ -44,24 +44,43 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/Trailer/Build-Traile
 `Build-Trailer.ps1`은 새 실행 폴더 `Saved/Trailer/Runs/<시각>`에서 촬영, 글자 판, 편집표, 소리,
 두 언어 영상, 배포용(`-hq`)과 README용(`-web`) 인코딩까지 한 번에 만든다. 끝으로 여섯 영상의 길이,
 화면 크기, 초당 프레임, 소리 줄을 ffprobe로 확인하고, README용이 10MB 아래인지 본다. 이 확인을
-통과해야 성공으로 기록된다.
+통과해야 성공으로 기록된다. 촬영은 `Run-TrailerCapture.ps1`에 그 실행 폴더를 넘겨서 하고, 그 폴더의
+잠금과 정리 기록은 `Build-Trailer.ps1`이 끝까지 쥔다. 그래서 촬영이 끝나도 인코딩할 프레임이 먼저
+지워지지 않는다.
 
-실행 폴더는 자동 정리(`GeneratedArtifactCleanup.ps1`)에 등록된다. 하루가 지나고 최근 성공 두 번에
-들지 않는 실행에서는 다시 찍으면 되는 장면 프레임과 중간 소리(`trailer_mix.wav`, `trailer_audio.wav`),
-기록만 지운다. 영상, 정지 화면, 글자 판, 편집표, 음량 측정은 남는다. 실패한 실행도 마지막 한 번은
-남는다. 예전 `Saved/Trailer`의 프레임과 영상은 등록하지 않으므로 자동으로 지워지지 않는다.
+실행 폴더는 자동 정리(`GeneratedArtifactCleanup.ps1`)에 등록된다. 끝난 지 하루가 지나고 같은
+스크립트·옵션의 최근 성공 두 번에 들지 않는 실행에서는 다시 찍으면 되는 장면 프레임, 중간 소리
+(`trailer_mix.wav`, `trailer_audio.wav`), 실행 폴더 바로 아래의 기록(`*.log`)만 지운다. 영상, 정지
+화면, 글자 판, 편집표, 음량 측정, 사용자 폴더(`User/`)는 남는다. 실패한 실행도 마지막 한 번은 남는다.
+정리는 자동 정리를 쓰는 다른 검사가 끝날 때도 돈다. 계속 쓸 실행 폴더에는 빈 `.keep` 파일을 둔다.
 
-장면 몇 개만 다시 찍어 볼 때는 단계를 따로 돌린다. 이때는 예전처럼 `Saved/Trailer`에 쌓이고
-자동 정리 밖이다. 다른 폴더에서 편집하려면 `IG_TRAILER_DIR`에 그 폴더를 준다.
+장면 몇 개만 다시 찍어 볼 때는 `Run-TrailerCapture.ps1`만 돌린다. 이때도 실행마다
+`Saved/Trailer/Runs/<시각>-<장면>` 폴더를 새로 만들고 기록(`Trailer-<장면>.log`)과 사용자 폴더도 그
+안에 두며, 위와 같은 규칙으로 정리된다. 성공·실패·시간 초과 모두 끝날 때 기록을 남기고, 시간이
+넘으면 엔진 프로세스 트리를 끝낸 뒤 닫는다. 프레임은 끝난 뒤 하루는 그대로 있고, 같은 장면 묶음의
+최근 성공 두 번과 실패 한 번은 그 뒤에도 남는다. 표에 없는 장면 이름을 주면 아무것도 찍지 않고
+실패로 끝난다.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/Trailer/Run-TrailerCapture.ps1 -Shot door-402,booth-cctv
+```
+
+단독 촬영 폴더에는 찍은 장면만 들어 있다. 영상은 모든 장면이 든 실행 폴더에서만 엮이므로 영상을
+다시 만들 때는 `Build-Trailer.ps1`을 처음부터 돌린다. `-Shot` 없이 단독으로 모두 찍었다면 그 실행
+폴더(`<시각>-all`)를 `IG_TRAILER_DIR`로 주고 편집 단계를 따로 돌릴 수 있다. 편집 단계와
+`create_readme_media.py --chase`는 `IG_TRAILER_DIR`이 없으면 멈춘다.
+
+```powershell
+$env:IG_TRAILER_DIR = (Resolve-Path 'Saved/Trailer/Runs/<시각>-all').Path
 python Scripts/Trailer/cards.py
 python Scripts/Trailer/assemble.py --marks
 python Scripts/Trailer/compose.py
 python Scripts/Trailer/assemble.py ko
 python Scripts/Trailer/assemble.py en
 ```
+
+예전 고정 폴더 `Saved/Trailer`에는 이제 아무것도 쓰지 않는다. 그 안에 남은 2026-10-12 영상과
+프레임은 자동 정리 대상이 아니다. 촬영기도 `-IGTrailerOut`으로 실행 폴더를 받지 못하면 찍지 않는다.
 
 촬영기(`-IGTrailerCapture`)는 장면마다 시점을 옮기며 UI 없이 프레임을 한 장씩 남긴다.
 장면표는 `AIGListenerGreyboxDirector::AdvanceTrailerCapture`에 있고, `-Shot door-402,booth-cctv`처럼
@@ -77,10 +96,11 @@ python Scripts/Trailer/assemble.py en
 어둑시니 장면은 `FRAMING`에 적은 대로 복도 끝을 1.6배로 잘라 쓴다. 원래 화각에서는 등 앞에 선
 형체가 작은 화면에서 몇 픽셀밖에 안 된다. 자른 화면은 고정이고 움직이지 않는다.
 
-결과는 실행 폴더의 `MissingFloor-Trailer.mp4`(한국어)와 `MissingFloor-Trailer-en.mp4`(영어)다
-(단계를 따로 돌리면 `Saved/Trailer`). 화면 잡티 때문에 원본이 크므로 배포용과 README용을 따로
-인코딩한다. `Build-Trailer.ps1`은 아래 인코딩까지 해 둔다. 릴리스 묶음에는
+결과는 실행 폴더의 `MissingFloor-Trailer.mp4`(한국어)와 `MissingFloor-Trailer-en.mp4`(영어)다.
+화면 잡티 때문에 원본이 크므로 배포용과 README용을 따로 인코딩한다. `Build-Trailer.ps1`은 아래
+인코딩까지 해 둔다. 릴리스 묶음에는
 `python Scripts/make_release_zip.py --trailer <실행 폴더>/MissingFloor-Trailer-hq.mp4`로 넘긴다.
+`--trailer`를 주지 않으면 예고편 없이 묶고, 준 파일이 없으면 멈춘다.
 
 ```powershell
 ffmpeg -i MissingFloor-Trailer.mp4 -c:v libx264 -preset slow -crf 22 -tune grain -c:a aac -b:a 160k -movflags +faststart MissingFloor-Trailer-hq.mp4
@@ -94,7 +114,7 @@ README 맨 위 영상은 10MB 아래의 `-web` 파일을 GitHub 편집기에 끌
 
 게임의 WAV만 쓴다. 음악과 나레이션은 없다. 문밖의 목소리는 게임처럼 철문에 걸러진 웅얼거림을
 합성하고, 말은 대사 상자가 맡는다. `compose.py`가 ffmpeg loudnorm을 두 번 돌려 -19 LUFS, 최대
--1.5 dBTP로 맞추고 측정값을 `Saved/Trailer/audio-loudness.json`에 남긴다.
+-1.5 dBTP로 맞추고 측정값을 실행 폴더의 `audio-loudness.json`에 남긴다.
 
 ## 배포 전 확인
 

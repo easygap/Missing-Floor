@@ -106,9 +106,7 @@ Caption size and background, sound direction markers, camera shake, flickering l
 
 ## Credits
 
-Sound effects are CC0 assets from OpenGameArt and Kenney, surface textures come from ambientCG, and scanned props from Poly Haven, also CC0. The fonts are Pretendard and Gowun Batang, with Noto Sans CJK for Japanese and Chinese (all SIL Open Font License 1.1).
-
-Some of the game is AI-made. Parts of the printed material, signs and textures are AI-generated images edited by hand. The bodies of the people and creatures, such as the one upstairs, the black shape, the building manager and the neighbors in 303 and 202, along with the alley cat and the delivery scooters, were turned into 3D from AI images, then cleaned up and rigged in Blender. The thing stuck to the walls was built by hand in Blender from AI concept images and texture tiles. Many other props were modeled in Blender from AI concept images. Full sources and terms are in the [asset ledger](../ASSET_POLICY.md) (Korean).
+Sound effects are CC0 assets from OpenGameArt and Kenney, surface textures come from ambientCG, and scanned props from Poly Haven, also CC0. The fonts are Pretendard and Gowun Batang, with Noto Sans CJK for Japanese and Chinese (all SIL Open Font License 1.1). Full sources and terms are in the [asset ledger](../ASSET_POLICY.md) (Korean).
 
 ## Bugs and feedback
 

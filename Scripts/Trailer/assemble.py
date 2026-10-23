@@ -21,8 +21,11 @@ import sys
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-# 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 없으면 예전 자리다.
-HERE = Path(os.environ.get('IG_TRAILER_DIR') or ROOT / 'Saved/Trailer')
+# 예고편 만들기(Build-Trailer.ps1)는 실행 폴더를 IG_TRAILER_DIR로 넘긴다. 따로 돌릴 때도 쓸 실행 폴더를
+# 지정한다. 예전에는 비워 두면 Saved/Trailer 한 곳에 덮어써서 어느 촬영의 결과인지 알 수 없었다.
+if not os.environ.get('IG_TRAILER_DIR'):
+    sys.exit('IG_TRAILER_DIR에 예고편 실행 폴더(Saved/Trailer/Runs/<시각>)를 지정해 주세요.')
+HERE = Path(os.environ['IG_TRAILER_DIR'])
 FPS = 30
 SIZE = (1920, 1080)
 # 기어 오는 장면은 붙잡히고 끊기기까지 한 번에 찍힌다. 끊긴 뒤 다섯 프레임까지 쓴다.

@@ -260,6 +260,131 @@ else {
     Assert-Cleanup (@($integration | Where-Object { $_.succeeded }).Count -eq 1) '성공 기록 오류'
     Assert-Cleanup (@($integration | Where-Object { -not $_.succeeded }).Count -eq 1) '실패 기록 오류'
     Assert-Cleanup (-not (Invoke-IGArtifactCleanup -ProjectRoot $project).Busy) '오류 뒤 실행 잠금이 남음'
+
+    # 예고편 단독 촬영도 실행 폴더·소유 기록·잠금·종료 기록을 갖는다. 가짜 엔진은 Start-Process로 뜨는
+    # 배치 파일이다. 성공, 실패, 시간 초과, 부모(Build-Trailer)가 넘긴 실행 폴더를 차례로 본다.
+    Remove-Item -LiteralPath (Join-Path $fixtureScripts 'fail.flag')
+    $fixtureTrailer = Join-Path $fixtureScripts 'Trailer'
+    [void][IO.Directory]::CreateDirectory($fixtureTrailer)
+    [IO.File]::WriteAllText((Join-Path $fixtureTrailer 'Run-TrailerCapture.ps1'),
+        [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'Trailer/Run-TrailerCapture.ps1')), [Text.UTF8Encoding]::new($true))
+    Write-Fixture (Join-Path $fixtureScripts 'Resolve-UnrealEditor.ps1') @'
+param([switch]$Commandlet)
+Join-Path $PSScriptRoot 'fake-trailer-editor.cmd'
+'@
+    [IO.File]::WriteAllText((Join-Path $fixtureScripts 'fake-trailer-editor.cmd'),
+        "@powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0fake-trailer-editor.ps1`" %*`r`n@exit /b %errorlevel%`r`n")
+    Write-Fixture (Join-Path $fixtureScripts 'fake-trailer-editor.ps1') @'
+# 엔진처럼 실행 줄 전체를 읽는다. -File로 넘긴 인자는 PowerShell이 다시 나누므로 쓰지 않는다.
+$line = [Environment]::CommandLine
+function Get-Arg([string]$Name) { if ($line -match "-$Name=([^`"\s]+)") { $Matches[1] } else { '' } }
+if ($line -notmatch '(^|\s)-RenderOffscreen(\s|$)') { exit 3 }
+$out = Get-Arg 'IGTrailerOut'
+$log = Get-Arg 'abslog'
+$user = Get-Arg 'UserDir'
+if (-not $out -or -not $log -or -not $user) { exit 4 }
+if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'hang.flag')) { Start-Sleep -Seconds 60 }
+$shots = @((Get-Arg 'IGTrailerShot').Split(',') | Where-Object { $_ })
+if (-not $shots.Count) { $shots = @('alley') }
+foreach ($shot in $shots) {
+    [void][IO.Directory]::CreateDirectory((Join-Path $out $shot))
+    [IO.File]::WriteAllText((Join-Path $out "$shot/frame_0000.png"), 'frame')
+}
+[void][IO.Directory]::CreateDirectory((Join-Path $user 'Saved/SaveGames'))
+[IO.File]::WriteAllText((Join-Path $user 'Saved/SaveGames/AutoSave_0.sav'), 'save')
+if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'fail.flag')) {
+    [IO.File]::WriteAllText($log, 'TRAILER_CAPTURE FAIL reason=test')
+    exit 1
+}
+[IO.File]::WriteAllText($log, 'TRAILER_CAPTURE PASS dropped=0')
+exit 0
+'@
+    $trailerCapture = Join-Path $fixtureTrailer 'Run-TrailerCapture.ps1'
+    $runsRoot = Join-Path $project 'Saved/Trailer/Runs'
+    function Get-TrailerRecords {
+        @(Get-ChildItem -LiteralPath (Join-Path $project 'Saved/ArtifactCleanup') -Filter '*.json' -File |
+            ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json } |
+            Where-Object { $_.group -match 'Run-TrailerCapture' })
+    }
+    $before = @(Get-ChildItem -LiteralPath $runsRoot -Directory).Count
+    # TRAILER_RUN은 Write-Host로 알리므로 정보 스트림을 받아 읽는다.
+    $standalone = @(& $trailerCapture -Shot door-402,booth-cctv -TimeoutSeconds 60 6>&1 | ForEach-Object { [string]$_ } |
+        Where-Object { $_ -like 'TRAILER_RUN *' })
+    Assert-Cleanup ($standalone.Count -eq 1) '단독 촬영이 실행 폴더를 알리지 않음'
+    $standaloneRun = $standalone[0].Substring(12)
+    Assert-Cleanup ((Split-Path -Parent $standaloneRun) -eq [IO.Path]::GetFullPath($runsRoot) -and
+        (Split-Path -Leaf $standaloneRun) -match '^\d{8}-\d{6}-\d{3}-door-402_booth-cctv$') "단독 촬영 실행 폴더 이름이 다름: $standaloneRun"
+    foreach ($made in @('door-402/frame_0000.png', 'booth-cctv/frame_0000.png', 'Trailer-door-402_booth-cctv.log',
+        'User/Saved/SaveGames/AutoSave_0.sav', '.ig-artifact-owner')) {
+        Assert-Cleanup (Test-Path -LiteralPath (Join-Path $standaloneRun $made)) "단독 촬영 결과가 실행 폴더에 없음: $made"
+    }
+    Assert-Cleanup (-not (Test-Path -LiteralPath (Join-Path $project 'Saved/Trailer/door-402')) -and
+        -not (Test-Path -LiteralPath (Join-Path $project 'Saved/Validation/Trailer-User')) -and
+        -not (Test-Path -LiteralPath (Join-Path $project 'Saved/Logs/Trailer-door-402_booth-cctv.log'))) '단독 촬영이 예전 고정 경로에 씀'
+    $records = @(Get-TrailerRecords)
+    Assert-Cleanup ($records.Count -eq 1 -and $records[0].succeeded -and $records[0].directory -eq $standaloneRun) '단독 촬영 성공 기록 오류'
+    Assert-Cleanup (@($records[0].files | Where-Object { $_.path -eq 'door-402/frame_0000.png' }).Count -eq 1) '단독 촬영 프레임이 정리 목록에 없음'
+    Assert-Cleanup (Test-Path -LiteralPath (Join-Path $standaloneRun 'door-402/frame_0000.png')) '단독 촬영이 끝나자마자 프레임을 지움'
+
+    Write-Fixture (Join-Path $fixtureScripts 'fail.flag')
+    $failure = $null
+    try { & $trailerCapture -Shot door-402 -TimeoutSeconds 60 | Out-Null }
+    catch { $failure = $_.Exception.Message }
+    Remove-Item -LiteralPath (Join-Path $fixtureScripts 'fail.flag')
+    Assert-Cleanup ($failure -like '트레일러 촬영 실패:*') "단독 촬영 실패가 원래 오류로 남지 않음: $failure"
+    Write-Fixture (Join-Path $fixtureScripts 'hang.flag')
+    $failure = $null
+    try { & $trailerCapture -Shot booth-cctv -TimeoutSeconds 3 | Out-Null }
+    catch { $failure = $_.Exception.Message }
+    Remove-Item -LiteralPath (Join-Path $fixtureScripts 'hang.flag')
+    Assert-Cleanup ($failure -like '트레일러 촬영 시간 초과:*') "단독 촬영 시간 초과가 원래 오류로 남지 않음: $failure"
+    $records = @(Get-TrailerRecords)
+    Assert-Cleanup ($records.Count -eq 3 -and @($records | Where-Object { -not $_.succeeded }).Count -eq 2) '단독 촬영 실패·시간 초과 기록이 빠짐'
+    $hungRun = @($records | Where-Object { $_.directory -like '*-booth-cctv' })[0].directory
+    Assert-Cleanup (-not (Test-IGArtifactInUse $hungRun @(Get-IGArtifactProcesses))) '시간 초과한 가짜 엔진이 남아 있음'
+    Assert-Cleanup (-not (Invoke-IGArtifactCleanup -ProjectRoot $project).Busy) '단독 촬영 뒤 실행 잠금이 남음'
+
+    # 부모가 등록한 실행 폴더에 찍을 때는 잠금·기록·정리를 부모에게 맡긴다. 부모 범위가 열린 동안
+    # 정리는 잠금 때문에 돌지 않고, 기록은 부모 것 하나만 남는다.
+    $parentScope = Enter-IGArtifactScope -ProjectRoot $project -Name 'Build-Trailer.ps1'
+    $managedRun = Join-Path $runsRoot 'Managed'
+    try {
+        Add-IGArtifactDirectory -Scope $parentScope -Directory $managedRun -Variant 'Trailer'
+        & $trailerCapture -OutputDirectory $managedRun -TimeoutSeconds 60 | Out-Null
+        Assert-Cleanup (Test-Path -LiteralPath (Join-Path $managedRun 'alley/frame_0000.png')) '부모 실행 폴더에 프레임이 없음'
+        Assert-Cleanup (Test-Path -LiteralPath (Join-Path $managedRun 'Trailer-all.log')) '부모 실행 폴더에 기록이 없음'
+        Assert-Cleanup ((Invoke-IGArtifactCleanup -ProjectRoot $project).Busy) '부모가 쓰는 중인데 정리가 돌았음'
+        Assert-Cleanup (@(Get-TrailerRecords).Count -eq 3) '부모가 넘긴 실행 폴더를 자식이 따로 기록함'
+    }
+    finally { Complete-IGArtifactScope -Scope $parentScope -Succeeded $true }
+    $managedRecords = @(Get-ChildItem -LiteralPath (Join-Path $project 'Saved/ArtifactCleanup') -Filter '*.json' -File |
+        ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json } |
+        Where-Object { $_.directory -eq [IO.Path]::GetFullPath($managedRun) })
+    Assert-Cleanup ($managedRecords.Count -eq 1 -and $managedRecords[0].group -match 'Build-Trailer') '부모 실행 폴더 기록 오류'
+    $orphan = Join-Path $runsRoot 'Orphan'
+    [void][IO.Directory]::CreateDirectory($orphan)
+    $failure = $null
+    try { & $trailerCapture -OutputDirectory $orphan -TimeoutSeconds 60 | Out-Null }
+    catch { $failure = $_.Exception.Message }
+    Assert-Cleanup ($failure -like '정리 기록이 없는 실행 폴더에는 찍지 않습니다*' -and
+        -not (Test-Path -LiteralPath (Join-Path $orphan 'alley'))) '정리 기록 없는 실행 폴더에 찍음'
+
+    # 같은 장면 묶음의 단독 촬영은 최근 성공 두 번을 남기고, 더 오래된 실행에서는 프레임과 기록만 지운다.
+    $repeated = @(1..3 | ForEach-Object {
+        Start-Sleep -Milliseconds 20
+        @(& $trailerCapture -Shot alley -TimeoutSeconds 60 6>&1 | ForEach-Object { [string]$_ } |
+            Where-Object { $_ -like 'TRAILER_RUN *' })[0].Substring(12)
+    })
+    $repeatedRecords = @(Get-TrailerRecords | Where-Object { $repeated -contains $_.directory } | Sort-Object { $repeated.IndexOf($_.directory) })
+    for ($index = 0; $index -lt $repeatedRecords.Count; $index++) { Age-Run ([pscustomobject]@{ Id = $repeatedRecords[$index].id }) (5 - $index) }
+    [void](Invoke-IGArtifactCleanup -ProjectRoot $project)
+    Assert-Cleanup (-not (Test-Path -LiteralPath (Join-Path $repeated[0] 'alley/frame_0000.png')) -and
+        -not (Test-Path -LiteralPath (Join-Path $repeated[0] 'Trailer-alley.log'))) '오래된 단독 촬영 프레임을 정리하지 않음'
+    Assert-Cleanup (Test-Path -LiteralPath (Join-Path $repeated[0] 'User/Saved/SaveGames/AutoSave_0.sav')) '단독 촬영 세이브를 지움'
+    foreach ($recent in @($repeated[1], $repeated[2])) {
+        Assert-Cleanup (Test-Path -LiteralPath (Join-Path $recent 'alley/frame_0000.png')) '최근 단독 촬영 두 번의 프레임을 지움'
+    }
+    Assert-Cleanup (Test-Path -LiteralPath (Join-Path $standaloneRun 'door-402/frame_0000.png')) '다른 장면 묶음의 단독 촬영 프레임을 지움'
     Write-Host "ARTIFACT_CLEANUP_TEST PASS checks=$checks"
 }
 finally {
