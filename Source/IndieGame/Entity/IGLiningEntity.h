@@ -143,7 +143,7 @@ public:
 	FString FindLegObstruction(int32 Leg) const;
 	/** FindLegObstruction과 같되 어느 마디(0 엉덩이→무릎, 1 무릎→발목, 2 발목→패드)인지와 부딪힌 것의 이름만 준다. */
 	bool FindLegObstructionPart(int32 Leg, int32& OutSegment, FString& OutComponent, FVector* OutImpact = nullptr,
-		FVector* OutNormal = nullptr) const;
+		FVector* OutNormal = nullptr, float* OutInside = nullptr) const;
 	/**
 	 * 무릎을 그 자리에 두면 엉덩이→무릎·무릎→발목 마디가 벽·바닥·천장·소품을 지나지 않는가. bThighOnly면 엉덩이→무릎만 본다.
 	 * 발목 끝 4 cm는 짚은 면 바로 위라 덜 본다. StandNormal(짚은 면의 법선)을 주면 그 면에 닿는 것만 덜 보고, 옆 소품은 끝까지 본다.
@@ -491,6 +491,8 @@ private:
 	float PinBlend = 1.0f;
 	/** 관통 프레임을 다리·상태·마디·부딪힌 것으로 나눈 수. 어디를 고칠지 정할 때 본다. */
 	TMap<FString, int32> ObstructionBreakdown;
+	/** 같은 묶음에서 마디가 물체 속을 지난 가장 긴 길이(cm). 얕게 스친 것과 깊이 뚫은 것을 가른다. */
+	TMap<FString, float> ObstructionDepth;
 	/** 몸판이 벽·소품·문짝을 파고든 프레임(상태별). */
 	int32 BodyObstructedFrames = 0;
 	TMap<int32, int32> BodyObstructionByState;

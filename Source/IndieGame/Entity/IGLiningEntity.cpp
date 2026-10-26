@@ -2823,8 +2823,8 @@ void AIGLiningEntity::RetreatTo(const FVector& Point, const FVector& Normal, con
 	MoveToCenter = Point + Normal.GetSafeNormal() * IGLining::PressStandOff;
 	MoveToRotation = IGLining::FrameRotation(FVector::ForwardVector, FVector::UpVector, Forward, Normal.GetSafeNormal());
 	MoveSeconds = FMath::Max(Seconds, 0.5f);
-	// 처음에 면에서 떨어지는 거리(40·70 cm)와 구석 면 앞에서 다 돌 자리(면에서 60·90 cm, 옆으로 0·±30 cm, 앞뒤로
-	// 0·±30 cm)를 그려 보고 몸판과 접힌 다리가 덜 지나는 쪽으로 간다. 한 가지로 정해 두면 5층 철문 옆 구석으로 밀려날 때
+	// 처음에 면에서 떨어지는 거리(40·55·70 cm)와 구석 면 앞에서 다 돌 자리(면에서 60·90 cm, 옆으로 0·±30 cm, 앞뒤로
+	// 0·±30·-60 cm)를 그려 보고 몸판과 접힌 다리가 덜 지나는 쪽으로 간다. 한 가지로 정해 두면 5층 철문 옆 구석으로 밀려날 때
 	// 몸판 모서리가 옆벽을 11 cm 파고들며 돌았다. 접힌 다리 무릎은 몸판 앞뒤 끝보다 5 cm 더 나와서, 몸판만 보면 도는
 	// 동안 무릎이 동쪽 벽을 5 cm 파고들었다.
 	RetreatAway = 40.0f;
@@ -2861,13 +2861,13 @@ void AIGLiningEntity::RetreatTo(const FVector& Point, const FVector& Normal, con
 			return Hits;
 		};
 		int32 BestHits = TNumericLimits<int32>::Max();
-		for (const float AwayDistance : {40.0f, 70.0f})
+		for (const float AwayDistance : {40.0f, 55.0f, 70.0f})
 		{
 			for (const float Out : {60.0f, 90.0f})
 			{
 				for (const float Across : {0.0f, -30.0f, 30.0f})
 				{
-					for (const float Along : {0.0f, -30.0f, 30.0f})
+					for (const float Along : {0.0f, -30.0f, -60.0f, 30.0f})
 					{
 						const FVector Before = MoveToCenter + MoveToRotation.GetUpVector() * Out
 							+ MoveToRotation.GetRightVector() * Across + MoveToRotation.GetForwardVector() * Along;
@@ -2995,10 +2995,13 @@ void AIGLiningEntity::PoseBody()
 			FString Component;
 			FVector Impact = FVector::ZeroVector;
 			FVector ImpactNormal = FVector::ZeroVector;
-			if (FindLegObstructionPart(Leg, Segment, Component, &Impact, &ImpactNormal))
+			float Inside = 0.0f;
+			if (FindLegObstructionPart(Leg, Segment, Component, &Impact, &ImpactNormal, &Inside))
 			{
 				++ObstructedFrames[Leg];
 				const FString Key = FString::Printf(TEXT("leg%d/state%d/seg%d/%s"), Leg, static_cast<int32>(State), Segment, *Component);
+				float& Deepest = ObstructionDepth.FindOrAdd(Key);
+				Deepest = FMath::Max(Deepest, Inside);
 				int32& Count = ObstructionBreakdown.FindOrAdd(Key);
 				if (Count++ == 0)
 				{
@@ -3873,7 +3876,7 @@ bool AIGLiningEntity::IsBodyObstructed(FString* OutComponent) const
 }
 
 bool AIGLiningEntity::FindLegObstructionPart(const int32 Leg, int32& OutSegment, FString& OutComponent, FVector* OutImpact,
-	FVector* OutNormal) const
+	FVector* OutNormal, float* OutInside) const
 {
 	UWorld* World = GetWorld();
 	if (!World || Leg < 0 || Leg >= LegCount)
@@ -3915,6 +3918,14 @@ bool AIGLiningEntity::FindLegObstructionPart(const int32 Leg, int32& OutSegment,
 			if (OutNormal)
 			{
 				*OutNormal = Hit.ImpactNormal;
+			}
+			if (OutInside)
+			{
+				// 마디 끝에서 거꾸로 쏴서 나오는 자리를 찾는다. 못 찾으면 끝이 물체 속이다.
+				FHitResult Exit;
+				const bool bExit = Hit.GetComponent()
+					&& Hit.GetComponent()->LineTraceComponent(Exit, End, Hit.ImpactPoint, FCollisionQueryParams(SCENE_QUERY_STAT(LiningLegExit), false));
+				*OutInside = FVector::Distance(Hit.ImpactPoint, bExit && !Exit.bStartPenetrating ? Exit.ImpactPoint : End);
 			}
 			return true;
 		}
@@ -4017,8 +4028,9 @@ void AIGLiningEntity::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		int32 Shown = 0;
 		for (const TPair<FString, int32>& Entry : ObstructionBreakdown)
 		{
-			UE_LOG(LogIndieGame, Display, TEXT("LINING_OBSTRUCTION %s frames=%d"), *Entry.Key, Entry.Value);
-			if (++Shown >= 24)
+			const float* Deepest = ObstructionDepth.Find(Entry.Key);
+			UE_LOG(LogIndieGame, Display, TEXT("LINING_OBSTRUCTION %s frames=%d max_in=%.1f"), *Entry.Key, Entry.Value, Deepest ? *Deepest : 0.0f);
+			if (++Shown >= 40)
 			{
 				break;
 			}
