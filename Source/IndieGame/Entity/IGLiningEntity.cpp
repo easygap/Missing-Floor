@@ -3133,7 +3133,8 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 	// 빠르기 안에서만 돈다. 반대편까지 돌아야 할 때는 몸 위(방 쪽)로 돌아 벽이나 바닥을 지나가지 않는다.
 	FVector KneeDirection = Target;
 	FVector Previous = Leg.KneeBend - Circle.Axis * FVector::DotProduct(Leg.KneeBend, Circle.Axis);
-	if (bKneeContinuity && !Leg.KneeBend.IsZero() && Previous.Normalize())
+	const bool bHasPrevious = bKneeContinuity && !Leg.KneeBend.IsZero() && Previous.Normalize();
+	if (bHasPrevious)
 	{
 		const float Gap = FMath::Acos(FMath::Clamp(FVector::DotProduct(Previous, Target), -1.0f, 1.0f));
 		const float DeltaSeconds = GetWorld() ? FMath::Max(GetWorld()->GetDeltaSeconds(), 1.0f / 240.0f) : 1.0f / 60.0f;
@@ -3182,6 +3183,15 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 	else
 	{
 		Leg.KneeTurnSign = 0.0f;
+	}
+	// 무릎이 지금 비어 있고 정한 쪽으로 가는 다음 자리가 벽·바닥·소품 속이면, 비켜 갈 길이 날 때까지 그 자리에 둔다.
+	// 벽에 세로로 붙은 몸의 아래 다리는 엉덩이가 바닥 가까이 있어, 도는 길이 바닥과 낮은 소품 속을 지나며 무릎이
+	// 내려갔다(302호 큰 점검구 47 cm, 관리실 바닥 27 cm).
+	if (bHasPrevious && PinnedLeg != Index && Leg.Fold < 0.999f
+		&& !IsKneeClear(Hip, Circle.Center + KneeDirection * Circle.Radius, Ankle, false, Leg.Normal)
+		&& IsKneeClear(Hip, Circle.Center + Previous * Circle.Radius, Ankle, false, Leg.Normal))
+	{
+		KneeDirection = Previous;
 	}
 	const bool bKneeContinuous = !Leg.KneeBend.IsZero();
 	Leg.KneeBend = KneeDirection;
@@ -3246,6 +3256,14 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 		{
 			Knee = Hip + (LastKnee + Wanted.GetSafeNormal() * MaxStep - Hip).GetSafeNormal() * Length1[Index];
 			Ankle = Knee + (AnkleGoal - Knee).GetSafeNormal() * Length2[Index];
+			// 따라잡는 곧은 길이 막힌 데로 들어가면 지난 무릎에 둔다(위와 같은 까닭).
+			const FVector Stay = Hip + (LastKnee - Hip).GetSafeNormal() * Length1[Index];
+			const FVector StayAnkle = Stay + (AnkleGoal - Stay).GetSafeNormal() * Length2[Index];
+			if (!IsKneeClear(Hip, Knee, Ankle, false, Leg.Normal) && IsKneeClear(Hip, Stay, StayAnkle, false, Leg.Normal))
+			{
+				Knee = Stay;
+				Ankle = StayAnkle;
+			}
 			const FVector Axis = (Ankle - Hip).GetSafeNormal();
 			HeldBend = Knee - Hip;
 			HeldBend -= Axis * FVector::DotProduct(HeldBend, Axis);
