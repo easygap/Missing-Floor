@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
 	# 소스의 NSLOCTEXT를 모아 목록과 언어별 .po를 새로 만든다.
 	[switch]$Gather,

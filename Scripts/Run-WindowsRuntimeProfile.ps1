@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$ArchiveDirectory,
     [Parameter(Mandatory)][string]$EvidenceDirectory,

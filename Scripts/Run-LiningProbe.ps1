@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
 	[ValidateSet(30, 60)][int]$FrameRate = 60,
 	[switch]$Shots,

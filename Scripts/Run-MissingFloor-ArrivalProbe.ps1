@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 	Production entry smoke test for 「없는 층」.
 

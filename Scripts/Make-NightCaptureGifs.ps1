@@ -1,4 +1,4 @@
-# -IGNightCapture 연속 프레임을 GIF로 묶는다.
+﻿# -IGNightCapture 연속 프레임을 GIF로 묶는다.
 # 어두운 복도에 색 단계가 생기지 않도록 ffmpeg 팔레트를 두 번에 나눠 처리한다.
 #   Saved/NightCapture/mercy-note   -> Docs/Media/m65-mercy-note-slide.gif
 # README의 추격 GIF는 create_readme_media.py가 새 촬영으로 만든다. 여기서

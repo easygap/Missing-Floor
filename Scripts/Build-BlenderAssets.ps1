@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
 	# 에셋 이름(SM_...) 또는 빌더 이름(unit_door). 비우면 전부.
 	[string[]]$Only = @()

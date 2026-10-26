@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
 	[ValidateSet(30, 60)][int]$FrameRate = 60,
 	# dawn: 밤3에 정우를 꺼내지 않고 새벽을 맞는 길. dawnbrace: 꺼낸 정우가 판을 받치는 한가운데 새벽(낮3 문 앞 상자).

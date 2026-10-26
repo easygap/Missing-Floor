@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
 	# 에셋 이름(SM_...). 비우면 Content/SourceArt/Blender의 manifest 전부.
 	[string[]]$Only = @(),

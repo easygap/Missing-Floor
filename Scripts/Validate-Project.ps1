@@ -1,7 +1,17 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Stop'
+# 시스템 코드 페이지가 949(UTF-8 아님)인 PC에서는 파이썬 검사가 한글이나 대시를 출력하다 UnicodeEncodeError로 죽었다
+# (2026-10-26 세계 형상 감사). 이 실행에서 부르는 파이썬은 입출력을 UTF-8로 하고, 그 출력을 받는 쪽도 UTF-8로 읽는다.
+# 받는 쪽을 949로 두면 한글 보고 줄을 못 읽어 못 보는 상자 수가 0으로 잡혔다.
+$env:PYTHONUTF8 = '1'
+try {
+	[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+}
+catch {
+	# 콘솔이 붙지 않은 실행에서는 바꿀 수 없다. 그때는 시스템 코드 페이지를 따른다.
+}
 . (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
 $igArtifactScope = Enter-IGArtifactScope -ProjectRoot (Split-Path -Parent $PSScriptRoot) -Name 'Validate-Project.ps1' -Parameters $PSBoundParameters
 $igArtifactSucceeded = $false

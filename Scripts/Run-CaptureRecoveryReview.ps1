@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param([int]$Width = 1920, [int]$Height = 1080)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')

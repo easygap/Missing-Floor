@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
 	[int]$Port = 8199,
 	# 서버를 내린다.

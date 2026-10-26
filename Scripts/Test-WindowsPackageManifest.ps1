@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$ArchiveDirectory,
     [ValidatePattern('^[0-9a-fA-F]{40}$')][string]$ExpectedCommit,

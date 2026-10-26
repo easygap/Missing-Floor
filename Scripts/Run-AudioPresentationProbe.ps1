@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
 	[ValidateSet(30, 60, 120)][int]$FrameRate = 60,
 	[ValidateRange(30, 300)][int]$TimeoutSeconds = 120

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param([ValidateSet(30, 60)][int]$FrameRate = 60)
 
 # 위층 사람이 계단탑을 타고 층을 오가며 쫓고, 소리를 놓친 뒤 둘레를 뒤지는지 잰다.

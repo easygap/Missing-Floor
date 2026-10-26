@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
 	[ValidateRange(60, 600)][int]$TimeoutSeconds = 240,
 	# 전후 비교 촬영에 쓴다. 예: -ExtraArguments '-IGCameraTexture=0'

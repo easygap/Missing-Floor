@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 # 간판과 포장의 한글은 글꼴로 조판한다. 상호와 제품명은 영수증 데이터와 맞춘다.
 $ErrorActionPreference = 'Stop'

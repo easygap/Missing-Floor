@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 	Renders the production arrival boxes and contract for visual review.
 #>

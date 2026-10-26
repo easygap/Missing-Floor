@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$OutputDirectory,
     [ValidateRange(640, 3840)][int]$Width = 1920,
