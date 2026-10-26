@@ -69,6 +69,16 @@ public:
 	void SetObstructed(bool bInObstructed, float BlockedYawDegrees = 38.0f);
 	bool IsObstructed() const { return bObstructed; }
 
+	/**
+	 * 덧댄 것 몸판이 문짝이 도는 자리에 있다. 열리는 문짝은 이 각(도)에서 멈추고, 풀리면 마저 열린다. 다 열린 문짝은
+	 * 밀지 않는다(덧댄 것이 길을 비킨다).
+	 */
+	void SetOpenLimit(float LimitYawDegrees);
+	void ClearOpenLimit();
+	bool HasOpenLimit() const { return OpenLimitYaw < 180.0f; }
+	/** 지금 문짝 각(도, 0이 닫힘). */
+	float GetDoorYaw() const { return CurrentYaw; }
+
 	/** 문짝(열리면 경첩 쪽 벽 앞에 선다). 덧댄 것이 몸판과 다리를 비킬 때 본다. */
 	UStaticMeshComponent* GetDoorPanel() const { return DoorPanel; }
 	/** 다 연 각(도). */
@@ -153,6 +163,8 @@ private:
 	bool bObstructed = false;
 	bool bAirSound = true;
 	float BlockedYaw = 38.0f;
+	/** 열리는 문짝이 넘지 않는 각(도). 180이면 제한이 없다. */
+	float OpenLimitYaw = 180.0f;
 	float CurrentYaw = 0.0f;
 	float TargetYaw = 0.0f;
 	/** 걸려서 튕기는 동안의 남은 시간. */

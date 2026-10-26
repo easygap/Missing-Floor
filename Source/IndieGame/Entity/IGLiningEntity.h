@@ -286,10 +286,12 @@ private:
 	void BeginTravelTo(FName GapId);
 	void BuildPath(const FVector& Start, const FVector& StartUp, const FVector& Goal, const FVector& GoalNormal);
 	/**
-	 * 다른 면으로 건너가는 길을 몇 가지(방 쪽으로 더 부풀기, 위로 돌기) 그려 보고 몸판이 벽·소품·열린 문짝을 덜 지나는
-	 * 것을 고른다. PathStartRotation·PathGoalRotation이 정해진 뒤에 부른다.
+	 * 다른 면으로 건너가는 길 하나를 몸판이 지나는 자리로 매긴다. 벽·소품을 지나는 점은 1, 목표 틈의 열린 문짝이나
+	 * 서 있는 사람을 지나는 점은 10이다. PathStartRotation·PathGoalRotation이 정해진 뒤에 부른다.
 	 */
 	int32 CountPathObstruction(const TArray<FVector>& Points, const AIGAccessHatch* Hatch) const;
+	/** 마지막으로 매긴 길의 내역(문짝·사람·벽·엉덩이). 진단 로그용. */
+	mutable FString LastPathCost;
 	FVector PathPoint(float Distance) const;
 	float PathLength() const { return PathDistances.IsEmpty() ? 0.0f : PathDistances.Last(); }
 	FQuat BodyRotationAt(float Alpha) const;
@@ -366,6 +368,10 @@ private:
 	 */
 	bool IsPadPlaceable(int32 Leg, const FVector& Hip, const FQuat& Rotation, const FVector& Pad, const FVector& Normal,
 		const AIGAccessHatch* Hatch) const;
+	/** 그 자리가 어느 틈의 벽 면 뒤(열린 점검구 속)인가. 거기를 짚으면 다리가 개구부 옆 벽을 뚫고 들어간다. */
+	bool IsInsideGapCavity(const FVector& Pad) const;
+	/** 엉덩이에서 그 자리까지 곧게 그은 선이 열린 덮개 문짝(다 연 자리)을 지나는가. */
+	bool CrossesOpenHatchDoor(const FVector& Hip, const FVector& Pad) const;
 	/** 이 다리가 버티는 자리(짚을 때와 누를 때 몸)에서 그 자리를 짚을 수 있는가. 마디가 막히거나 패드가 옆 면을 파고들면 안 된다. */
 	bool IsBracePadUsable(int32 Leg, const FIGLiningGap& Gap, const FGapPose& Pose, const FVector& Pad, const FVector& Normal) const;
 	/** 틈을 막고 있을 때 플레이어가 덮개를 닫으면 문짝이 몸판이나 다리에 걸리는 각(도). */
@@ -382,6 +388,10 @@ private:
 	float LeanKnee(int32 Leg, const FVector& Hip, const FVector& Ankle, const FVector& Pole);
 	void ResetKneeLean();
 	void UpdateColliders();
+	/** 밀려나는 동안 Alpha(0~1)의 몸 가운데와 회전. Away는 처음에 면에서 떨어지는 거리, Before는 구석 면 앞에서 다 돌 자리다. */
+	FVector RetreatPoseAt(float Alpha, float Away, const FVector& Before, FQuat& OutRotation) const;
+	/** 열리는 덮개 문짝이 몸판에 닿으면 그 각에서 멈추게 하고, 몸이 비키면 푼다. 다 열린 문짝은 밀지 않는다. */
+	void UpdateHatchOpenLimits();
 	/** 몸판·다리·패드 충돌을 한꺼번에 켜거나 끈다. */
 	void SetBlockersEnabled(bool bEnabled);
 	void CheckGrip();
@@ -538,6 +548,10 @@ private:
 	// 누르기·펴기·물러나기의 출발과 도착.
 	FVector MoveFromCenter = FVector::ZeroVector;
 	FVector MoveToCenter = FVector::ZeroVector;
+	/** 밀려날 때 붙을 구석 면 앞에서 다 돌 자리. RetreatTo가 몸판이 덜 지나는 자리로 고른다. */
+	FVector RetreatBefore = FVector::ZeroVector;
+	/** 밀려날 때 처음에 짚고 있던 면에서 곧장 떨어지는 거리(cm). */
+	float RetreatAway = 40.0f;
 	FQuat MoveFromRotation = FQuat::Identity;
 	FQuat MoveToRotation = FQuat::Identity;
 	float MoveSeconds = 1.0f;

@@ -191,6 +191,25 @@ float AIGAccessHatch::GetOpenYaw()
 	return IGAccessHatch::OpenYawDegrees;
 }
 
+void AIGAccessHatch::SetOpenLimit(const float LimitYawDegrees)
+{
+	const float Limit = FMath::Clamp(LimitYawDegrees, 0.0f, IGAccessHatch::OpenYawDegrees);
+	if (!FMath::IsNearlyEqual(Limit, OpenLimitYaw, 0.5f))
+	{
+		OpenLimitYaw = Limit;
+		SetActorTickEnabled(true);
+	}
+}
+
+void AIGAccessHatch::ClearOpenLimit()
+{
+	if (HasOpenLimit())
+	{
+		OpenLimitYaw = 180.0f;
+		SetActorTickEnabled(true);
+	}
+}
+
 void AIGAccessHatch::GetDoorPlane(const float YawDegrees, FVector& OutHinge, FVector& OutAlong, FVector& OutUp, float& OutWidth,
 	float& OutHeight) const
 {
@@ -375,10 +394,12 @@ void AIGAccessHatch::Tick(const float DeltaSeconds)
 			return;
 		}
 	}
-	CurrentYaw = FMath::FInterpConstantTo(CurrentYaw, TargetYaw, DeltaSeconds, SwingSpeed);
+	// 여는 동안 덧댄 것 몸판에 닿으면 그 각에서 멈춘다(SetOpenLimit). 닫을 때는 보지 않는다.
+	const float Goal = bOpen ? FMath::Min(TargetYaw, OpenLimitYaw) : TargetYaw;
+	CurrentYaw = FMath::FInterpConstantTo(CurrentYaw, Goal, DeltaSeconds, SwingSpeed);
 	ApplyDoorYaw(CurrentYaw);
 	RefreshAirMotes(DeltaSeconds);
-	if (FMath::IsNearlyEqual(CurrentYaw, TargetYaw, 0.1f) && BounceSeconds <= 0.0f && !IsGapOpen())
+	if (FMath::IsNearlyEqual(CurrentYaw, Goal, 0.1f) && BounceSeconds <= 0.0f && !IsGapOpen())
 	{
 		SetActorTickEnabled(false);
 	}
