@@ -144,8 +144,12 @@ public:
 	/** FindLegObstruction과 같되 어느 마디(0 엉덩이→무릎, 1 무릎→발목, 2 발목→패드)인지와 부딪힌 것의 이름만 준다. */
 	bool FindLegObstructionPart(int32 Leg, int32& OutSegment, FString& OutComponent, FVector* OutImpact = nullptr,
 		FVector* OutNormal = nullptr) const;
-	/** 무릎을 그 자리에 두면 엉덩이→무릎·무릎→발목 마디가 벽·바닥·천장·소품을 지나지 않는가. bThighOnly면 엉덩이→무릎만 본다. */
-	bool IsKneeClear(const FVector& Hip, const FVector& Knee, const FVector& Ankle, bool bThighOnly = false) const;
+	/**
+	 * 무릎을 그 자리에 두면 엉덩이→무릎·무릎→발목 마디가 벽·바닥·천장·소품을 지나지 않는가. bThighOnly면 엉덩이→무릎만 본다.
+	 * 발목 끝 4 cm는 짚은 면 바로 위라 덜 본다. StandNormal(짚은 면의 법선)을 주면 그 면에 닿는 것만 덜 보고, 옆 소품은 끝까지 본다.
+	 */
+	bool IsKneeClear(const FVector& Hip, const FVector& Knee, const FVector& Ankle, bool bThighOnly = false,
+		const FVector& StandNormal = FVector::ZeroVector) const;
 	/** 몸 살·물갈퀴·패드 막 뼈가 있는 몸인가(예전 SK_Lining에는 없다). */
 	bool HasSoftBody() const { return bHasSoftBones; }
 	/** 검사용: 몸 사분면(다리와 같은 번호) 살이 쉬는 자리에서 처진 거리(월드 cm). */
@@ -252,6 +256,11 @@ private:
 		FVector KneeBend = FVector::ZeroVector;
 		/** 무릎이 무릎 빠르기에 막혀 IK 자리를 아직 못 따라잡았다. 디딘 뒤에도 따라잡을 때까지 같은 한도로 옮긴다. */
 		bool bKneeCatchUp = false;
+		/**
+		 * 가까운 쪽이 벽 속이라 반대쪽으로 멀리 돌기 시작한 방향(+1·-1, 0이면 없음). 정한 쪽에 닿을 때까지 지킨다.
+		 * 프레임마다 다시 고르면 한 걸음 물러난 자리에서 가까운 쪽이 다시 비어 보여 무릎이 두 자리를 오갔다.
+		 */
+		float KneeTurnSign = 0.0f;
 		/** 무릎을 기다리며 디딜 자리 위에 머문 시간(초). */
 		float LandWaitSeconds = 0.0f;
 		/** 마지막으로 놓은 패드 가운데(짚는 면)와 그 틀(X 바깥쪽, Z 짚은 면의 법선). */
