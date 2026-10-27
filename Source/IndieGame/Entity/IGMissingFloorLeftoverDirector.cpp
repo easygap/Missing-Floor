@@ -329,7 +329,11 @@ void AIGMissingFloorLeftoverDirector::Say(const FText& Speaker, const FText& Lin
 
 void AIGMissingFloorLeftoverDirector::Think(const FText& Line, const float Seconds)
 {
-	AIGHorrorHUD::PushThought(this, Line, Seconds);
+	FIGDialogueScope Scope;
+	Scope.Owner = this;
+	Scope.Lifetime = EIGDialogueLifetime::Reaction;
+	Scope.Interruption = EIGDialogueInterruption::Drop;
+	AIGHorrorHUD::PushThoughtScoped(this, Line, Seconds, MoveTemp(Scope));
 }
 
 void AIGMissingFloorLeftoverDirector::Caption(const FText& Line, const FVector& Where, const float Seconds)
@@ -361,9 +365,16 @@ void AIGMissingFloorLeftoverDirector::ThinkAboutItem(const FText& Line, const fl
 	FIGDialogueScope Scope;
 	Scope.Context = IGLeftoverDialogue::Examine;
 	Scope.Owner = this;
-	// 쪽지를 펴거나 급한 말이 끼어들면 잠깐 물러났다가 남은 시간만큼 다시 뜬다. 오래 가려지면 지난 일이라 버린다.
+	// 다른 말이 시작되거나 물건을 살피던 자리에서 떠나면 지난 감상을 다시 띄우지 않는다.
 	Scope.Lifetime = EIGDialogueLifetime::Reaction;
-	Scope.Interruption = EIGDialogueInterruption::Resume;
+	Scope.Interruption = EIGDialogueInterruption::Drop;
+	const APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	const TWeakObjectPtr<APawn> Observer(PC ? PC->GetPawn() : nullptr);
+	const FVector Origin = Observer.IsValid() ? Observer->GetActorLocation() : FVector::ZeroVector;
+	Scope.StillValid = [Observer, Origin]()
+	{
+		return Observer.IsValid() && FVector::DistSquared(Observer->GetActorLocation(), Origin) < FMath::Square(250.0f);
+	};
 	AIGHorrorHUD::PushDialogueScoped(this, FText::GetEmpty(), Line, EIGDialogueChannel::InnerVoice, Seconds,
 		EIGDialoguePriority::Critical, MoveTemp(Scope));
 }
@@ -421,6 +432,7 @@ void AIGMissingFloorLeftoverDirector::SayThen(
 void AIGMissingFloorLeftoverDirector::Speak(
 	const FText& Speaker, const FText& Line, FIGDialogueScope Scope, const float MinSeconds)
 {
+	AIGHorrorHUD::CancelDialogue(this, IGLeftoverDialogue::Examine);
 	if (IGVoice::IsYudam(Speaker))
 	{
 		IGVoice::Say(this, Speaker, Line, MoveTemp(Scope), nullptr, IGVoice::ESource::Self,
@@ -1364,7 +1376,7 @@ void AIGMissingFloorLeftoverDirector::HandleInnerTarget(AIGLeftoverTarget* Targe
 	if (Key == IGLeftover::PieceA)
 	{
 		Take(IGLeftover::PieceA);
-		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceAThought", "점검구 덮개 조각이야. 방수막째로 잘려 나왔어."), 3.6f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceAThought", "검은 막까지 같이 잘렸어."), 3.0f);
 	}
 	else if (Key == IGLeftover::PieceB)
 	{
@@ -1376,7 +1388,7 @@ void AIGMissingFloorLeftoverDirector::HandleInnerTarget(AIGLeftoverTarget* Targe
 			return;
 		}
 		Take(IGLeftover::PieceB);
-		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "이것도 방수막째 잘린 조각이야."), 3.4f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "여기도 같은 조각이 있네."), 3.0f);
 	}
 	else if (Key == FName(TEXT("Inner.GloveBoxOpen")))
 	{
@@ -1473,7 +1485,7 @@ void AIGMissingFloorLeftoverDirector::HandleErrandOutside()
 	}
 	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverErrandOut", "필로티 쪽으로 나갔어. 안쪽 방 문이 열려 있어."), 3.6f);
+		Think(NSLOCTEXT("IGMissingFloor", "LeftoverErrandOut", "밖으로 나갔네."), 2.6f);
 	}), 1.6f, false);
 }
 
@@ -1613,7 +1625,7 @@ void AIGMissingFloorLeftoverDirector::BuildDayProps()
 				NSLOCTEXT("IGMissingFloor", "LeftoverNotice2", "수거일: 다음 주 월요일 오전 [두 줄 그어 지움]"),
 				NSLOCTEXT("IGMissingFloor", "LeftoverNotice3", "이번 주 목요일 아침 7시 [볼펜 손글씨]"),
 				FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverNotice4", "버릴 짐은 전날 밤까지 필로티 적치 자리에 내놓아 주세요."),
+				NSLOCTEXT("IGMissingFloor", "LeftoverNotice4", "버릴 짐은 전날 밤까지 1층 주차장 안쪽에 내놓아 주세요."),
 				NSLOCTEXT("IGMissingFloor", "LeftoverNotice5", "찾아갈 짐이 있으면 관리실에 말씀해 주세요.  -관리인"),
 			});
 		CollectionNotice->OnReadStateChanged.AddDynamic(this, &AIGMissingFloorLeftoverDirector::HandleNoticeRead);

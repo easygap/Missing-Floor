@@ -1,152 +1,92 @@
-﻿[CmdletBinding()]
-param(
-	# 에셋 이름(SM_...). 비우면 Content/SourceArt/Blender의 manifest 전부.
-	[string[]]$Only = @(),
-	# Blender 빌더까지 먼저 돌린다.
-	[switch]$Build
-)
+[CmdletBinding()]
+param([string[]]$Only = @(), [switch]$Build)
 
-# Blender에서 구운 에셋을 UE 에셋으로 만들어 저장소 Content에 넣는다.
-#
-# 에디터는 게임 모듈이 없는 콘텐츠 전용 프로젝트에서 돈다. 2026-08-25부터
-# Smart App Control이 이 저장소의 UnrealEditor-IndieGame.dll을 막아 원래
-# 프로젝트로는 에디터를 못 여는데, 메시·텍스처·재질 에셋은 게임 코드를
-# 참조하지 않으므로 어느 프로젝트에서 만들어도 같은 파일이다. 경로에 한글이
-# 없는 %LOCALAPPDATA%\IndieGame\ArtImport에 그 프로젝트를 만들고, 저장소의
-# Content 세 폴더를 거기 미러한 뒤 반입하고, 결과를 되가져온다.
-
+# 검증한 ASCII 연결 경로로 원본 프로젝트에 직접 반입한다.
+# 메시 하나를 바꿀 때도 Content 전체를 ArtImport에 복제하던 경로는 쓰지 않는다.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$Only = @($Only | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
-
+. (Join-Path $PSScriptRoot 'GeneratedArtifactCleanup.ps1')
+. (Join-Path $PSScriptRoot 'Resolve-AsciiWorkspace.ps1')
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$sourceRoot = Join-Path $projectRoot 'Content\SourceArt\Blender'
-$importRoot = Join-Path $env:LOCALAPPDATA 'IndieGame\ArtImport'
-
-if ($Build) {
-	& (Join-Path $PSScriptRoot 'Build-BlenderAssets.ps1') -Only $Only
-}
-
-if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) {
-	throw "Blender 산출물 폴더가 없다: $sourceRoot (먼저 Build-BlenderAssets.ps1)"
-}
-
-# --- 콘텐츠 전용 프로젝트 ----------------------------------------------------
-New-Item -ItemType Directory -Force -Path (Join-Path $importRoot 'Config') | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $importRoot 'Content') | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $importRoot 'Scripts') | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $importRoot 'Saved\Logs') | Out-Null
-
-$uproject = Join-Path $importRoot 'ArtImport.uproject'
-@'
-{
-	"FileVersion": 3,
-	"EngineAssociation": "5.8",
-	"Category": "Tools",
-	"Description": "Content-only import project for Indie_Game art assets. No game module, so Smart App Control has nothing to block.",
-	"Plugins": [
-		{ "Name": "PythonScriptPlugin", "Enabled": true },
-		{ "Name": "EditorScriptingUtilities", "Enabled": true },
-		{ "Name": "GeometryScripting", "Enabled": true }
-	]
-}
-'@ | Set-Content -LiteralPath $uproject -Encoding UTF8
-
-@'
-[/Script/EngineSettings.GameMapsSettings]
-EditorStartupMap=/Engine/Maps/Templates/OpenWorld
-GameDefaultMap=/Engine/Maps/Templates/OpenWorld
-
-[/Script/Engine.RendererSettings]
-r.DynamicGlobalIlluminationMethod=1
-r.ReflectionMethod=1
-r.Shadow.Virtual.Enable=1
-r.GenerateMeshDistanceFields=True
-r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange=True
-
-[/Script/WindowsTargetPlatform.WindowsTargetSettings]
-DefaultGraphicsRHI=DefaultGraphicsRHI_DX12
--D3D12TargetedShaderFormats=PCD3D_SM5
-+D3D12TargetedShaderFormats=PCD3D_SM6
-'@ | Set-Content -LiteralPath (Join-Path $importRoot 'Config\DefaultEngine.ini') -Encoding UTF8
-
-function Invoke-Mirror {
-	param([string]$Source, [string]$Destination, [switch]$Mirror)
-	New-Item -ItemType Directory -Force -Path $Destination | Out-Null
-	$arguments = @($Source, $Destination)
-	$arguments += if ($Mirror) { '/MIR' } else { '/E' }
-	$arguments += @('/COPY:DAT', '/R:2', '/W:1', '/XJ', '/NFL', '/NDL', '/NP', '/NJH', '/NJS')
-	& robocopy.exe @arguments | Out-Null
-	if ($LASTEXITCODE -ge 8) {
-		throw "robocopy failed ($LASTEXITCODE): $Source -> $Destination"
-	}
-}
-
-# 저장소 → 임포트 프로젝트. 기존 메시·텍스처·재질이 있어야 M_Glass 참조가
-# 풀리고 바운드 JSON에 전체 메시가 들어간다.
-foreach ($relative in @('Content\Meshes', 'Content\Prototype\Textures', 'Content\Prototype\Materials')) {
-	Invoke-Mirror -Source (Join-Path $projectRoot $relative) -Destination (Join-Path $importRoot $relative) -Mirror
-}
-# Blender 산출물과 스크립트도 ASCII 경로로 옮긴다. 에디터 커맨드라인이 한글
-# 경로를 토막 내는 일이 있었다.
-Invoke-Mirror -Source $sourceRoot -Destination (Join-Path $importRoot 'Import') -Mirror
-foreach ($script in @('import_blender_assets.py', 'mesh_lod_contract.py', 'create_textured_materials.py', 'texture_atlas_contract.py')) {
-	Copy-Item -LiteralPath (Join-Path $PSScriptRoot $script) -Destination (Join-Path $importRoot 'Scripts') -Force
-}
-
-$editor = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath $uproject -Commandlet
-if (-not $editor -or -not (Test-Path -LiteralPath $editor)) {
-	throw "UnrealEditor-Cmd.exe를 찾지 못했다: $editor"
-}
-
-$boundsOut = Join-Path $importRoot 'Saved\mesh_bounds.json'
-$logPath = Join-Path $importRoot ('Saved\Logs\BlenderImport_{0}.log' -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
-$env:IG_BLENDER_SOURCE = Join-Path $importRoot 'Import'
-$env:IG_ONLY = ($Only -join ',')
-$env:IG_BOUNDS_OUT = $boundsOut
+$scope = Enter-IGArtifactScope -ProjectRoot $projectRoot -Name 'Import-BlenderAssets.ps1' -Parameters $PSBoundParameters
+$succeeded = $false
+$oldEnvironment = @{}
 try {
-	& $editor $uproject -unattended -nop4 -nosplash -nullrhi -nosound -RenderOffscreen -stdout -FullStdOutLogOutput `
-		"-abslog=$logPath" "-ExecutePythonScript=$(Join-Path $importRoot 'Scripts\import_blender_assets.py')" | Out-Null
-	$editorExit = $LASTEXITCODE
+    $Only = @($Only | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+    if ($Build) { & (Join-Path $PSScriptRoot 'Build-BlenderAssets.ps1') -Only $Only }
+    # 다른 반입 스크립트가 쓰는 콘텐츠 전용 프로젝트는 작은 설정 파일만 준비한다.
+    # 이 호환 경로에 원본 Content나 Blender 폴더 전체를 복제하지 않는다.
+    $legacyRoot = Join-Path $env:LOCALAPPDATA 'IndieGame/ArtImport'
+    $legacyProject = Join-Path $legacyRoot 'ArtImport.uproject'
+    if (-not (Test-Path -LiteralPath $legacyProject)) {
+        foreach ($part in @('Config', 'Content/Meshes', 'Content/Prototype/Materials', 'Content/Prototype/Textures', 'Scripts', 'Saved/Logs')) {
+            $null = New-Item -ItemType Directory -Path (Join-Path $legacyRoot $part) -Force
+        }
+        $projectInfo = Get-Content -LiteralPath (Join-Path $projectRoot 'IndieGame.uproject') -Raw -Encoding UTF8 | ConvertFrom-Json
+        @{
+            FileVersion = 3
+            EngineAssociation = $projectInfo.EngineAssociation
+            Plugins = @(
+                @{ Name = 'PythonScriptPlugin'; Enabled = $true },
+                @{ Name = 'EditorScriptingUtilities'; Enabled = $true },
+                @{ Name = 'GeometryScripting'; Enabled = $true }
+            )
+        } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $legacyProject -Encoding UTF8
+    }
+    $workspace = Resolve-IGAsciiWorkspace -ProjectRoot $projectRoot
+    $sourceRoot = Join-Path $workspace 'Content/SourceArt/Blender'
+    $manifests = @(Get-ChildItem -LiteralPath $sourceRoot -Directory | ForEach-Object {
+        if ($Only.Count -and $Only -notcontains $_.Name) { return }
+        $path = Join-Path $_.FullName 'manifest.json'
+        if (Test-Path -LiteralPath $path) { Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json }
+    })
+    if (-not $manifests.Count) { throw '반입할 Blender 에셋이 없습니다.' }
+    foreach ($name in $Only) {
+        if ($manifests.name -notcontains $name) { throw "에셋 목록에 없습니다: $name" }
+    }
+    $project = Join-Path $workspace 'IndieGame.uproject'
+    $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -ProjectPath $project -Commandlet
+    $runRoot = Join-Path $projectRoot ('Saved/Validation/BlenderImport-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
+    Add-IGArtifactDirectory -Scope $scope -Directory $runRoot -Variant 'Import'
+    $log = Join-Path $runRoot 'import.log'
+    foreach ($key in @('IG_BLENDER_SOURCE', 'IG_ONLY', 'IG_BOUNDS_OUT')) {
+        $oldEnvironment[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
+    }
+    $env:IG_BLENDER_SOURCE = $sourceRoot
+    $env:IG_ONLY = $Only -join ','
+    $env:IG_BOUNDS_OUT = Join-Path $workspace 'Docs/mesh_bounds.json'
+    $arguments = @(
+        ('"{0}"' -f $project), '-unattended', '-nop4', '-nosplash', '-nullrhi', '-nosound', '-RenderOffscreen',
+        '-EnablePlugins=PythonScriptPlugin,EditorScriptingUtilities', ('"-abslog={0}"' -f $log),
+        ('"-ExecutePythonScript={0}"' -f (Join-Path $workspace 'Scripts/import_blender_assets.py'))
+    )
+    $process = Start-Process -FilePath $editor -ArgumentList $arguments -WindowStyle Hidden -PassThru
+    $null = $process.Handle
+    if (-not $process.WaitForExit(900000)) {
+        if (-not $process.HasExited) { Stop-Process -Id $process.Id -ErrorAction Stop }
+        throw "Blender 에셋 반입 시간 초과: $log"
+    }
+    if ($process.ExitCode -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'BLENDER_IMPORT PASS assets=')) {
+        Get-Content -LiteralPath $log -Tail 25 | Write-Host
+        throw "Blender 에셋 반입 실패: $log"
+    }
+    foreach ($manifest in $manifests) {
+        $expected = @("Content/Meshes/$($manifest.name).uasset")
+        $roles = @($manifest.textures.PSObject.Properties | ForEach-Object Name)
+        if ($roles.Count) { $expected += "Content/Prototype/Materials/MI_$($manifest.name.Substring(3)).uasset" }
+        foreach ($role in $roles) { $expected += "Content/Prototype/Textures/T_$($manifest.name.Substring(3))_$role.uasset" }
+        foreach ($relative in $expected) {
+            if (-not (Test-Path -LiteralPath (Join-Path $projectRoot $relative) -PathType Leaf)) {
+                throw "반입한 파일을 찾지 못했습니다: $relative"
+            }
+        }
+    }
+    Select-String -LiteralPath $log -Pattern 'BLENDER_IMPORT PASS' | ForEach-Object { Write-Host $_.Line }
+    $succeeded = $true
 }
 finally {
-	Remove-Item Env:IG_BLENDER_SOURCE, Env:IG_ONLY, Env:IG_BOUNDS_OUT -ErrorAction SilentlyContinue
+    foreach ($key in $oldEnvironment.Keys) {
+        [Environment]::SetEnvironmentVariable($key, $oldEnvironment[$key], 'Process')
+    }
+    Complete-IGArtifactScope -Scope $scope -Succeeded $succeeded
 }
-$pass = Select-String -LiteralPath $logPath -Pattern 'BLENDER_IMPORT PASS assets=\d+' | Select-Object -Last 1
-if ($editorExit -ne 0 -or -not $pass) {
-	Select-String -LiteralPath $logPath -Pattern 'LogPython: Error|Traceback|BLENDER_IMPORT' | Select-Object -Last 30 | ForEach-Object { Write-Host $_.Line }
-	throw "Blender 에셋 반입 실패 (exit $editorExit). 로그: $logPath"
-}
-
-# 임포트 프로젝트 → 저장소. 새 파일과 바뀐 파일만 넘어온다.
-foreach ($relative in @('Content\Meshes', 'Content\Prototype\Textures', 'Content\Prototype\Materials')) {
-	Invoke-Mirror -Source (Join-Path $importRoot $relative) -Destination (Join-Path $projectRoot $relative)
-}
-if (Test-Path -LiteralPath $boundsOut) {
-	Copy-Item -LiteralPath $boundsOut -Destination (Join-Path $projectRoot 'Docs\mesh_bounds.json') -Force
-}
-
-# 계약: manifest에 적힌 에셋이 실제로 저장소에 도착했는지 본다.
-$missing = @()
-foreach ($manifestPath in Get-ChildItem -LiteralPath $sourceRoot -Recurse -Filter 'manifest.json') {
-	$manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $manifestPath.FullName | ConvertFrom-Json
-	if ($Only.Count -gt 0 -and $Only -notcontains $manifest.name) { continue }
-	$expected = @("Content\Meshes\$($manifest.name).uasset")
-	# 구운 텍스처가 없는 메시(raw_uv)는 인스턴스도 없다. 재질은 씬이 UV0에 준다.
-	$roles = @($manifest.textures.PSObject.Properties | ForEach-Object { $_.Name })
-	if ($roles.Count -gt 0) {
-		$expected += "Content\Prototype\Materials\MI_$($manifest.name.Substring(3)).uasset"
-	}
-	foreach ($role in $roles) {
-		$expected += "Content\Prototype\Textures\T_$($manifest.name.Substring(3))_$role.uasset"
-	}
-	foreach ($relative in $expected) {
-		if (-not (Test-Path -LiteralPath (Join-Path $projectRoot $relative) -PathType Leaf)) {
-			$missing += $relative
-		}
-	}
-}
-if ($missing.Count -gt 0) {
-	throw "반입 뒤 저장소에 없는 파일: $($missing -join ', ')"
-}
-Write-Host ('BLENDER_IMPORT PASS {0}' -f $pass.Line.Substring($pass.Line.IndexOf('assets=')))

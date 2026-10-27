@@ -919,7 +919,7 @@ foreach ($propBuildInvariant in @(
 	}
 }
 foreach ($surfaceLightingInvariant in @(
-	'PostProcess->Settings.LocalExposureDetailStrength = 1.12f;',
+	'PostProcess->Settings.LocalExposureDetailStrength = 1.0f;',
 	'PostProcess->Settings.FilmSlope = 0.90f;',
 	'PostProcess->Settings.AmbientOcclusionIntensity = 0.48f;',
 	'PostProcess->Settings.LumenAmbientOcclusionIntensity = 0.55f;',

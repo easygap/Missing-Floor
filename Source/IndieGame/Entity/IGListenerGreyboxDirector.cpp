@@ -3024,9 +3024,9 @@ bool AIGListenerGreyboxDirector::TalkAtStoreCounter()
 	IGVoice::Say(this,
 		NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
 		bDeliveryQuestion
-			? NSLOCTEXT("IGMissingFloor", "NarinDeliveryQuestion", "뒷골목 게시판에 붙은 택배 안내문 보고 왔는데요. 백도하 앞으로 온 택배도 여기 맡긴 적 있어요?")
+			? NSLOCTEXT("IGMissingFloor", "NarinDeliveryQuestion", "택배 맡아 주신다는 안내문 보고 왔는데요. 백도하 이름으로 온 것도 있었어요?")
 			: bReceiptQuestion
-			? NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 기록이 남아 있어요?")
+			? NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배, 누가 찾아갔는지 알 수 있을까요?")
 			: bRoofQuestion
 			? NSLOCTEXT("IGMissingFloor", "NarinRoofQuestion", "저희 빌라 옥상 문이요, 원래 잠가 둬요? 자물쇠가 채워져 있던데.")
 			: (Narrative->GetNightIndex() == 0

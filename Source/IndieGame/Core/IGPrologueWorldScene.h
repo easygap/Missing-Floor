@@ -638,6 +638,9 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> WindowGlowMaterial;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> WindowDarkMaterial;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> NightSkyMaterial;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> CloudSkyMaterial;
+	UPROPERTY(Transient) TObjectPtr<UStaticMesh> CloudSkyMesh;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> CloudSkyInstance;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> StreetLampGlowMaterial;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> CoolerBodyMaterial;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> CounterTopMaterial;

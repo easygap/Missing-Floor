@@ -65,9 +65,10 @@ SURFACE_RESPONSE_DEFAULTS = {
         "roughness_detail_scale": 4.1, "specular": 0.32,
     },
     "Concrete": {
+        "response_revision": 2,
         "macro_strength": 0.075, "macro_scale": 5.4,
-        "normal_strength": 0.72, "detail_normal_strength": 0.06,
-        "detail_normal_scale": 4.7, "roughness_detail_strength": 0.16,
+        "normal_strength": 0.42, "detail_normal_strength": 0.0,
+        "detail_normal_scale": 4.7, "roughness_detail_strength": 0.06,
         "roughness_detail_scale": 4.7, "specular": 0.32,
     },
     "Shutter": {
@@ -98,8 +99,10 @@ SURFACE_RESPONSE_DEFAULTS = {
         "roughness_detail_scale": 4.8, "specular": 0.28,
     },
     "KoreanVillaStucco": {
+        # 잔골재가 얼굴 높이에서 자갈처럼 솟지 않도록 원본 요철만 남긴다.
+        "response_revision": 2,
         "macro_strength": 0.052, "macro_scale": 6.2,
-        "normal_strength": 1.08, "detail_normal_strength": 0.10,
+        "normal_strength": 0.32, "detail_normal_strength": 0.0,
         "detail_normal_scale": 5.4, "roughness_detail_strength": 0.08,
         "roughness_detail_scale": 5.4, "ao_strength": 0.84,
         "specular": 0.24,

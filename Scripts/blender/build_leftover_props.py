@@ -485,6 +485,12 @@ def print_quad(asset, image, size, center, notes, rotation=(0.0, 0.0, 0.0), roug
                    origin="box-bottom-center", notes=notes)
 
 
+def build_collection_notice():
+    # 수거 안내 A4. 원점은 종이 아래 가운데(벽 면), 앞면 -Y.
+    print_quad("SM_CollectionNoticePrint", "LeftoverCollectionNotice.png", (0.21, 0.297), (0.0, -0.0004, 0.1485),
+               "1층 게시판 옆 「대형 폐기물 수거 안내」 A4. 수거일을 볼펜으로 긋고 손글씨로 고쳤다. 원점 종이 아래 가운데.")
+
+
 def build_labels():
     # SM_StorageBox의 빈 이름표(앞면 -Y, 가운데 X 0.12, Z 0.187, 16x9 cm) 바로 앞에 붙는다.
     print_quad("SM_LeftoverLabelJeongwoo", "LeftoverLabelJeongwoo.png", (0.16, 0.09), (0.12, -0.1934, 0.187),
@@ -496,10 +502,6 @@ def build_labels():
     print_quad("SM_LeftoverLabelMarked", "LeftoverLabelMarked.png", (0.20, 0.05), (-0.09, -0.1936, 0.285),
                "정우가 오빠 상자 앞면 위쪽에 붙인 종이테이프 「버리지 마세요」. SM_StorageBox와 같은 원점.",
                rotation=(0.0, math.radians(-4.0), 0.0), roughness=0.6)
-    ig.reset_scene()
-    # 수거 안내 A4. 원점은 종이 아래 가운데(벽 면), 앞면 -Y.
-    print_quad("SM_CollectionNoticePrint", "LeftoverCollectionNotice.png", (0.21, 0.297), (0.0, -0.0004, 0.1485),
-               "1층 게시판 옆 「대형 폐기물 수거 안내」 A4. 수거일을 볼펜으로 긋고 손글씨로 고쳤다. 원점 종이 아래 가운데.")
 
 
 def build_labels_303():
@@ -513,7 +515,12 @@ def build_labels_303():
 
 
 if __name__ == "__main__":
-    only = os.environ.get("IG_ONLY", "")
+    only = set(filter(None, os.environ.get("IG_ONLY", "").split(",")))
+    # 같은 제작 함수가 내보내는 이름표도 어느 이름으로 선택하든 만들어야 한다.
+    if only & {"SM_LeftoverLabelJeongwoo", "SM_LeftoverLabelDoha", "SM_LeftoverLabelMarked"}:
+        only.add("SM_LeftoverLabelJeongwoo")
+    if "SM_LeftoverStickerUnclaimed" in only:
+        only.add("SM_LeftoverLabel303")
     builders = {}
     for key in HATCH_SIZES:
         builders[f"SM_AccessHatchFrame{key}"] = (lambda k=key: build_hatch_frame(k))
@@ -532,9 +539,10 @@ if __name__ == "__main__":
     builders["SM_FinishBoard"] = build_finish_board
     builders["SM_TimberWedge"] = build_wedge
     builders["SM_LeftoverLabelJeongwoo"] = build_labels
+    builders["SM_CollectionNoticePrint"] = build_collection_notice
     builders["SM_LeftoverLabel303"] = build_labels_303
     for name, builder in builders.items():
-        if only and name not in only.split(","):
+        if only and name not in only:
             continue
         ig.reset_scene()
         builder()

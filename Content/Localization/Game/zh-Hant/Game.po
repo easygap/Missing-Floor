@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-10-22 07:40\n"
-"PO-Revision-Date: 2026-10-22 07:40\n"
+"POT-Creation-Date: 2026-10-27 06:30\n"
+"PO-Revision-Date: 2026-10-27 06:30\n"
 "Language-Team: \n"
 "Language: zh-Hant\n"
 "MIME-Version: 1.0\n"
@@ -49,218 +49,218 @@ msgid "계산하기 ({2})"
 msgstr "結帳（{2}）"
 
 #. Key:	EntranceSealedPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(5301)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(5301)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(5318)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(5318)
 msgctxt "IGMissingFloor,EntranceSealedPrompt"
 msgid "열어 보기"
 msgstr "試著打開"
 
 #. Key:	EntranceSealedThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(5307)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(5307)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(5324)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(5324)
 msgctxt "IGMissingFloor,EntranceSealedThought"
 msgid "…안 열리네. 잠긴 것도 아닌데."
 msgstr "……打不開。明明沒鎖。"
 
 #. Key:	BuildingDoorPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7210)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7210)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7267)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7267)
 msgctxt "IGPrologue,BuildingDoorPrompt"
 msgid "열기"
 msgstr "打開"
 
 #. Key:	LightsOutNoticePrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7346)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7346)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7403)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7403)
 msgctxt "IGMissingFloor,LightsOutNoticePrompt"
 msgid "읽기"
 msgstr "閱讀"
 
 #. Key:	LightsOutNoticeTitle
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7348)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7348)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7405)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7405)
 msgctxt "IGMissingFloor,LightsOutNoticeTitle"
 msgid "복도 소등 안내"
 msgstr "走廊熄燈公告"
 
 #. Key:	LightsOutNoticeBody
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7350)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7350)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7407)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7407)
 msgctxt "IGMissingFloor,LightsOutNoticeBody"
 msgid "공용 전기료를 줄이기 위해 밤 12시부터 새벽 5시까지 복도 등을 끕니다."
 msgstr "為節省公共電費，晚上12點至凌晨5點關閉走廊燈。"
 
 #. Key:	LightsOutNoticeStairs
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7355)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7355)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7412)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7412)
 msgctxt "IGMissingFloor,LightsOutNoticeStairs"
 msgid "계단은 센서등이 켜집니다."
 msgstr "樓梯間有感應燈。"
 
 #. Key:	LightsOutNoticeSigned
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7357)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7357)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7414)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7414)
 msgctxt "IGMissingFloor,LightsOutNoticeSigned"
 msgid "관리실"
 msgstr "管理室"
 
 #. Key:	Door202NotePrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7377)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7377)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7434)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7434)
 msgctxt "IGMissingFloor,Door202NotePrompt"
 msgid "읽기"
 msgstr "閱讀"
 
 #. Key:	Door202NoteTitle
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7379)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7379)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7436)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7436)
 msgctxt "IGMissingFloor,Door202NoteTitle"
 msgid "기사님 죄송해요ㅠ"
 msgstr "宅配大哥，不好意思"
 
 #. Key:	Door202NoteBody
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7382)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7382)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7439)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7439)
 msgctxt "IGMissingFloor,Door202NoteBody"
 msgid "다 다른 집이에요"
 msgstr "這是三戶不同的人家"
 
 #. Key:	Door202NoteAsk
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7383)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7383)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7440)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7440)
 msgctxt "IGMissingFloor,Door202NoteAsk"
 msgid "호수 한 번만 봐 주세요!"
 msgstr "麻煩看一下門牌號碼！"
 
 #. Key:	Door303SignPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7402)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7402)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7459)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7459)
 msgctxt "IGMissingFloor,Door303SignPrompt"
 msgid "읽기"
 msgstr "閱讀"
 
 #. Key:	Door303SignTitle
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7404)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7404)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7461)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7461)
 msgctxt "IGMissingFloor,Door303SignTitle"
 msgid "벨 누르지 마세요"
 msgstr "請勿按門鈴"
 
 #. Key:	Door303SignSleep
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7406)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7406)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7463)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7463)
 msgctxt "IGMissingFloor,Door303SignSleep"
 msgid "낮에 자는 사람이 있어요."
 msgstr "白天有人在睡覺。"
 
 #. Key:	Door303SignKnock
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7407)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7407)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7464)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7464)
 msgctxt "IGMissingFloor,Door303SignKnock"
 msgid "노크도 하지 말아 주세요."
 msgstr "也請不要敲門。"
 
 #. Key:	Door303SignParcel
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7408)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7408)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7465)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7465)
 msgctxt "IGMissingFloor,Door303SignParcel"
 msgid "택배는 문 앞에 두고 가 주세요."
 msgstr "包裹請放在門口。"
 
 #. Key:	WindowPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7435)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7435)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7492)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7492)
 msgctxt "IGPrologue,WindowPrompt"
 msgid "내다보기"
 msgstr "往外看"
 
 #. Key:	WindowThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7436)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7436)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7493)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7493)
 msgctxt "IGPrologue,WindowThought"
 msgid "건너편 불빛이 방까지 들어오네."
 msgstr "對面的燈光照進房間裡來了。"
 
 #. Key:	WaterProfileA
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7505)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7505)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7562)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7562)
 msgctxt "IGPrologue,WaterProfileA"
 msgid "새벽샘물 500mL 2병 고르기"
 msgstr "拿兩瓶黎明泉水 500mL"
 
 #. Key:	WaterProfileAThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7507)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7507)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7564)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7564)
 msgctxt "IGPrologue,WaterProfileAThought"
 msgid "두 병이면 충분하겠지."
 msgstr "兩瓶應該夠了吧。"
 
 #. Key:	WaterProfileB
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7512)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7512)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7569)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7569)
 msgctxt "IGPrologue,WaterProfileB"
 msgid "한강수 1L 1병 고르기"
 msgstr "拿一瓶漢江水 1L"
 
 #. Key:	WaterProfileBThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7514)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7514)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7571)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7571)
 msgctxt "IGPrologue,WaterProfileBThought"
 msgid "이거 하나면 되겠다."
 msgstr "這一瓶就夠了。"
 
 #. Key:	WaterProfileC
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7520)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7520)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7577)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7577)
 msgctxt "IGPrologue,WaterProfileC"
 msgid "맑은산 2L 2병 고르기"
 msgstr "拿兩瓶清山 2L"
 
 #. Key:	WaterProfileCThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7522)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7522)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7579)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7579)
 msgctxt "IGPrologue,WaterProfileCThought"
 msgid "무겁지만 한 번에 가져가자."
 msgstr "重是重了點，一次拿回去吧。"
 
 #. Key:	LeftHomeThought
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7633)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7633)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7690)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7690)
 msgctxt "IGPrologue,LeftHomeThought"
 msgid "밖은 후텁지근하네."
 msgstr "外面好悶熱。"
 
 #. Key:	HideUnderDeskPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7699)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7699)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7756)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7756)
 msgctxt "IGMissingFloor,HideUnderDeskPrompt"
 msgid "숨기"
 msgstr "躲起來"
 
 #. Key:	HideBehindSheetPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7715)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7715)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7772)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7772)
 msgctxt "IGMissingFloor,HideBehindSheetPrompt"
 msgid "숨기"
 msgstr "躲起來"
 
 #. Key:	BatteryBuyPrompt
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7763)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7763)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7820)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7820)
 msgctxt "IGMissingFloor,BatteryBuyPrompt"
 msgid "한 팩 사기"
 msgstr "買一包"
 
 #. Key:	BathroomOn
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7862)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7862)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7919)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7919)
 msgctxt "IGRoomLight,BathroomOn"
 msgid "켜기"
 msgstr "開燈"
 
 #. Key:	BathroomOff
-#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7863)
-#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7863)
+#. SourceLocation:	Source/IndieGame/Core/IGPrologueWorldScene.cpp(7920)
+#: Source/IndieGame/Core/IGPrologueWorldScene.cpp(7920)
 msgctxt "IGRoomLight,BathroomOff"
 msgid "끄기"
 msgstr "關燈"
@@ -342,33 +342,33 @@ msgctxt "IGElevatorOverload,NoFifthAfterThought"
 msgid "…4층 위로는 안 가는데."
 msgstr "……可是它不會到四樓以上啊。"
 
+#. Key:	CaptionLiningPeel
+#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1515)
+#: Source/IndieGame/Entity/IGLiningEntity.cpp(1515)
+msgctxt "IGMissingFloor,CaptionLiningPeel"
+msgid "[무언가 벽에서 쩍 떨어지는 소리]"
+msgstr "［有什麼東西從牆上啪地剝開的聲音］"
+
 #. Key:	CaptionLiningCreak
-#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1373)
-#: Source/IndieGame/Entity/IGLiningEntity.cpp(1373)
+#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(2389)
+#: Source/IndieGame/Entity/IGLiningEntity.cpp(2389)
 msgctxt "IGMissingFloor,CaptionLiningCreak"
 msgid "[쇠붙이가 버티며 삐걱이는 소리]"
 msgstr "［金屬吃力地嘎吱作響］"
 
 #. Key:	CaptionLiningPress
-#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1497)
-#: Source/IndieGame/Entity/IGLiningEntity.cpp(1497)
+#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(2523)
+#: Source/IndieGame/Entity/IGLiningEntity.cpp(2523)
 msgctxt "IGMissingFloor,CaptionLiningPress"
 msgid "[무언가 벽에 쩍 들러붙는 소리]"
 msgstr "［有什麼東西啪地黏到牆上的聲音］"
 
 #. Key:	CaptionLiningSpread
-#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(1900)
-#: Source/IndieGame/Entity/IGLiningEntity.cpp(1900)
+#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(2949)
+#: Source/IndieGame/Entity/IGLiningEntity.cpp(2949)
 msgctxt "IGMissingFloor,CaptionLiningSpread"
 msgid "[쇠붙이 여러 개가 한꺼번에 긁히는 소리]"
 msgstr "［好幾塊金屬同時刮擦的聲音］"
-
-#. Key:	CaptionLiningPeel
-#. SourceLocation:	Source/IndieGame/Entity/IGLiningEntity.cpp(762)
-#: Source/IndieGame/Entity/IGLiningEntity.cpp(762)
-msgctxt "IGMissingFloor,CaptionLiningPeel"
-msgid "[무언가 벽에서 쩍 떨어지는 소리]"
-msgstr "［有什麼東西從牆上啪地剝開的聲音］"
 
 #. Key:	EntityAnswerReplyCaption
 #. SourceLocation:	Source/IndieGame/Entity/IGListenerEntity.cpp(1794)
@@ -1305,15 +1305,15 @@ msgstr "白侑潭"
 #. SourceLocation:	Source/IndieGame/Entity/IGListenerGreyboxDirector.cpp(3027)
 #: Source/IndieGame/Entity/IGListenerGreyboxDirector.cpp(3027)
 msgctxt "IGMissingFloor,NarinDeliveryQuestion"
-msgid "뒷골목 게시판에 붙은 택배 안내문 보고 왔는데요. 백도하 앞으로 온 택배도 여기 맡긴 적 있어요?"
-msgstr "我看到後巷公告欄上貼的宅配告示。請問寄給白道夏的包裹，有寄放在這裡過嗎？"
+msgid "택배 맡아 주신다는 안내문 보고 왔는데요. 백도하 이름으로 온 것도 있었어요?"
+msgstr "我看到你們代收包裹的公告了。有收過白道河的包裹嗎？"
 
 #. Key:	NarinReceiptQuestion
 #. SourceLocation:	Source/IndieGame/Entity/IGListenerGreyboxDirector.cpp(3029)
 #: Source/IndieGame/Entity/IGListenerGreyboxDirector.cpp(3029)
 msgctxt "IGMissingFloor,NarinReceiptQuestion"
-msgid "그 마지막 택배요. 누가 언제 찾아갔는지 기록이 남아 있어요?"
-msgstr "那最後一件包裹，有沒有紀錄是誰、什麼時候領走的？"
+msgid "그 마지막 택배, 누가 찾아갔는지 알 수 있을까요?"
+msgstr "最後那件包裹，查得到是誰領走的嗎？"
 
 #. Key:	NarinRoofQuestion
 #. SourceLocation:	Source/IndieGame/Entity/IGListenerGreyboxDirector.cpp(3031)
@@ -2702,480 +2702,480 @@ msgid "[가까이] 희미한 숨소리"
 msgstr "［近處］微弱的呼吸聲"
 
 #. Key:	LeftoverFrameCatchCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverAnnex.cpp(209)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverAnnex.cpp(209)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverAnnex.cpp(215)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverAnnex.cpp(215)
 msgctxt "IGMissingFloor,LeftoverFrameCatchCaption"
 msgid "[철골 마디가 틀에 걸려 끼는 소리]"
 msgstr "［鋼骨的關節卡進鋼架的聲音］"
 
 #. Key:	LeftoverPushedCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverAnnex.cpp(237)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverAnnex.cpp(237)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverAnnex.cpp(243)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverAnnex.cpp(243)
 msgctxt "IGMissingFloor,LeftoverPushedCaption"
 msgid "[휜 철골이 빠지며 벽을 긁고 멀어지는 소리]"
 msgstr "［彎掉的鋼架鬆脫，刮著牆漸漸遠去的聲音］"
 
+#. Key:	LeftoverHatchDraftCaption
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1021)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1021)
+msgctxt "IGMissingFloor,LeftoverHatchDraftCaption"
+msgid "[점검구 안으로 바람이 빨려 드는 소리]"
+msgstr "［風被吸進檢修口的聲音］"
+
 #. Key:	HatchOpenPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1070)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1070)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1110)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1110)
 msgctxt "IGMissingFloor,HatchOpenPrompt"
 msgid "열기"
 msgstr "打開"
 
 #. Key:	HatchClosePrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1071)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1071)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1111)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1111)
 msgctxt "IGMissingFloor,HatchClosePrompt"
 msgid "닫기"
 msgstr "關上"
 
 #. Key:	LeftoverPieceAPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1088)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1088)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1128)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1128)
 msgctxt "IGMissingFloor,LeftoverPieceAPrompt"
 msgid "챙기기"
 msgstr "帶上"
 
 #. Key:	LeftoverPieceBPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1096)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1096)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1136)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1136)
 msgctxt "IGMissingFloor,LeftoverPieceBPrompt"
 msgid "떼어 내기"
 msgstr "揭下來"
 
 #. Key:	LeftoverGloveBoxPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1109)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1109)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1149)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1149)
 msgctxt "IGMissingFloor,LeftoverGloveBoxPrompt"
 msgid "열어 보기"
 msgstr "打開看看"
 
 #. Key:	LeftoverGlovesPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1114)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1114)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1154)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1154)
 msgctxt "IGMissingFloor,LeftoverGlovesPrompt"
 msgid "챙기기"
 msgstr "帶上"
 
 #. Key:	LeftoverLedgerPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1132)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1132)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1172)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1172)
 msgctxt "IGMissingFloor,LeftoverLedgerPrompt"
 msgid "열어 보기"
 msgstr "打開看看"
 
 #. Key:	LeftoverLedgerTitle
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1134)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1134)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1174)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1174)
 msgctxt "IGMissingFloor,LeftoverLedgerTitle"
 msgid "맡긴 짐 대장"
 msgstr "寄放物品紀錄簿"
 
 #. Key:	LeftoverLedger1
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1136)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1136)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1176)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1176)
 msgctxt "IGMissingFloor,LeftoverLedger1"
 msgid "202  정우     겨울 장비 1상자          24.11.3"
 msgstr "202  正宇     冬季裝備 1箱             24.11.3"
 
 #. Key:	LeftoverLedger2
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1137)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1137)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1177)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1177)
 msgctxt "IGMissingFloor,LeftoverLedger2"
 msgid "301  (공실)   선반·전기장판            24.12.20"
 msgstr "301  (空屋)   層架、電熱毯             24.12.20"
 
 #. Key:	LeftoverLedger3
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1138)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1138)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1178)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1178)
 msgctxt "IGMissingFloor,LeftoverLedger3"
 msgid "옥탑 백도하   공구·상자 2              24.7.26"
 msgstr "頂樓 白道夏   工具、箱子 2             24.7.26"
 
 #. Key:	LeftoverLedger4
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1140)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1140)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1180)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1180)
 msgctxt "IGMissingFloor,LeftoverLedger4"
 msgid "위 짐 일체 주인 없음. 수거일에 같이 처리."
 msgstr "以上物品皆無主。清運日一併處理。"
 
 #. Key:	LeftoverCotPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1146)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1146)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1186)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1186)
 msgctxt "IGMissingFloor,LeftoverCotPrompt"
 msgid "살펴보기"
 msgstr "查看"
 
 #. Key:	LeftoverCotThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1148)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1148)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1188)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1188)
 msgctxt "IGMissingFloor,LeftoverCotThought"
 msgid "여기서 먹고 자나 봐. 베개 밑에 귀마개가 있어."
 msgstr "他好像吃住都在這裡。枕頭底下有耳塞。"
 
 #. Key:	LeftoverBoardsPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1152)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1152)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1192)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1192)
 msgctxt "IGMissingFloor,LeftoverBoardsPrompt"
 msgid "살펴보기"
 msgstr "查看"
 
 #. Key:	LeftoverBoardsThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1154)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1154)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1194)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1194)
 msgctxt "IGMissingFloor,LeftoverBoardsThought"
 msgid "벽에서 뜯어낸 판이야. 뒷면마다 방수 시트가 붙어 있어."
 msgstr "是從牆上拆下來的板子。每塊背面都貼著防水膜。"
 
 #. Key:	LeftoverHeapPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1158)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1158)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1198)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1198)
 msgctxt "IGMissingFloor,LeftoverHeapPrompt"
 msgid "살펴보기"
 msgstr "查看"
 
 #. Key:	LeftoverHeapThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1160)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1160)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1200)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1200)
 msgctxt "IGMissingFloor,LeftoverHeapThought"
 msgid "방음재랑 방수 시트를 겹겹이 덧대 놨어. 철골까지 같이 붙어 있네."
 msgstr "隔音棉和防水膜一層一層補上去了。連鋼骨都一起黏在上面。"
 
 #. Key:	LeftoverLedgerThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1193)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1193)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1233)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1233)
 msgctxt "IGMissingFloor,LeftoverLedgerThought"
 msgid "오빠 이름까지 적어 놓고 주인이 없대."
 msgstr "連我哥的名字都寫了，還說是沒人認領的東西。"
 
 #. Key:	LeftoverInnerLockedPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1209)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1209)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1249)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1249)
 msgctxt "IGMissingFloor,LeftoverInnerLockedPrompt"
 msgid "열기"
 msgstr "打開"
 
 #. Key:	LeftoverInnerLockedThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1210)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1210)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1250)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1250)
 msgctxt "IGMissingFloor,LeftoverInnerLockedThought"
 msgid "안에서 잠겼어."
 msgstr "從裡面鎖上了。"
 
 #. Key:	LeftoverPieceAThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1339)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1339)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1379)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1379)
 msgctxt "IGMissingFloor,LeftoverPieceAThought"
-msgid "점검구 덮개 조각이야. 방수막째로 잘려 나왔어."
-msgstr "是檢修口蓋板的碎片。連防水膜一起被切下來了。"
+msgid "검은 막까지 같이 잘렸어."
+msgstr "連黑色的膜都一起切斷了。"
 
 #. Key:	LeftoverPieceBStuck
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1347)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1347)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1387)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1387)
 msgctxt "IGMissingFloor,LeftoverPieceBStuck"
 msgid "뭔가에 눌려서 안 떨어져."
 msgstr "被什麼東西壓著，撕不下來。"
 
 #. Key:	LeftoverPieceBThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1351)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1351)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1391)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1391)
 msgctxt "IGMissingFloor,LeftoverPieceBThought"
-msgid "이것도 방수막째 잘린 조각이야."
-msgstr "這塊也是連防水膜一起切下來的。"
+msgid "여기도 같은 조각이 있네."
+msgstr "這裡也有一樣的碎片。"
 
 #. Key:	LeftoverGloveBoxThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1355)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1355)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1395)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1395)
 msgctxt "IGMissingFloor,LeftoverGloveBoxThought"
 msgid "202호 정우 씨 짐이네. 주인 없음 딱지가 붙어 있어."
 msgstr "是202室正宇的東西。貼紙上寫著無主。"
 
 #. Key:	LeftoverGlovesThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1363)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1363)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1403)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1403)
 msgctxt "IGMissingFloor,LeftoverGlovesThought"
 msgid "낮에 정우 씨한테 보여 주자."
 msgstr "白天拿給正宇看吧。"
 
 #. Key:	LeftoverGlovesThought202
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1364)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1364)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1404)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1404)
 msgctxt "IGMissingFloor,LeftoverGlovesThought202"
 msgid "낮에 202호에 가져다주자."
 msgstr "白天拿去202吧。"
 
 #. Key:	P2ContradictionThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1382)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1382)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1422)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1422)
 msgctxt "IGMissingFloor,P2ContradictionThought"
 msgid "26일에 짐을 다 뺐다는데, 벽 두드리는 소리는 31일까지 났어. 그때도 위에 누가 있었던 거야."
 msgstr "說是26號就把東西都清空了，可是牆裡的敲擊聲一直響到31號。那時候上面還有人。"
 
 #. Key:	LeftoverWakeCreak
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1395)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1395)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1435)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1435)
 msgctxt "IGMissingFloor,LeftoverWakeCreak"
 msgid "[간이침대가 삐걱거리는 소리]"
 msgstr "［行軍床嘎吱作響］"
 
 #. Key:	LeftoverWakeSwitch
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1403)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1403)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1443)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1443)
 msgctxt "IGMissingFloor,LeftoverWakeSwitch"
 msgid "[스위치 켜는 소리]"
 msgstr "［按下開關的聲音］"
 
 #. Key:	LeftoverWakeThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1404)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1404)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1444)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1444)
 msgctxt "IGMissingFloor,LeftoverWakeThought"
 msgid "아저씨가 깼어. 숨어야 해."
 msgstr "阿伯醒了。得躲起來。"
 
 #. Key:	LeftoverErrandOut
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1444)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1444)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1488)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1488)
 msgctxt "IGMissingFloor,LeftoverErrandOut"
-msgid "필로티 쪽으로 나갔어. 안쪽 방 문이 열려 있어."
-msgstr "他往停車場那邊出去了。裡間的門開著。"
+msgid "밖으로 나갔네."
+msgstr "他出去了。"
 
 #. Key:	LeftoverErrandBack
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1454)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1454)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1498)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1498)
 msgctxt "IGMissingFloor,LeftoverErrandBack"
 msgid "손수레 소리가 이쪽으로 와. 나가야 해."
 msgstr "手推車的聲音往這邊來了。得出去了。"
 
 #. Key:	N2ReturnThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1523)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1523)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1571)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1571)
 msgctxt "IGMissingFloor,N2ReturnThought"
 msgid "이제 403호로 돌아가야 해."
 msgstr "現在得回403室了。"
 
 #. Key:	LeftoverNoticePrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1571)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1571)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1619)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1619)
 msgctxt "IGMissingFloor,LeftoverNoticePrompt"
 msgid "읽기"
 msgstr "閱讀"
 
 #. Key:	LeftoverNoticeTitle
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1573)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1573)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1621)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1621)
 msgctxt "IGMissingFloor,LeftoverNoticeTitle"
 msgid "대형 폐기물 수거 안내"
 msgstr "大型廢棄物清運通知"
 
 #. Key:	LeftoverNotice1
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1575)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1575)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1623)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1623)
 msgctxt "IGMissingFloor,LeftoverNotice1"
 msgid "건물 안에 주인 없이 남은 짐을 한꺼번에 처리합니다."
 msgstr "大樓內無主的遺留物品將統一清運。"
 
 #. Key:	LeftoverNotice2
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1577)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1577)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1625)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1625)
 msgctxt "IGMissingFloor,LeftoverNotice2"
 msgid "수거일: 다음 주 월요일 오전 [두 줄 그어 지움]"
 msgstr "清運日：下週一上午［用兩條線劃掉］"
 
 #. Key:	LeftoverNotice3
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1578)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1578)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1626)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1626)
 msgctxt "IGMissingFloor,LeftoverNotice3"
 msgid "이번 주 목요일 아침 7시 [볼펜 손글씨]"
 msgstr "本週四早上7點［原子筆手寫］"
 
 #. Key:	LeftoverNotice4
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1580)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1580)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1628)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1628)
 msgctxt "IGMissingFloor,LeftoverNotice4"
-msgid "버릴 짐은 전날 밤까지 필로티 적치 자리에 내놓아 주세요."
-msgstr "要丟棄的物品，請於前一晚放到一樓停車場的堆放處。"
+msgid "버릴 짐은 전날 밤까지 1층 주차장 안쪽에 내놓아 주세요."
+msgstr "請於回收日前一晚，將要丟棄的物品放到一樓停車場內側。"
 
 #. Key:	LeftoverNotice5
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1581)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1581)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1629)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1629)
 msgctxt "IGMissingFloor,LeftoverNotice5"
 msgid "찾아갈 짐이 있으면 관리실에 말씀해 주세요.  -관리인"
 msgstr "如有要領回的物品，請告知管理室。  -管理員"
 
 #. Key:	LeftoverHoldDoorPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1602)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1602)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1650)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1650)
 msgctxt "IGMissingFloor,LeftoverHoldDoorPrompt"
 msgid "잡아 주기"
 msgstr "幫忙扶著"
 
 #. Key:	LeftoverNoticeThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1619)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1619)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1667)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1667)
 msgctxt "IGMissingFloor,LeftoverNoticeThought"
 msgid "월요일이던 걸 목요일로 당겼어. 주인 없는 짐이라니, 누구 짐인데."
 msgstr "本來是星期一，提前到星期四了。說什麼無主物品，到底是誰的東西？"
 
 #. Key:	LeftoverUnknownSender
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1671)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1671)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1719)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1719)
 msgctxt "IGMissingFloor,LeftoverUnknownSender"
 msgid "202호"
 msgstr "202室"
 
 #. Key:	LeftoverJeongwooAlone
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1673)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1673)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1721)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1721)
 msgctxt "IGMissingFloor,LeftoverJeongwooAlone"
 msgid "새벽에 판이 갑자기 헐거워져서 겨우 밀고 나왔어요. 상자는 못 챙겼어요. 302호 혼자 가지 마세요."
 msgstr "凌晨板子突然鬆了，我用力推開，好不容易才出來。箱子沒拿到。不要一個人去302。"
 
 #. Key:	LeftoverJeongwooBoxAtDoor
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1675)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1675)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1723)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1723)
 msgctxt "IGMissingFloor,LeftoverJeongwooBoxAtDoor"
 msgid "새벽엔 진짜 고마웠어요. 그 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요."
 msgstr "凌晨真的很謝謝妳。那個箱子我早上搬出來放在403門口了。那個房間以後不要一個人進去。"
 
 #. Key:	LeftoverJeongwooThanks
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1676)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1676)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1724)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1724)
 msgctxt "IGMissingFloor,LeftoverJeongwooThanks"
 msgid "새벽엔 진짜 고마웠어요. 짐은 아침에 제가 마저 뺐어요. 그 방엔 이제 혼자 들어가지 마세요."
 msgstr "凌晨真的很謝謝妳。剩下的東西我早上搬完了。那個房間以後不要一個人進去。"
 
 #. Key:	LeftoverTruckCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1697)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1697)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1745)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1745)
 msgctxt "IGMissingFloor,LeftoverTruckCaption"
 msgid "[골목 끝으로 멀어지는 트럭 엔진 소리]"
 msgstr "［往巷子盡頭遠去的卡車引擎聲］"
 
 #. Key:	LeftoverEmptiedThought
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1701)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1701)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1749)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1749)
 msgctxt "IGMissingFloor,LeftoverEmptiedThought"
 msgid "다 실어 갔어. 끈이랑 찢긴 딱지만 남았네."
 msgstr "全都載走了。只剩下繩子和撕破的貼紙。"
 
 #. Key:	LeftoverBoxesIntro
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1783)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1783)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1831)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1831)
 msgctxt "IGMissingFloor,LeftoverBoxesIntro"
 msgid "어, 어제 골목에서 뵌… 진짜 죄송했어요. 저 202호 정우예요."
 msgstr "啊，妳是昨天在巷子裡遇到的……真的很抱歉。我是202的正宇。"
 
 #. Key:	LeftoverBoxesHello
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1785)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1785)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1833)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1833)
 msgctxt "IGMissingFloor,LeftoverBoxesHello"
 msgid "안녕하세요. 저 202호 사는 정우예요."
 msgstr "妳好。我是住202的正宇。"
 
 #. Key:	LeftoverBoxesAskDoor
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1788)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1788)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1836)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1836)
 msgctxt "IGMissingFloor,LeftoverBoxesAskDoor"
 msgid "저기, 죄송한데 문 좀 잡아 주실래요?"
 msgstr "那個，不好意思，可以幫我拉一下門嗎？"
 
 #. Key:	LeftoverBoxesWhy
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1800)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1800)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1848)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1848)
 msgctxt "IGMissingFloor,LeftoverBoxesWhy"
 msgid "수거 날짜를 당겼대요. 내일 아침까지 여기다 모아 달라고요."
 msgstr "聽說清運日提前了。要我明天早上前把東西都集中到這裡。"
 
 #. Key:	LeftoverBoxesThanks
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1868)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1868)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1916)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1916)
 msgctxt "IGMissingFloor,LeftoverBoxesThanks"
 msgid "고마워요. 302호까지만 가면 돼요."
 msgstr "謝謝。只要搬到302就好。"
 
 #. Key:	LeftoverGloves1
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1927)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1927)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1975)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1975)
 msgctxt "IGMissingFloor,LeftoverGloves1"
 msgid "이거 제 건데요. 버리라고 한 적 없어요."
 msgstr "這是我的。我沒說可以丟掉啊。"
 
 #. Key:	LeftoverGloves2
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1928)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1928)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1976)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1976)
 msgctxt "IGMissingFloor,LeftoverGloves2"
 msgid "302호 짐에 더 섞여 있을지도 몰라요. 거기도 한번 봐요."
 msgstr "302的東西裡說不定還混著你的。那邊也去看一下。"
 
 #. Key:	LeftoverGloves3
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1929)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1929)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1977)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1977)
 msgctxt "IGMissingFloor,LeftoverGloves3"
 msgid "배달 끝나면 네 시쯤 돼요. 들어오는 길에 빼놓을게요."
 msgstr "跑完外送差不多四點。回來的時候我順便搬出來。"
 
 #. Key:	LeftoverNoGloves1
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1933)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1933)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1981)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1981)
 msgctxt "IGMissingFloor,LeftoverNoGloves1"
 msgid "302호로 옮긴 짐에 제 겨울 장비도 섞여 있더라고요."
 msgstr "我發現搬到302的東西裡，也混了我的冬季裝備。"
 
 #. Key:	LeftoverNoGloves2
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1934)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1934)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1982)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1982)
 msgctxt "IGMissingFloor,LeftoverNoGloves2"
 msgid "302호에 더 있으면 같이 봐요."
 msgstr "302如果還有，一起去看看。"
 
 #. Key:	LeftoverNoGloves3
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1935)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1935)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1983)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(1983)
 msgctxt "IGMissingFloor,LeftoverNoGloves3"
 msgid "배달 끝나면 네 시쯤 돼요. 들어오는 길에 빼놓을게요."
 msgstr "跑完外送大概是四點。回來的時候我順便搬出來。"
 
 #. Key:	LeftoverHomePouchPrompt
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(666)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(666)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(706)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(706)
 msgctxt "IGMissingFloor,LeftoverHomePouchPrompt"
 msgid "살펴보기"
 msgstr "查看"
 
 #. Key:	LeftoverHomePouchHammer
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(682)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(682)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(722)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(722)
 msgctxt "IGMissingFloor,LeftoverHomePouchHammer"
 msgid "고리 하나가 비어 있어. 5층에서 가져온 튜닝 해머가 꽂히던 자리야."
 msgstr "有一個插槽是空的。從五樓拿回來的那把調音扳手，原本就插在這裡。"
 
 #. Key:	LeftoverHomePouchEmpty
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(683)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(683)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(723)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(723)
 msgctxt "IGMissingFloor,LeftoverHomePouchEmpty"
 msgid "고리 하나가 비어 있어. 손잡이 긴 공구를 꽂던 자리야."
 msgstr "有一個插槽是空的。那是插長柄工具的位置。"
 
 #. Key:	LeftoverMovedToLarge
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(928)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(928)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(968)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(968)
 msgctxt "IGMissingFloor,LeftoverMovedToLarge"
 msgid "저리로 옮겨 갔어."
 msgstr "它移到那邊去了。"
 
 #. Key:	LeftoverFirstMove
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(958)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(958)
+#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(998)
+#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(998)
 msgctxt "IGMissingFloor,LeftoverFirstMove"
 msgid "벽에 붙어 있던 게… 움직였어."
 msgstr "貼在牆上的東西……動了。"
-
-#. Key:	LeftoverHatchDraftCaption
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(981)
-#: Source/IndieGame/Entity/IGMissingFloorLeftoverDirector.cpp(981)
-msgctxt "IGMissingFloor,LeftoverHatchDraftCaption"
-msgid "[점검구 안으로 바람이 빨려 드는 소리]"
-msgstr "［風被吸進檢修口的聲音］"
 
 #. Key:	LeftoverFreedLine
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1021)
@@ -3328,8 +3328,8 @@ msgstr "比一比"
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1684)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1684)
 msgctxt "IGMissingFloor,LeftoverFirstPickThought"
-msgid "조각 셋에 틀 하나."
-msgstr "三塊碎片，一個框。"
+msgid "잘린 데가 거칠어."
+msgstr "切口好粗糙。"
 
 #. Key:	LeftoverFitNoRoom
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1733)
@@ -3363,8 +3363,8 @@ msgstr "切口跑到外側了。"
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1774)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1774)
 msgctxt "IGMissingFloor,LeftoverFitRotated"
-msgid "자리는 맞는데 구멍 위치가 어긋나."
-msgstr "位置是對的，孔的位置卻對不上。"
+msgid "구멍이 안 맞네."
+msgstr "孔對不上。"
 
 #. Key:	LeftoverClampSeatCaption
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1807)
@@ -3384,15 +3384,15 @@ msgstr "全都對上了。原來是一整塊蓋板。"
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1825)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1825)
 msgctxt "IGMissingFloor,LeftoverFlipThought"
-msgid "얼룩이 대각선으로 이어져. 물이 위에서 새어 내려온 자국이야."
-msgstr "污漬斜斜地連成一線。是水從上面滲下來的痕跡。"
+msgid "뒤쪽까지 물이 샜었네."
+msgstr "水都滲到背面了。"
 
 #. Key:	LeftoverVentThought
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1842)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1842)
 msgctxt "IGMissingFloor,LeftoverVentThought"
-msgid "통풍구를 방음재로 쑤셔 막고 그 위에 방수막을 덮었어."
-msgstr "拿隔音棉把通風口硬塞住，上面再蓋上防水膜。"
+msgid "바람구멍을 왜 막아 놨지?"
+msgstr "為什麼要堵住通風口？"
 
 #. Key:	LeftoverCoverTakeThought
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1931)
@@ -3405,15 +3405,15 @@ msgstr "這麼大的補板，我在哪裡看過。"
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1932)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1932)
 msgctxt "IGMissingFloor,LeftoverCoverTakeUnseen"
-msgid "네 귀퉁이에 나사 구멍이 있어. 어딘가에 박혀 있던 거야."
-msgstr "四個角都有螺絲孔。本來是鎖在某個地方的。"
+msgid "이걸 어디서 떼어 온 거지?"
+msgstr "這是從哪裡拆下來的？"
 
 #. Key:	LeftoverSiteMatch1
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1969)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(1969)
 msgctxt "IGMissingFloor,LeftoverSiteMatch1"
-msgid "덧판 나사 네 개가 틀 구멍에 딱 맞네."
-msgstr "補板的四顆螺絲，正好對上框上的孔。"
+msgid "여기 붙어 있던 거였어."
+msgstr "原來裝在這裡。"
 
 #. Key:	LeftoverUnknownVoice
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(200)
@@ -3580,22 +3580,22 @@ msgstr "這是303室寄放的東西。上面寫著，只保管到冬天。"
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(789)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(789)
 msgctxt "IGMissingFloor,LeftoverSackThought"
-msgid "남은 조각 하나랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어."
-msgstr "最後一塊碎片，還有金屬框。上面的膜跟管理室拿來的那幾塊一樣。"
+msgid "이것도 같은 덮개에서 떨어진 건가?"
+msgstr "這也是那塊蓋板上的？"
 
 #. Key:	LeftoverSackTwoPieces
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(791)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(791)
 msgctxt "IGMissingFloor,LeftoverSackTwoPieces"
-msgid "남은 조각 둘이랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어."
-msgstr "剩下的兩塊碎片，還有金屬框。上面的膜跟管理室拿來的那塊一樣。"
+msgid "여기도 조각이 있네. 틀도 같이 있어."
+msgstr "這裡還有碎片，框架也在。"
 
 #. Key:	LeftoverSackAllPieces
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(792)
 #: Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(792)
 msgctxt "IGMissingFloor,LeftoverSackAllPieces"
-msgid "점검구 덮개 조각 셋이랑 금속 틀이야."
-msgstr "三塊檢修口蓋板的碎片，還有金屬框。"
+msgid "덮개를 잘라 놓은 건가?"
+msgstr "有人把蓋板切開了？"
 
 #. Key:	LeftoverWedgeHeld
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorLeftoverStorage.cpp(826)
@@ -4310,13 +4310,6 @@ msgstr "［鋼架被推著刮過地面的聲音］"
 msgctxt "IGMissingFloor,WallBraceSlip"
 msgid "틀이 밀려."
 msgstr "鋼架被推歪了。"
-
-#. Key:	WallSpread
-#. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorNightFourWall.cpp(889)
-#: Source/IndieGame/Entity/IGMissingFloorNightFourWall.cpp(889)
-msgctxt "IGMissingFloor,WallSpread"
-msgid "천장까지 몸을 폈어."
-msgstr "它把身子撐到天花板了。"
 
 #. Key:	ForumPrompt
 #. SourceLocation:	Source/IndieGame/Entity/IGMissingFloorNightThreeDirector.cpp(1001)
@@ -6559,8 +6552,8 @@ msgid "[오토바이가 스쳐 지나가는 소리]"
 msgstr "［機車擦身而過的聲音］"
 
 #. Key:	HatchPeelSealPrompt
-#. SourceLocation:	Source/IndieGame/Interaction/IGAccessHatch.cpp(427)
-#: Source/IndieGame/Interaction/IGAccessHatch.cpp(427)
+#. SourceLocation:	Source/IndieGame/Interaction/IGAccessHatch.cpp(495)
+#: Source/IndieGame/Interaction/IGAccessHatch.cpp(495)
 msgctxt "IGMissingFloor,HatchPeelSealPrompt"
 msgid "뜯어내기"
 msgstr "撕下來"
@@ -7896,22 +7889,22 @@ msgid "불빛이 약해졌어. 건전지가 다 돼 가나 봐."
 msgstr "光越來越暗了，電池大概快沒電了。"
 
 #. Key:	PhoneMarketApp
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(10008)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(10008)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(10064)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(10064)
 msgctxt "IGHUD,PhoneMarketApp"
 msgid "동네장터"
 msgstr "鄰里市集"
 
 #. Key:	PhoneMarketSearch
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(10018)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(10018)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(10074)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(10074)
 msgctxt "IGHUD,PhoneMarketSearch"
 msgid "‘조율 공구’ 관련 글"
 msgstr "「調音工具」的搜尋結果"
 
 #. Key:	PhoneCloseFormat
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(10057)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(10057)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(10113)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(10113)
 msgctxt "IGHUD,PhoneCloseFormat"
 msgid "[ {0} ]  휴대폰 내려놓기"
 msgstr "[ {0} ]  放下手機"
@@ -7979,20 +7972,6 @@ msgctxt "IGJournal,BoardDeliveryReceipt.Where"
 msgid "관리실 책상 · 둘째 밤"
 msgstr "管理室桌上 · 第二夜"
 
-#. Key:	SoundBearingAbove
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2146)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(2146)
-msgctxt "IGHUD,SoundBearingAbove"
-msgid "위"
-msgstr "上方"
-
-#. Key:	SoundBearingBelow
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2147)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(2147)
-msgctxt "IGHUD,SoundBearingBelow"
-msgid "아래"
-msgstr "下方"
-
 #. Key:	CarbonLedgerOriginal.Title
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(216)
 #: Source/IndieGame/Player/IGHorrorHUD.cpp(216)
@@ -8000,26 +7979,19 @@ msgctxt "IGJournal,CarbonLedgerOriginal.Title"
 msgid "민원 접수철 밑장"
 msgstr "投訴登記單底下那張紙"
 
-#. Key:	SoundBearingBehind
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2160)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(2160)
-msgctxt "IGHUD,SoundBearingBehind"
-msgid "뒤"
-msgstr "後方"
-
-#. Key:	SoundBearingRight
+#. Key:	SoundBearingAbove
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2163)
 #: Source/IndieGame/Player/IGHorrorHUD.cpp(2163)
-msgctxt "IGHUD,SoundBearingRight"
-msgid "오른쪽"
-msgstr "右側"
+msgctxt "IGHUD,SoundBearingAbove"
+msgid "위"
+msgstr "上方"
 
-#. Key:	SoundBearingLeft
+#. Key:	SoundBearingBelow
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2164)
 #: Source/IndieGame/Player/IGHorrorHUD.cpp(2164)
-msgctxt "IGHUD,SoundBearingLeft"
-msgid "왼쪽"
-msgstr "左側"
+msgctxt "IGHUD,SoundBearingBelow"
+msgid "아래"
+msgstr "下方"
 
 #. Key:	CarbonLedgerOriginal.Excerpt
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(217)
@@ -8028,12 +8000,33 @@ msgctxt "IGJournal,CarbonLedgerOriginal.Excerpt"
 msgid "7/27 · 401호: 벽에서 쿵쿵. 사람 소리 같음."
 msgstr "7/27 · 401室：牆裡碰碰響，像是有人。"
 
+#. Key:	SoundBearingBehind
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2177)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(2177)
+msgctxt "IGHUD,SoundBearingBehind"
+msgid "뒤"
+msgstr "後方"
+
 #. Key:	CarbonLedgerOriginal.Where
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(218)
 #: Source/IndieGame/Player/IGHorrorHUD.cpp(218)
 msgctxt "IGJournal,CarbonLedgerOriginal.Where"
 msgid "관리실 책상 · 둘째 밤"
 msgstr "管理室桌上 · 第二夜"
+
+#. Key:	SoundBearingRight
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2180)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(2180)
+msgctxt "IGHUD,SoundBearingRight"
+msgid "오른쪽"
+msgstr "右側"
+
+#. Key:	SoundBearingLeft
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2181)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(2181)
+msgctxt "IGHUD,SoundBearingLeft"
+msgid "왼쪽"
+msgstr "左側"
 
 #. Key:	AgentMoveOutMessage.Title
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(220)
@@ -8287,13 +8280,6 @@ msgctxt "IGJournal,BreakerCutIntervention.Where"
 msgid "5층 · 넷째 밤"
 msgstr "五樓 · 第四夜"
 
-#. Key:	NightRestAvailable
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2686)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(2686)
-msgctxt "IGHUD,NightRestAvailable"
-msgid "403호 침대에서 아침까지 쉴 수 있다 · 쉬면 이 밤이 끝난다"
-msgstr "可以在403室的床上休息到天亮 · 休息後今晚就結束"
-
 #. Key:	ShippingLabels.Title
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(270)
 #: Source/IndieGame/Player/IGHorrorHUD.cpp(270)
@@ -8321,6 +8307,13 @@ msgstr "403室桌上 · 入住當天"
 msgctxt "IGJournal,TunerNotebookName.Title"
 msgid "조율 수첩"
 msgstr "調音筆記本"
+
+#. Key:	NightRestAvailable
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2741)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(2741)
+msgctxt "IGHUD,NightRestAvailable"
+msgid "403호 침대에서 아침까지 쉴 수 있다 · 쉬면 이 밤이 끝난다"
+msgstr "可以在403室的床上休息到天亮 · 休息後今晚就結束"
 
 #. Key:	TunerNotebookName.Excerpt
 #. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(275)
@@ -8442,1919 +8435,1919 @@ msgid "401호 · 셋째 날 낮"
 msgstr "401室 · 第三天白天"
 
 #. Key:	KeyLabelNone
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(2994)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(2994)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3049)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3049)
 msgctxt "IGHUD,KeyLabelNone"
 msgid "없음"
 msgstr "無"
 
 #. Key:	CreditsGameTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3304)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3304)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3359)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3359)
 msgctxt "IGHUD,CreditsGameTitle"
 msgid "Missing Floor"
 msgstr "Missing Floor"
 
 #. Key:	CreditsDeveloper
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3305)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3305)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3360)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3360)
 msgctxt "IGHUD,CreditsDeveloper"
 msgid "기획 · 개발    easygap"
 msgstr "企劃 · 開發    easygap"
 
 #. Key:	CreditsEngine
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3306)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3306)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3361)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3361)
 msgctxt "IGHUD,CreditsEngine"
 msgid "제작 도구    Unreal Engine 5.8"
 msgstr "製作工具    Unreal Engine 5.8"
 
 #. Key:	CreditsMaterials
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3307)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3307)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3362)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3362)
 msgctxt "IGHUD,CreditsMaterials"
 msgid "일부 재질    ambientCG · CC0"
 msgstr "部分材質    ambientCG · CC0"
 
 #. Key:	CreditsProps
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3308)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3308)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3363)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3363)
 msgctxt "IGHUD,CreditsProps"
 msgid "일부 소품    Poly Haven · CC0"
 msgstr "部分道具    Poly Haven · CC0"
 
 #. Key:	CreditsSounds
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3309)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3309)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3364)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3364)
 msgctxt "IGHUD,CreditsSounds"
 msgid "일부 소리    OpenGameArt · Kenney · Owlish Media · CC0"
 msgstr "部分音效    OpenGameArt · Kenney · Owlish Media · CC0"
 
 #. Key:	CreditsFonts
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3310)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3310)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3365)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3365)
 msgctxt "IGHUD,CreditsFonts"
 msgid "글꼴    Pretendard · 고운바탕 · Noto Sans CJK · SIL OFL"
 msgstr "字型    Pretendard · Gowun Batang · Noto Sans CJK · SIL OFL"
 
 #. Key:	EndCreditsThanks
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3311)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3311)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3366)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3366)
 msgctxt "IGHUD,EndCreditsThanks"
 msgid "끝까지 플레이해 주셔서 감사합니다."
 msgstr "感謝您一路玩到最後。"
 
 #. Key:	CaptureMercyNoteRead
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3402)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3402)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3457)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3457)
 msgctxt "IGMissingFloor,CaptureMercyNoteRead"
 msgid "“소리를 줄여라. 걔는 눈이 없어.”"
 msgstr "「小聲點。那孩子沒有眼睛。」"
 
 #. Key:	MercyNoteUnderDoorRead
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3415)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3415)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3470)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3470)
 msgctxt "IGMissingFloor,MercyNoteUnderDoorRead"
 msgid "“낮에 와. 문 열어 둘게.”"
 msgstr "「白天來。我會把門開著。」"
 
 #. Key:	TipCrouch
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3444)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3444)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3499)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3499)
 msgctxt "IGHUD,TipCrouch"
 msgid "앉아서 걷기\n발소리가 작아진다"
 msgstr "蹲著走\n腳步聲變小"
 
 #. Key:	TipHoldBreath
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3448)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3448)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3503)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3503)
 msgctxt "IGHUD,TipHoldBreath"
 msgid "숨 참기\n오래 참으면 숨이 거칠어진다"
 msgstr "屏住呼吸\n憋太久呼吸會變粗重"
 
 #. Key:	TipSprint
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3452)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3452)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3507)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3507)
 msgctxt "IGHUD,TipSprint"
 msgid "달리기\n발소리도 커진다"
 msgstr "奔跑\n腳步聲也變大"
 
 #. Key:	TipJournal
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3456)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3456)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3511)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3511)
 msgctxt "IGHUD,TipJournal"
 msgid "조사 기록\n낮에 확인할 수 있다"
 msgstr "查看調查紀錄\n僅限白天"
 
 #. Key:	TipHint
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3460)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3460)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3515)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3515)
 msgctxt "IGHUD,TipHint"
 msgid "힌트\n막혔을 때 누르기"
 msgstr "提示\n卡住時按下"
 
 #. Key:	TipHintAnswer
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3464)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3464)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3519)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3519)
 msgctxt "IGHUD,TipHintAnswer"
 msgid "풀이 보기\n한 번 더 누르면 나온다"
 msgstr "查看解法\n再按一次就會顯示解法"
 
 #. Key:	GuideBasicsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3502)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3502)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3557)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3557)
 msgctxt "IGHUD,GuideBasicsGamepad"
 msgid "LS 이동  ·  RS 둘러보기  ·  {0} 조사"
 msgstr "LS 移動  ·  RS 轉動視角  ·  {0} 調查"
 
 #. Key:	GuideBasicsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3505)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3505)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3560)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3560)
 msgctxt "IGHUD,GuideBasicsKeyboard"
 msgid "WASD 이동  ·  마우스로 둘러보기  ·  {0} 조사"
 msgstr "WASD 移動  ·  滑鼠轉動視角  ·  {0} 調查"
 
 #. Key:	GuideRecallOpen
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3508)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3508)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3563)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3563)
 msgctxt "IGHUD,GuideRecallOpen"
 msgid "{0} 목표와 조작 다시 보기"
 msgstr "{0} 再次查看目標與操作"
 
 #. Key:	GuideMovementGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3517)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3517)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3572)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3572)
 msgctxt "IGHUD,GuideMovementGamepad"
 msgid "LS 이동  ·  {0} 달리기  ·  {1} 앉기  ·  {2} 점프"
 msgstr "LS 移動  ·  {0} 奔跑  ·  {1} 蹲下  ·  {2} 跳躍"
 
 #. Key:	GuideMovementKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3518)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3518)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3573)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3573)
 msgctxt "IGHUD,GuideMovementKeyboard"
 msgid "WASD 이동  ·  {0} 달리기  ·  {1} 앉기  ·  {2} 점프"
 msgstr "WASD 移動  ·  {0} 奔跑  ·  {1} 蹲下  ·  {2} 跳躍"
 
 #. Key:	GuideActions
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3523)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3523)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3578)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3578)
 msgctxt "IGHUD,GuideActions"
 msgid "{0} 조사  ·  {1} 두드리기  ·  {2} 숨 참기  ·  {3} 손전등"
 msgstr "{0} 調查  ·  {1} 敲擊  ·  {2} 屏住呼吸  ·  {3} 手電筒"
 
 #. Key:	GuideRecallClose
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3536)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3536)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3591)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3591)
 msgctxt "IGHUD,GuideRecallClose"
 msgid "{0} 안내 닫기"
 msgstr "{0} 關閉說明"
 
 #. Key:	GuideRecallJournal
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3541)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3541)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3596)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3596)
 msgctxt "IGHUD,GuideRecallJournal"
 msgid "{0} 조사 기록"
 msgstr "{0} 調查紀錄"
 
 #. Key:	GuideRecallHint
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3547)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3547)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3602)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3602)
 msgctxt "IGHUD,GuideRecallHint"
 msgid "{0} 힌트"
 msgstr "{0} 提示"
 
 #. Key:	GuideSeparator
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3550)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3550)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3605)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3605)
 msgctxt "IGHUD,GuideSeparator"
 msgid "  ·  "
 msgstr "  ·  "
 
 #. Key:	LineHeightSample
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3565)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(3565)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(3620)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(3620)
 msgctxt "IGHUD,LineHeightSample"
 msgid "한Ag"
 msgstr "漢Ag"
 
 #. Key:	ReplaySkipToggleCancel
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4351)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4351)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4406)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4406)
 msgctxt "IGHUD,ReplaySkipToggleCancel"
 msgid "{0}  다시 눌러 취소"
 msgstr "{0}  再按一次取消"
 
 #. Key:	ReplaySkipToggleStart
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4352)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4352)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4407)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4407)
 msgctxt "IGHUD,ReplaySkipToggleStart"
 msgid "{0}  눌러 건너뛰기"
 msgstr "{0}  按下跳過"
 
 #. Key:	ReplaySkipHold
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4355)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4355)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4410)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4410)
 msgctxt "IGHUD,ReplaySkipHold"
 msgid "{0}  {1}초 눌러 건너뛰기"
 msgstr "{0}  長按{1}秒跳過"
 
 #. Key:	EndingCAppSection
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4754)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4754)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4809)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4809)
 msgctxt "IGHUD,EndingCAppSection"
 msgid "주거  ·  빌라"
 msgstr "住宅  ·  公寓"
 
 #. Key:	EndingCUnitChip
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4801)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4801)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4856)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4856)
 msgctxt "IGHUD,EndingCUnitChip"
 msgid "403호"
 msgstr "403室"
 
 #. Key:	EndingCListingTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4828)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4828)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4883)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4883)
 msgctxt "IGHUD,EndingCListingTitle"
 msgid "무영로 달빛빌라 403호"
 msgstr "無影路 月光公寓 403室"
 
 #. Key:	EndingCListingCopy
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4837)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4837)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4892)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4892)
 msgctxt "IGHUD,EndingCListingCopy"
 msgid "채광 좋은 남향, 즉시 입주 가능"
 msgstr "採光佳、坐北朝南，隨時可入住"
 
 #. Key:	EndingCListingMeta
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4846)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4846)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4901)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4901)
 msgctxt "IGHUD,EndingCListingMeta"
 msgid "빌라  ·  4층  ·  남향"
 msgstr "公寓  ·  4樓  ·  朝南"
 
 #. Key:	EndingCScrolledTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4863)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4863)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4918)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4918)
 msgctxt "IGHUD,EndingCScrolledTitle"
 msgid "무영로 달빛빌라 403호"
 msgstr "無影路 月光公寓 403室"
 
 #. Key:	EndingCCommentHeading
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4872)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4872)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4927)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4927)
 msgctxt "IGHUD,EndingCCommentHeading"
 msgid "입주자 후기"
 msgstr "住戶評價"
 
 #. Key:	EndingCCommentLineOne
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4895)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4895)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4950)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4950)
 msgctxt "IGHUD,EndingCCommentLineOne"
 msgid "이 집 새벽마다 뭐 두드리는 소리 나요."
 msgstr "這間每天凌晨都會聽到敲東西的聲音。"
 
 #. Key:	EndingCCommentLineTwoDawn
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4899)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4899)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4954)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4954)
 msgctxt "IGHUD,EndingCCommentLineTwoDawn"
 msgid "관리인 아저씨는 물탱크 배관 소리래요."
 msgstr "管理員阿伯說是水塔管線的聲音。"
 
 #. Key:	EndingCCommentLineTwo
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4900)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4900)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4955)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4955)
 msgctxt "IGHUD,EndingCCommentLineTwo"
 msgid "두 명이서 하는 것 같아요."
 msgstr "好像是兩個人在敲。"
 
 #. Key:	EndingCCommentMeta
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4920)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4920)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4975)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(4975)
 msgctxt "IGHUD,EndingCCommentMeta"
 msgid "방금 전  ·  조회 17"
 msgstr "剛剛  ·  瀏覽 17"
 
 #. Key:	EndingCRetryFormat
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(4947)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(4947)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(5002)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(5002)
 msgctxt "IGHUD,EndingCRetryFormat"
 msgid "{0}  넷째 밤 다시 시작"
 msgstr "{0}  重新開始第四夜"
 
 #. Key:	DialogueContinues
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(5094)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(5094)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(5149)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(5149)
 msgctxt "IGHorrorHUD,DialogueContinues"
 msgid "이어짐"
 msgstr "續下頁"
 
 #. Key:	SoundCaptionWithBearing
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(5365)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(5365)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(5420)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(5420)
 msgctxt "IGHUD,SoundCaptionWithBearing"
 msgid "[{0}] {1}"
 msgstr "［{0}］{1}"
 
 #. Key:	SettingsCategoryHeading
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6466)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6466)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6522)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6522)
 msgctxt "IGHUD,SettingsCategoryHeading"
 msgid "설정 항목"
 msgstr "類別"
 
 #. Key:	SettingsOptionsHeading
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6474)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6474)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6530)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6530)
 msgctxt "IGHUD,SettingsOptionsHeading"
 msgid "세부 설정"
 msgstr "詳細設定"
 
 #. Key:	SettingOn
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6792)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6792)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6848)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6848)
 msgctxt "IGHUD,SettingOn"
 msgid "켬"
 msgstr "開"
 
 #. Key:	SettingOff
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6793)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6793)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6849)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6849)
 msgctxt "IGHUD,SettingOff"
 msgid "끔"
 msgstr "關"
 
 #. Key:	DifficultyDescQuiet
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6799)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6799)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6855)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6855)
 msgctxt "IGHUD,DifficultyDescQuiet"
 msgid "위층 사람이 소리를 잘 알아채지 못하고, 쫓아오는 속도도 느려집니다."
 msgstr "樓上的人比較不容易察覺聲音，追趕的速度也會變慢。"
 
 #. Key:	DifficultyDescStandard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6800)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6800)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6856)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6856)
 msgctxt "IGHUD,DifficultyDescStandard"
 msgid "작은 소리에도 주의하며 돌아다녀야 합니다. 기본 난이도입니다."
 msgstr "探索時要小心，連細微的聲音都可能引起注意。這是預設難度。"
 
 #. Key:	DifficultyDescHasty
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6801)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6801)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6857)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6857)
 msgctxt "IGHUD,DifficultyDescHasty"
 msgid "위층 사람이 작은 소리도 잘 듣고 오래 쫓아옵니다."
 msgstr "樓上的人能聽見更細微的聲音，也會追得更久。"
 
 #. Key:	DifficultyDescListenOnly
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6802)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6802)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6858)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6858)
 msgctxt "IGHUD,DifficultyDescListenOnly"
 msgid "위층 사람이 소리를 듣고 다가오지만 쫓거나 붙잡지는 않습니다. 모든 퍼즐과 결말을 볼 수 있습니다."
 msgstr "樓上的人仍會循著聲音靠近，但不會追趕或抓住你。所有謎題和結局都能玩到。"
 
 #. Key:	InputModeToggle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6807)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6807)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6863)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6863)
 msgctxt "IGHUD,InputModeToggle"
 msgid "한 번 눌러 전환"
 msgstr "切換"
 
 #. Key:	InputModeHold
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6808)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6808)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6864)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6864)
 msgctxt "IGHUD,InputModeHold"
 msgid "누르는 동안"
 msgstr "按住"
 
 #. Key:	A11yDifficulty
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6817)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6817)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6873)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6873)
 msgctxt "IGHUD,A11yDifficulty"
 msgid "난이도"
 msgstr "難度"
 
 #. Key:	A11yHints
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6818)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6818)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6874)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6874)
 msgctxt "IGHUD,A11yHints"
 msgid "힌트"
 msgstr "提示"
 
 #. Key:	A11yReducedMotion
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6819)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6819)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6875)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6875)
 msgctxt "IGHUD,A11yReducedMotion"
 msgid "화면 흔들림 줄이기"
 msgstr "減少畫面晃動"
 
 #. Key:	A11yReducedFlicker
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6820)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6820)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6876)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6876)
 msgctxt "IGHUD,A11yReducedFlicker"
 msgid "빛 깜빡임 줄이기"
 msgstr "減少光線閃爍"
 
 #. Key:	A11yFieldOfView
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6821)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6821)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6877)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6877)
 msgctxt "IGHUD,A11yFieldOfView"
 msgid "시야각"
 msgstr "視野角度"
 
 #. Key:	A11yVignette
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6822)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6822)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6878)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6878)
 msgctxt "IGHUD,A11yVignette"
 msgid "화면 가장자리 어둡게"
 msgstr "畫面邊緣變暗"
 
 #. Key:	A11yCameraTexture
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6823)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6823)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6879)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6879)
 msgctxt "IGHUD,A11yCameraTexture"
 msgid "렌즈 왜곡"
 msgstr "鏡頭變形"
 
 #. Key:	A11yCenterDot
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6824)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6824)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6880)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6880)
 msgctxt "IGHUD,A11yCenterDot"
 msgid "화면 가운데 점"
 msgstr "畫面中央圓點"
 
 #. Key:	A11yFearDirection
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6825)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6825)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6881)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6881)
 msgctxt "IGHUD,A11yFearDirection"
 msgid "소리가 나는 방향 표시"
 msgstr "顯示聲音方向"
 
 #. Key:	A11yKnockRing
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6826)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6826)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6882)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6882)
 msgctxt "IGHUD,A11yKnockRing"
 msgid "두드리는 소리를 화면에 표시"
 msgstr "畫面顯示敲擊聲"
 
 #. Key:	A11yKnockHaptic
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6827)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6827)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6883)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6883)
 msgctxt "IGHUD,A11yKnockHaptic"
 msgid "두드리는 소리를 진동으로 알림"
 msgstr "震動提示敲擊聲"
 
 #. Key:	A11yHeartbeat
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6828)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6828)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6884)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6884)
 msgctxt "IGHUD,A11yHeartbeat"
 msgid "심장 박동 표시"
 msgstr "顯示心跳"
 
 #. Key:	A11yKnockAssist
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6829)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6829)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6885)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6885)
 msgctxt "IGHUD,A11yKnockAssist"
 msgid "박자 맞추기 도움"
 msgstr "敲擊節奏輔助"
 
 #. Key:	A11ySoundCaptions
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6830)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6830)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6886)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6886)
 msgctxt "IGHUD,A11ySoundCaptions"
 msgid "소리 자막"
 msgstr "音效字幕"
 
 #. Key:	A11yCaptionSize
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6831)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6831)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6887)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6887)
 msgctxt "IGHUD,A11yCaptionSize"
 msgid "자막 글자 크기"
 msgstr "字幕字體大小"
 
 #. Key:	A11yCaptionBackground
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6832)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6832)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6888)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6888)
 msgctxt "IGHUD,A11yCaptionBackground"
 msgid "자막 배경 진하기"
 msgstr "字幕背景不透明度"
 
 #. Key:	A11yCaptionSafeArea
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6833)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6833)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6889)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6889)
 msgctxt "IGHUD,A11yCaptionSafeArea"
 msgid "자막 표시 영역"
 msgstr "字幕顯示範圍"
 
 #. Key:	A11yCaptionDuration
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6834)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6834)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6890)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6890)
 msgctxt "IGHUD,A11yCaptionDuration"
 msgid "자막 표시 시간"
 msgstr "字幕顯示時間"
 
 #. Key:	A11yCrouchInput
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6835)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6835)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6891)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6891)
 msgctxt "IGHUD,A11yCrouchInput"
 msgid "앉기 입력 방식"
 msgstr "蹲下操作方式"
 
 #. Key:	A11yHoldInput
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6836)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6836)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6892)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6892)
 msgctxt "IGHUD,A11yHoldInput"
 msgid "길게 누르기 방식"
 msgstr "長按操作方式"
 
 #. Key:	A11yHoldDuration
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6837)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6837)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6893)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6893)
 msgctxt "IGHUD,A11yHoldDuration"
 msgid "길게 누르는 시간"
 msgstr "長按時間"
 
 #. Key:	A11yPromptKeys
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6838)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6838)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6894)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6894)
 msgctxt "IGHUD,A11yPromptKeys"
 msgid "조작 키 표시"
 msgstr "按鍵提示"
 
 #. Key:	A11yHaptics
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6839)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6839)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6895)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6895)
 msgctxt "IGHUD,A11yHaptics"
 msgid "컨트롤러 진동"
 msgstr "手把震動"
 
 #. Key:	A11yMicrophone
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6840)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6840)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6896)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6896)
 msgctxt "IGHUD,A11yMicrophone"
 msgid "마이크 소리 사용"
 msgstr "麥克風收音"
 
 #. Key:	A11yReset
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6841)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6841)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6897)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6897)
 msgctxt "IGHUD,A11yReset"
 msgid "기본값으로 초기화"
 msgstr "恢復預設值"
 
 #. Key:	A11yClose
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6842)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6842)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6898)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6898)
 msgctxt "IGHUD,A11yClose"
 msgid "닫기"
 msgstr "關閉"
 
 #. Key:	CenterDotAlways
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6856)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6856)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6912)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6912)
 msgctxt "IGHUD,CenterDotAlways"
 msgid "항상"
 msgstr "持續顯示"
 
 #. Key:	CenterDotFocus
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6857)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6857)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6913)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6913)
 msgctxt "IGHUD,CenterDotFocus"
 msgid "물건을 볼 때"
 msgstr "對準物品時"
 
 #. Key:	SoundCaptionsAll
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6866)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6866)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6922)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6922)
 msgctxt "IGHUD,SoundCaptionsAll"
 msgid "모든 소리"
 msgstr "所有聲音"
 
 #. Key:	SoundCaptionsImportant
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6867)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6867)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6923)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6923)
 msgctxt "IGHUD,SoundCaptionsImportant"
 msgid "중요한 소리"
 msgstr "重要聲音"
 
 #. Key:	PromptKeysAlways
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6876)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6876)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6932)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6932)
 msgctxt "IGHUD,PromptKeysAlways"
 msgid "항상"
 msgstr "持續顯示"
 
 #. Key:	PromptKeysLearning
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6877)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6877)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6933)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6933)
 msgctxt "IGHUD,PromptKeysLearning"
 msgid "익힐 때까지"
 msgstr "僅前3次"
 
 #. Key:	AccessibilityResetArmed
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6883)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6883)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6939)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6939)
 msgctxt "IGHUD,AccessibilityResetArmed"
 msgid "한 번 더 누르면 초기화"
 msgstr "再按一次恢復預設值"
 
 #. Key:	A11yHintsDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6890)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6890)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6946)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6946)
 msgctxt "IGHUD,A11yHintsDesc"
 msgid "힌트 키를 누르면 다음에 살펴볼 곳을 알려 줍니다. 다시 누르면 더 자세한 힌트가 나옵니다."
 msgstr "按提示鍵會告訴你接下來該看哪裡。再按一次，提示會更詳細。"
 
 #. Key:	A11yReducedMotionDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6891)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6891)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6947)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6947)
 msgctxt "IGHUD,A11yReducedMotionDesc"
 msgid "걷거나 쫓길 때 화면이 덜 흔들리게 합니다."
 msgstr "減少走路或被追趕時的畫面晃動。"
 
 #. Key:	A11yReducedFlickerDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6892)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6892)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6948)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6948)
 msgctxt "IGHUD,A11yReducedFlickerDesc"
 msgid "손전등과 조명이 빠르게 깜빡이는 효과를 줄입니다."
 msgstr "減少手電筒和燈光快速閃爍的效果。"
 
 #. Key:	A11yFieldOfViewDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6893)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6893)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6949)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6949)
 msgctxt "IGHUD,A11yFieldOfViewDesc"
 msgid "화면에 보이는 범위를 넓히거나 좁힙니다. 시야가 좁게 느껴지거나 어지럽다면 값을 바꿔 보세요."
 msgstr "放大或縮小畫面可見的範圍。若覺得視野太窄或容易頭暈，可以試著調整。"
 
 #. Key:	A11yVignetteDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6894)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6894)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6950)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6950)
 msgctxt "IGHUD,A11yVignetteDesc"
 msgid "화면 가장자리를 어둡게 합니다. 움직일 때 어지럽다면 값을 높여 보세요."
 msgstr "讓畫面邊緣變暗。移動時覺得頭暈，可以調高數值。"
 
 #. Key:	A11yCameraTextureDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6895)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6895)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6951)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6951)
 msgctxt "IGHUD,A11yCameraTextureDesc"
 msgid "화면 가장자리에 약한 렌즈 왜곡 효과를 더합니다. 눈이 피로하면 낮춰 주세요."
 msgstr "在畫面邊緣加入輕微的鏡頭變形效果。眼睛疲勞時請調低。"
 
 #. Key:	A11yCenterDotDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6896)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6896)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6952)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6952)
 msgctxt "IGHUD,A11yCenterDotDesc"
 msgid "조사할 물건을 보면 화면 가운데에 점이 뜹니다. 어지럽다면 항상 표시하도록 바꿔 보세요. 시선을 둘 곳이 생깁니다."
 msgstr "對準可以調查的物品時，畫面中央會出現圓點。容易頭暈的話，可改成「持續顯示」，讓視線有個固定的參考點。"
 
 #. Key:	A11yFearDirectionDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6897)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6897)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6953)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6953)
 msgctxt "IGHUD,A11yFearDirectionDesc"
 msgid "중요한 소리가 나면 화면 가장자리에 그 방향을 표시합니다."
 msgstr "出現重要的聲音時，會在畫面邊緣標示聲音的方向。"
 
 #. Key:	A11yKnockRingDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6898)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6898)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6954)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6954)
 msgctxt "IGHUD,A11yKnockRingDesc"
 msgid "켜면 위층 사람이 낸 소리도 얇은 원으로 표시합니다. 내가 낸 소리는 늘 굵은 원입니다."
 msgstr "開啟後，樓上的人發出的聲音也會以細圓圈顯示。自己發出的聲音一律以粗圓圈顯示。"
 
 #. Key:	A11yKnockHapticDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6899)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6899)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6955)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6955)
 msgctxt "IGHUD,A11yKnockHapticDesc"
 msgid "위층 사람이 소리를 내면 게임패드가 진동합니다. 멀리서 나는 소리일수록 진동도 약해집니다."
 msgstr "樓上的人發出聲音時，手把會震動。聲音越遠，震動越弱。"
 
 #. Key:	A11yHeartbeatDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6900)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6900)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6956)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6956)
 msgctxt "IGHUD,A11yHeartbeatDesc"
 msgid "긴장하면 화면 가장자리가 심장 박동에 맞춰 어두워졌다 밝아집니다."
 msgstr "緊張時，畫面邊緣會隨著心跳忽暗忽亮。"
 
 #. Key:	A11yKnockAssistDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6901)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6901)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6957)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6957)
 msgctxt "IGHUD,A11yKnockAssistDesc"
 msgid "박자가 조금 늦거나 빨라도 맞은 것으로 칩니다."
 msgstr "敲擊節奏稍微快一點或慢一點也算數。"
 
 #. Key:	A11ySoundCaptionsConfirmDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6904)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6904)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6960)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6960)
 msgctxt "IGHUD,A11ySoundCaptionsConfirmDesc"
 msgid "이전 버전에서 기본으로 켜 두던 설정입니다. 이제 기본은 ‘끔’입니다. 그대로 쓸지 바꿀지 골라 주세요."
 msgstr "舊版本預設開啟這項設定。現在預設為「關」。請選擇保留還是更改。"
 
 #. Key:	A11ySoundCaptionsDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6905)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6905)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6961)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6961)
 msgctxt "IGHUD,A11ySoundCaptionsDesc"
 msgid "소리를 글로 보여 줍니다. ‘중요한 소리’는 두드리는 소리나 다가오는 발소리처럼 진행에 필요한 소리만, ‘모든 소리’는 건물과 동네의 평범한 소리까지 보여 줍니다."
 msgstr "以文字顯示聲音。「重要聲音」只顯示敲擊聲、逼近的腳步聲等推進所需的聲音；「所有聲音」還會顯示樓裡和街坊的日常聲響。"
 
 #. Key:	A11yCaptionSizeDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6906)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6906)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6962)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6962)
 msgctxt "IGHUD,A11yCaptionSizeDesc"
 msgid "대화와 소리 자막의 글자 크기를 함께 바꿉니다. 아래에서 미리 볼 수 있습니다."
 msgstr "同時調整對話和音效字幕的字體大小。可在下方預覽。"
 
 #. Key:	A11yCaptionBackgroundDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6907)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6907)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6963)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6963)
 msgctxt "IGHUD,A11yCaptionBackgroundDesc"
 msgid "자막 뒤의 검은 배경을 얼마나 진하게 표시할지 정합니다."
 msgstr "設定字幕後方黑色背景的深淺。"
 
 #. Key:	A11yCaptionSafeAreaDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6908)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6908)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6964)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6964)
 msgctxt "IGHUD,A11yCaptionSafeAreaDesc"
 msgid "값을 줄이면 자막이 화면 안쪽에 표시됩니다."
 msgstr "數值調低時，字幕會顯示在畫面較內側的位置。"
 
 #. Key:	A11yCaptionDurationDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6909)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6909)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6965)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6965)
 msgctxt "IGHUD,A11yCaptionDurationDesc"
 msgid "자막이 화면에 떠 있는 시간을 조절합니다. 읽을 시간이 부족하면 값을 높여 주세요."
 msgstr "調整字幕在畫面上停留的時間。如果來不及看完，請調高數值。"
 
 #. Key:	A11yCrouchInputDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6910)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6910)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6966)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6966)
 msgctxt "IGHUD,A11yCrouchInputDesc"
 msgid "앉기 키를 한 번씩 눌러 앉고 서거나, 누르고 있는 동안만 앉도록 설정합니다."
 msgstr "每按一次蹲下鍵就蹲下或站起，或是只在按住時蹲下。"
 
 #. Key:	A11yHoldInputDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6911)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6911)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6967)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6967)
 msgctxt "IGHUD,A11yHoldInputDesc"
 msgid "버튼을 길게 누르기 어렵다면 한 번 눌러 시작하고 다시 눌러 취소하도록 바꿀 수 있습니다."
 msgstr "如果長按按鍵有困難，可以改成按一下開始、再按一下取消。"
 
 #. Key:	A11yHoldDurationDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6912)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6912)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6968)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6968)
 msgctxt "IGHUD,A11yHoldDurationDesc"
 msgid "문을 열거나 조사할 때 버튼을 얼마나 오래 누를지 정합니다."
 msgstr "設定開門或調查時需要按住按鍵多久。"
 
 #. Key:	A11yPromptKeysDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6913)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6913)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6969)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6969)
 msgctxt "IGHUD,A11yPromptKeysDesc"
 msgid "‘항상’으로 두면 누를 키를 계속 표시합니다. ‘익힐 때까지’로 두면 같은 동작을 세 번 한 뒤부터 키 이름을 숨깁니다."
 msgstr "「持續顯示」會一直顯示按鍵名稱。「僅前3次」會在同一個動作完成3次後隱藏按鍵名稱。"
 
 #. Key:	A11yHapticsDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6914)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6914)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6970)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6970)
 msgctxt "IGHUD,A11yHapticsDesc"
 msgid "게임패드 진동을 켜거나 끕니다."
 msgstr "開啟或關閉手把震動。"
 
 #. Key:	A11yMicrophoneDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6915)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6915)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6971)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6971)
 msgctxt "IGHUD,A11yMicrophoneDesc"
 msgid "켜면 마이크로 들어오는 내 목소리와 주변 소리에 위층 사람이 반응합니다."
 msgstr "開啟後，樓上的人會對麥克風收到的說話聲和周圍聲音做出反應。"
 
 #. Key:	A11yResetDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6916)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6916)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6972)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6972)
 msgctxt "IGHUD,A11yResetDesc"
 msgid "이 화면의 설정을 기본값으로 되돌립니다."
 msgstr "將這個畫面的設定恢復成預設值。"
 
 #. Key:	A11yCloseDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6917)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6917)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6973)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6973)
 msgctxt "IGHUD,A11yCloseDesc"
 msgid "설정을 저장하고 이전 화면으로 돌아갑니다."
 msgstr "儲存設定並返回上一個畫面。"
 
 #. Key:	A11yCategoryGameplay
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6924)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6924)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6980)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6980)
 msgctxt "IGHUD,A11yCategoryGameplay"
 msgid "게임 진행"
 msgstr "遊戲"
 
 #. Key:	A11yCategoryMotion
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6925)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6925)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6981)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6981)
 msgctxt "IGHUD,A11yCategoryMotion"
 msgid "화면 효과"
 msgstr "畫面效果"
 
 #. Key:	A11yCategorySound
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6926)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6926)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6982)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6982)
 msgctxt "IGHUD,A11yCategorySound"
 msgid "소리 알림"
 msgstr "聲音提示"
 
 #. Key:	A11yCategoryCaptions
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6927)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6927)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6983)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6983)
 msgctxt "IGHUD,A11yCategoryCaptions"
 msgid "자막"
 msgstr "字幕"
 
 #. Key:	A11yCategoryInput
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6928)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6928)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6984)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6984)
 msgctxt "IGHUD,A11yCategoryInput"
 msgid "조작"
 msgstr "操作"
 
 #. Key:	A11yCategoryGeneral
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6929)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6929)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6985)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6985)
 msgctxt "IGHUD,A11yCategoryGeneral"
 msgid "기타"
 msgstr "其他"
 
 #. Key:	AccessibilityTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6940)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6940)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6996)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6996)
 msgctxt "IGHUD,AccessibilityTitle"
 msgid "접근성 설정"
 msgstr "無障礙設定"
 
 #. Key:	AccessibilitySubtitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6941)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6941)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6997)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6997)
 msgctxt "IGHUD,AccessibilitySubtitle"
 msgid "글자, 소리 안내, 조작을 편하게 맞춰 주세요."
 msgstr "依照自己的需求，調整文字、聲音提示和操作。"
 
 #. Key:	AccessibilitySavedImmediately
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6942)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6942)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6998)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(6998)
 msgctxt "IGHUD,AccessibilitySavedImmediately"
 msgid "변경 즉시 저장"
 msgstr "變更後立即儲存"
 
 #. Key:	SettingsEffectHeading
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(6992)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(6992)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7048)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7048)
 msgctxt "IGHUD,SettingsEffectHeading"
 msgid "설명"
 msgstr "說明"
 
 #. Key:	CaptionPreviewBody
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7011)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7011)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7067)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7067)
 msgctxt "IGHUD,CaptionPreviewBody"
 msgid "[위] 천장에서 뭔가 끄는 소리"
 msgstr "［上方］天花板傳來拖東西的聲音"
 
 #. Key:	CaptionPreviewSpeaker
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7079)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7079)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7135)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7135)
 msgctxt "IGHUD,CaptionPreviewSpeaker"
 msgid "미리 보기"
 msgstr "預覽"
 
 #. Key:	AccessibilityControlsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7121)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7121)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7177)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7177)
 msgctxt "IGHUD,AccessibilityControlsGamepad"
 msgid "D-pad 이동·값 변경  ·  A 선택  ·  B 닫기"
 msgstr "D-pad 移動·調整數值  ·  A 選擇  ·  B 關閉"
 
 #. Key:	AccessibilityControlsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7125)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7125)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7181)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7181)
 msgctxt "IGHUD,AccessibilityControlsKeyboard"
 msgid "방향키 이동·값 변경  ·  Enter 선택  ·  Esc/F10 닫기"
 msgstr "方向鍵 移動·調整數值  ·  Enter 選擇  ·  Esc/F10 關閉"
 
 #. Key:	MissingFloorJournalTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7283)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7283)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7339)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7339)
 msgctxt "IGHUD,MissingFloorJournalTitle"
 msgid "조사 기록"
 msgstr "調查紀錄"
 
 #. Key:	MissingFloorJournalSubtitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7291)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7291)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7347)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7347)
 msgctxt "IGHUD,MissingFloorJournalSubtitle"
 msgid "달빛빌라에서 알아낸 것들"
 msgstr "在月光公寓查到的事"
 
 #. Key:	JournalCountFormat
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7339)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7339)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7395)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7395)
 msgctxt "IGHUD,JournalCountFormat"
 msgid "기록 {0}개  ·  {1} / {2}"
 msgstr "{0} 筆紀錄  ·  {1} / {2}"
 
 #. Key:	MissingFloorJournalControlsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7370)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7370)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7426)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7426)
 msgctxt "IGHUD,MissingFloorJournalControlsGamepad"
 msgid "D-pad  기록 넘기기  ·  Y 닫기"
 msgstr "D-pad  翻閱紀錄  ·  Y 關閉"
 
 #. Key:	MissingFloorJournalControlsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7374)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7374)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7430)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7430)
 msgctxt "IGHUD,MissingFloorJournalControlsKeyboard"
 msgid "← / →  기록 넘기기  ·  Tab 닫기"
 msgstr "← / →  翻閱紀錄  ·  Tab 關閉"
 
 #. Key:	JournalHeardTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7452)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7452)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7508)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7508)
 msgctxt "IGHUD,JournalHeardTitle"
 msgid "들은 말"
 msgstr "聽到的話"
 
 #. Key:	JournalHeardHint
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7453)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7453)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7509)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7509)
 msgctxt "IGHUD,JournalHeardHint"
 msgid "아래로 갈수록 최근에 들은 말"
 msgstr "越往下越新"
 
 #. Key:	JournalLaneAdministration
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7535)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7535)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7591)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7591)
 msgctxt "IGHUD,JournalLaneAdministration"
 msgid "건물 서류"
 msgstr "公寓文件"
 
 #. Key:	JournalLaneLife
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7536)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7536)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7592)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7592)
 msgctxt "IGHUD,JournalLaneLife"
 msgid "소리와 흔적"
 msgstr "聲音與痕跡"
 
 #. Key:	JournalLanePersonal
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7537)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7537)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7593)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7593)
 msgctxt "IGHUD,JournalLanePersonal"
 msgid "오빠의 흔적"
 msgstr "哥留下的痕跡"
 
 #. Key:	MissingFloorJournalEmpty
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7763)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7763)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7819)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7819)
 msgctxt "IGHUD,MissingFloorJournalEmpty"
 msgid "아직 적어 둔 게 없다."
 msgstr "還沒記下什麼。"
 
 #. Key:	AudioCalibrationTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7812)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7812)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7868)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7868)
 msgctxt "IGHUD,AudioCalibrationTitle"
 msgid "소리와 밝기"
 msgstr "音量與亮度"
 
 #. Key:	AudioCalibrationFirstRunSubtitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7819)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7819)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7875)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7875)
 msgctxt "IGHUD,AudioCalibrationFirstRunSubtitle"
 msgid "시작하기 전에 소리 크기와 화면 밝기를 맞춰 주세요."
 msgstr "開始之前，請先調整音量和畫面亮度。"
 
 #. Key:	AudioCalibrationSubtitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7820)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7820)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7876)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7876)
 msgctxt "IGHUD,AudioCalibrationSubtitle"
 msgid "헤드폰이나 모니터를 바꿨다면 다시 맞춰 주세요."
 msgstr "如果換了耳機或螢幕，請重新調整。"
 
 #. Key:	AudioCalibrationKnockLabel
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7853)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7853)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7909)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7909)
 msgctxt "IGHUD,AudioCalibrationKnockLabel"
 msgid "위층에서 두드리는 소리"
 msgstr "樓上的敲擊聲"
 
 #. Key:	AudioCalibrationKnockInstruction
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7862)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7862)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7918)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7918)
 msgctxt "IGHUD,AudioCalibrationKnockInstruction"
 msgid "두드리는 소리가 잘 들리면서\n귀에 부담이 없는 크기로 맞춰 주세요."
 msgstr "請把音量調到能清楚聽見敲擊聲，\n又不會覺得刺耳。"
 
 #. Key:	AudioCalibrationShadowLabel
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7889)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7889)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7945)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7945)
 msgctxt "IGHUD,AudioCalibrationShadowLabel"
 msgid "어두운 화면 확인"
 msgstr "暗部確認"
 
 #. Key:	AudioCalibrationShadowInstruction
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7898)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7898)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7954)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7954)
 msgctxt "IGHUD,AudioCalibrationShadowInstruction"
 msgid "가운데 칸이 희미하게 보이도록 맞춰 주세요.\n왼쪽 칸은 배경과 구분되지 않아야 합니다."
 msgstr "請調到中間的方塊隱約可見。\n左邊的方塊要和背景分不出來。"
 
 #. Key:	AudioCal.MasterVolume
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7933)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7933)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7989)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7989)
 msgctxt "IGHUD,AudioCal.MasterVolume"
 msgid "전체 소리"
 msgstr "主音量"
 
 #. Key:	AudioCal.Music
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7934)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7934)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7990)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7990)
 msgctxt "IGHUD,AudioCal.Music"
 msgid "배경 음악"
 msgstr "背景音樂"
 
 #. Key:	AudioCal.Ambience
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7935)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7935)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7991)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7991)
 msgctxt "IGHUD,AudioCal.Ambience"
 msgid "환경음"
 msgstr "環境音"
 
 #. Key:	AudioCal.ListeningOn
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7936)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7936)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7992)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7992)
 msgctxt "IGHUD,AudioCal.ListeningOn"
 msgid "출력 장치"
 msgstr "輸出裝置"
 
 #. Key:	AudioCal.DisplayBrightness
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7937)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7937)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7993)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7993)
 msgctxt "IGHUD,AudioCal.DisplayBrightness"
 msgid "화면 밝기"
 msgstr "畫面亮度"
 
 #. Key:	AudioCal.PlayKnockAgain
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7938)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7938)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7994)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7994)
 msgctxt "IGHUD,AudioCal.PlayKnockAgain"
 msgid "다시 듣기"
 msgstr "再聽一次敲擊聲"
 
 #. Key:	AudioCal.SaveAndContinue
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7940)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7940)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7996)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7996)
 msgctxt "IGHUD,AudioCal.SaveAndContinue"
 msgid "저장하고 시작하기"
 msgstr "儲存並開始"
 
 #. Key:	AudioCal.SaveAndBack
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7941)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7941)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7997)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(7997)
 msgctxt "IGHUD,AudioCal.SaveAndBack"
 msgid "저장하고 돌아가기"
 msgstr "儲存並返回"
 
 #. Key:	AudioCal.Headphones
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7970)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7970)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8026)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8026)
 msgctxt "IGHUD,AudioCal.Headphones"
 msgid "헤드폰"
 msgstr "耳機"
 
 #. Key:	AudioCal.Speakers
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7971)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7971)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8027)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8027)
 msgctxt "IGHUD,AudioCal.Speakers"
 msgid "스피커"
 msgstr "喇叭"
 
 #. Key:	AudioCalibrationBusNote
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7988)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7988)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8044)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8044)
 msgctxt "IGHUD,AudioCalibrationBusNote"
 msgid "배경 음악과 환경음은 따로 조절할 수 있습니다. 두드리는 소리와 위층 사람이 내는 소리는 전체 소리 크기를 따릅니다."
 msgstr "背景音樂和環境音可以分開調整。敲擊聲和樓上的人發出的聲音由主音量控制。"
 
 #. Key:	AudioCalibrationOutputHeadphones
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7993)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7993)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8049)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8049)
 msgctxt "IGHUD,AudioCalibrationOutputHeadphones"
 msgid "헤드폰에 맞는 입체 음향을 사용합니다."
 msgstr "使用適合耳機的空間音效。"
 
 #. Key:	AudioCalibrationOutputSpeakers
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(7996)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(7996)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8052)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8052)
 msgctxt "IGHUD,AudioCalibrationOutputSpeakers"
 msgid "스피커에 맞게 소리를 재생합니다. 방향을 구분하기 어렵다면 소리 자막을 켜 주세요."
 msgstr "以適合喇叭的方式播放聲音。如果難以分辨方向，請開啟音效字幕。"
 
 #. Key:	AudioCalibrationControlsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8005)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8005)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8061)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8061)
 msgctxt "IGHUD,AudioCalibrationControlsGamepad"
 msgid "D-pad 이동·값 변경  ·  A 선택  ·  B 취소"
 msgstr "D-pad 移動·調整數值  ·  A 選擇  ·  B 取消"
 
 #. Key:	AudioCalibrationControlsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8008)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8008)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8064)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8064)
 msgctxt "IGHUD,AudioCalibrationControlsKeyboard"
 msgid "방향키/WASD 이동·값 변경  ·  Enter 선택  ·  Esc 취소  ·  마우스 선택"
 msgstr "方向鍵/WASD 移動·調整數值  ·  Enter 選擇  ·  Esc 取消  ·  滑鼠點選"
 
 #. Key:	Display.Fullscreen
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8033)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8033)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8089)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8089)
 msgctxt "IGHUD,Display.Fullscreen"
 msgid "전체 화면"
 msgstr "全螢幕"
 
 #. Key:	Display.Borderless
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8034)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8034)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8090)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8090)
 msgctxt "IGHUD,Display.Borderless"
 msgid "테두리 없는 창"
 msgstr "無邊框視窗"
 
 #. Key:	Display.Windowed
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8035)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8035)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8091)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8091)
 msgctxt "IGHUD,Display.Windowed"
 msgid "창 모드"
 msgstr "視窗模式"
 
 #. Key:	Display.Low
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8045)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8045)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8101)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8101)
 msgctxt "IGHUD,Display.Low"
 msgid "낮음"
 msgstr "低"
 
 #. Key:	Display.High
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8046)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8046)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8102)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8102)
 msgctxt "IGHUD,Display.High"
 msgid "높음"
 msgstr "高"
 
 #. Key:	Display.Unlimited
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8052)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8052)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8108)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8108)
 msgctxt "IGHUD,Display.Unlimited"
 msgid "제한 없음"
 msgstr "無限制"
 
 #. Key:	Display.DisplayMode
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8056)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8056)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8112)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8112)
 msgctxt "IGHUD,Display.DisplayMode"
 msgid "화면 모드"
 msgstr "顯示模式"
 
 #. Key:	Display.Resolution
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8057)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8057)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8113)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8113)
 msgctxt "IGHUD,Display.Resolution"
 msgid "해상도"
 msgstr "解析度"
 
 #. Key:	Display.GraphicsQuality
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8058)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8058)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8114)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8114)
 msgctxt "IGHUD,Display.GraphicsQuality"
 msgid "그래픽 품질"
 msgstr "畫質"
 
 #. Key:	Display.VSync
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8059)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8059)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8115)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8115)
 msgctxt "IGHUD,Display.VSync"
 msgid "수직 동기화"
 msgstr "垂直同步"
 
 #. Key:	Display.FrameLimit
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8060)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8060)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8116)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8116)
 msgctxt "IGHUD,Display.FrameLimit"
 msgid "프레임 제한"
 msgstr "幀數上限"
 
 #. Key:	Display.Language
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8062)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8062)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8118)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8118)
 msgctxt "IGHUD,Display.Language"
 msgid "언어 · Language"
 msgstr "語言 · Language"
 
 #. Key:	Display.Accessibility
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8063)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8063)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8119)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8119)
 msgctxt "IGHUD,Display.Accessibility"
 msgid "접근성 설정"
 msgstr "無障礙設定"
 
 #. Key:	Display.AudioBrightness
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8064)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8064)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8120)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8120)
 msgctxt "IGHUD,Display.AudioBrightness"
 msgid "소리와 밝기"
 msgstr "音量與亮度"
 
 #. Key:	Display.ControlsRebinding
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8065)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8065)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8121)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8121)
 msgctxt "IGHUD,Display.ControlsRebinding"
 msgid "조작 설정"
 msgstr "操作設定"
 
 #. Key:	Display.KeepTheseSettings
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8067)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8067)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8123)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8123)
 msgctxt "IGHUD,Display.KeepTheseSettings"
 msgid "이 설정 유지"
 msgstr "保留此設定"
 
 #. Key:	Display.ReapplyDisplay
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8068)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8068)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8124)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8124)
 msgctxt "IGHUD,Display.ReapplyDisplay"
 msgid "화면 설정 다시 적용"
 msgstr "重新套用畫面設定"
 
 #. Key:	Display.RevertSettings
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8070)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8070)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8126)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8126)
 msgctxt "IGHUD,Display.RevertSettings"
 msgid "이전 설정으로 되돌리기"
 msgstr "還原先前設定"
 
 #. Key:	Display.Back
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8071)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8071)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8127)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8127)
 msgctxt "IGHUD,Display.Back"
 msgid "돌아가기"
 msgstr "返回"
 
 #. Key:	Display.Open
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8086)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8086)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8142)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8142)
 msgctxt "IGHUD,Display.Open"
 msgid "열기"
 msgstr "開啟"
 
 #. Key:	Display.WindowModeDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8094)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8094)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8150)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8150)
 msgctxt "IGHUD,Display.WindowModeDesc"
 msgid "전체 화면이나 창 모드로 바꿉니다. 바꾼 뒤 10초 동안 확인하지 않으면 이전 설정으로 돌아갑니다."
 msgstr "切換全螢幕或視窗模式。變更後 10 秒內沒有確認，就會恢復先前的設定。"
 
 #. Key:	Display.ResolutionDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8095)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8095)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8151)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8151)
 msgctxt "IGHUD,Display.ResolutionDesc"
 msgid "화면 해상도를 바꿉니다. 모니터 해상도와 맞추면 가장 선명하게 보입니다."
 msgstr "變更畫面解析度。與螢幕解析度相同時，畫面最清晰。"
 
 #. Key:	Display.QualityDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8096)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8096)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8152)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8152)
 msgctxt "IGHUD,Display.QualityDesc"
 msgid "그림자와 반사 등의 품질을 조절합니다. 게임이 버벅인다면 낮춰 보세요."
 msgstr "調整陰影、反射等效果的品質。遊戲卡頓的話，可以試著調低。"
 
 #. Key:	Display.VSyncDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8097)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8097)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8153)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8153)
 msgctxt "IGHUD,Display.VSyncDesc"
 msgid "화면이 가로로 갈라져 보이는 현상을 줄입니다. 조작 반응이 조금 느려질 수 있습니다."
 msgstr "減少畫面出現橫向撕裂的情況。操作反應可能會稍微變慢。"
 
 #. Key:	Display.FrameLimitDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8098)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8098)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8154)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8154)
 msgctxt "IGHUD,Display.FrameLimitDesc"
 msgid "초당 표시할 화면 수의 최댓값을 정합니다. 값을 낮추면 발열과 전력 사용을 줄일 수 있습니다."
 msgstr "設定每秒顯示畫面數的上限。調低可以減少發熱和耗電。"
 
 #. Key:	Display.LanguageDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8099)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8099)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8155)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8155)
 msgctxt "IGHUD,Display.LanguageDesc"
 msgid "화면에 나오는 글의 언어를 바꿉니다. 바로 적용됩니다."
 msgstr "變更畫面文字的語言。立即生效。"
 
 #. Key:	Display.AccessibilityDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8100)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8100)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8156)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8156)
 msgctxt "IGHUD,Display.AccessibilityDesc"
 msgid "난이도, 자막, 화면 흔들림, 조작 도움을 설정합니다."
 msgstr "設定難度、字幕、畫面晃動和操作輔助。"
 
 #. Key:	Display.AudioBrightnessDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8101)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8101)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8157)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8157)
 msgctxt "IGHUD,Display.AudioBrightnessDesc"
 msgid "소리 크기와 화면 밝기를 맞춥니다."
 msgstr "調整音量和畫面亮度。"
 
 #. Key:	Display.ControlsDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8102)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8102)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8158)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8158)
 msgctxt "IGHUD,Display.ControlsDesc"
 msgid "동작별 키와 게임패드 버튼을 바꿉니다. Esc와 F10은 바꿀 수 없습니다."
 msgstr "變更各動作的按鍵和手把按鈕。Esc 和 F10 無法變更。"
 
 #. Key:	Display.ReapplyDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8103)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8103)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8159)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8159)
 msgctxt "IGHUD,Display.ReapplyDesc"
 msgid "현재 화면 설정을 다시 적용합니다."
 msgstr "重新套用目前的畫面設定。"
 
 #. Key:	Display.BackDesc
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8104)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8104)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8160)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8160)
 msgctxt "IGHUD,Display.BackDesc"
 msgid "이전 화면으로 돌아갑니다."
 msgstr "返回上一個畫面。"
 
 #. Key:	Display.Display
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8108)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8108)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8164)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8164)
 msgctxt "IGHUD,Display.Display"
 msgid "화면"
 msgstr "畫面"
 
 #. Key:	Display.Performance
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8109)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8109)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8165)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8165)
 msgctxt "IGHUD,Display.Performance"
 msgid "성능"
 msgstr "效能"
 
 #. Key:	Display.General
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8110)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8110)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8166)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8166)
 msgctxt "IGHUD,Display.General"
 msgid "일반"
 msgstr "一般"
 
 #. Key:	Display.Changes
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8111)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8111)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8167)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8167)
 msgctxt "IGHUD,Display.Changes"
 msgid "변경 사항"
 msgstr "變更"
 
 #. Key:	DisplaySettingsTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8116)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8116)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8172)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8172)
 msgctxt "IGHUD,DisplaySettingsTitle"
 msgid "화면 설정"
 msgstr "畫面設定"
 
 #. Key:	DisplaySettingsSubtitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8117)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8117)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8173)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8173)
 msgctxt "IGHUD,DisplaySettingsSubtitle"
 msgid "해상도, 그래픽 품질, 언어를 바꿀 수 있습니다."
 msgstr "調整解析度、畫質與語言。"
 
 #. Key:	DisplayImmediateStatus
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8118)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8118)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8174)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8174)
 msgctxt "IGHUD,DisplayImmediateStatus"
 msgid "바꾸는 즉시 적용되고 저장됩니다"
 msgstr "變更後立即套用並儲存"
 
 #. Key:	DisplaySettingEffect
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8165)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8165)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8221)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8221)
 msgctxt "IGHUD,DisplaySettingEffect"
 msgid "선택한 항목"
 msgstr "所選項目"
 
 #. Key:	DisplaySettingsConfirmCountdown
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8186)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8186)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8242)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8242)
 msgctxt "IGHUD,DisplaySettingsConfirmCountdown"
 msgid "이 화면 설정을 유지할까요? {0}초 뒤 자동으로 되돌립니다."
 msgstr "要保留這個畫面設定嗎？{0} 秒後將自動還原。"
 
 #. Key:	DisplaySettingsApplied
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8201)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8201)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8257)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8257)
 msgctxt "IGHUD,DisplaySettingsApplied"
 msgid "설정을 적용했습니다."
 msgstr "已套用設定。"
 
 #. Key:	DisplaySettingsConfirmControlsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8227)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8227)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8283)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8283)
 msgctxt "IGHUD,DisplaySettingsConfirmControlsGamepad"
 msgid "A 유지  ·  B/View 되돌리기  ·  아래 메뉴에서도 선택 가능"
 msgstr "A 保留  ·  B/View 還原  ·  也可在下方選單選擇"
 
 #. Key:	DisplaySettingsConfirmControlsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8228)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8228)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8284)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8284)
 msgctxt "IGHUD,DisplaySettingsConfirmControlsKeyboard"
 msgid "Enter/클릭 유지  ·  Esc 되돌리기  ·  아래 메뉴에서도 선택 가능"
 msgstr "Enter/點選 保留  ·  Esc 還原  ·  也可在下方選單選擇"
 
 #. Key:	DisplaySettingsControlsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8230)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8230)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8286)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8286)
 msgctxt "IGHUD,DisplaySettingsControlsGamepad"
 msgid "D-pad 이동·값 변경  ·  A 선택  ·  B/View 취소"
 msgstr "D-pad 移動·調整數值  ·  A 選擇  ·  B/View 取消"
 
 #. Key:	DisplaySettingsControlsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8234)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8234)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8290)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8290)
 msgctxt "IGHUD,DisplaySettingsControlsKeyboard"
 msgid "방향키/WASD 이동·값 변경  ·  Enter 선택  ·  Esc 취소  ·  마우스 선택"
 msgstr "方向鍵/WASD 移動·調整數值  ·  Enter 選擇  ·  Esc 取消  ·  滑鼠點選"
 
 #. Key:	KeyBindingsColumnPad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8249)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8249)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8305)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8305)
 msgctxt "IGHUD,KeyBindingsColumnPad"
 msgid "게임패드"
 msgstr "手把"
 
 #. Key:	KeyBindingsColumnKeys
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8250)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8250)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8306)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8306)
 msgctxt "IGHUD,KeyBindingsColumnKeys"
 msgid "키보드"
 msgstr "鍵盤"
 
 #. Key:	KeyBindingsColumnActive
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8253)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8253)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8309)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8309)
 msgctxt "IGHUD,KeyBindingsColumnActive"
 msgid "[ {0} ]"
 msgstr "[ {0} ]"
 
 #. Key:	KeyBindingsContext
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8278)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8278)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8334)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8334)
 msgctxt "IGHUD,KeyBindingsContext"
 msgid "설정 · 조작"
 msgstr "設定 · 操作"
 
 #. Key:	KeyBindingsTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8284)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8284)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8340)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8340)
 msgctxt "IGHUD,KeyBindingsTitle"
 msgid "키 설정"
 msgstr "按鍵設定"
 
 #. Key:	LookMouse
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8309)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8309)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8365)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8365)
 msgctxt "IGHUD,LookMouse"
 msgid "마우스 감도"
 msgstr "滑鼠靈敏度"
 
 #. Key:	LookPad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8313)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8313)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8369)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8369)
 msgctxt "IGHUD,LookPad"
 msgid "패드 감도"
 msgstr "手把靈敏度"
 
 #. Key:	LookVertical
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8317)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8317)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8373)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8373)
 msgctxt "IGHUD,LookVertical"
 msgid "세로 감도 배율"
 msgstr "垂直靈敏度倍率"
 
 #. Key:	LookInvert
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8321)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8321)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8377)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8377)
 msgctxt "IGHUD,LookInvert"
 msgid "상하 반전"
 msgstr "上下反轉"
 
 #. Key:	LookInvertOn
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8323)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8323)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8379)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8379)
 msgctxt "IGHUD,LookInvertOn"
 msgid "켬"
 msgstr "開"
 
 #. Key:	LookInvertOff
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8324)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8324)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8380)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8380)
 msgctxt "IGHUD,LookInvertOff"
 msgid "끔"
 msgstr "關"
 
 #. Key:	LookValueSelected
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8344)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8344)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8400)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8400)
 msgctxt "IGHUD,LookValueSelected"
 msgid "‹ {0} ›"
 msgstr "‹ {0} ›"
 
 #. Key:	KeyBindingsPressNow
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8426)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8426)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8482)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8482)
 msgctxt "IGHUD,KeyBindingsPressNow"
 msgid "[ 누르세요 ]"
 msgstr "[ 請按鍵 ]"
 
 #. Key:	KeyBindingsListenHold
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8432)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8432)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8488)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8488)
 msgctxt "IGHUD,KeyBindingsListenHold"
 msgid "{0} 길게"
 msgstr "長按 {0}"
 
 #. Key:	KeyBindingsNone
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8438)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8438)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8494)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8494)
 msgctxt "IGHUD,KeyBindingsNone"
 msgid "없음"
 msgstr "無"
 
 #. Key:	KeyBindingsChanged
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8447)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8447)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8503)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8503)
 msgctxt "IGHUD,KeyBindingsChanged"
 msgid "{0} *"
 msgstr "{0} *"
 
 #. Key:	KeyBindingsResetRow
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8480)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8480)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8536)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8536)
 msgctxt "IGHUD,KeyBindingsResetRow"
 msgid "전부 기본값으로"
 msgstr "全部恢復預設"
 
 #. Key:	LookDetail
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8509)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8509)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8565)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8565)
 msgctxt "IGHUD,LookDetail"
 msgid "마우스와 게임패드 감도는 따로 조절합니다. 세로 감도 배율을 높이면 시점이 위아래로 더 빨리 움직입니다."
 msgstr "滑鼠和手把的靈敏度分開調整。調高垂直靈敏度倍率，上下轉動視角會更快。"
 
 #. Key:	KeyBindingsFixedNote
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8534)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8534)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8590)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8590)
 msgctxt "IGHUD,KeyBindingsFixedNote"
 msgid "Esc(일시정지)와 F10(접근성 설정)은 바꿀 수 없습니다. 패드 버튼은 Xbox 기준입니다."
 msgstr "Esc（暫停）和 F10（無障礙設定）無法變更。手把按鈕以 Xbox 配置為準。"
 
 #. Key:	KeyBindingsControlsPad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8541)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8541)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8597)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8597)
 msgctxt "IGHUD,KeyBindingsControlsPad"
 msgid "D-pad ↑↓ 항목 이동 · ←→ 값 변경/장치 선택 · A 바꾸기 · B 돌아가기"
 msgstr "D-pad ↑↓ 移動項目 · ←→ 調整數值/選擇裝置 · A 變更 · B 返回"
 
 #. Key:	KeyBindingsControlsKeys
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8545)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8545)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8601)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8601)
 msgctxt "IGHUD,KeyBindingsControlsKeys"
 msgid "↑↓ 항목 이동 · ←→ 값 변경/장치 선택 · Enter 바꾸기 · Esc 돌아가기"
 msgstr "↑↓ 移動項目 · ←→ 調整數值/選擇裝置 · Enter 變更 · Esc 返回"
 
 #. Key:	NoticeContext
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8770)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8770)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8826)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8826)
 msgctxt "IGHUD,NoticeContext"
 msgid "플레이 전에"
 msgstr "開始遊戲前"
 
 #. Key:	NoticeTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8778)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8778)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8834)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8834)
 msgctxt "IGHUD,NoticeTitle"
 msgid "콘텐츠 안내"
 msgstr "內容提示"
 
 #. Key:	NoticeSensory
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8789)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8789)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8845)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8845)
 msgctxt "IGHUD,NoticeSensory"
 msgid "화면과 소리"
 msgstr "畫面與聲音"
 
 #. Key:	NoticeSensory1
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8790)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8790)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8846)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8846)
 msgctxt "IGHUD,NoticeSensory1"
 msgid "어두운 곳에서 무언가 갑자기 다가오거나 큰 소리가 날 수 있습니다. 화면 흔들림과 조명 깜빡임도 있습니다."
 msgstr "在昏暗的地方，可能會有東西突然靠近，或傳出很大的聲響。也有畫面晃動和燈光閃爍。"
 
 #. Key:	NoticeSensory2
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8791)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8791)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8847)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8847)
 msgctxt "IGHUD,NoticeSensory2"
 msgid "화면이나 소리가 불편하면 잠시 쉬거나 설정을 조절해 주세요."
 msgstr "如果畫面或聲音讓你不舒服，請稍作休息或調整設定。"
 
 #. Key:	NoticeThemes
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8792)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8792)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8848)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8848)
 msgctxt "IGHUD,NoticeThemes"
 msgid "다루는 내용"
 msgstr "涉及內容"
 
 #. Key:	NoticeThemes1
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8793)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8793)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8849)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8849)
 msgctxt "IGHUD,NoticeThemes1"
 msgid "시신이 나오는 장면과 사람이 죽어 가는 소리를 듣는 구간이 있습니다."
 msgstr "遊戲中有遺體出現的場景，也有聽見他人臨死前聲音的情節。"
 
 #. Key:	NoticeThemes2
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8795)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8795)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8851)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8851)
 msgctxt "IGHUD,NoticeThemes2"
 msgid "층간소음 분쟁과 불법 증축, 실종 사건을 다루는 허구의 이야기입니다."
 msgstr "本作是以樓上樓下的噪音糾紛、違法加蓋與失蹤事件為題材的虛構故事。"
 
 #. Key:	NoticeControls
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8796)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8796)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8852)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8852)
 msgctxt "IGHUD,NoticeControls"
 msgid "불편하다면"
 msgstr "感到不適時"
 
 #. Key:	NoticeControls1
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8797)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8797)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8853)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8853)
 msgctxt "IGHUD,NoticeControls1"
 msgid "접근성 설정에서 화면 흔들림과 빛 깜빡임을 줄일 수 있습니다."
 msgstr "可以在無障礙設定中減少畫面晃動和光線閃爍。"
 
 #. Key:	NoticeControls2
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8798)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8798)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8854)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8854)
 msgctxt "IGHUD,NoticeControls2"
 msgid "쫓기는 게 부담스럽다면 난이도를 ‘추격 없음’으로 바꿔 주세요. 어느 난이도에서도 모든 결말을 볼 수 있습니다."
 msgstr "如果被追讓你吃不消，可以把難度改成「不追擊」。不管哪種難度，都能看到所有結局。"
 
 #. Key:	NoticeControlsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8851)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8851)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8907)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8907)
 msgctxt "IGHUD,NoticeControlsGamepad"
 msgid "A  계속  ·  Y  접근성 설정 열기"
 msgstr "A  繼續  ·  Y  開啟無障礙設定"
 
 #. Key:	NoticeControlsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8854)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8854)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8910)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8910)
 msgctxt "IGHUD,NoticeControlsKeyboard"
 msgid "Enter  계속  ·  F10  접근성 설정 열기"
 msgstr "Enter  繼續  ·  F10  開啟無障礙設定"
 
 #. Key:	CreditsContext
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8871)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8871)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8927)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8927)
 msgctxt "IGHUD,CreditsContext"
 msgid "제작 정보 · 2026"
 msgstr "製作名單 · 2026"
 
 #. Key:	CreditsTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8879)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8879)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8935)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8935)
 msgctxt "IGHUD,CreditsTitle"
 msgid "만든 사람"
 msgstr "製作人員"
 
 #. Key:	CreditsBackGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8923)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8923)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8979)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8979)
 msgctxt "IGHUD,CreditsBackGamepad"
 msgid "B  돌아가기"
 msgstr "B  返回"
 
 #. Key:	CreditsBackKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8924)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8924)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8980)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8980)
 msgctxt "IGHUD,CreditsBackKeyboard"
 msgid "Esc 또는 Enter  돌아가기"
 msgstr "Esc 或 Enter  返回"
 
 #. Key:	PauseContext
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8935)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8935)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8991)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(8991)
 msgctxt "IGHUD,PauseContext"
 msgid "메뉴"
 msgstr "選單"
 
 #. Key:	MainTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8944)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8944)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9000)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9000)
 msgctxt "IGHUD,MainTitle"
 msgid "Missing Floor"
 msgstr "Missing Floor"
 
 #. Key:	PauseTitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8945)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8945)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9001)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9001)
 msgctxt "IGHUD,PauseTitle"
 msgid "일시정지"
 msgstr "暫停"
 
 #. Key:	PauseSubtitle
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8951)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8951)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9007)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9007)
 msgctxt "IGHUD,PauseSubtitle"
 msgid "진행 중"
 msgstr "遊戲已暫停"
 
 #. Key:	Menu.ThisGameIsMadeToBeHeardOnHeadphones
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8964)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8964)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9020)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9020)
 msgctxt "IGHUD,Menu.ThisGameIsMadeToBeHeardOnHeadphones"
 msgid "헤드폰을 쓰면 소리가 나는 방향을 구분하기 쉽습니다."
 msgstr "戴上耳機，更容易分辨聲音從哪個方向傳來。"
 
 #. Key:	Menu.PressAnyKeyToSkip
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8965)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8965)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9021)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9021)
 msgctxt "IGHUD,Menu.PressAnyKeyToSkip"
 msgid "아무 키를 누르면 건너뜁니다."
 msgstr "按任意鍵跳過。"
 
 #. Key:	Menu.ThisOverwritesYourAutosave
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8972)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8972)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9028)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9028)
 msgctxt "IGHUD,Menu.ThisOverwritesYourAutosave"
 msgid "자동 저장을 덮어씁니다."
 msgstr "這會覆蓋自動存檔。"
 
 #. Key:	Menu.SelectNewGameAgainToStart
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(8973)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(8973)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9029)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9029)
 msgctxt "IGHUD,Menu.SelectNewGameAgainToStart"
 msgid "한 번 더 누르면 새 게임을 시작합니다"
 msgstr "再按一次即開始新遊戲"
 
 #. Key:	Menu.Continue
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9032)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9032)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9088)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9088)
 msgctxt "IGHUD,Menu.Continue"
 msgid "이어하기"
 msgstr "繼續遊戲"
 
 #. Key:	Menu.NewGame
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9034)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9034)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9090)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9090)
 msgctxt "IGHUD,Menu.NewGame"
 msgid "새 게임"
 msgstr "新遊戲"
 
 #. Key:	Menu.StartGame
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9035)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9035)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9091)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9091)
 msgctxt "IGHUD,Menu.StartGame"
 msgid "게임 시작"
 msgstr "開始遊戲"
 
 #. Key:	Menu.Settings
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9036)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9036)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9092)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9092)
 msgctxt "IGHUD,Menu.Settings"
 msgid "설정"
 msgstr "設定"
 
 #. Key:	Menu.Credits
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9037)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9037)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9093)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9093)
 msgctxt "IGHUD,Menu.Credits"
 msgid "제작 정보"
 msgstr "製作名單"
 
 #. Key:	Menu.Quit
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9038)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9038)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9094)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9094)
 msgctxt "IGHUD,Menu.Quit"
 msgid "게임 종료"
 msgstr "離開遊戲"
 
 #. Key:	Menu.Night5
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9041)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9041)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9097)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9097)
 msgctxt "IGHUD,Menu.Night5"
 msgid "다섯째 밤"
 msgstr "第五夜"
 
 #. Key:	Menu.Resume
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9045)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9045)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9101)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9101)
 msgctxt "IGHUD,Menu.Resume"
 msgid "계속하기"
 msgstr "繼續"
 
 #. Key:	Menu.LoadLatestAutosave
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9046)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9046)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9102)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9102)
 msgctxt "IGHUD,Menu.LoadLatestAutosave"
 msgid "최근 자동 저장 불러오기"
 msgstr "讀取最近的自動存檔"
 
 #. Key:	Menu.ConfirmNewGame
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9082)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9082)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9138)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9138)
 msgctxt "IGHUD,Menu.ConfirmNewGame"
 msgid "새 게임 확인"
 msgstr "確認開始新遊戲"
 
 #. Key:	Menu.NoSave
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9086)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9086)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9142)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9142)
 msgctxt "IGHUD,Menu.NoSave"
 msgid "  · 저장 없음"
 msgstr "  · 沒有存檔"
 
 #. Key:	TitleConfirmControlsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9132)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9132)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9188)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9188)
 msgctxt "IGHUD,TitleConfirmControlsGamepad"
 msgid "A 시작  ·  View 취소"
 msgstr "A 開始  ·  View 取消"
 
 #. Key:	SystemMenuControlsGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9133)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9133)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9189)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9189)
 msgctxt "IGHUD,SystemMenuControlsGamepad"
 msgid "D-pad 이동  ·  A 선택  ·  View 돌아가기"
 msgstr "D-pad 移動  ·  A 選擇  ·  View 返回"
 
 #. Key:	TitleConfirmControlsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9135)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9135)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9191)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9191)
 msgctxt "IGHUD,TitleConfirmControlsKeyboard"
 msgid "Enter 시작  ·  Esc 취소"
 msgstr "Enter 開始  ·  Esc 取消"
 
 #. Key:	SystemMenuControlsKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9136)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9136)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9192)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9192)
 msgctxt "IGHUD,SystemMenuControlsKeyboard"
 msgid "↑↓ 이동  ·  Enter 선택  ·  Esc 돌아가기"
 msgstr "↑↓ 移動  ·  Enter 選擇  ·  Esc 返回"
 
 #. Key:	PromptHoldTag
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9463)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9463)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9519)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9519)
 msgctxt "IGHUD,PromptHoldTag"
 msgid "길게"
 msgstr "長按"
 
 #. Key:	NoteNavigationGamepad
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9731)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9731)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9787)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9787)
 msgctxt "IGHUD,NoteNavigationGamepad"
 msgid "D-pad 좌우"
 msgstr "D-pad 左右"
 
 #. Key:	NoteNavigationKeyboard
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9732)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9732)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9788)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9788)
 msgctxt "IGHUD,NoteNavigationKeyboard"
 msgid "← → / 휠"
 msgstr "← → / 滾輪"
 
 #. Key:	NotePageArtworkFormat
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9736)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9736)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9792)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9792)
 msgctxt "IGHUD,NotePageArtworkFormat"
 msgid "[ {0} ]  {1} / {2} · 다음 장은 본문"
 msgstr "[ {0} ]  {1} / {2} · 下一頁是內文"
 
 #. Key:	NotePageOriginalFormat
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9737)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9737)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9793)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9793)
 msgctxt "IGHUD,NotePageOriginalFormat"
 msgid "[ {0} ]  {1} / {2} · 한국어 원본"
 msgstr "[ {0} ]  {1} / {2} · 韓文原件"
 
 #. Key:	NotePageFormat
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9738)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9738)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9794)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9794)
 msgctxt "IGHUD,NotePageFormat"
 msgid "[ {0} ]  {1} / {2}"
 msgstr "[ {0} ]  {1} / {2}"
 
 #. Key:	NoteCloseBound
-#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9743)
-#: Source/IndieGame/Player/IGHorrorHUD.cpp(9743)
+#. SourceLocation:	Source/IndieGame/Player/IGHorrorHUD.cpp(9799)
+#: Source/IndieGame/Player/IGHorrorHUD.cpp(9799)
 msgctxt "IGHUD,NoteCloseBound"
 msgid "[ {0} ]  덮기"
 msgstr "[ {0} ]  闔上"
@@ -10619,134 +10612,134 @@ msgid "손전등… 현관 신발장 위에 두고 왔지."
 msgstr "手電筒……放在玄關鞋櫃上沒拿。"
 
 #. Key:	DialogueLongKorean
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(1256)
-#: Source/IndieGame/Player/IGPlayerController.cpp(1256)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(1257)
+#: Source/IndieGame/Player/IGPlayerController.cpp(1257)
 msgctxt "IGFrontendProbe,DialogueLongKorean"
 msgid "통화가 연결되지 않습니다. 천장에서 두드리는 소리가 세 번 났고, 같은 순간 휴대폰 알람이 네 시 반을 알렸습니다. 이 문장은 큰 글자에서도 잘리지 않고 다음 페이지로 이어져야 합니다. 플레이어가 이동 중이어도 앞 문장을 덮어쓰지 않아야 합니다."
 msgstr "電話無法接通。天花板傳來三下敲擊聲，同一刻，手機鬧鐘響了，時間是凌晨四點半。這段文字即使字體放大也不能被切掉，要接續到下一頁。即使玩家正在移動，也不能蓋掉前一句。"
 
 #. Key:	BackgroundSoundCaption
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(1754)
-#: Source/IndieGame/Player/IGPlayerController.cpp(1754)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(1755)
+#: Source/IndieGame/Player/IGPlayerController.cpp(1755)
 msgctxt "IGFrontendProbe,BackgroundSoundCaption"
 msgid "[배관에 물 흐르는 소리]"
 msgstr "［管道裡的流水聲］"
 
 #. Key:	NightDenied
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(2603)
-#: Source/IndieGame/Player/IGPlayerController.cpp(2603)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(2604)
+#: Source/IndieGame/Player/IGPlayerController.cpp(2604)
 msgctxt "IGMissingFloorJournal,NightDenied"
 msgid "지금은 그럴 때가 아니야."
 msgstr "現在不是做這個的時候。"
 
 #. Key:	LoadLockedAtNight
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(3248)
-#: Source/IndieGame/Player/IGPlayerController.cpp(3248)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(3249)
+#: Source/IndieGame/Player/IGPlayerController.cpp(3249)
 msgctxt "IGFrontend,LoadLockedAtNight"
 msgid "밤이 지나가기 전에는 불러올 수 없습니다."
 msgstr "夜晚結束前無法讀取。"
 
 #. Key:	DisplaySettingsUnavailable
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(3919)
-#: Source/IndieGame/Player/IGPlayerController.cpp(3919)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(3920)
+#: Source/IndieGame/Player/IGPlayerController.cpp(3920)
 msgctxt "IGFrontend,DisplaySettingsUnavailable"
 msgid "화면 설정을 적용할 수 없습니다."
 msgstr "無法套用畫面設定。"
 
 #. Key:	DisplaySettingsReverted
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4028)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4028)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4029)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4029)
 msgctxt "IGFrontend,DisplaySettingsReverted"
 msgid "이전 화면 설정으로 되돌렸습니다."
 msgstr "已還原為先前的畫面設定。"
 
 #. Key:	NewGameDeleteFailed
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4054)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4054)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4055)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4055)
 msgctxt "IGFrontend,NewGameDeleteFailed"
 msgid "자동 저장을 지우지 못했습니다. 저장 공간과 폴더 권한을 확인하세요."
 msgstr "無法刪除自動存檔。請確認儲存空間和資料夾權限。"
 
 #. Key:	SaveOperationBusy
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4096)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4096)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4097)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4097)
 msgctxt "IGFrontend,SaveOperationBusy"
 msgid "저장 작업이 끝난 뒤 다시 시도하세요."
 msgstr "請等存檔完成後再試一次。"
 
 #. Key:	LoadingAutosave
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4106)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4106)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4107)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4107)
 msgctxt "IGFrontend,LoadingAutosave"
 msgid "최근 자동 저장을 불러오는 중입니다."
 msgstr "正在讀取最近的自動存檔。"
 
 #. Key:	CompatibleAutosaveMissing
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4116)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4116)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4117)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4117)
 msgctxt "IGFrontend,CompatibleAutosaveMissing"
 msgid "불러올 수 있는 자동 저장이 없습니다."
 msgstr "沒有能讀取的自動存檔。"
 
 #. Key:	SaveFailed
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4174)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4174)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4175)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4175)
 msgctxt "IGFrontend,SaveFailed"
 msgid "저장에 실패했습니다. 저장 공간과 폴더 권한을 확인하세요."
 msgstr "存檔失敗。請確認儲存空間和資料夾權限。"
 
 #. Key:	LoadFailed
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4202)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4202)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4203)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4203)
 msgctxt "IGFrontend,LoadFailed"
 msgid "자동 저장을 불러오지 못했습니다. 파일이 손상됐거나 호환되지 않습니다."
 msgstr "無法讀取自動存檔。檔案已損毀或不相容。"
 
 #. Key:	KeyBindingsUseArrows
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4729)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4729)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4730)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4730)
 msgctxt "IGHUD,KeyBindingsUseArrows"
 msgid "좌우로 움직여 값을 바꿀 수 있습니다."
 msgstr "左右移動即可調整數值。"
 
 #. Key:	KeyBindingsReset
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4741)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4741)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4742)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4742)
 msgctxt "IGHUD,KeyBindingsReset"
 msgid "전부 기본값으로 되돌렸습니다."
 msgstr "已全部恢復預設值。"
 
 #. Key:	KeyBindingsAwaitPad
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4749)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4749)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4750)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4750)
 msgctxt "IGHUD,KeyBindingsAwaitPad"
 msgid "새 버튼을 누르세요. B를 누르면 취소합니다."
 msgstr "請按下新的按鈕。按 B 取消。"
 
 #. Key:	KeyBindingsAwaitKey
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4751)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4751)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4752)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4752)
 msgctxt "IGHUD,KeyBindingsAwaitKey"
 msgid "새 키를 누르세요. Esc를 누르면 취소합니다."
 msgstr "請按下新的按鍵。按 Esc 取消。"
 
 #. Key:	KeyBindingsBound
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4794)
-#: Source/IndieGame/Player/IGPlayerController.cpp(4794)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(4795)
+#: Source/IndieGame/Player/IGPlayerController.cpp(4795)
 msgctxt "IGHUD,KeyBindingsBound"
 msgid "‘{0}’ 키로 바꿨습니다."
 msgstr "已改為「{0}」鍵。"
 
 #. Key:	NightFiveSignal
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(5374)
-#: Source/IndieGame/Player/IGPlayerController.cpp(5374)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(5375)
+#: Source/IndieGame/Player/IGPlayerController.cpp(5375)
 msgctxt "IGMissingFloor,NightFiveSignal"
 msgid "둘, 쉬고, 하나"
 msgstr "兩下，停一下，再一下"
 
 #. Key:	NightFiveAnswer
-#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(5396)
-#: Source/IndieGame/Player/IGPlayerController.cpp(5396)
+#. SourceLocation:	Source/IndieGame/Player/IGPlayerController.cpp(5397)
+#: Source/IndieGame/Player/IGPlayerController.cpp(5397)
 msgctxt "IGMissingFloor,NightFiveAnswer"
 msgid "복도 끝에서 대답하듯 두 번 두드리는 소리"
 msgstr "走廊盡頭傳來像在回應的兩下敲擊聲"

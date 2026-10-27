@@ -489,6 +489,22 @@ def validate_pbr_textures(pbr_stems) -> int:
     return checked
 
 
+def load_print_texture(texture_name):
+    """인쇄물이 실제로 읽는 페이지와 해당 칸의 해상도를 돌려준다."""
+    manifest = texture_atlas_contract.try_load_manifest()
+    entry = manifest["entries"].get(texture_name) if manifest else None
+    if entry:
+        page = texture_atlas_contract.page_package_path(entry["page"])
+        if unreal.EditorAssetLibrary.does_asset_exist(page):
+            texture = load(page, unreal.Texture2D)
+            require(entry["x"] + entry["w"] <= texture.blueprint_get_size_x()
+                    and entry["y"] + entry["h"] <= texture.blueprint_get_size_y(),
+                    f"인쇄물 칸이 페이지 밖입니다: {texture_name}")
+            return texture, entry["w"], entry["h"]
+    texture = load(f"/Game/Prototype/Textures/{texture_name}", unreal.Texture2D)
+    return texture, texture.blueprint_get_size_x(), texture.blueprint_get_size_y()
+
+
 def validate_textures() -> int:
     checked = validate_pbr_textures(PBR_STEMS)
     for texture_name in EVIDENCE_MASK_MATERIALS.values():
@@ -500,9 +516,7 @@ def validate_textures() -> int:
         require("MASK" in compression.upper(), f"Mask compression missing: {texture_name}")
         checked += 1
     for texture_name in sorted(set(PRINT_MATERIALS.values())):
-        texture = load(
-            f"/Game/Prototype/Textures/{texture_name}", unreal.Texture2D
-        )
+        texture, width, height = load_print_texture(texture_name)
         require(texture.get_editor_property("srgb"), f"Print texture must be sRGB: {texture_name}")
         require(
             texture.get_editor_property("address_x") == unreal.TextureAddress.TA_CLAMP
@@ -514,15 +528,12 @@ def validate_textures() -> int:
             f"Print texture must inherit the World group's anisotropic sampler: {texture_name}",
         )
         require(
-            texture.blueprint_get_size_x() >= 512
-            and texture.blueprint_get_size_y() >= 240,
+            width >= 512 and height >= 240,
             f"Print texture is below inspection resolution: {texture_name}",
         )
         checked += 1
     for texture_name in sorted(set(ENTRANCE_PLATE_MATERIALS.values())):
-        texture = load(
-            f"/Game/Prototype/Textures/{texture_name}", unreal.Texture2D
-        )
+        texture, width, height = load_print_texture(texture_name)
         require(
             texture.get_editor_property("srgb"),
             f"Plate texture must be sRGB: {texture_name}",
@@ -537,8 +548,7 @@ def validate_textures() -> int:
             f"Plate texture must inherit the World sampler: {texture_name}",
         )
         require(
-            texture.blueprint_get_size_x() >= 128
-            and texture.blueprint_get_size_y() >= 64,
+            width >= 128 and height >= 64,
             f"Plate texture is below authored resolution: {texture_name}",
         )
         checked += 1

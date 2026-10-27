@@ -785,11 +785,11 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 		Take(PieceC);
 		Take(StorageFrame);
 		PlaySound(UIGToneSequenceSoundWave::CreatePlasticBagSetDown(this), PartsSack + FVector(0.0f, 0.0f, 30.0f), 0.5f);
-		Think(OfficePieces == 2
-			? NSLOCTEXT("IGMissingFloor", "LeftoverSackThought", "남은 조각 하나랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어.")
+		ThinkAboutItem(OfficePieces == 2
+			? NSLOCTEXT("IGMissingFloor", "LeftoverSackThought", "이것도 같은 덮개에서 떨어진 건가?")
 			: OfficePieces == 1
-			? NSLOCTEXT("IGMissingFloor", "LeftoverSackTwoPieces", "남은 조각 둘이랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어.")
-			: NSLOCTEXT("IGMissingFloor", "LeftoverSackAllPieces", "점검구 덮개 조각 셋이랑 금속 틀이야."), 3.6f);
+			? NSLOCTEXT("IGMissingFloor", "LeftoverSackTwoPieces", "여기도 조각이 있네. 틀도 같이 있어.")
+			: NSLOCTEXT("IGMissingFloor", "LeftoverSackAllPieces", "덮개를 잘라 놓은 건가?"), 3.6f);
 		RefreshStorage();
 		RefreshAssembly();
 		return;
@@ -1681,7 +1681,7 @@ void AIGMissingFloorLeftoverDirector::HandleAssemblyTarget(AIGLeftoverTarget* Ta
 		HoldPiece(Target->Index);
 		if (PlayBeat(FName(TEXT("Leftover.Assembly.FirstPick"))))
 		{
-			ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverFirstPickThought", "조각 셋에 틀 하나."), 2.6f);
+			ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverFirstPickThought", "잘린 데가 거칠어."), 2.6f);
 		}
 		return;
 	}
@@ -1771,7 +1771,7 @@ void AIGMissingFloorLeftoverDirector::TryFit(const int32 Slot)
 		? NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막 위에서 미끄러져.")
 		: Piece != Slot
 			? NSLOCTEXT("IGMissingFloor", "LeftoverFitWrongSlot", "잘린 면이 바깥으로 나와.")
-			: NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "자리는 맞는데 구멍 위치가 어긋나.");
+			: NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "구멍이 안 맞네.");
 	ThinkIn(IGLeftoverDialogue::Fit, Hint, 3.0f);
 	if (WrongFits >= 3)
 	{
@@ -1822,7 +1822,7 @@ void AIGMissingFloorLeftoverDirector::FinishAssemblyFlip()
 		return;
 	}
 	PlaySound(UIGToneSequenceSoundWave::CreatePickupRustle(this), AssemblyCenter, 0.45f, 0.8f);
-	ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverFlipThought", "얼룩이 대각선으로 이어져. 물이 위에서 새어 내려온 자국이야."), 3.6f);
+	ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverFlipThought", "뒤쪽까지 물이 샜었네."), 3.6f);
 	RefreshAssembly();
 }
 
@@ -1839,7 +1839,7 @@ void AIGMissingFloorLeftoverDirector::LiftMembrane()
 	GetWorldTimerManager().SetTimer(MembraneTimer, this, &AIGMissingFloorLeftoverDirector::TickMembraneLift, 1.0f / 60.0f, true);
 	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverVentThought", "통풍구를 방음재로 쑤셔 막고 그 위에 방수막을 덮었어."), 4.0f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverVentThought", "바람구멍을 왜 막아 놨지?"), 4.0f);
 	}), 1.2f, false);
 	RefreshAssembly();
 }
@@ -1929,7 +1929,7 @@ void AIGMissingFloorLeftoverDirector::TakeAssembledCover()
 	// 5층 구석을 본 적이 있을 때만 그 자리를 떠올린다. 못 봤으면 손에 든 것만 말한다.
 	ThinkAboutItem(HasBeat(SeenAnnexInspectionBeat)
 		? NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakeThought", "이만한 덧판을 어디서 봤는데.")
-		: NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakeUnseen", "네 귀퉁이에 나사 구멍이 있어. 어딘가에 박혀 있던 거야."), 3.6f);
+		: NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakeUnseen", "이걸 어디서 떼어 온 거지?"), 3.6f);
 	RefreshAssembly();
 }
 
@@ -1966,7 +1966,7 @@ void AIGMissingFloorLeftoverDirector::TickSiteHold()
 	{
 		bSiteLinePending = false;
 		ThinkIn(IGLeftoverDialogue::SiteMatch,
-			NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch1", "덧판 나사 네 개가 틀 구멍에 딱 맞네."), 3.6f, true);
+			NSLOCTEXT("IGMissingFloor", "LeftoverSiteMatch1", "여기 붙어 있던 거였어."), 3.6f, true);
 	}
 	// 그 말이 다른 말 뒤에 밀리면 덮개를 내려놓은 뒤에야 「딱 맞네」가 떴다. 말이 떠 있거나 기다리는 동안은
 	// 덧판 앞에 든 채로 둔다.

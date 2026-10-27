@@ -1092,6 +1092,21 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Stand(FVector(-30.0f, 60.0f, 0.0f), FVector(-62.0f, 62.0f, 84.0f));
 			Use(Target(TEXT("PieceA")));
 			Check(Taken(IGLeftoverProbe::PieceA), TEXT("n2_piece_a_taken"));
+			// 실제 물건 상호작용이 낸 독백을 본다. 자리를 떠났다가 돌아와도 지난 감상을 다시 띄우지 않는다.
+			APlayerController* Observer = GetWorld()->GetFirstPlayerController();
+			AIGHorrorHUD* Hud = Observer ? Cast<AIGHorrorHUD>(Observer->GetHUD()) : nullptr;
+			Check(Hud && Hud->HasDialogueInContextForTesting(IGLeftoverDialogue::Examine), TEXT("item_thought_belongs_to_examination"));
+			if (Hud && Player.IsValid())
+			{
+				const FVector Origin = Player->GetActorLocation();
+				const double Now = GetWorld()->GetTimeSeconds();
+				Player->SetActorLocation(Origin + FVector(300.0f, 0.0f, 0.0f));
+				Hud->AdvanceDialogueForTesting(Now);
+				Check(!Hud->HasDialogueInContextForTesting(IGLeftoverDialogue::Examine), TEXT("item_thought_dropped_after_leaving"));
+				Player->SetActorLocation(Origin);
+				Hud->AdvanceDialogueForTesting(Now + 0.01);
+				Check(!Hud->HasDialogueInContextForTesting(IGLeftoverDialogue::Examine), TEXT("item_thought_does_not_return"));
+			}
 			Use(Target(TEXT("Inner.GloveBoxOpen")));
 			Use(Target(TEXT("JeongwooGloves")));
 			Check(Taken(IGLeftoverProbe::Gloves), TEXT("n2_gloves_taken"));
@@ -1651,6 +1666,15 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		if (PhaseSeconds < 1.0f)
 		{
 			return;
+		}
+		// 복도로 나간 직후 관리인에게 잡힌 실행에서는 복귀가 끝나기를 기다린다.
+		// 잡히는 화면 중에 조립대 앞으로 옮겨 조각을 들면, 복귀가 조각을 내려놓으면서 다음 검사가 엇갈린다.
+		for (TActorIterator<AIGNightLoopDirector> It(GetWorld()); It; ++It)
+		{
+			if (It->IsCaptureResetInFlight())
+			{
+				return;
+			}
 		}
 		Stand(FVector(-50.0f, -185.0f, 600.0f), FVector(34.0f, -185.0f, 634.0f));
 		Shoot(TEXT("p6_table"));
@@ -2304,6 +2328,11 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		if (TickInputRoute(DeltaSeconds))
 		{
+			if (!bNight3Av)
+			{
+				Check(!Narrative->HasBeatPlayed(FName(TEXT("Night3.MokFirstHeard"))),
+					TEXT("input_no_manager_identification_through_other_floors"));
+			}
 			UE_LOG(LogIndieGame, Display, TEXT("INPUT_ROUTE done seconds=%.1f"), PhaseSeconds);
 			Finish();
 		}

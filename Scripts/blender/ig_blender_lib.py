@@ -1468,8 +1468,10 @@ def build_asset(asset_name, mesh_class, parts, out_root, collision_parts=None,
     if preview:
         # preview_yaw: 카메라가 서는 방위. 0이 -Y(기본 앞면), 90이 -X, 180이 +Y.
         render_preview(ob, os.path.join(out_dir, f"{asset_name}_preview.png"), camera_yaw_deg=preview_yaw)
-        render_preview(ob, os.path.join(out_dir, f"{asset_name}_preview_torch.png"), flashlight=True,
-                       camera_yaw_deg=preview_yaw)
+        # 추가 조명 검토는 필요할 때만 만든다. 일반 빌드는 대표 화면 한 장을 남긴다.
+        if os.environ.get("IG_REVIEW_LIGHTING") == "1":
+            render_preview(ob, os.path.join(out_dir, f"{asset_name}_preview_torch.png"), flashlight=True,
+                           camera_yaw_deg=preview_yaw)
 
     # 인쇄만 보정한다. 모델 전체를 뒤집으면 책등·손잡이·개봉 탭까지 옮겨진다.
     # ImageUV를 쓰는 인쇄 재질만 바뀌며, 베이크 UV와 물체 좌표는 보존한다.
@@ -1511,7 +1513,13 @@ def build_asset(asset_name, mesh_class, parts, out_root, collision_parts=None,
     export_fbx(fbx_path, [ob] + hulls + list(extra_export))
     manifest = write_manifest(out_dir, asset_name, mesh_class, fbx_path, textures, ob, slots, notes,
                               origin=origin, ue_bounds=ue_bounds, emissive=emissive)
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, f"{asset_name}.blend"))
+    # 자동 생성 원본은 Git LFS로 관리한다. 이 무인 저장에서 .blend1 사본을 추가하지 않는다.
+    previous_versions = bpy.context.preferences.filepaths.save_version
+    try:
+        bpy.context.preferences.filepaths.save_version = 0
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, f"{asset_name}.blend"))
+    finally:
+        bpy.context.preferences.filepaths.save_version = previous_versions
     log(f"{asset_name}: done in {time.time() - started:.1f}s")
     return manifest
 

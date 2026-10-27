@@ -16,7 +16,9 @@ $igArtifactSucceeded = $false
 try {
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
-$runLog = Join-Path $projectRoot 'Saved/Logs/ReadmeCapture.log'
+$runRoot = Join-Path $projectRoot ('Saved/Validation/ReadmeCapture-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $runRoot -Variant ('ReadmeCapture-' + $Culture)
+$runLog = Join-Path $runRoot 'capture.log'
 $settings = Join-Path $projectRoot 'Saved/Config/WindowsEditor/GameUserSettings.ini'
 $mediaRoot = Join-Path $projectRoot 'Docs/Media'
 $shotNames = @('bedroom','corridor-day','alley','store','corridor-night','booth','bedroom-dawn','alley-dawn')
@@ -39,7 +41,7 @@ try {
 			('"{0}"' -f (Join-Path $projectRoot 'IndieGame.uproject')),
 			'-game', '-unattended', '-nosplash', '-NoLoadingScreen',
 			'-RenderOffscreen', '-d3d12', '-nosound', '-Windowed', '-ResX=1920', '-ResY=1080', '-ForceRes',
-			('-UserDir={0}' -f (Join-Path $projectRoot 'Saved/Validation/Readme-User')),
+			('"-UserDir={0}"' -f (Join-Path $runRoot 'User')),
 			'-IGMissingFloor', '-IGArrivalCapture', '-IGReadmeCapture', '-IGSkipFrontend',
 			'"-ExecCmds=Scalability 2,r.ScreenPercentage 100,t.MaxFPS 60"', ('"-abslog={0}"' -f $runLog)
 		) + @(if ($Culture) { "-IGCulture=$Culture" }) + $ExtraArguments

@@ -1967,6 +1967,12 @@ void AIGHorrorHUD::ValidateCurrentDialogue(const double CurrentTime)
 void AIGHorrorHUD::AdvanceDialogueQueue(const double CurrentTime)
 {
 	LastDialogueClock = CurrentTime;
+	// 아직 차례가 오지 않은 말도 매번 조건을 본다. 앞말을 기다리는 동안 자리를 떠났다가
+	// 돌아오면, 지나간 물건 감상이나 상황 반응이 다시 살아나던 문제를 막는다.
+	CancelDialogueWhere([](const FIGDialogueMessage& Message)
+	{
+		return !IsDialogueStillValid(Message);
+	}, EIGDialogueEndReason::Cancelled);
 	ValidateCurrentDialogue(CurrentTime);
 	if (bHasCurrentDialogue && CurrentTime < DialogueEndTime)
 	{

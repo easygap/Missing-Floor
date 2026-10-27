@@ -57,7 +57,7 @@ if ($Variant -eq 'hints') { $extra += ('-IGHintScenario=' + $HintScenario) }
 if ($NearMiss) { $extra += '-IGLeftoverNearMiss' }
 $audio = @('-nosound')
 if ($Record) {
-	# 숨긴 창은 초점이 없어 엔진이 소리를 줄인다. 녹음할 때는 열어 둔다.
+	# 창을 숨긴 상태에서도 파일에 녹음할 음량을 유지한다. 스피커 출력은 하지 않는다.
 	$audio = @('-DeterministicAudio', '-AudioMixer', '-IGLeftoverRecord', '-ini:Engine:[Audio]:UnfocusedVolumeMultiplier=1.0')
 }
 # 기본도 오프스크린으로 그린다. 처음에는 else에서 @('-nullrhi')를 돌려줬는데, if 식이 원소 하나짜리 배열을 문자열로 풀어
@@ -65,12 +65,27 @@ if ($Record) {
 # 실행에서 잡혔다.
 $render = @(if ($Record) { '-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes' }
 	elseif ($Shots -and $Clean) { '-d3d12', '-Windowed', '-ResX=1920', '-ResY=1080', '-ForceRes', '-IGLeftoverShots', '-IGLeftoverCleanShots' }
-	elseif ($Shots) { '-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLeftoverShots' })
+	elseif ($Shots) { '-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-IGLeftoverShots' }
+	else { '-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes' })
 $probeArg = if ($Variant -eq 'full') { '-IGLeftoverProbe' } else { "-IGLeftoverProbe=$Variant" }
-& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen @audio @render `
-	-IGListenerGreybox $probeArg -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
-	"-UserDir=$probeUser" "-abslog=$logPath" @extra | Out-Null
-$exitCode = $LASTEXITCODE
+function Invoke-LeftoverBackgroundRun {
+	param([string]$RunLog, [switch]$Resume)
+	$arguments = @(
+		('"{0}"' -f $projectPath), '-game', '-unattended', '-nosplash', '-NoLoadingScreen',
+		'-RenderOffscreen', '-IGListenerGreybox', $probeArg, '-IGSkipFrontend', '-UseFixedTimeStep',
+		"-FPS=$FrameRate", ('"-UserDir={0}"' -f $probeUser), ('"-abslog={0}"' -f $RunLog)
+	) + $audio + $render + $extra
+	if ($Resume) { $arguments += '-IGHintResume' }
+	$process = Start-Process -FilePath $editor -ArgumentList $arguments -WindowStyle Hidden -PassThru
+	$null = $process.Handle
+	$process.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::BelowNormal
+	if (-not $process.WaitForExit(900000)) {
+		if (-not $process.HasExited) { Stop-Process -Id $process.Id -ErrorAction Stop }
+		throw "남은 짐 검사 시간 초과: $RunLog"
+	}
+	return $process.ExitCode
+}
+$exitCode = Invoke-LeftoverBackgroundRun -RunLog $logPath
 $probePattern = 'LEFTOVER_(CHECK|PROBE|N2|N3|DAY1|TAKEN|LINING|HINT_DUMP|RESUME)|N3AV t=[0-9.]+ (setup|record)|MANAGER_(ERRAND|CHASE|CATCH|INVESTIGATE)|LINING_(TARGET|SEALED|GRIP|PLACED)|INPUT_(SEGMENT|ROUTE|MOUSE|STUCK|FOCUS|BLOCK|LINING_LEG)|LEFTOVER_LEG'
 Select-String -LiteralPath $logPath -Pattern $probePattern | ForEach-Object { Write-Host $_.Line }
 if ($exitCode -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
@@ -79,10 +94,7 @@ if ($exitCode -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'LEFT
 if ($Variant -eq 'hints' -and $HintScenario -in @('save', 'fallensave', 'fallenbracedsave')) {
 	# 같은 사용자 폴더로 다시 켜면 방금 남긴 밤 저장을 불러와 이어 한다.
 	$resumeLog = Join-Path (Split-Path -Parent $probeUser) "Leftover-$tag-resume-$FrameRate.log"
-	& $editor $projectPath -game -unattended -nosplash -NoLoadingScreen -RenderOffscreen @audio @render `
-		-IGListenerGreybox $probeArg -IGSkipFrontend -IGHintResume -UseFixedTimeStep "-FPS=$FrameRate" `
-		"-UserDir=$probeUser" "-abslog=$resumeLog" @extra | Out-Null
-	$exitCode = $LASTEXITCODE
+	$exitCode = Invoke-LeftoverBackgroundRun -RunLog $resumeLog -Resume
 	Select-String -LiteralPath $resumeLog -Pattern $probePattern | ForEach-Object { Write-Host $_.Line }
 	if ($exitCode -ne 0 -or -not (Select-String -LiteralPath $resumeLog -Pattern 'LEFTOVER_PROBE PASS failures=0')) {
 		throw "저장을 불러온 밤의 남은 짐 검사에 실패했습니다: $resumeLog"

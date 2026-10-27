@@ -1002,8 +1002,9 @@ void AIGStoreClerk::ApplyPose(const double Now)
 	}
 	HeadYaw = FMath::FInterpTo(HeadYaw, WantYaw, DeltaSeconds, 7.0f);
 	HeadAim = FMath::FInterpTo(HeadAim, WantPitch, DeltaSeconds, 7.0f);
-	const float HeadPitch = 0.7f * FMath::Sin(Phase) + HeadAim;
-	const float HeadTurn = 1.7f * FMath::Sin(Phase) + HeadYaw;
+	// 상대나 단말기를 볼 때만 고개가 움직인다. 호흡 주기마다 좌우로 흔들지 않는다.
+	const float HeadPitch = HeadAim;
+	const float HeadTurn = HeadYaw;
 	const FQuat HeadDelta = FQuat(FVector::UpVector, FMath::DegreesToRadians(HeadTurn))
 		* FQuat(FVector::ForwardVector, FMath::DegreesToRadians(HeadPitch));
 	Body->SetBoneTransformByName(

@@ -67,6 +67,13 @@ README는 개발 노트가 아니라 **게임을 처음 보는 사람이 읽는 
 
 ## 검증
 
+사용자가 다른 작업을 하고 있으므로 검수 창을 띄우거나 활성화하지 않는다.
+Unreal 실행은 `Start-Process -WindowStyle Hidden`과 `-RenderOffscreen`을 함께 쓴다.
+게임 소리는 스피커로 내보내지 않고, 필요한 경우 파일로 녹음한다.
+화면은 엔진이 저장한 캡처로 확인한다. 창 활성화, 키보드·마우스 포커스 전환,
+일반 창으로 재실행하는 우회는 하지 않는다. 다른 프로젝트의 실행은 건드리지 않는다.
+이 방식으로 확인하지 못한 항목은 미검증으로 남기고, 검수가 끝났다고 쓰지 않는다.
+
 ```powershell
 pwsh -NoProfile -File Scripts/Validate-Project.ps1
 ```

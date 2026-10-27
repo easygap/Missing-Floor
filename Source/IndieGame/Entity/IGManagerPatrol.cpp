@@ -26,6 +26,7 @@
 #include "Interaction/IGHidingSpot.h"
 #include "Interaction/IGSwingDoor.h"
 #include "Entity/IGMissingFloorNightThreeDirector.h"
+#include "Entity/IGMissingFloorLeftoverDirector.h"
 #include "Narrative/IGStoryStateSubsystem.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/CommandLine.h"
@@ -789,12 +790,26 @@ bool AIGManagerPatrol::IsCaptureAllowed() const
 void AIGManagerPatrol::ThinkOnce(const TCHAR* BeatId, const FText& Thought)
 {
 	UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
-	if (!Narrative || Narrative->HasBeatPlayed(FName(BeatId)))
+	if (!Narrative || Narrative->HasBeatPlayed(FName(BeatId))
+		|| AIGMissingFloorLeftoverDirector::IsAnySceneActive(GetWorld()))
 	{
 		return;
 	}
 	Narrative->MarkBeatPlayed(FName(BeatId));
-	AIGHorrorHUD::PushThought(this, Thought, 3.2f);
+	FIGDialogueScope Scope;
+	Scope.Owner = this;
+	Scope.Context = FName(BeatId);
+	Scope.Lifetime = EIGDialogueLifetime::Reaction;
+	Scope.Interruption = EIGDialogueInterruption::Drop;
+	const TWeakObjectPtr<AIGManagerPatrol> WeakThis(this);
+	const FVector ObservedAt = GetPlayerFeet();
+	Scope.StillValid = [WeakThis, ObservedAt]()
+	{
+		return WeakThis.IsValid() && WeakThis->IsOnDuty()
+			&& FVector::DistSquared(WeakThis->GetPlayerFeet(), ObservedAt) < FMath::Square(400.0f)
+			&& !AIGMissingFloorLeftoverDirector::IsAnySceneActive(WeakThis->GetWorld());
+	};
+	AIGHorrorHUD::PushThoughtScoped(this, Thought, 3.2f, MoveTemp(Scope));
 }
 
 // -- 상태 전환 ---------------------------------------------------------------
@@ -2507,14 +2522,6 @@ void AIGManagerPatrol::UpdateSenses(const float DeltaSeconds)
 	}
 	const double Now = GetWorld()->GetTimeSeconds();
 	const FVector Feet = GetFeet();
-	const float DistanceToPlayer = FVector::Dist(Feet, GetPlayerFeet());
-
-	// 처음 들리는 거리. 열쇠와 슬리퍼가 누구인지 그녀가 먼저 안다.
-	if (bBodyShown && DistanceToPlayer < 1400.0f && !bErrand)
-	{
-		ThinkOnce(TEXT("Night3.MokFirstHeard"),
-			NSLOCTEXT("IGMissingFloor", "YudamMokFirstHeard", "관리인 아저씨네. 어제 관리실 들어간 걸 알아챘나?"));
-	}
 
 	float LitDistance = 0.0f;
 	const bool bLit = IsPlayerVisibleInTorch(LitDistance);
@@ -2954,6 +2961,24 @@ void AIGManagerPatrol::PlayStep()
 void AIGManagerPatrol::PlayKeys(const bool bForceCaption)
 {
 	const double Now = GetWorld()->GetTimeSeconds();
+	// 거리만 재면 다른 층에서 서 있는 관리인까지 알아본다. 열쇠 소리가 실제로 나고,
+	// 같은 층의 열린 통로로 들을 수 있을 때만 알아본다. 구출 장면의 대화를 가로채지 않는다.
+	const FVector SoundAt = GetFeet() + FVector(0.0f, 0.0f, 95.0f);
+	const FVector ListenerAt = Player.IsValid() ? Player->GetPawnViewLocation() : FVector::ZeroVector;
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	if (Player.IsValid() && bBodyShown && !bErrand && Narrative && Narrative->GetNightIndex() == 3
+		&& FMath::Abs(GetFeet().Z - GetPlayerFeet().Z) < 180.0f
+		&& FVector::DistSquared(SoundAt, ListenerAt) < FMath::Square(1400.0f))
+	{
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(ManagerHeard), false, this);
+		Params.AddIgnoredActor(Player.Get());
+		FHitResult Hit;
+		if (!GetWorld()->LineTraceSingleByChannel(Hit, SoundAt, ListenerAt, ECC_Visibility, Params))
+		{
+			ThinkOnce(TEXT("Night3.MokFirstHeard"),
+				NSLOCTEXT("IGMissingFloor", "YudamMokFirstHeard", "관리인 아저씨네. 어제 관리실 들어간 걸 알아챘나?"));
+		}
+	}
 	StepSeed = StepSeed * 1664525u + 1013904223u;
 	NextKeysSeconds = Now + 5.0 + static_cast<double>(StepSeed % 40u) * 0.1;
 	IGAudio::SpawnOneShotAt(

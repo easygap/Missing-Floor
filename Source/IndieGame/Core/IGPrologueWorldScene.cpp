@@ -328,6 +328,9 @@ AIGPrologueWorldScene::AIGPrologueWorldScene()
 	WindowGlowMaterial = FindMaterial(TEXT("/Game/Prototype/Materials/M_WindowGlow.M_WindowGlow"));
 	WindowDarkMaterial = FindMaterial(TEXT("/Game/Prototype/Materials/M_WindowDark.M_WindowDark"));
 	NightSkyMaterial = FindMaterial(TEXT("/Game/Prototype/Materials/M_NightSky.M_NightSky"));
+	CloudSkyMaterial = FindMaterial(TEXT("/Game/Prototype/Materials/M_OvercastSky.M_OvercastSky"));
+	ConstructorHelpers::FObjectFinder<UStaticMesh> SkyMeshFinder(TEXT("/Engine/EngineSky/SM_SkySphere.SM_SkySphere"));
+	CloudSkyMesh = SkyMeshFinder.Object;
 	StreetLampGlowMaterial = FindMaterial(TEXT("/Game/Prototype/Materials/M_StreetLampGlow.M_StreetLampGlow"));
 	CoolerBodyMaterial = FindMaterial(TEXT("/Game/Prototype/Materials/M_CoolerBody.M_CoolerBody"));
 	CounterTopMaterial = FindMaterial(TEXT("/Game/Prototype/Materials/M_CounterTop.M_CounterTop"));
@@ -367,7 +370,8 @@ AIGPrologueWorldScene::AIGPrologueWorldScene()
 	// local detail enhancement carries the plaster response inside the beam.
 	PostProcess->Settings.LocalExposureShadowContrastScale = 0.76f;
 	PostProcess->Settings.bOverride_LocalExposureDetailStrength = true;
-	PostProcess->Settings.LocalExposureDetailStrength = 1.12f;
+	// 표면의 잔결을 후처리로 다시 강조하면 어두운 벽과 피부에 잡티가 떠 보인다.
+	PostProcess->Settings.LocalExposureDetailStrength = 1.0f;
 	PostProcess->Settings.bOverride_LocalExposureBlurredLuminanceBlend = true;
 	PostProcess->Settings.LocalExposureBlurredLuminanceBlend = 0.52f;
 	PostProcess->Settings.bOverride_LocalExposureBlurredLuminanceKernelSizePercent = true;
@@ -381,17 +385,18 @@ AIGPrologueWorldScene::AIGPrologueWorldScene()
 	// 조명과 표면의 명암을 그대로 남기고 화면에 입자를 덧씌우지 않는다.
 	PostProcess->Settings.FilmGrainIntensity = 0.0f;
 	PostProcess->Settings.bOverride_ColorSaturation = true;
-	PostProcess->Settings.ColorSaturation = FVector4(0.93f, 0.95f, 1.0f, 1.0f);
+	PostProcess->Settings.ColorSaturation = FVector4(0.96f, 0.96f, 0.96f, 1.0f);
 	// A restrained film curve gives PBR roughness and normal changes somewhere
 	// to read.  The toe is kept below the engine default so the unlit corridor
 	// retains material information instead of crushing into a single black,
 	// while the shoulder rolls practicals off before their fixture detail clips.
 	PostProcess->Settings.bOverride_ColorContrast = true;
-	PostProcess->Settings.ColorContrast = FVector4(1.025f, 1.025f, 1.025f, 1.0f);
+	PostProcess->Settings.ColorContrast = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
 	PostProcess->Settings.bOverride_FilmSlope = true;
 	PostProcess->Settings.FilmSlope = 0.90f;
 	PostProcess->Settings.bOverride_FilmToe = true;
-	PostProcess->Settings.FilmToe = 0.53f;
+	// 암부를 눌러 인물과 문틀이 한 덩어리가 되지 않게 기본 곡선으로 돌린다.
+	PostProcess->Settings.FilmToe = 0.425f;
 	PostProcess->Settings.bOverride_FilmShoulder = true;
 	PostProcess->Settings.FilmShoulder = 0.24f;
 	PostProcess->Settings.bOverride_FilmBlackClip = true;
@@ -4393,10 +4398,22 @@ void AIGPrologueWorldScene::ApplyExteriorTimeOfDay()
 		MoonLight->ForwardShadingPriority = bMorning ? 0 : 1;
 	}
 	if (SkyAmbient) { SkyAmbient->SetIntensity(bMorning ? 0.85f : 0.62f); }
-	if (bMorning && HeightFog)
+	// 해와 달이 구름 뒤에 가린 날. 별이나 원반을 하늘 그림 위에 따로 띄우지 않는다.
+	if (CloudSkyInstance)
 	{
-		HeightFog->SetFogDensity(0.004f);
-		HeightFog->SetFogInscatteringColor(FLinearColor(0.12f, 0.15f, 0.18f));
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Zenith Color"), bMorning
+			? FLinearColor(.15f, .23f, .33f) : FLinearColor(.018f, .029f, .048f));
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Horizon color"), bMorning
+			? FLinearColor(.52f, .58f, .65f) : FLinearColor(.09f, .11f, .15f));
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Cloud color"), bMorning
+			? FLinearColor(.62f, .65f, .67f) : FLinearColor(.11f, .13f, .16f));
+	}
+	if (HeightFog)
+	{
+		// 아침 값을 밤에도 남겨 두지 않는다. 저장 불러오기와 밤 전환이 같은 결과를 내야 한다.
+		HeightFog->SetFogDensity(bMorning ? 0.004f : 0.012f);
+		HeightFog->SetFogInscatteringColor(bMorning
+			? FLinearColor(.12f, .15f, .18f) : FLinearColor(.030f, .042f, .060f));
 	}
 	if (bMorning && PostProcess)
 	{
@@ -6790,15 +6807,28 @@ void AIGPrologueWorldScene::BuildStore()
 	CreateBlock(FVector(2438, -457, 7), FVector(64, 94, 1.4f), PlasticDarkMaterial, false);
 	CreateBlock(FVector(2426, -398, 246), FVector(15, 10, 10), FridgeInteriorMaterial, false);
 	CreateBlock(FVector(2434, -404, 241), FVector(7, 7, 10), PlasticDarkMaterial, false, CylinderMesh, FRotator(48, 35, 0));
-	// 실내 LED 네 줄. 밝은 매장은 정상적인 생활 공간의 기준점이다.
+	// 긴 등기구와 같은 크기의 면광원. 점광원 넷이 만들던 동그란 반사와 겹그림자를 줄인다.
 	for (const float X : {2540.0f, 2920.0f})
 	{
 		for (const float Y : {-250.0f, -650.0f})
 		{
 			CreateBlock(FVector(X, Y, 257), FVector(180, 7, 4), LightPanelMaterial, false);
-			UPointLightComponent* Light = CreateLight(FVector(X, Y, 239), 3650, 460,
-				FLinearColor(1, .985f, .955f), true, 12, nullptr, true);
-			Light->SetVolumetricScatteringIntensity(0.02f);
+			URectLightComponent* Light = NewObject<URectLightComponent>(this);
+			Light->SetupAttachment(SceneRoot);
+			Light->SetMobility(EComponentMobility::Movable);
+			Light->SetRelativeLocation(FVector(X, Y, 252));
+			// +X가 빛의 진행 방향, 로컬 Y가 폭이다. 긴 변을 천장의 X축에 맞춘다.
+			Light->SetRelativeRotation(FRotator(-90, 90, 0));
+			Light->SetSourceWidth(176.0f);
+			Light->SetSourceHeight(6.0f);
+			Light->SetAttenuationRadius(500.0f);
+			Light->SetIntensityUnits(ELightUnits::Lumens);
+			Light->SetIntensity(1800.0f);
+			Light->SetLightColor(FLinearColor(1.0f, .985f, .955f));
+			Light->SetCastShadows(true);
+			Light->SetVolumetricScatteringIntensity(0.0f);
+			Light->RegisterComponent();
+			AddZoneLight(Light, EIGLightZone::Store);
 		}
 	}
 	CreateLight(FVector(2340, -457, 225), 1150, 650, FLinearColor(1, .96f, .87f), true, 28);
@@ -6954,6 +6984,31 @@ void AIGPrologueWorldScene::BuildSkyAndFog()
 	SkyAtmosphere->SetupAttachment(SceneRoot);
 	SkyAtmosphere->RegisterComponent();
 
+	// 낮은 사양에서도 같은 구름을 보도록 얇은 하늘 표면을 쓴다. 이동은 매우 느리게 둔다.
+	// 실루엣이나 실내 그림자를 만드는 메시는 아니므로 충돌·거리장·그림자 계산에서 뺀다.
+	if (CloudSkyMaterial && CloudSkyMesh)
+	{
+		UStaticMeshComponent* Dome = NewObject<UStaticMeshComponent>(this, TEXT("OvercastSky"));
+		Dome->SetupAttachment(SceneRoot);
+		Dome->SetStaticMesh(CloudSkyMesh);
+		Dome->SetRelativeScale3D(FVector(400.0f));
+		Dome->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Dome->SetCastShadow(false);
+		Dome->bAffectDistanceFieldLighting = false;
+		Dome->bAffectDynamicIndirectLighting = false;
+		CloudSkyInstance = UMaterialInstanceDynamic::Create(CloudSkyMaterial, this);
+		CloudSkyInstance->SetScalarParameterValue(TEXT("Cloud speed"), 0.012f);
+		CloudSkyInstance->SetScalarParameterValue(TEXT("Cloud opacity"), 0.72f);
+		CloudSkyInstance->SetScalarParameterValue(TEXT("Stars brightness"), 0.0f);
+		CloudSkyInstance->SetScalarParameterValue(TEXT("Sun brightness"), 0.0f);
+		CloudSkyInstance->SetScalarParameterValue(TEXT("Horizon Falloff"), 3.0f);
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Zenith Color"), FLinearColor(.018f, .029f, .048f));
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Horizon color"), FLinearColor(.09f, .11f, .15f));
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Cloud color"), FLinearColor(.11f, .13f, .16f));
+		Dome->SetMaterial(0, CloudSkyInstance);
+		Dome->RegisterComponent();
+	}
+
 	PreDawnSun = NewObject<UDirectionalLightComponent>(this, TEXT("PreDawnSun"));
 	PreDawnSun->SetupAttachment(SceneRoot);
 	PreDawnSun->SetMobility(EComponentMobility::Movable);
@@ -6999,7 +7054,9 @@ void AIGPrologueWorldScene::BuildSkyAndFog()
 	HeightFog->SetRelativeLocation(FVector(1000, -400, 0));
 	HeightFog->SetFogDensity(0.012f);
 	HeightFog->SetFogHeightFalloff(0.4f);
-	HeightFog->SetFogInscatteringColor(FLinearColor(0.030f, 0.042f, 0.085f));
+	// 하늘 자체의 색과 구름을 먼 거리의 안개로 다시 덮지 않는다.
+	HeightFog->SetFogCutoffDistance(100000.0f);
+	HeightFog->SetFogInscatteringColor(FLinearColor(0.030f, 0.042f, 0.060f));
 	HeightFog->SetVolumetricFog(true);
 	HeightFog->SetVolumetricFogScatteringDistribution(0.55f);
 	HeightFog->SetVolumetricFogExtinctionScale(1.0f);

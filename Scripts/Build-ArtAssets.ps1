@@ -801,6 +801,10 @@ $pythonStages = @(
 		SuccessPattern = 'PHOTO_PROP_LOD_BUILD PASS'
 	},
 	@{
+		Script = 'build_overcast_sky.py'
+		SuccessPattern = 'OVERCAST_SKY PASS'
+	},
+	@{
 		Script = 'validate_baked_art_assets.py'
 		SuccessPattern = 'ART_UASSET_AUDIT PASS'
 	},
@@ -858,6 +862,7 @@ foreach ($stage in $pythonStages) {
 
 
 $requiredAssets = @(
+	'Content\Prototype\Materials\M_OvercastSky.uasset',
 	'Content\Meshes\SM_CrackedPhone.uasset',
 	'Content\Meshes\SM_LabelSleeve.uasset',
 	'Content\Meshes\SM_StickyNote76mm.uasset',

@@ -117,7 +117,8 @@ if ($selected -contains 'roof_utility') {
 	if ($LASTEXITCODE -ne 0) { throw '옥상 설비 표찰 생성 실패' }
 }
 
-$logRoot = Join-Path $projectRoot 'Saved\Logs'
+$logRoot = Join-Path $projectRoot ('Saved/Validation/BlenderBuild-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
+Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $logRoot -Variant ($selected -join '_')
 if ($selected -contains 'leftover_props') {
 	& python (Join-Path $PSScriptRoot 'build_leftover_prints.py')
 	if ($LASTEXITCODE -ne 0) { throw '남은 짐 인쇄 원본 생성 실패' }
@@ -134,23 +135,39 @@ New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
 $colorCheckLog = Join-Path $logRoot 'BlenderBaseColorCheck.log'
 & $blender -b --factory-startup --python-exit-code 1 `
 	--python (Join-Path $builderRoot 'check_base_color_bake.py') `
-	-- (Join-Path $projectRoot 'Saved\BaseColorBakeCheck') *> $colorCheckLog
+	-- (Join-Path $logRoot 'BaseColorCheck') *> $colorCheckLog
 if ($LASTEXITCODE -ne 0 -or @(Select-String -LiteralPath $colorCheckLog -Pattern '^BASE_COLOR_BAKE PASS').Count -ne 2) {
 	throw "금속 색 보존 검사 실패: $colorCheckLog"
 }
 Write-Host 'BASE_COLOR_BAKE PASS direct=1 from_high=1'
 foreach ($builder in $selected) {
 	$script = Join-Path $builderRoot "build_$builder.py"
-	$logPath = Join-Path $logRoot ('Blender_{0}_{1}.log' -f $builder, (Get-Date -Format 'yyyyMMdd_HHmmss'))
+	$logPath = Join-Path $logRoot "Blender_$builder.log"
 	Write-Host "BLENDER_BUILD running build_$builder.py"
-	& $blender -b --factory-startup --python-exit-code 1 --python $script -- $outRoot 2>&1 | Tee-Object -FilePath $logPath | Where-Object { $_ -match '^\[IGBL\]|Error|Traceback' } | ForEach-Object { Write-Host "  $_" }
+	# 부분 빌드를 지원하는 빌더에도 선택을 넘긴다. 안내문 한 장을 고르고 소품 전체를 다시 굽던 경로다.
+	$oldOnly = $env:IG_ONLY
+	$builderStartedAt = [DateTime]::UtcNow
+	try {
+		$env:IG_ONLY = if ($Only.Count -and $Only -notcontains $builder) {
+			@($builders[$builder] | Where-Object { $Only -contains $_ }) -join ','
+		} else { '' }
+		& $blender -b --factory-startup --python-exit-code 1 --python $script -- $outRoot 2>&1 | Tee-Object -FilePath $logPath | Where-Object { $_ -match '^\[IGBL\]|Error|Traceback' } | ForEach-Object { Write-Host "  $_" }
+	} finally {
+		$env:IG_ONLY = $oldOnly
+	}
 	if ($LASTEXITCODE -ne 0) {
 		throw "Blender 빌더 실패 ($LASTEXITCODE): build_$builder.py, 로그 $logPath"
 	}
-	foreach ($asset in $builders[$builder]) {
+	$expectedAssets = if ($Only.Count -and $Only -notcontains $builder) {
+		@($builders[$builder] | Where-Object { $Only -contains $_ })
+	} else { @($builders[$builder]) }
+	foreach ($asset in $expectedAssets) {
 		$manifest = Join-Path $outRoot "$asset\manifest.json"
 		if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
 			throw "빌더가 manifest를 남기지 않았다: $manifest"
+		}
+		if ((Get-Item -LiteralPath $manifest).LastWriteTimeUtc -lt $builderStartedAt.AddSeconds(-1)) {
+			throw "선택한 에셋을 새로 만들지 않았습니다: $asset"
 		}
 	}
 }

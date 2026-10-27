@@ -403,7 +403,10 @@ def build_lined_panels():
 
 if __name__ == "__main__":
     ig.reset_scene()
-    only = os.environ.get("IG_ONLY", "")
+    only = set(filter(None, os.environ.get("IG_ONLY", "").split(",")))
+    # 두 벽판을 함께 만드는 함수이므로 B만 골라도 실행한다.
+    if "SM_LinedWallPanelB" in only:
+        only.add("SM_LinedWallPanelA")
     builders = {
         "SM_InnerRoomCot": build_cot,
         "SM_InnerRoomCabinet": build_cabinet,
@@ -416,7 +419,7 @@ if __name__ == "__main__":
         "SM_LinedWallPanelA": build_lined_panels,
     }
     for name, builder in builders.items():
-        if only and name not in only.split(","):
+        if only and name not in only:
             continue
         ig.reset_scene()
         builder()

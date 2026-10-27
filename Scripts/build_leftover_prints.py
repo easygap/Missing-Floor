@@ -54,7 +54,7 @@ hd.line((440, 905, 1120, 912), fill=200, width=5)
 hand = hand.filter(ImageFilter.GaussianBlur(0.8))
 ink = Image.new('RGB', (W, H), '#1b2a6b')
 notice.paste(ink, (0, 0), hand)
-for y, text in ((1080, '버릴 짐은 전날 밤까지'), (1160, '필로티 적치 자리에 내놓아 주세요.'),
+for y, text in ((1080, '버릴 짐은 전날 밤까지'), (1160, '1층 주차장 안쪽에 내놓아 주세요.'),
                 (1320, '찾아갈 짐이 있으면'), (1400, '관리실에 말씀해 주세요.')):
     d.text((W // 2, y), text, font=font(PRINT, 54), fill='#262823', anchor='mt')
 d.text((W - 170, 1560), '-관리인', font=font(PRINT, 50), fill='#262823', anchor='rt')

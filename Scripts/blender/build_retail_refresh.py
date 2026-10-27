@@ -23,11 +23,11 @@ def materials():
     return {
         "white": ig.mat_plastic("도장강판", (.72, .73, .70), .40, bump=0),
         "dark": ig.mat_plastic("차콜ABS", (.025, .029, .032), .43, bump=0),
-        "top": ig.mat_plastic("회녹색라미네이트", (.43, .53, .26), .32, bump=0),
+        "top": ig.mat_plastic("회백색라미네이트", (.54, .52, .48), .46, bump=0),
         "steel": ig.mat_metal("알루미늄", (.64, .66, .66), roughness=.32, streak=.02),
         "paper": ig.mat_plastic("무광종이", (.88, .87, .81), .6, bump=0),
         "led": ig.mat_emissive("백색LED", (.90, .96, 1), 1.2),
-        "blue": ig.mat_emissive("푸른광고띠", (.025, .13, .42), .75),
+        "blue": ig.mat_emissive("광고테두리", (.035, .065, .095), .20),
         "screen": ig.mat_plastic("POS화면", (.025, .042, .05), .25, bump=0),
         "print": ig.mat_image_uv("상품인쇄", os.path.join(ART, "RetailPackaging.png"), roughness=.38),
         "back": ig.mat_image_uv("상품뒷면", os.path.join(ART, "RetailPackagingBack.png"), roughness=.45),
@@ -53,7 +53,7 @@ def counter(out):
     ]
     for x in (-1.07, -.36, .36, 1.07):
         parts.append(ig.box("도어이음", (.003, .003, .74), (x, -.261, .5), material=m["dark"]))
-    finish("SM_StoreCounter", parts, out, "계산대 224×64×93cm. 고객은 -Y, 상판 높이는 월드 99cm. 회녹색 라미네이트와 도장 전면.")
+    finish("SM_StoreCounter", parts, out, "계산대 224×64×93cm. 고객은 -Y, 상판 높이는 월드 99cm. 회백색 라미네이트와 도장 전면.")
 
 
 def pos(out):

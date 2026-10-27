@@ -885,8 +885,7 @@ void AIGMissingFloorNightFourDirector::PollAnnexSpread()
 	}
 	bSpreadNoticed = true;
 	GetWorldTimerManager().ClearTimer(AnnexSpreadPollTimer);
-	// 보이는 것만 말한다. 틀을 쓰는 법은 H로 물을 때 떠올린다(시간이 지났다고 답을 주지 않는다).
-	ThinkClue(this, NSLOCTEXT("IGMissingFloor", "WallSpread", "천장까지 몸을 폈어."), 2.6f);
+	// 몸을 펴는 장면은 움직임과 소리로 보인다. 해결 방법은 요청한 힌트에서만 다룬다.
 	RefreshPresentation();
 }
 

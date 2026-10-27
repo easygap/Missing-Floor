@@ -95,6 +95,7 @@ def parse_args():
     parser.add_argument("--shell-glb", default=SHELL_GLB)
     parser.add_argument("--shell-tris", type=int, default=SHELL_TRIS)
     parser.add_argument("--no-bake", action="store_true")
+    parser.add_argument("--review-poses", action="store_true", help="자세 검토용 추가 화면을 만든다")
     return parser.parse_args(argv)
 
 
@@ -508,7 +509,7 @@ def foam_chunk(name, center, axes, half, material, bone, seed, plane=None, lop=0
 
 
 def leg_sheet(name, a, b, up_hint, seed, r0, layer, sweep_deg, twist_deg, ang0, ext_a, ext_b, flare, mats, weight_of,
-              lift=0.0, hang=0.0, pinch_a=0.0, pinch_b=0.0, bend_dir=None, floor_z=None, rows=16, cols=9):
+              lift=0.0, hang=0.0, pinch_a=0.0, pinch_b=0.0, bend_dir=None, floor_z=None, rows=24, cols=12):
     """다리 마디를 감싼 막 판 하나. 단면은 길이 방향으로 한 번 접힌 V이고, 길이를 따라 꼬이며 가늘어진다.
     양 끝은 마디를 넘어 이웃 마디와 겹쳐(ext_a·ext_b m) 관절을 덮고, 웨이트를 섞어 같이 굽는다. flare가
     있으면 끝(발목)으로 갈수록 바깥으로 벌어져 발 위로 퍼진다. lift는 한쪽 가장자리가 들뜬 정도다(들뜬 판
@@ -524,8 +525,9 @@ def leg_sheet(name, a, b, up_hint, seed, r0, layer, sweep_deg, twist_deg, ang0, 
     rnd = random.Random(seed)
     sweep = math.radians(sweep_deg)
     twist = math.radians(twist_deg)
-    fold_depth = rnd.uniform(0.02, 0.04) * rnd.choice((1.0, -0.6))
-    folds = rnd.choice((1, 2, 2, 3))
+    # 가까이서도 하나의 막으로 읽히게 한다. 잔주름을 큰 꺾임마다 더하면 쇳조각처럼 보였다.
+    fold_depth = rnd.uniform(0.008, 0.015) * rnd.choice((1.0, -0.6))
+    folds = rnd.choice((1, 1, 2))
     fold_phase = rnd.uniform(0.0, 0.4)
     bend = Vector(bend_dir).normalized() if bend_dir is not None else None
     t_start = -ext_a / length
@@ -545,7 +547,7 @@ def leg_sheet(name, a, b, up_hint, seed, r0, layer, sweep_deg, twist_deg, ang0, 
             # 접힘: 판 너비에 한둘 이상. 꼬임 때문에 길이를 따라 비스듬히 돈다.
             r += fold_depth * abs(math.sin(math.pi * (folds * u + fold_phase))) ** 1.4
             # 울퉁불퉁한 굵기: 쑤셔 넣은 방음재가 뭉친 데는 불룩하다.
-            r += 0.018 * _wobble(seed + 11, t * 2.4) + 0.006 * _wobble(seed + 6, t * 6.0, u * 3.0)
+            r += 0.007 * _wobble(seed + 11, t * 2.4) + 0.002 * _wobble(seed + 6, t * 6.0, u * 3.0)
             if flare:
                 r += flare * _smooth((t - 0.78) / 0.3) ** 1.5
             if pinch_a:
@@ -969,9 +971,8 @@ def build_parts(mats, shell):
         parts.append(ob)
     # 몸통을 덮은 큰 막 판 둘(앞·뒤 절반)과 한쪽 모서리에 겹친 작은 판 하나. 몸 실루엣이 타원 대신
     # 들쭉날쭉하게 접힌 부채꼴이 된다.
-    parts.append(body_drape("DrapeFront", tree, True, 71, mats, layer=0.0, overhang=0.22, pleats=0.26))
-    parts.append(body_drape("DrapeBack", tree, False, 83, mats, layer=0.008, overhang=0.20, pleats=0.21))
-    parts.append(body_drape("DrapeCorner", tree, True, 97, mats, layer=0.028, x0=0.20, overhang=0.14, pleats=0.17))
+    parts.append(body_drape("DrapeFront", tree, True, 71, mats, layer=0.0, overhang=0.16, pleats=0.09))
+    parts.append(body_drape("DrapeBack", tree, False, 83, mats, layer=0.012, overhang=0.14, pleats=0.07))
     for key, (sx, sy) in LEGS.items():
         hip, knee, ankle, pad = leg_points(sx, sy)
         d = (knee - hip).normalized()
@@ -993,22 +994,22 @@ def build_parts(mats, shell):
         for k in range(3):
             ang = base + math.tau * k / 3 + rnd.uniform(-0.3, 0.3)
             parts.append(leg_sheet(f"{key}_Sheet1_{k}", hip, knee, (0, 0, 1), seed * 17 + k, 0.108, 0.018 * k,
-                                   rnd.uniform(80, 105), rnd.choice((-1, 1)) * rnd.uniform(40, 90), ang,
+                                   rnd.uniform(100, 120), rnd.choice((-1, 1)) * rnd.uniform(15, 28), ang,
                                    0.05, 0.09, 0.0, mats, w1, lift=rnd.choice((0.0, 0.03)), pinch_b=0.28))
             ang = base + 0.7 + math.tau * k / 3 + rnd.uniform(-0.3, 0.3)
             parts.append(leg_sheet(f"{key}_Sheet2_{k}", knee, ankle, (0, 0, -1), seed * 19 + k, 0.090, 0.016 * k,
-                                   rnd.uniform(75, 100), rnd.choice((-1, 1)) * rnd.uniform(40, 90), ang,
+                                   rnd.uniform(95, 115), rnd.choice((-1, 1)) * rnd.uniform(15, 28), ang,
                                    0.08, 0.17, 0.12, mats, w2, lift=rnd.choice((0.0, 0.02)), pinch_a=0.24,
                                    bend_dir=seg3_dir, floor_z=pad.z))
         # 위에 걸친 판: 마디 위쪽을 덮고 한쪽 가장자리가 마디 가운데에서 아래로 처진다.
         top = math.pi * 0.5 + rnd.uniform(-0.5, 0.5)
         parts.append(leg_sheet(f"{key}_Flap1", hip, knee, (0, 0, 1), seed * 23, 0.112, 0.05,
                                rnd.uniform(120, 150), rnd.choice((-1, 1)) * rnd.uniform(20, 50), top,
-                               0.03, 0.06, 0.0, mats, w1, hang=rnd.uniform(0.12, 0.17), pinch_b=0.2))
+                               0.03, 0.06, 0.0, mats, w1, hang=rnd.uniform(0.05, 0.08), pinch_b=0.2))
         top = -math.pi * 0.5 + rnd.uniform(-0.5, 0.5)
         parts.append(leg_sheet(f"{key}_Flap2", knee, ankle, (0, 0, -1), seed * 29, 0.094, 0.046,
                                rnd.uniform(110, 140), rnd.choice((-1, 1)) * rnd.uniform(20, 50), top,
-                               0.05, 0.02, 0.06, mats, w2, hang=rnd.uniform(0.08, 0.12), pinch_a=0.18))
+                               0.05, 0.02, 0.06, mats, w2, hang=rnd.uniform(0.04, 0.06), pinch_a=0.18))
         COLLISION_REF.setdefault("leg_shapes", []).append((hip, knee, ankle))
         # 굳은 실리콘이 관절을 건너 처진다(무릎: 윗마디→아랫마디, 엉덩이: 몸→윗마디).
         p0 = knee - d * 0.14 + Z * 0.09 + side_d * 0.03
@@ -1462,10 +1463,10 @@ def main():
     # 눌러 4%대로 둔다. 예전에는 0.15를 곱해 1%도 안 됐고, 밤 손전등 아래에서 접힘도 재료도 안 보이는 검은
     # 다각형이 됐다(2026-10-22 밤4 벽 진단). 거칠기는 큰 접힘에 손전등이 비칠 만큼만 낮춘다.
     mats = {
-        "foam": tiled_material("LiningFoam", "T_LiningFoam", 0.45, normal_strength=1.2, contact_grime=0.4),
-        "membrane": tiled_material("LiningMembrane", "T_LiningMembrane", 0.7, normal_strength=1.2, rough_scale=1.05,
+        "foam": tiled_material("LiningFoam", "T_LiningFoam", 0.45, normal_strength=0.45, contact_grime=0.4),
+        "membrane": tiled_material("LiningMembrane", "T_LiningMembrane", 0.7, normal_strength=0.35, rough_scale=1.15,
                                    contact_grime=0.3, tint=(0.8, 0.8, 0.78)),
-        "steel": tiled_material("LiningSteel", "T_LiningSteel", 0.35, metallic=0.3, normal_strength=0.7, rough_scale=1.6,
+        "steel": tiled_material("LiningSteel", "T_LiningSteel", 0.35, metallic=0.15, normal_strength=0.25, rough_scale=1.8,
                                 tint=(0.30, 0.30, 0.29), contact_grime=0.3),
         "sealant": flat_material("LiningSealant", (0.10, 0.10, 0.088), 0.6),
     }
@@ -1518,24 +1519,30 @@ def main():
     ig.render_preview(body, os.path.join(out_dir, f"{name}_preview.png"), camera_yaw_deg=-35.0, camera_pitch_deg=30.0)
     pose_legs(arm, Vector((0, 0, 0)), folded_targets())
     ig.render_preview(body, os.path.join(out_dir, f"{name}_folded.png"), camera_yaw_deg=-30.0, camera_pitch_deg=22.0)
-    ig.render_preview(body, os.path.join(out_dir, f"{name}_folded_torch.png"), flashlight=True, camera_yaw_deg=-50.0, camera_pitch_deg=18.0)
+    if args.review_poses:
+        ig.render_preview(body, os.path.join(out_dir, f"{name}_folded_torch.png"), flashlight=True, camera_yaw_deg=-50.0, camera_pitch_deg=18.0)
     clear_pose(arm)
-    pose_legs(arm, Vector((0.0, 0.0, 0.42)), crouch_targets())
-    for tag, yaw, pitch in (("front", 0.0, 6.0), ("side", -90.0, 6.0), ("quarter", -40.0, 24.0)):
-        ig.render_preview(body, os.path.join(out_dir, f"{name}_crouch_{tag}.png"), camera_yaw_deg=yaw, camera_pitch_deg=pitch)
-    ig.render_preview(body, os.path.join(out_dir, f"{name}_crouch_torch.png"), flashlight=True, camera_yaw_deg=-25.0, camera_pitch_deg=12.0)
-    clear_pose(arm)
+    if args.review_poses:
+        pose_legs(arm, Vector((0.0, 0.0, 0.42)), crouch_targets())
+        for tag, yaw, pitch in (("front", 0.0, 6.0), ("side", -90.0, 6.0), ("quarter", -40.0, 24.0)):
+            ig.render_preview(body, os.path.join(out_dir, f"{name}_crouch_{tag}.png"), camera_yaw_deg=yaw, camera_pitch_deg=pitch)
+        ig.render_preview(body, os.path.join(out_dir, f"{name}_crouch_torch.png"), flashlight=True, camera_yaw_deg=-25.0, camera_pitch_deg=12.0)
+        clear_pose(arm)
     pose_legs(arm, Vector((0.0, 0.0, 1.35)), spread_targets())
     ig.render_preview(body, os.path.join(out_dir, f"{name}_spread.png"), camera_yaw_deg=-75.0, camera_pitch_deg=6.0)
     clear_pose(arm)
-    step_demo(arm)
-    ig.render_preview(body, os.path.join(out_dir, f"{name}_step.png"), camera_yaw_deg=-20.0, camera_pitch_deg=14.0)
-    ig.render_preview(body, os.path.join(out_dir, f"{name}_step_torch.png"), flashlight=True, camera_yaw_deg=-20.0, camera_pitch_deg=14.0)
-    # 막 끝이 바닥에 남아 늘어난 fr 패드를 옆에서 가까이 본다.
-    pad_fr = crouch_targets()["fr"][0]
-    render_closeup(body, os.path.join(out_dir, f"{name}_step_pad_torch.png"), mirrored(pad_fr + Vector((-0.12, -0.12, 0.16))),
-                   0.95, True, 45.0, 22.0)
-    clear_pose(arm)
+    if args.review_poses:
+        step_demo(arm)
+        ig.render_preview(body, os.path.join(out_dir, f"{name}_step.png"), camera_yaw_deg=-20.0, camera_pitch_deg=14.0)
+        ig.render_preview(body, os.path.join(out_dir, f"{name}_step_torch.png"), flashlight=True, camera_yaw_deg=-20.0, camera_pitch_deg=14.0)
+        # 막 끝이 바닥에 남아 늘어난 fr 패드를 옆에서 가까이 본다.
+        pad_fr = crouch_targets()["fr"][0]
+        render_closeup(body, os.path.join(out_dir, f"{name}_step_pad_torch.png"), mirrored(pad_fr + Vector((-0.12, -0.12, 0.16))),
+                       0.95, True, 45.0, 22.0)
+        clear_pose(arm)
+
+    # 소스 이력은 Git LFS에 남는다. 무인 빌드에서 같은 원본의 .blend1 복사본을 쌓지 않는다.
+    bpy.context.preferences.filepaths.save_version = 0
 
     if args.no_bake:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, f"{name}.blend"))

@@ -21,18 +21,28 @@ $editor = & (Join-Path $PSScriptRoot 'Resolve-UnrealEditor.ps1') -Commandlet
 $tag = if ($NoNearMiss) { 'DayScenes-NoNearMiss' } else { 'DayScenes' }
 $extra = @()
 if ($NoNearMiss) { $extra += '-IGDayScenesNoNearMiss' }
-$logPath = Join-Path $projectRoot "Saved/Logs/$tag-$FrameRate.log"
 $probeUser = Join-Path $projectRoot ("Saved/Validation/$tag-" + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '/User')
+$logPath = Join-Path (Split-Path -Parent $probeUser) "$tag-$FrameRate.log"
 Add-IGArtifactDirectory -Scope $igArtifactScope -Directory (Split-Path -Parent $probeUser) -Variant ((Split-Path -Leaf (Split-Path -Parent $probeUser)) -replace '-20\d{6}.*$', '')
-& $editor $projectPath -game -unattended -nosplash -nullrhi -nosound -NoLoadingScreen -RenderOffscreen `
-	-IGListenerGreybox -IGDayScenesProbe -IGSkipFrontend -UseFixedTimeStep "-FPS=$FrameRate" `
-	"-UserDir=$probeUser" "-abslog=$logPath" @extra | Out-Null
+$arguments = @(
+	('"{0}"' -f $projectPath), '-game', '-unattended', '-nosplash', '-nullrhi', '-nosound',
+	'-NoLoadingScreen', '-RenderOffscreen', '-IGListenerGreybox', '-IGDayScenesProbe',
+	'-IGSkipFrontend', '-UseFixedTimeStep', "-FPS=$FrameRate",
+	('"-UserDir={0}"' -f $probeUser), ('"-abslog={0}"' -f $logPath)
+) + $extra
+$process = Start-Process -FilePath $editor -ArgumentList $arguments -WindowStyle Hidden -PassThru
+$null = $process.Handle
+if (-not $process.WaitForExit(900000)) {
+	if (-not $process.HasExited) { Stop-Process -Id $process.Id -ErrorAction Stop }
+	throw "낮 장면 검사 시간 초과: $logPath"
+}
+$exitCode = $process.ExitCode
 Select-String -LiteralPath $logPath -Pattern 'DAYSCENES_(CHECK|PROBE)|MISSINGFLOOR_DAY' | ForEach-Object { Write-Host $_.Line }
 $posted = @(Select-String -LiteralPath $logPath -Pattern 'MISSINGFLOOR_DAY note303_posted_sound').Count
 if ($posted -ne 2) {
 	throw "쪽지 붙이는 소리가 두 번 나야 하는데 $posted 번이었습니다: $logPath"
 }
-if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'DAYSCENES_PROBE PASS failures=0')) {
+if ($exitCode -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'DAYSCENES_PROBE PASS failures=0')) {
 	throw "낮 장면 검사에 실패했습니다: $logPath"
 }
 
