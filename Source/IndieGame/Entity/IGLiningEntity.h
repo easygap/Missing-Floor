@@ -258,6 +258,12 @@ private:
 		 */
 		FVector SwingPoles[8];
 		bool bSwingPlanned = false;
+		/**
+		 * 짚은 다리의 무릎이 이번 당기기 동안 따라갈 길(SwingPoles를 같이 쓴다). 당기기를 시작할 때 정하고(PlanPullPole)
+		 * 당기기가 끝나거나 다리를 들면 끈다. PullPlanFrom은 길을 정한 때 몸이 길 위에서 간 거리다.
+		 */
+		bool bPullPlanned = false;
+		float PullPlanFrom = 0.0f;
 		/** 이번에는 몸 쪽 가장자리부터 들지 않고 패드를 평평하게 뗀다(엉덩이 바로 밑에서 출발하는 짚기). */
 		bool bFlatPeel = false;
 		/** 지난 프레임에 쓴 몸 기준 극(눕히기까지 넣은 것). PlanSwingPole이 기본값으로 쓴다. */
@@ -464,6 +470,10 @@ private:
 	void PlanSwingPole(int32 Index);
 	/** 이 다리의 이번 스윙에 무릎 길을 정할 수 있는가(틀에 걸리거나 접고 펴는 다리, 극을 모르는 다리는 안 된다). */
 	bool CanPlanKneePath(int32 Index) const;
+	/** 몸을 당기는 동안 짚은 다리의 무릎이 따라갈 길을 정한다(FLeg::bPullPlanned). */
+	void PlanPullPole(int32 Index);
+	/** 당기기를 시작한다. 짚은 다리의 무릎 길은 다음 프레임부터 한 다리씩 정한다. */
+	void BeginPullPlans();
 	/**
 	 * Swing의 출발·도착·비켜 돌기대로 패드가 옮겨 가는 동안 엉덩이가 HipFrom에서 HipTo로 갈 때, 스윙을 여덟 자리로 나눠
 	 * 자리마다 무릎 원 24방향의 빈 정도를 재고 무릎 빠르기 안에서 빈 방향만 이어 가는 길을 찾는다. 처음 자리의 무릎은
@@ -642,6 +652,8 @@ private:
 	float PhaseSeconds = 0.0f;
 	float PullFrom = 0.0f;
 	float PullTo = 0.0f;
+	/** 이번 당기기에서 무릎 길을 정할 다음 다리(LegCount면 다 정했다). 한 프레임에 한 다리씩 정한다. */
+	int32 PullPlanNext = LegCount;
 	int32 SwingGroup = 0;
 	int32 PeelLeg = 0;
 
