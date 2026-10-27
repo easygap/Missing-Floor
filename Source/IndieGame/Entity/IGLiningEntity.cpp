@@ -79,6 +79,11 @@ namespace IGLining
 	constexpr float SwingSeconds = 0.78f;
 	// 무릎이 아직 따라오는 발은 디딜 자리 바로 위에서 이만큼까지 기다렸다가 디딘다(초).
 	constexpr float LandWaitSeconds = 0.5f;
+	// 무릎 자리를 고를 때 넓적다리·정강이를 이 반지름(cm)의 굵기로 본다. 다리 겉(12 cm)을 다 비키게 하면 좁은 구석에서
+	// 고를 쪽이 없어서, 짚은 면 가까이 붙는 막은 조금 겹쳐도 되게 절반 남짓으로 잡았다.
+	constexpr float KneeRoomRadius = 7.0f;
+	// 다리 겉이 묻혔는지 재는 반지름(검사 로그 LINING_LEGS_THICK).
+	constexpr float ThickMeasureRadius = 6.0f;
 	constexpr float UnfoldSeconds = 1.05f;
 	constexpr float PeelSeconds = 1.9f;
 	constexpr float BraceSeconds = 0.95f;
@@ -946,15 +951,23 @@ bool AIGLiningEntity::ChooseBracePad(const int32 Leg, const FIGLiningGap& Gap, c
 	const FVector Spot = Pose.Anchor
 		+ Pose.Forward * IGLining::LegSx[Leg] * (Pose.GapHalf.X + IGLining::BraceMarginAlong)
 		+ Pose.Side * IGLining::LegSy[Leg] * (Pose.GapHalf.Y + IGLining::BraceMarginAcross);
+	// 쓸 수 있는 자리를 다 모은 뒤, 기본 점수 순으로 무릎 둘 자리 벌점(KneeRoomPenalty)을 더해 고른다. 예전에는 둘레 자리가
+	// 쓸 만하면 바로 짚고 아니면 기본 점수만 보았다. 302호 큰 점검구 아래 다리는 엉덩이에서 24 cm 자리를 짚어 무릎 원 전체가
+	// 바닥 속이었다(넓적다리 50 cm).
+	struct FBraceCandidate
+	{
+		FVector Pad;
+		FVector Normal;
+		float Score;
+	};
+	TArray<FBraceCandidate, TInlineAllocator<64>> Candidates;
 	FHitResult Hit;
 	if (World->LineTraceSingleByObjectType(Hit, Spot + N * 60.0f, Spot - N * 30.0f, Objects, Params) && !Hit.bStartPenetrating)
 	{
 		const FVector Pad = Hit.ImpactPoint + Hit.ImpactNormal * 2.0f;
 		if (IsBracePadUsable(Leg, Gap, Pose, Pad, Hit.ImpactNormal))
 		{
-			OutPad = Pad;
-			OutNormal = Hit.ImpactNormal;
-			return true;
+			Candidates.Add({Pad, Hit.ImpactNormal, 0.0f});
 		}
 	}
 	// 둘레가 바닥 밑·옆 소품 속이거나 그리로 가는 길이 막혔다. 짚을 때 엉덩이에서 둘레 쪽으로 부채꼴로 쏴서 닿는 면
@@ -963,8 +976,6 @@ bool AIGLiningEntity::ChooseBracePad(const int32 Leg, const FIGLiningGap& Gap, c
 	const FVector Toward = (Spot - Hip).GetSafeNormal();
 	const float Desired = FVector::Distance(Hip, Spot);
 	const float Reach = (Length1[Leg] + Length2[Leg]) * 0.95f;
-	float BestScore = TNumericLimits<float>::Max();
-	bool bFound = false;
 	for (const float Yaw : {0.0f, 25.0f, -25.0f, 50.0f, -50.0f, 80.0f, -80.0f, 115.0f, -115.0f})
 	{
 		const FVector Turned = FQuat(N, FMath::DegreesToRadians(Yaw)).RotateVector(Toward);
@@ -981,12 +992,9 @@ bool AIGLiningEntity::ChooseBracePad(const int32 Leg, const FIGLiningGap& Gap, c
 			// 둘레에서 먼 자리일수록, 짚을 거리가 둘레와 다를수록, 틈이 난 벽이 아닌 면일수록 덜 고른다.
 			const float Score = FVector::Distance(Pad, Spot) + 0.5f * FMath::Abs(Hit.Distance - Desired)
 				+ (FVector::DotProduct(Hit.ImpactNormal, N) > 0.7f ? 0.0f : 12.0f);
-			if (Score < BestScore && IsBracePadUsable(Leg, Gap, Pose, Pad, Hit.ImpactNormal))
+			if (IsBracePadUsable(Leg, Gap, Pose, Pad, Hit.ImpactNormal))
 			{
-				BestScore = Score;
-				OutPad = Pad;
-				OutNormal = Hit.ImpactNormal;
-				bFound = true;
+				Candidates.Add({Pad, Hit.ImpactNormal, Score});
 			}
 		}
 	}
@@ -1008,18 +1016,62 @@ bool AIGLiningEntity::ChooseBracePad(const int32 Leg, const FIGLiningGap& Gap, c
 					continue;
 				}
 				const FVector Pad = Hit.ImpactPoint + Hit.ImpactNormal * 2.0f;
-				const float Score = FVector::Distance(Pad, Spot) + 12.0f;
-				if (Score < BestScore && IsBracePadUsable(Leg, Gap, Pose, Pad, Hit.ImpactNormal))
+				if (IsBracePadUsable(Leg, Gap, Pose, Pad, Hit.ImpactNormal))
 				{
-					BestScore = Score;
-					OutPad = Pad;
-					OutNormal = Hit.ImpactNormal;
-					bFound = true;
+					Candidates.Add({Pad, Hit.ImpactNormal, static_cast<float>(FVector::Distance(Pad, Spot)) + 12.0f});
 				}
 			}
 		}
 	}
+	Candidates.Sort([](const FBraceCandidate& A, const FBraceCandidate& B) { return A.Score < B.Score; });
+	const FVector PressHip = HipWorld(Leg, Pose.Anchor + N * IGLining::PressStandOff, Pose.Rotation);
+	float BestScore = TNumericLimits<float>::Max();
+	bool bFound = false;
+	for (const FBraceCandidate& Candidate : Candidates)
+	{
+		if (Candidate.Score >= BestScore)
+		{
+			break;
+		}
+		const float Score = Candidate.Score + KneeRoomPenalty(Leg, PressHip, Pose.Rotation, Candidate.Pad, Candidate.Normal);
+		if (Score < BestScore)
+		{
+			BestScore = Score;
+			OutPad = Candidate.Pad;
+			OutNormal = Candidate.Normal;
+			bFound = true;
+		}
+	}
 	return bFound;
+}
+
+float AIGLiningEntity::KneeRoomPenalty(const int32 Leg, const FVector& Hip, const FQuat& Rotation, const FVector& Pad,
+	const FVector& Normal) const
+{
+	// 발목이 엉덩이 곁이면 두 마디가 포개져 무릎 원이 커지고(반지름 80 cm 가까이) 구석에서는 둘 쪽이 없다. 무릎 원 24쪽 가운데
+	// 굵기만큼 빈 쪽이 세 방향(45도) 이상 이어지지 않으면 무릎이 벽·바닥에 붙어 지낸다.
+	const FVector Ankle = AnkleFor(Leg, Pad, Normal, Hip, Rotation);
+	const float Reach = FVector::Distance(Hip, Ankle) / FMath::Max(Length1[Leg] + Length2[Leg], 1.0f);
+	float Penalty = Reach < 0.35f ? (0.35f - Reach) * 150.0f : 0.0f;
+	const FVector Pole = (Rotation.RotateVector(RestOutward[Leg]) * 0.35f + Rotation.GetUpVector() * 0.9f).GetSafeNormal();
+	const IGLining::FKneeCircle Circle = IGLining::KneeCircle(Hip, Ankle, Length1[Leg], Length2[Leg], Pole);
+	constexpr int32 Count = 24;
+	int32 Rooms[Count];
+	bool bAnyRoom = false;
+	for (int32 Slot = 0; Slot < Count; ++Slot)
+	{
+		Rooms[Slot] = LegRoom(Hip, Circle.At(TWO_PI * Slot / Count), Ankle, Normal);
+		bAnyRoom |= Rooms[Slot] > 0;
+	}
+	int32 Run = 0;
+	int32 BestRun = 0;
+	for (int32 Slot = 0; Slot < Count * 2 && BestRun < Count; ++Slot)
+	{
+		Run = Rooms[Slot % Count] == 2 ? Run + 1 : 0;
+		BestRun = FMath::Max(BestRun, Run);
+	}
+	Penalty += BestRun >= 3 ? 0.0f : (bAnyRoom ? 25.0f : 60.0f);
+	return Penalty;
 }
 
 float AIGLiningEntity::FindBlockedHatchYaw(const FIGLiningGap& Gap, const FGapPose& Pose) const
@@ -2996,6 +3048,11 @@ void AIGLiningEntity::PoseBody()
 			FVector Impact = FVector::ZeroVector;
 			FVector ImpactNormal = FVector::ZeroVector;
 			float Inside = 0.0f;
+			const FLeg& Measured = Legs[Leg];
+			if (!IsLegThickClear(Measured.Hip, Measured.Knee, Measured.Ankle, IGLining::ThickMeasureRadius, Measured.Normal))
+			{
+				++ThickObstructedFrames[Leg];
+			}
 			if (FindLegObstructionPart(Leg, Segment, Component, &Impact, &ImpactNormal, &Inside))
 			{
 				++ObstructedFrames[Leg];
@@ -3095,103 +3152,35 @@ void AIGLiningEntity::SolveLeg(const int32 Index)
 	}
 	// 무릎은 극을 엉덩이→발목 축에 수직인 면에 내린 쪽(원 위)에 둔다.
 	const IGLining::FKneeCircle Circle = IGLining::KneeCircle(Hip, Ankle, Length1[Index], Length2[Index], Pole);
-	// 무릎을 둘 쪽. 극 쪽에 두면 마디가 벽·바닥·천장·소품·열린 문짝을 지날 때는 원을 16등분해 극에서 가장 가까운 빈
-	// 쪽으로 정한다. 짚은 발과 엉덩이는 그대로 두고 무릎만 비킨다. 예전에는 지난 무릎을 극 쪽으로 돌린 뒤 막히면 지난 쪽에서 가까운 빈 쪽으로 되돌려, 두 쪽이 프레임마다 서로
-	// 당기며 무릎이 마감판 가장자리를 들락거렸다(302호 좁은 틈 왼쪽 위 다리).
-	FVector Target = Circle.Bend;
-	if (bKneeContinuity && PinnedLeg != Index && Leg.Fold < 0.999f
-		&& !IsKneeClear(Hip, Circle.Center + Target * Circle.Radius, Ankle, false, Leg.Normal))
-	{
-		// 두 마디가 다 빈 쪽이 없으면(옮기는 발목이 잠깐 면 속을 지날 때) 넓적다리만이라도 빈 쪽, 그것도 없으면 지난
-		// 프레임 쪽을 지킨다. 극 쪽으로 가 버리면 무릎이 방 구석 벽 너머로 나갔다(관리실 작은 점검구 짚기, 53 cm).
-		constexpr int32 Samples = 16;
-		bool bFound = false;
-		for (int32 Pass = 0; Pass < 2 && !bFound; ++Pass)
-		{
-			for (int32 Step = 1; Step <= Samples / 2 && !bFound; ++Step)
-			{
-				for (const float Sign : {1.0f, -1.0f})
-				{
-					const FVector Candidate = FQuat(Circle.Axis, Sign * TWO_PI * Step / Samples).RotateVector(Circle.Bend);
-					if (IsKneeClear(Hip, Circle.Center + Candidate * Circle.Radius, Ankle, Pass == 1, Leg.Normal))
-					{
-						Target = Candidate;
-						bFound = true;
-						break;
-					}
-				}
-			}
-		}
-		FVector Held = Leg.KneeBend - Circle.Axis * FVector::DotProduct(Leg.KneeBend, Circle.Axis);
-		if (!bFound && !Leg.KneeBend.IsZero() && Held.Normalize())
-		{
-			Target = Held;
-		}
-	}
-	// 극이 엉덩이→발목 축과 나란해지면 극의 그림자가 작아지며 방향이 휙 바뀌어, 무릎이 한 프레임에 원을 가로질러 반대로
-	// 뒤집혔다(덧댄 것 검사 102 cm, 관리실 81 cm). 지난 프레임 무릎 쪽을 새 원에 내려 잇고, 정한 쪽으로는 스윙과 같은 무릎
-	// 빠르기 안에서만 돈다. 반대편까지 돌아야 할 때는 몸 위(방 쪽)로 돌아 벽이나 바닥을 지나가지 않는다.
-	FVector KneeDirection = Target;
+	// 지난 프레임 무릎 쪽을 새 원에 내려 잇고, 정한 쪽으로는 스윙과 같은 무릎 빠르기 안에서만 돈다. 극이 엉덩이→발목 축과
+	// 나란해지면 극의 그림자가 휙 바뀌어, 무릎이 한 프레임에 원을 가로질러 반대로 뒤집혔다(덧댄 것 검사 102 cm, 관리실 81 cm).
 	FVector Previous = Leg.KneeBend - Circle.Axis * FVector::DotProduct(Leg.KneeBend, Circle.Axis);
 	const bool bHasPrevious = bKneeContinuity && !Leg.KneeBend.IsZero() && Previous.Normalize();
-	if (bHasPrevious)
+	const float TurnSeconds = GetWorld() ? FMath::Max(GetWorld()->GetDeltaSeconds(), 1.0f / 240.0f) : 1.0f / 60.0f;
+	const float MaxTurn = IGLining::SwingKneeSpeed * TurnSeconds / FMath::Max(Circle.Radius, 1.0f);
+	FVector KneeDirection = Circle.Bend;
+	if (bKneeContinuity && PinnedLeg != Index && Leg.Fold < 0.999f)
 	{
-		const float Gap = FMath::Acos(FMath::Clamp(FVector::DotProduct(Previous, Target), -1.0f, 1.0f));
-		const float DeltaSeconds = GetWorld() ? FMath::Max(GetWorld()->GetDeltaSeconds(), 1.0f / 240.0f) : 1.0f / 60.0f;
-		const float MaxTurn = IGLining::SwingKneeSpeed * DeltaSeconds / FMath::Max(Circle.Radius, 1.0f);
-		if (Gap > MaxTurn)
+		// 넓적다리·정강이 굵기까지 보고 둘레에서 둘 쪽과 도는 쪽을 같이 고른다(ChooseKneeDirection).
+		KneeDirection = ChooseKneeDirection(Index, Hip, Ankle, Circle.Center, Circle.Axis, Circle.Bend, Circle.Radius, bHasPrevious,
+			Previous, Leg.Normal, MaxTurn);
+	}
+	else
+	{
+		// 틀에 걸린 다리와 다 접히는 다리는 걸린 자리·접힌 자리를 따르니 극 쪽으로만 돈다. 반대편까지 돌아야 할 때는 몸
+		// 위(방 쪽)로 돈다.
+		Leg.KneeTurnSign = 0.0f;
+		const float Gap = bHasPrevious ? FMath::Acos(FMath::Clamp(FVector::DotProduct(Previous, Circle.Bend), -1.0f, 1.0f)) : 0.0f;
+		if (bHasPrevious && Gap > MaxTurn)
 		{
-			float Sign = FVector::DotProduct(FVector::CrossProduct(Previous, Target), Circle.Axis) >= 0.0f ? 1.0f : -1.0f;
+			float Sign = FVector::DotProduct(FVector::CrossProduct(Previous, Circle.Bend), Circle.Axis) >= 0.0f ? 1.0f : -1.0f;
 			if (Gap > PI * 0.75f)
 			{
 				const FVector ViaPlus = FQuat(Circle.Axis, HALF_PI).RotateVector(Previous);
 				Sign = FVector::DotProduct(ViaPlus, Up) >= FVector::DotProduct(-ViaPlus, Up) ? 1.0f : -1.0f;
 			}
-			// 그쪽으로 한 걸음 돈 무릎이 벽·소품·열린 문짝 속이고, 반대쪽으로 정한 쪽까지 도는 호가 끝까지 비어 있으면
-			// 반대쪽으로 멀리 돌고, 닿을 때까지 그쪽을 지킨다. 5층 점검구를 누르다 펼 때 남쪽 위 다리 무릎이 가까운 쪽인 남벽
-			// 속을 지나 위로 돌았다(15 cm). 반대쪽 한 걸음만 보고 매 프레임 다시 고르면 막힌 자리 앞뒤를 오가며 무릎이
-			// 떨었고, 바닥 쪽으로 도는 호는 바닥을 지났다. 반대쪽도 막히면 예전처럼 가까운 쪽으로 간다.
-			if (Leg.KneeTurnSign != 0.0f)
-			{
-				Sign = Leg.KneeTurnSign;
-			}
-			else if (PinnedLeg != Index && Leg.Fold < 0.999f
-				&& !IsKneeClear(Hip, Circle.Center + FQuat(Circle.Axis, Sign * MaxTurn).RotateVector(Previous) * Circle.Radius, Ankle, true))
-			{
-				const bool bShortWay = (FVector::DotProduct(FVector::CrossProduct(Previous, Target), Circle.Axis) >= 0.0f) == (Sign > 0.0f);
-				const float FarAngle = bShortWay ? TWO_PI - Gap : Gap;
-				const int32 Steps = FMath::Max(1, FMath::CeilToInt(FarAngle / FMath::DegreesToRadians(15.0f)));
-				bool bFarClear = true;
-				for (int32 Step = 1; Step <= Steps && bFarClear; ++Step)
-				{
-					const FVector Along = FQuat(Circle.Axis, -Sign * FarAngle * Step / Steps).RotateVector(Previous);
-					bFarClear = IsKneeClear(Hip, Circle.Center + Along * Circle.Radius, Ankle, true);
-				}
-				if (bFarClear)
-				{
-					Sign = -Sign;
-					Leg.KneeTurnSign = Sign;
-				}
-			}
 			KneeDirection = FQuat(Circle.Axis, Sign * MaxTurn).RotateVector(Previous);
 		}
-		else
-		{
-			Leg.KneeTurnSign = 0.0f;
-		}
-	}
-	else
-	{
-		Leg.KneeTurnSign = 0.0f;
-	}
-	// 무릎이 지금 비어 있고 정한 쪽으로 가는 다음 자리가 벽·바닥·소품 속이면, 비켜 갈 길이 날 때까지 그 자리에 둔다.
-	// 벽에 세로로 붙은 몸의 아래 다리는 엉덩이가 바닥 가까이 있어, 도는 길이 바닥과 낮은 소품 속을 지나며 무릎이
-	// 내려갔다(302호 큰 점검구 47 cm, 관리실 바닥 27 cm).
-	if (bHasPrevious && PinnedLeg != Index && Leg.Fold < 0.999f
-		&& !IsKneeClear(Hip, Circle.Center + KneeDirection * Circle.Radius, Ankle, false, Leg.Normal)
-		&& IsKneeClear(Hip, Circle.Center + Previous * Circle.Radius, Ankle, false, Leg.Normal))
-	{
-		KneeDirection = Previous;
 	}
 	const bool bKneeContinuous = !Leg.KneeBend.IsZero();
 	Leg.KneeBend = KneeDirection;
@@ -3841,6 +3830,200 @@ bool AIGLiningEntity::IsKneeClear(const FVector& Hip, const FVector& Knee, const
 		&& (!bShin || !Door->LineTraceComponent(Hit, Knee, AnkleEnd, DoorParams)));
 }
 
+bool AIGLiningEntity::IsLegThickClear(const FVector& Hip, const FVector& Knee, const FVector& Ankle, const float Radius,
+	const FVector& StandNormal) const
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return true;
+	}
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(LiningLegThick), false, this);
+	if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+	{
+		Params.AddIgnoredActor(PlayerPawn);
+	}
+	const FCollisionObjectQueryParams Objects(ECC_WorldStatic);
+	const FCollisionShape Sphere = FCollisionShape::MakeSphere(Radius);
+	const FCollisionQueryParams DoorParams(SCENE_QUERY_STAT(LiningLegThickDoor), false);
+	UStaticMeshComponent* Door = ActiveHatchDoor();
+	FHitResult Hit;
+	const FVector Up = Knee - Hip;
+	const float UpLength = Up.Size();
+	if (UpLength > Radius + 1.0f)
+	{
+		const FVector ThighStart = Hip + Up / UpLength * Radius;
+		if (World->SweepSingleByObjectType(Hit, ThighStart, Knee, FQuat::Identity, Objects, Sphere, Params)
+			|| (Door && Door->SweepComponent(Hit, ThighStart, Knee, FQuat::Identity, Sphere)))
+		{
+			return false;
+		}
+	}
+	const FVector Down = Ankle - Knee;
+	const float DownLength = Down.Size();
+	if (DownLength > 10.0f)
+	{
+		const FVector ShinEnd = Ankle - Down / DownLength * 8.0f;
+		if (World->SweepSingleByObjectType(Hit, Knee, ShinEnd, FQuat::Identity, Objects, Sphere, Params)
+			&& (StandNormal.IsZero() || FVector::Distance(Hit.Location, Ankle) > 25.0f
+				|| FVector::DotProduct(Hit.ImpactNormal, StandNormal) < 0.7f))
+		{
+			return false;
+		}
+		if (Door && Door->SweepComponent(Hit, Knee, ShinEnd, FQuat::Identity, Sphere))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+int32 AIGLiningEntity::LegRoom(const FVector& Hip, const FVector& Knee, const FVector& Ankle, const FVector& StandNormal) const
+{
+	if (!IsKneeClear(Hip, Knee, Ankle, false, StandNormal))
+	{
+		return 0;
+	}
+	return IsLegThickClear(Hip, Knee, Ankle, IGLining::KneeRoomRadius, StandNormal) ? 2 : 1;
+}
+
+FVector AIGLiningEntity::ChooseKneeDirection(const int32 Index, const FVector& Hip, const FVector& Ankle, const FVector& Center,
+	const FVector& Axis, const FVector& PoleSide, const float Radius, const bool bHasPrevious, const FVector& Previous,
+	const FVector& StandNormal, const float MaxTurn)
+{
+	// 예전에는 극 쪽이 막히면 극에서 가장 가까운 빈 쪽(가운데 선 기준)을 목표로 삼고, 그쪽으로 도는 길이 막히면 반대쪽 호·
+	// 멈춤 규칙을 덧대 비켰다. 다리 겉은 가운데 선보다 12 cm 굵어 빈 쪽으로 판정된 무릎도 벽·소품에 묻혔고, 돌아가는 길은
+	// 매번 다른 규칙이 맡아 한 곳을 막으면 다른 곳이 뚫렸다. 이제 둘레를 한 번에 재서 목표와 도는 쪽을 같이 정한다.
+	FLeg& Leg = Legs[Index];
+	const auto At = [&Center, Radius](const FVector& Direction) { return Center + Direction * Radius; };
+	const auto RoomOf = [this, &Hip, &Ankle, &StandNormal, &At](const FVector& Direction)
+	{
+		return LegRoom(Hip, At(Direction), Ankle, StandNormal);
+	};
+	const auto AngleBetween = [](const FVector& A, const FVector& B)
+	{
+		return FMath::Acos(FMath::Clamp(FVector::DotProduct(A, B), -1.0f, 1.0f));
+	};
+	const auto SignTo = [&Axis](const FVector& From, const FVector& To)
+	{
+		return FVector::DotProduct(FVector::CrossProduct(From, To), Axis) >= 0.0f ? 1.0f : -1.0f;
+	};
+	// 빠른 길: 극 쪽이 굵기만큼 비었고 지난 쪽에서 거기까지 짧은 호도 15도마다 굵기만큼 비었으면 그쪽으로 돈다. 빈 방에서
+	// 짚은 다리는 대부분 여기서 끝난다.
+	if (RoomOf(PoleSide) == 2)
+	{
+		if (!bHasPrevious)
+		{
+			Leg.KneeTurnSign = 0.0f;
+			return PoleSide;
+		}
+		const float Gap = AngleBetween(Previous, PoleSide);
+		if (Gap <= MaxTurn)
+		{
+			Leg.KneeTurnSign = 0.0f;
+			return PoleSide;
+		}
+		const float Sign = SignTo(Previous, PoleSide);
+		bool bArcClear = true;
+		const int32 Steps = FMath::Max(1, FMath::CeilToInt(Gap / FMath::DegreesToRadians(15.0f)));
+		for (int32 Step = 0; Step < Steps && bArcClear; ++Step)
+		{
+			bArcClear = RoomOf(FQuat(Axis, Sign * Gap * Step / Steps).RotateVector(Previous)) == 2;
+		}
+		if (bArcClear)
+		{
+			Leg.KneeTurnSign = 0.0f;
+			return FQuat(Axis, Sign * MaxTurn).RotateVector(Previous);
+		}
+	}
+	// 둘레 24쪽(15도마다)의 빈 정도를 잰다. 0번이 극 쪽이다.
+	constexpr int32 Count = 24;
+	FVector Dirs[Count];
+	int32 Rooms[Count];
+	int32 BestRoom = 0;
+	for (int32 Slot = 0; Slot < Count; ++Slot)
+	{
+		Dirs[Slot] = FQuat(Axis, TWO_PI * Slot / Count).RotateVector(PoleSide);
+		Rooms[Slot] = RoomOf(Dirs[Slot]);
+		BestRoom = FMath::Max(BestRoom, Rooms[Slot]);
+	}
+	if (BestRoom == 0)
+	{
+		// 어디에도 둘 곳이 없다(엉덩이와 발목이 포개져 원이 벽·소품 속을 돈다). 지난 쪽을 지킨다.
+		return bHasPrevious ? Previous : PoleSide;
+	}
+	// 가장 잘 빈 쪽 가운데 극에 가깝고(1) 지난 쪽에 가까운(0.5) 곳을 목표로 삼는다.
+	int32 TargetSlot = 0;
+	float BestCost = TNumericLimits<float>::Max();
+	for (int32 Slot = 0; Slot < Count; ++Slot)
+	{
+		if (Rooms[Slot] != BestRoom)
+		{
+			continue;
+		}
+		const float Cost = AngleBetween(Dirs[Slot], PoleSide) + (bHasPrevious ? 0.5f * AngleBetween(Dirs[Slot], Previous) : 0.0f);
+		if (Cost < BestCost)
+		{
+			BestCost = Cost;
+			TargetSlot = Slot;
+		}
+	}
+	const FVector Target = Dirs[TargetSlot];
+	if (!bHasPrevious)
+	{
+		Leg.KneeTurnSign = 0.0f;
+		return Target;
+	}
+	const float Gap = AngleBetween(Previous, Target);
+	if (Gap <= MaxTurn)
+	{
+		Leg.KneeTurnSign = 0.0f;
+		return Target;
+	}
+	// 지난 쪽에서 목표까지 두 호에서 가장 덜 빈 방향. 지난 쪽은 가장 가까운 15도 방향으로 친다. 화면 주사율이 높으면 한
+	// 프레임에 도는 각이 작아 지난 쪽이 목표와 같은 방향으로 잡힐 수 있다. 그때 방향을 차례로 돌며 재면 원 한 바퀴를 재게
+	// 되어 두 호가 다 막힌 것으로 나오고, 무릎이 목표 몇 도 앞에서 멈췄다.
+	const float FromPole = SignTo(PoleSide, Previous) * AngleBetween(PoleSide, Previous);
+	const int32 PreviousSlot = (FMath::RoundToInt(FromPole / (TWO_PI / Count)) % Count + Count) % Count;
+	const auto ArcRoom = [&Rooms, PreviousSlot, TargetSlot](const int32 Step)
+	{
+		int32 Least = Rooms[TargetSlot];
+		if (PreviousSlot == TargetSlot)
+		{
+			return Least;
+		}
+		for (int32 Slot = (PreviousSlot + Step + Count) % Count; Slot != TargetSlot; Slot = (Slot + Step + Count) % Count)
+		{
+			Least = FMath::Min(Least, Rooms[Slot]);
+		}
+		return Least;
+	};
+	const int32 PlusRoom = ArcRoom(1);
+	const int32 MinusRoom = ArcRoom(-1);
+	const float ShortSign = SignTo(Previous, Target);
+	float Sign = ShortSign;
+	if (Leg.KneeTurnSign != 0.0f && (Leg.KneeTurnSign > 0.0f ? PlusRoom : MinusRoom) >= 1)
+	{
+		// 정한 쪽이 아직 비어 있으면 닿을 때까지 지킨다(프레임마다 고르면 두 자리를 오갔다).
+		Sign = Leg.KneeTurnSign;
+	}
+	else if (PlusRoom >= 1 || MinusRoom >= 1)
+	{
+		Sign = PlusRoom != MinusRoom ? (PlusRoom > MinusRoom ? 1.0f : -1.0f) : ShortSign;
+		Leg.KneeTurnSign = Sign;
+	}
+	else
+	{
+		// 두 호가 다 막혔다. 지난 쪽이 비어 있으면 길이 날 때까지 지키고, 지난 쪽부터 막혀 있으면 짧은 쪽으로 빠져나간다.
+		Leg.KneeTurnSign = 0.0f;
+		if (RoomOf(Previous) >= 1)
+		{
+			return Previous;
+		}
+	}
+	return FQuat(Axis, Sign * MaxTurn).RotateVector(Previous);
+}
+
 bool AIGLiningEntity::IsBodyObstructed(FString* OutComponent) const
 {
 	UWorld* World = GetWorld();
@@ -4042,6 +4225,8 @@ void AIGLiningEntity::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			ByState += FString::Printf(TEXT(" state%d=%d"), Entry.Key, Entry.Value);
 		}
 		UE_LOG(LogIndieGame, Display, TEXT("LINING_BODY frames=%d obstructed=%d%s"), MeasuredFrames, BodyObstructedFrames, *ByState);
+		UE_LOG(LogIndieGame, Display, TEXT("LINING_LEGS_THICK frames=%d radius=%.0f obstructed=%d,%d,%d,%d"), MeasuredFrames,
+			IGLining::ThickMeasureRadius, ThickObstructedFrames[0], ThickObstructedFrames[1], ThickObstructedFrames[2], ThickObstructedFrames[3]);
 		ObstructionBreakdown.ValueSort([](const int32 A, const int32 B) { return A > B; });
 		int32 Shown = 0;
 		for (const TPair<FString, int32>& Entry : ObstructionBreakdown)

@@ -150,6 +150,12 @@ public:
 	 */
 	bool IsKneeClear(const FVector& Hip, const FVector& Knee, const FVector& Ankle, bool bThighOnly = false,
 		const FVector& StandNormal = FVector::ZeroVector) const;
+	/**
+	 * 넓적다리·정강이가 굵기(반지름 Radius)만큼 비었는가. 엉덩이 쪽 끝은 몸판에 묻혀 있어 반지름만큼 떨어진 데부터, 발목 쪽
+	 * 끝은 짚은 면 가까이라 8 cm 덜 본다. StandNormal을 주면 정강이 끝 25 cm 안에서 그 면에 닿는 것은 덜 본다.
+	 */
+	bool IsLegThickClear(const FVector& Hip, const FVector& Knee, const FVector& Ankle, float Radius,
+		const FVector& StandNormal = FVector::ZeroVector) const;
 	/** 몸 살·물갈퀴·패드 막 뼈가 있는 몸인가(예전 SK_Lining에는 없다). */
 	bool HasSoftBody() const { return bHasSoftBones; }
 	/** 검사용: 몸 사분면(다리와 같은 번호) 살이 쉬는 자리에서 처진 거리(월드 cm). */
@@ -395,6 +401,20 @@ private:
 	 * 걷는 동안이 아니면 0으로 돌아간다.
 	 */
 	float LeanKnee(int32 Leg, const FVector& Hip, const FVector& Ankle, const FVector& Pole);
+	/** 무릎을 그 자리에 둘 때 빈 정도. 2는 굵기만큼 빔, 1은 가운데 선만 빔, 0은 막힘. */
+	int32 LegRoom(const FVector& Hip, const FVector& Knee, const FVector& Ankle, const FVector& StandNormal) const;
+	/**
+	 * 엉덩이 Hip에서 Pad를 짚을 때 무릎 둘 자리가 모자란 만큼의 벌점(짚을 자리 점수와 같은 cm 단위). 발목이 엉덩이 곁이거나,
+	 * 무릎 원에서 굵기만큼 빈 쪽이 세 방향(45도) 이상 이어지지 않으면 붙는다.
+	 */
+	float KneeRoomPenalty(int32 Leg, const FVector& Hip, const FQuat& Rotation, const FVector& Pad, const FVector& Normal) const;
+	/**
+	 * 엉덩이→발목 축을 도는 무릎 원(가운데 Center, 축 Axis, 극 쪽 PoleSide, 반지름 Radius) 위에서 이번 프레임 무릎 쪽을
+	 * 고른다. 둘레 24쪽의 빈 정도를 재서 가장 잘 빈 쪽 가운데 극과 지난 쪽에 가까운 곳을 목표로 삼고, 지난 쪽에서 목표까지
+	 * 빈 호로만 한 프레임에 MaxTurn(라디안)씩 돈다. 두 호가 다 막히면 지난 쪽이 비어 있을 때 그 자리를 지킨다.
+	 */
+	FVector ChooseKneeDirection(int32 Index, const FVector& Hip, const FVector& Ankle, const FVector& Center, const FVector& Axis,
+		const FVector& PoleSide, float Radius, bool bHasPrevious, const FVector& Previous, const FVector& StandNormal, float MaxTurn);
 	void ResetKneeLean();
 	void UpdateColliders();
 	/** 밀려나는 동안 Alpha(0~1)의 몸 가운데와 회전. Away는 처음에 면에서 떨어지는 거리, Before는 구석 면 앞에서 다 돌 자리다. */
@@ -482,6 +502,8 @@ private:
 	float MaxKneeStep[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 	int32 KneeJumpFrames[4] = {0, 0, 0, 0};
 	int32 ObstructedFrames[4] = {0, 0, 0, 0};
+	/** 넓적다리·정강이 겉(반지름 6 cm)이 벽·소품·문짝에 묻힌 프레임. 가운데 선은 비어도 겉이 보이게 묻히는 것을 센다. */
+	int32 ThickObstructedFrames[4] = {0, 0, 0, 0};
 	int32 MeasuredFrames = 0;
 	FString WorstKneeStep;
 	/** SetKneeHint로 무릎 쪽을 정한 다리와 그 자리. 없으면 INDEX_NONE. */
