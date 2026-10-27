@@ -251,6 +251,17 @@ private:
 		 */
 		FVector SwingDetour = FVector::ZeroVector;
 		float SwingDetourPeak = 0.5f;
+		/**
+		 * 이번에 옮기는 동안 무릎 극이 따라갈 길(월드 방향, 스윙 비율 0~1을 고르게 나눈 자리마다). bSwingPlanned가
+		 * 꺼져 있으면 몸 기준 극을 쓴다. 옮기기 시작할 때 정하고(PlanSwingPole) 디디면 끈다. 디딘 뒤에도 쓰면 몸이 당겨
+		 * 오는 동안 그 극이 벽 쪽을 가리켜 무릎이 벽을 지났다.
+		 */
+		FVector SwingPoles[8];
+		bool bSwingPlanned = false;
+		/** 이번에는 몸 쪽 가장자리부터 들지 않고 패드를 평평하게 뗀다(엉덩이 바로 밑에서 출발하는 짚기). */
+		bool bFlatPeel = false;
+		/** 지난 프레임에 쓴 몸 기준 극(눕히기까지 넣은 것). PlanSwingPole이 기본값으로 쓴다. */
+		FVector LastPole = FVector::ZeroVector;
 		/** 마지막으로 푼 관절 자리(검사·충돌용). */
 		FVector Hip = FVector::ZeroVector;
 		FVector Knee = FVector::ZeroVector;
@@ -415,6 +426,8 @@ private:
 	 */
 	FVector ChooseKneeDirection(int32 Index, const FVector& Hip, const FVector& Ankle, const FVector& Center, const FVector& Axis,
 		const FVector& PoleSide, float Radius, bool bHasPrevious, const FVector& Previous, const FVector& StandNormal, float MaxTurn);
+	/** 옮기기를 시작하는 다리의 무릎 극이 따라갈 길을 패드가 지날 길 전체를 보고 정한다(FLeg::SwingPoles). */
+	void PlanSwingPole(int32 Index);
 	void ResetKneeLean();
 	void UpdateColliders();
 	/** 밀려나는 동안 Alpha(0~1)의 몸 가운데와 회전. Away는 처음에 면에서 떨어지는 거리, Before는 구석 면 앞에서 다 돌 자리다. */
@@ -504,6 +517,13 @@ private:
 	int32 ObstructedFrames[4] = {0, 0, 0, 0};
 	/** 넓적다리·정강이 겉(반지름 6 cm)이 벽·소품·문짝에 묻힌 프레임. 가운데 선은 비어도 겉이 보이게 묻히는 것을 센다. */
 	int32 ThickObstructedFrames[4] = {0, 0, 0, 0};
+	/** 다리 풀이에 든 시간(검사 로그 LINING_SOLVE_TIME). 옮기기 전 무릎 길 정하기와 네 다리 풀기를 프레임마다 더한다. */
+	double SolveFrameSeconds = 0.0;
+	double SolveTotalSeconds = 0.0;
+	double SolveMaxSeconds = 0.0;
+	double PlanTotalSeconds = 0.0;
+	double PlanMaxSeconds = 0.0;
+	int32 PlanCount = 0;
 	int32 MeasuredFrames = 0;
 	FString WorstKneeStep;
 	/** SetKneeHint로 무릎 쪽을 정한 다리와 그 자리. 없으면 INDEX_NONE. */
