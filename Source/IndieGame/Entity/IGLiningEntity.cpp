@@ -81,6 +81,10 @@ namespace IGLining
 	constexpr float LandWaitSeconds = 0.5f;
 	// 옮기기 전에 무릎 길을 정할 때 스윙을 나누는 자리 수(FLeg::SwingPoles 크기와 같다).
 	constexpr int32 PoleSamples = 8;
+	// 틈 둘레를 짚을 자리를 고를 때 옮겨 가는 무릎 길을 다 재 보는 후보 수와, 그 길에서 무릎을 둘 데가 없는 자리 하나의
+	// 벌점(짚을 자리 점수와 같은 cm 단위).
+	constexpr int32 BracePathChecks = 4;
+	constexpr float BraceBlockedPenalty = 48.0f;
 	// 무릎 자리를 고를 때 넓적다리·정강이를 이 반지름(cm)의 굵기로 본다. 다리 겉(12 cm)을 다 비키게 하면 좁은 구석에서
 	// 고를 쪽이 없어서, 짚은 면 가까이 붙는 막은 조금 겹쳐도 되게 절반 남짓으로 잡았다.
 	constexpr float KneeRoomRadius = 7.0f;
@@ -931,7 +935,7 @@ void AIGLiningEntity::UpdateHatchOpenLimits()
 }
 
 bool AIGLiningEntity::ChooseBracePad(const int32 Leg, const FIGLiningGap& Gap, const FGapPose& Pose, FVector& OutPad,
-	FVector& OutNormal) const
+	FVector& OutNormal, FBraceSwing* OutSwing) const
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -1027,6 +1031,14 @@ bool AIGLiningEntity::ChooseBracePad(const int32 Leg, const FIGLiningGap& Gap, c
 	}
 	Candidates.Sort([](const FBraceCandidate& A, const FBraceCandidate& B) { return A.Score < B.Score; });
 	const FVector PressHip = HipWorld(Leg, Pose.Anchor + N * IGLining::PressStandOff, Pose.Rotation);
+	// 옮겨 가는 길도 본다. 짚을 자리만 보고 고르면 안쪽 방 큰 점검구 아래 1번 다리가 옮기는 길 가운데 세 자리에서 무릎 원
+	// 24방향이 다 막혀, 넓적다리가 바닥을 28 cm 지났다(엉덩이가 바닥 12 cm 위다). 다리는 지금 짚은 자리를 떼어, 짚을 때 몸
+	// 자리로 가는 몸을 따라 옮긴다. 비켜 돌기와 무릎 길은 옮길 때와 같은 수로 잰다.
+	const FLeg& Current = Legs[Leg];
+	const bool bMeasurePath = OutSwing && CanPlanKneePath(Leg);
+	const FVector LiftHip = HipWorld(Leg, BodyCenter, BodyRotation);
+	const FVector BraceHip = HipWorld(Leg, Pose.Anchor + N * IGLining::BraceStandOff, Pose.Rotation);
+	int32 FullChecks = 0;
 	float BestScore = TNumericLimits<float>::Max();
 	bool bFound = false;
 	for (const FBraceCandidate& Candidate : Candidates)
@@ -1035,16 +1047,82 @@ bool AIGLiningEntity::ChooseBracePad(const int32 Leg, const FIGLiningGap& Gap, c
 		{
 			break;
 		}
-		const float Score = Candidate.Score + KneeRoomPenalty(Leg, PressHip, Pose.Rotation, Candidate.Pad, Candidate.Normal);
+		float Score = Candidate.Score + KneeRoomPenalty(Leg, PressHip, Pose.Rotation, Candidate.Pad, Candidate.Normal);
+		if (Score >= BestScore)
+		{
+			continue;
+		}
+		FBraceSwing Swing;
+		if (bMeasurePath)
+		{
+			// 무릎 길을 다 재는 자리(몸 기준 극이 내내 비지 않는 자리)는 점수 순으로 많아야 BracePathChecks개다. 하나에
+			// 트레이스가 수백 번이다.
+			if (FullChecks >= IGLining::BracePathChecks)
+			{
+				break;
+			}
+			FLeg Trial = Current;
+			Trial.FromPad = Current.Pad;
+			Trial.FromNormal = Current.Normal;
+			Trial.ToPad = Candidate.Pad;
+			Trial.ToNormal = Candidate.Normal.GetSafeNormal();
+			Trial.FoldFrom = Current.Fold;
+			Trial.FoldTo = 0.0f;
+			Trial.LiftScale = 1.0f;
+			Trial.SwingDetour = FVector::ZeroVector;
+			Trial.SwingDetourPeak = 0.5f;
+			if (FindSwingDetour(Leg, Trial, Swing.Detour, Swing.DetourPeak))
+			{
+				Trial.SwingDetour = Swing.Detour;
+				Trial.SwingDetourPeak = Swing.DetourPeak;
+			}
+			MeasureKneePath(Leg, Trial, LiftHip, BodyRotation, BraceHip, Pose.Rotation, Swing.Path);
+			FullChecks += Swing.Path.bDefaultClear ? 0 : 1;
+			// 옮기는 동안 무릎을 둘 데가 아예 없는 자리만 센다. 길을 정하지 않으면 몸 기준 극을 쓴다. 가운데 선만 빈 자리나
+			// 도는 각까지 점수로 치면 5층 배관 점검구 아래 다리가 길 점수 1점 남짓 차이로 둘레에서 먼 자리를 짚어, 짚는 동안
+			// 다리 겉이 묻힌 프레임이 3에서 14로 늘었다.
+			const bool bPlanTaken = !Swing.Path.bDefaultClear && Swing.Path.Score > Swing.Path.DefaultScore + 1.0f;
+			const int32 Blocked = Swing.Path.bDefaultClear ? 0 : (bPlanTaken ? Swing.Path.Blocked : Swing.Path.DefaultBlocked);
+			Score += Blocked * IGLining::BraceBlockedPenalty;
+		}
 		if (Score < BestScore)
 		{
 			BestScore = Score;
 			OutPad = Candidate.Pad;
 			OutNormal = Candidate.Normal;
 			bFound = true;
+			if (bMeasurePath)
+			{
+				*OutSwing = Swing;
+			}
 		}
 	}
 	return bFound;
+}
+
+bool AIGLiningEntity::RechooseBracePad(const int32 Index)
+{
+	FLeg& Leg = Legs[Index];
+	const FIGLiningGap* Gap = FindGap(TargetGap);
+	FVector Pad = FVector::ZeroVector;
+	FVector Normal = FVector::UpVector;
+	FBraceSwing Swing;
+	if (!Gap || !TargetPose.bValid || !CanPlanKneePath(Index) || !ChooseBracePad(Index, *Gap, TargetPose, Pad, Normal, &Swing))
+	{
+		return false;
+	}
+	Leg.ToPad = Pad;
+	Leg.ToNormal = Normal.GetSafeNormal();
+	Leg.SwingDetour = Swing.Detour;
+	Leg.SwingDetourPeak = Swing.DetourPeak;
+	// 고를 때 잰 무릎 길을 그대로 쓴다(PlanSwingPole과 같은 기준).
+	Leg.bFlatPeel = LegReach(Index, BodyCenter, BodyRotation) < 0.3f;
+	Leg.bSwingPlanned = !Swing.Path.bDefaultClear && Swing.Path.Score > Swing.Path.DefaultScore + 1.0f;
+	for (int32 Sample = 0; Sample < IGLining::PoleSamples; ++Sample)
+	{
+		Leg.SwingPoles[Sample] = Swing.Path.Poles[Sample];
+	}
+	return true;
 }
 
 float AIGLiningEntity::KneeRoomPenalty(const int32 Leg, const FVector& Hip, const FQuat& Rotation, const FVector& Pad,
@@ -1852,12 +1930,23 @@ FVector AIGLiningEntity::SwingPadAt(const FLeg& Leg, const float T, const FVecto
 
 void AIGLiningEntity::PlanSwingDetour(const int32 Index)
 {
+	FLeg& Leg = Legs[Index];
+	FVector Detour = FVector::ZeroVector;
+	float Peak = 0.5f;
+	if (FindSwingDetour(Index, Leg, Detour, Peak))
+	{
+		Leg.SwingDetour = Detour;
+		Leg.SwingDetourPeak = Peak;
+	}
+}
+
+bool AIGLiningEntity::FindSwingDetour(const int32 Index, const FLeg& Leg, FVector& OutDetour, float& OutPeak) const
+{
 	UWorld* World = GetWorld();
 	if (!World)
 	{
-		return;
+		return false;
 	}
-	FLeg& Leg = Legs[Index];
 	// 걷는 동안 스윙하는 사이에는 몸이 서 있으므로 엉덩이도 그 자리다. 무릎은 SolveLeg처럼 극으로 풀고 접힌 자세와
 	// 섞는다(눕히기는 빼고 잰다).
 	const FVector Hip = HipWorld(Index, BodyCenter, BodyRotation);
@@ -1904,7 +1993,7 @@ void AIGLiningEntity::PlanSwingDetour(const int32 Index)
 	const float Before = KneeStep(FVector::ZeroVector, 0.5f, WorstStep);
 	if (Before <= Budget)
 	{
-		return;
+		return false;
 	}
 	// 몸 면을 따라, 옮기는 방향에 수직으로 비킨다. 무릎이 가장 크게 튀는 때 발목이 엉덩이에서 벗어나 있는 쪽부터 보고,
 	// 엉덩이 바로 밑을 지나면 다리 바깥쪽부터 본다. 벽에서 떨어지는 쪽(사람이 서 있는 방 쪽)으로는 비키지 않는다.
@@ -1923,7 +2012,7 @@ void AIGLiningEntity::PlanSwingDetour(const int32 Index)
 	}
 	if (!Away.Normalize())
 	{
-		return;
+		return false;
 	}
 	struct FDetour
 	{
@@ -2008,11 +2097,12 @@ void AIGLiningEntity::PlanSwingDetour(const int32 Index)
 		}
 		else
 		{
-			Leg.SwingDetour = Option.Offset;
-			Leg.SwingDetourPeak = Option.Peak;
-			return;
+			OutDetour = Option.Offset;
+			OutPeak = Option.Peak;
+			return true;
 		}
 	}
+	return false;
 }
 
 void AIGLiningEntity::UpdateSwings(const float DeltaSeconds)
@@ -2020,6 +2110,7 @@ void AIGLiningEntity::UpdateSwings(const float DeltaSeconds)
 	const float Duration = (State == EIGLiningState::Peeling ? IGLining::PeelSeconds * 0.55f
 		: State == EIGLiningState::Spread ? FMath::Max(MoveSeconds * 0.5f, 0.6f)
 		: IGLining::SwingSeconds) / PaceScale;
+	bool bRechosePad = false;
 	for (int32 Index = 0; Index < LegCount; ++Index)
 	{
 		FLeg& Leg = Legs[Index];
@@ -2045,8 +2136,19 @@ void AIGLiningEntity::UpdateSwings(const float DeltaSeconds)
 		if (bLifting
 			&& (State == EIGLiningState::Peeling || State == EIGLiningState::Stepping || State == EIGLiningState::Bracing))
 		{
+			// 틈을 짚으러 드는 다리는 옮겨 가는 길까지 보고 짚을 자리를 다시 고른다. 후보마다 무릎 길을 재느라 오래 걸려서(네
+			// 다리를 한 프레임에 고르면 18 ms) 한 프레임에 한 다리만 고르고 다른 다리는 다음 프레임에 든다.
+			const bool bRechoose = State == EIGLiningState::Bracing && CanPlanKneePath(Index);
+			if (bRechoose && bRechosePad)
+			{
+				continue;
+			}
 			const double PlanStarted = bMeasureLegs ? FPlatformTime::Seconds() : 0.0;
-			PlanSwingPole(Index);
+			bRechosePad |= bRechoose;
+			if (!bRechoose || !RechooseBracePad(Index))
+			{
+				PlanSwingPole(Index);
+			}
 			if (bMeasureLegs)
 			{
 				const double Spent = FPlatformTime::Seconds() - PlanStarted;
@@ -2054,6 +2156,10 @@ void AIGLiningEntity::UpdateSwings(const float DeltaSeconds)
 				PlanTotalSeconds += Spent;
 				PlanMaxSeconds = FMath::Max(PlanMaxSeconds, Spent);
 				++PlanCount;
+				if (bRechoose)
+				{
+					BraceChooseMaxSeconds = FMath::Max(BraceChooseMaxSeconds, Spent);
+				}
 			}
 		}
 		Leg.SwingAlpha = FMath::Min(1.0f, Leg.SwingAlpha + DeltaSeconds / Duration);
@@ -2314,7 +2420,8 @@ void AIGLiningEntity::UpdateStepping(const float DeltaSeconds)
 					const int32 FirstGroup = Caught[1] > Caught[0] ? 1 : 0;
 					for (int32 Leg = 0; Leg < LegCount; ++Leg)
 					{
-						// 둘레가 바닥 밑·옆 소품 속이면 닿는 면을 다시 고른다. 짚을 데가 없는 다리는 몸 밑에 접는다.
+						// 둘레가 바닥 밑·옆 소품 속이면 닿는 면을 다시 고른다. 짚을 데가 없는 다리는 몸 밑에 접는다. 짚는 다리는
+						// 들 때 옮겨 가는 길까지 보고 다시 고른다(RechooseBracePad).
 						FVector Pad = FVector::ZeroVector;
 						FVector Normal = N;
 						const bool bTuck = Gap->bTuckLowerLegs && !TargetPose.bTurned && IGLining::LegSx[Leg] < 0.0f;
@@ -4087,34 +4194,56 @@ void AIGLiningEntity::PlanSwingPole(const int32 Index)
 	FLeg& Leg = Legs[Index];
 	Leg.bSwingPlanned = false;
 	Leg.bFlatPeel = false;
-	if (!bKneeContinuity || PinnedLeg == Index || Leg.LastPole.IsZero() || Leg.FoldFrom > 0.001f || Leg.FoldTo > 0.001f)
+	if (!CanPlanKneePath(Index))
 	{
 		return;
 	}
-	constexpr int32 Samples = IGLining::PoleSamples;
-	constexpr int32 Count = 24;
-	// 스윙의 한 자리에서 다음 자리까지 무릎이 도는 한도(45도). 가운데 몫에서 스윙이 가장 빠를 때 무릎 빠르기로 도는 각이다.
-	constexpr int32 MaxSlots = 3;
 	// 걷는 동안 옮기는 사이에는 몸이 서 있다. 틈을 짚을 때는 몸이 짚을 자리로 간다.
 	const bool bBodyMoves = State == EIGLiningState::Bracing;
 	// 엉덩이 바로 밑(다리 길이 30% 안)에서 출발하는 짚기는 패드를 평평하게 뗀다(SolveLeg).
 	Leg.bFlatPeel = bBodyMoves && LegReach(Index, BodyCenter, BodyRotation) < 0.3f;
-	const FVector HipNow = HipWorld(Index, BodyCenter, BodyRotation);
-	const FVector HipEnd = bBodyMoves ? HipWorld(Index, MoveToCenter, MoveToRotation) : HipNow;
 	const FQuat RotationEnd = bBodyMoves ? MoveToRotation : BodyRotation;
+	FKneePath Path;
+	MeasureKneePath(Index, Leg, HipWorld(Index, BodyCenter, BodyRotation), BodyRotation,
+		HipWorld(Index, bBodyMoves ? MoveToCenter : BodyCenter, RotationEnd), RotationEnd, Path);
+	// 몸 기준 극을 그대로 쓸 때보다 나을 때만 길을 따른다.
+	if (Path.bDefaultClear || Path.Score <= Path.DefaultScore + 1.0f)
+	{
+		return;
+	}
+	for (int32 Sample = 0; Sample < IGLining::PoleSamples; ++Sample)
+	{
+		Leg.SwingPoles[Sample] = Path.Poles[Sample];
+	}
+	Leg.bSwingPlanned = true;
+}
+
+bool AIGLiningEntity::CanPlanKneePath(const int32 Index) const
+{
+	const FLeg& Leg = Legs[Index];
+	return bKneeContinuity && PinnedLeg != Index && !Leg.LastPole.IsZero() && Leg.FoldFrom <= 0.001f && Leg.FoldTo <= 0.001f;
+}
+
+void AIGLiningEntity::MeasureKneePath(const int32 Index, const FLeg& Swing, const FVector& HipFrom, const FQuat& RotationFrom,
+	const FVector& HipTo, const FQuat& RotationTo, FKneePath& Out) const
+{
+	constexpr int32 Samples = IGLining::PoleSamples;
+	constexpr int32 Count = 24;
+	// 스윙의 한 자리에서 다음 자리까지 무릎이 도는 한도(45도). 가운데 몫에서 스윙이 가장 빠를 때 무릎 빠르기로 도는 각이다.
+	constexpr int32 MaxSlots = 3;
 	FVector Hips[Samples];
 	FVector Ankles[Samples];
 	FVector Normals[Samples];
 	for (int32 Sample = 0; Sample < Samples; ++Sample)
 	{
 		const float T = static_cast<float>(Sample) / (Samples - 1);
-		Hips[Sample] = FMath::Lerp(HipNow, HipEnd, T);
-		Normals[Sample] = FMath::Lerp(Leg.FromNormal, Leg.ToNormal, T).GetSafeNormal();
-		Ankles[Sample] = AnkleFor(Index, SwingPadAt(Leg, T, Leg.SwingDetour, Leg.SwingDetourPeak), Normals[Sample], Hips[Sample],
-			FQuat::Slerp(BodyRotation, RotationEnd, T));
+		Hips[Sample] = FMath::Lerp(HipFrom, HipTo, T);
+		Normals[Sample] = FMath::Lerp(Swing.FromNormal, Swing.ToNormal, T).GetSafeNormal();
+		Ankles[Sample] = AnkleFor(Index, SwingPadAt(Swing, T, Swing.SwingDetour, Swing.SwingDetourPeak), Normals[Sample],
+			Hips[Sample], FQuat::Slerp(RotationFrom, RotationTo, T));
 	}
 	// 처음 자리 무릎 원에서 몸 기준 극 쪽(0번)부터 15도마다 24방향. 같은 월드 방향을 자리마다 그 자리 무릎 원에 내린다.
-	const IGLining::FKneeCircle Start = IGLining::KneeCircle(Hips[0], Ankles[0], Length1[Index], Length2[Index], Leg.LastPole);
+	const IGLining::FKneeCircle Start = IGLining::KneeCircle(Hips[0], Ankles[0], Length1[Index], Length2[Index], Swing.LastPole);
 	FVector Directions[Count];
 	for (int32 Slot = 0; Slot < Count; ++Slot)
 	{
@@ -4127,15 +4256,26 @@ void AIGLiningEntity::PlanSwingPole(const int32 Index)
 			IGLining::KneeCircle(Hips[Sample], Ankles[Sample], Length1[Index], Length2[Index], Directions[Slot]);
 		Rooms[Sample][Slot] = LegRoom(Hips[Sample], Circle.At(0.0f), Ankles[Sample], Normals[Sample]);
 	};
+	const auto Value = [](const int32 Room) { return Room == 2 ? 2.0f : Room == 1 ? 1.0f : -10.0f; };
 	// 몸 기준 극 쪽부터 잰다. 내내 굵기만큼 비어 있으면(넓은 데서 걸을 때 대부분) 나머지는 재지 않는다.
-	bool bDefaultClear = true;
+	Out.bDefaultClear = true;
+	Out.DefaultScore = 0.0f;
+	Out.Blocked = 0;
+	Out.DefaultBlocked = 0;
 	for (int32 Sample = 0; Sample < Samples; ++Sample)
 	{
 		Measure(Sample, 0);
-		bDefaultClear &= Rooms[Sample][0] == 2;
+		Out.bDefaultClear &= Rooms[Sample][0] == 2;
+		Out.DefaultScore += Value(Rooms[Sample][0]);
+		Out.DefaultBlocked += Rooms[Sample][0] == 0 ? 1 : 0;
 	}
-	if (bDefaultClear)
+	if (Out.bDefaultClear)
 	{
+		Out.Score = Out.DefaultScore;
+		for (FVector& Pole : Out.Poles)
+		{
+			Pole = Directions[0];
+		}
 		return;
 	}
 	for (int32 Sample = 0; Sample < Samples; ++Sample)
@@ -4150,10 +4290,9 @@ void AIGLiningEntity::PlanSwingPole(const int32 Index)
 		const int32 Gap = FMath::Abs(A - B) % Count;
 		return FMath::Min(Gap, Count - Gap);
 	};
-	const auto Value = [](const int32 Room) { return Room == 2 ? 2.0f : Room == 1 ? 1.0f : -10.0f; };
 	// 지금 무릎이 있는 방향.
 	int32 StartSlot = 0;
-	FVector Current = Leg.KneeBend - Start.Axis * FVector::DotProduct(Leg.KneeBend, Start.Axis);
+	FVector Current = Swing.KneeBend - Start.Axis * FVector::DotProduct(Swing.KneeBend, Start.Axis);
 	if (Current.Normalize())
 	{
 		const float Angle = FMath::Atan2(FVector::DotProduct(FVector::CrossProduct(Start.Bend, Current), Start.Axis),
@@ -4208,22 +4347,13 @@ void AIGLiningEntity::PlanSwingPole(const int32 Index)
 			EndSlot = Slot;
 		}
 	}
-	// 몸 기준 극을 그대로 쓸 때보다 나을 때만 길을 따른다.
-	float DefaultScore = 0.0f;
-	for (int32 Sample = 0; Sample < Samples; ++Sample)
-	{
-		DefaultScore += Value(Rooms[Sample][0]);
-	}
-	if (Score[Samples - 1][EndSlot] <= DefaultScore + 1.0f)
-	{
-		return;
-	}
+	Out.Score = Score[Samples - 1][EndSlot];
 	for (int32 Sample = Samples - 1; Sample >= 0; --Sample)
 	{
-		Leg.SwingPoles[Sample] = Directions[EndSlot];
+		Out.Poles[Sample] = Directions[EndSlot];
+		Out.Blocked += Rooms[Sample][EndSlot] == 0 ? 1 : 0;
 		EndSlot = From[Sample][EndSlot] == INDEX_NONE ? EndSlot : From[Sample][EndSlot];
 	}
-	Leg.bSwingPlanned = true;
 }
 
 bool AIGLiningEntity::IsBodyObstructed(FString* OutComponent) const
@@ -4429,9 +4559,10 @@ void AIGLiningEntity::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		UE_LOG(LogIndieGame, Display, TEXT("LINING_BODY frames=%d obstructed=%d%s"), MeasuredFrames, BodyObstructedFrames, *ByState);
 		UE_LOG(LogIndieGame, Display, TEXT("LINING_LEGS_THICK frames=%d radius=%.0f obstructed=%d,%d,%d,%d"), MeasuredFrames,
 			IGLining::ThickMeasureRadius, ThickObstructedFrames[0], ThickObstructedFrames[1], ThickObstructedFrames[2], ThickObstructedFrames[3]);
-		UE_LOG(LogIndieGame, Display, TEXT("LINING_SOLVE_TIME frames=%d avg_ms=%.3f max_ms=%.3f plans=%d plan_avg_ms=%.3f plan_max_ms=%.3f"),
+		UE_LOG(LogIndieGame, Display,
+			TEXT("LINING_SOLVE_TIME frames=%d avg_ms=%.3f max_ms=%.3f plans=%d plan_avg_ms=%.3f plan_max_ms=%.3f brace_choose_max_ms=%.3f"),
 			MeasuredFrames, MeasuredFrames > 0 ? SolveTotalSeconds * 1000.0 / MeasuredFrames : 0.0, SolveMaxSeconds * 1000.0, PlanCount,
-			PlanCount > 0 ? PlanTotalSeconds * 1000.0 / PlanCount : 0.0, PlanMaxSeconds * 1000.0);
+			PlanCount > 0 ? PlanTotalSeconds * 1000.0 / PlanCount : 0.0, PlanMaxSeconds * 1000.0, BraceChooseMaxSeconds * 1000.0);
 		ObstructionBreakdown.ValueSort([](const int32 A, const int32 B) { return A > B; });
 		int32 Shown = 0;
 		for (const TPair<FString, int32>& Entry : ObstructionBreakdown)

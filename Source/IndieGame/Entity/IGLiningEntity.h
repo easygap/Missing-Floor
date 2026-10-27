@@ -292,6 +292,31 @@ private:
 		FVector Velocity = FVector::ZeroVector;
 	};
 
+	/** 옮기는 길 하나에서 무릎 극이 따라갈 길과 그 길의 점수(MeasureKneePath). */
+	struct FKneePath
+	{
+		/**
+		 * 자리마다 무릎이 굵기만큼 비면 2, 가운데 선만 비면 1, 막히면 -10을 더하고 많이 돌수록 조금 깎은 점수. 정한 길과
+		 * 몸 기준 극을 그대로 쓸 때의 점수다.
+		 */
+		float Score = 0.0f;
+		float DefaultScore = 0.0f;
+		/** 몸 기준 극이 내내 굵기만큼 비어 있어 나머지 방향은 재지 않았다. */
+		bool bDefaultClear = false;
+		/** 정한 길과 몸 기준 극에서 무릎이 막히는 자리 수. */
+		int32 Blocked = 0;
+		int32 DefaultBlocked = 0;
+		FVector Poles[8];
+	};
+
+	/** 지금 짚은 자리에서 고른 짚을 자리로 옮겨 갈 때의 비켜 돌기와 무릎 길(ChooseBracePad). */
+	struct FBraceSwing
+	{
+		FVector Detour = FVector::ZeroVector;
+		float DetourPeak = 0.5f;
+		FKneePath Path;
+	};
+
 	/** 틈을 짚고 누를 몸 자리. 벽 면 위 몸 가운데와 몸 방향(앞 +X가 벽을 따라 향하는 쪽, 위 +Z가 틈 법선). */
 	struct FGapPose
 	{
@@ -368,6 +393,8 @@ private:
 	 * 맞는 길이 없으면 그대로 옮긴다.
 	 */
 	void PlanSwingDetour(int32 Leg);
+	/** PlanSwingDetour가 Leg의 스윙에 고를 비켜 돌기. 비켜 돌 일이 없거나 맞는 길이 없으면 false다. 다리 상태는 바꾸지 않는다. */
+	bool FindSwingDetour(int32 Index, const FLeg& Leg, FVector& OutDetour, float& OutPeak) const;
 	bool FindContact(int32 Leg, const FVector& FutureBody, const FQuat& FutureRotation, const FVector& Travel, FVector& OutPad, FVector& OutNormal) const;
 	/**
 	 * 틈을 덮을 몸 자리를 정한다. 틈 가운데에 몸판(80×120)을 대면 옆 소품·이웃 벽·열린 점검구 문짝을 파고드는 자리가
@@ -385,9 +412,16 @@ private:
 	/**
 	 * 틈을 짚고 버틸 때 이 다리가 짚을 자리. 틈 둘레(BraceMargin 바깥)의 벽을 먼저 보고, 그 자리가 바닥 밑·벽 속·옆 소품
 	 * 속이거나 엉덩이에서 막혀 있으면 엉덩이에서 둘레 쪽으로 부채꼴로 쏴서 닿는 면(옆 소품의 옆면, 바닥, 이웃 벽, 천장)
-	 * 가운데 둘레에 가장 가까운 곳을 고른다. 없으면 false이고 다리를 몸 밑에 접는다.
+	 * 가운데 둘레에 가장 가까운 곳을 고른다. 없으면 false이고 다리를 몸 밑에 접는다. OutSwing을 주면 다리가 지금 몸에서
+	 * 지금 짚은 자리를 떼어 그리로 옮겨 가는 길의 무릎 길까지 재서 고르고, 고른 자리의 비켜 돌기와 무릎 길을 돌려준다.
 	 */
-	bool ChooseBracePad(int32 Leg, const FIGLiningGap& Gap, const FGapPose& Pose, FVector& OutPad, FVector& OutNormal) const;
+	bool ChooseBracePad(int32 Leg, const FIGLiningGap& Gap, const FGapPose& Pose, FVector& OutPad, FVector& OutNormal,
+		FBraceSwing* OutSwing = nullptr) const;
+	/**
+	 * 틈을 짚으러 지금 드는 다리의 짚을 자리를 옮겨 가는 길까지 보고 다시 고르고, 그 길의 비켜 돌기와 무릎 길을 그대로
+	 * 쓴다(짚기를 시작할 때는 짚을 자리만 보고 정해 둔다). 다시 고를 수 없으면 false다.
+	 */
+	bool RechooseBracePad(int32 Index);
 	/**
 	 * 엉덩이 Hip에서 이 다리로 Pad를 짚을 때 패드 덩어리가 옆 벽·바닥·소품이나 Hatch의 열린 문짝을 파고들지 않고, 무릎을
 	 * 둘 빈 쪽이 엉덩이→발목 원 위에 한 군데는 있는가(SolveLeg가 거기로 비킨다). 틈을 짚을 때와 걸을 때 다 쓴다.
@@ -428,6 +462,15 @@ private:
 		const FVector& PoleSide, float Radius, bool bHasPrevious, const FVector& Previous, const FVector& StandNormal, float MaxTurn);
 	/** 옮기기를 시작하는 다리의 무릎 극이 따라갈 길을 패드가 지날 길 전체를 보고 정한다(FLeg::SwingPoles). */
 	void PlanSwingPole(int32 Index);
+	/** 이 다리의 이번 스윙에 무릎 길을 정할 수 있는가(틀에 걸리거나 접고 펴는 다리, 극을 모르는 다리는 안 된다). */
+	bool CanPlanKneePath(int32 Index) const;
+	/**
+	 * Swing의 출발·도착·비켜 돌기대로 패드가 옮겨 가는 동안 엉덩이가 HipFrom에서 HipTo로 갈 때, 스윙을 여덟 자리로 나눠
+	 * 자리마다 무릎 원 24방향의 빈 정도를 재고 무릎 빠르기 안에서 빈 방향만 이어 가는 길을 찾는다. 처음 자리의 무릎은
+	 * Swing.KneeBend, 몸 기준 극은 Swing.LastPole이다.
+	 */
+	void MeasureKneePath(int32 Index, const FLeg& Swing, const FVector& HipFrom, const FQuat& RotationFrom, const FVector& HipTo,
+		const FQuat& RotationTo, FKneePath& Out) const;
 	void ResetKneeLean();
 	void UpdateColliders();
 	/** 밀려나는 동안 Alpha(0~1)의 몸 가운데와 회전. Away는 처음에 면에서 떨어지는 거리, Before는 구석 면 앞에서 다 돌 자리다. */
@@ -517,13 +560,17 @@ private:
 	int32 ObstructedFrames[4] = {0, 0, 0, 0};
 	/** 넓적다리·정강이 겉(반지름 6 cm)이 벽·소품·문짝에 묻힌 프레임. 가운데 선은 비어도 겉이 보이게 묻히는 것을 센다. */
 	int32 ThickObstructedFrames[4] = {0, 0, 0, 0};
-	/** 다리 풀이에 든 시간(검사 로그 LINING_SOLVE_TIME). 옮기기 전 무릎 길 정하기와 네 다리 풀기를 프레임마다 더한다. */
+	/**
+	 * 다리 풀이에 든 시간(검사 로그 LINING_SOLVE_TIME). 틈 둘레를 짚을 자리 고르기, 옮기기 전 무릎 길 정하기, 네 다리 풀기를
+	 * 프레임마다 더한다.
+	 */
 	double SolveFrameSeconds = 0.0;
 	double SolveTotalSeconds = 0.0;
 	double SolveMaxSeconds = 0.0;
 	double PlanTotalSeconds = 0.0;
 	double PlanMaxSeconds = 0.0;
 	int32 PlanCount = 0;
+	double BraceChooseMaxSeconds = 0.0;
 	int32 MeasuredFrames = 0;
 	FString WorstKneeStep;
 	/** SetKneeHint로 무릎 쪽을 정한 다리와 그 자리. 없으면 INDEX_NONE. */
