@@ -4398,15 +4398,16 @@ void AIGPrologueWorldScene::ApplyExteriorTimeOfDay()
 		MoonLight->ForwardShadingPriority = bMorning ? 0 : 1;
 	}
 	if (SkyAmbient) { SkyAmbient->SetIntensity(bMorning ? 0.85f : 0.62f); }
-	// 해와 달이 구름 뒤에 가린 날. 별이나 원반을 하늘 그림 위에 따로 띄우지 않는다.
+	// 해와 달이 구름 뒤에 가린 날. 별이나 원반을 하늘 그림 위에 따로 띄우지 않는다. 밤 구름은 도시 불빛을 받아 하늘보다
+	// 밝다. 구름색이 지평선 색과 거의 같아 골목에서 구름이 하나도 안 보였다.
 	if (CloudSkyInstance)
 	{
 		CloudSkyInstance->SetVectorParameterValue(TEXT("Zenith Color"), bMorning
-			? FLinearColor(.15f, .23f, .33f) : FLinearColor(.018f, .029f, .048f));
+			? FLinearColor(.15f, .23f, .33f) : FLinearColor(.012f, .019f, .034f));
 		CloudSkyInstance->SetVectorParameterValue(TEXT("Horizon color"), bMorning
-			? FLinearColor(.52f, .58f, .65f) : FLinearColor(.09f, .11f, .15f));
+			? FLinearColor(.52f, .58f, .65f) : FLinearColor(.055f, .066f, .088f));
 		CloudSkyInstance->SetVectorParameterValue(TEXT("Cloud color"), bMorning
-			? FLinearColor(.62f, .65f, .67f) : FLinearColor(.11f, .13f, .16f));
+			? FLinearColor(.74f, .76f, .78f) : FLinearColor(.15f, .16f, .18f));
 	}
 	if (HeightFog)
 	{
@@ -6998,13 +6999,14 @@ void AIGPrologueWorldScene::BuildSkyAndFog()
 		Dome->bAffectDynamicIndirectLighting = false;
 		CloudSkyInstance = UMaterialInstanceDynamic::Create(CloudSkyMaterial, this);
 		CloudSkyInstance->SetScalarParameterValue(TEXT("Cloud speed"), 0.012f);
-		CloudSkyInstance->SetScalarParameterValue(TEXT("Cloud opacity"), 0.72f);
+		CloudSkyInstance->SetScalarParameterValue(TEXT("Cloud opacity"), 0.85f);
 		CloudSkyInstance->SetScalarParameterValue(TEXT("Stars brightness"), 0.0f);
 		CloudSkyInstance->SetScalarParameterValue(TEXT("Sun brightness"), 0.0f);
 		CloudSkyInstance->SetScalarParameterValue(TEXT("Horizon Falloff"), 3.0f);
-		CloudSkyInstance->SetVectorParameterValue(TEXT("Zenith Color"), FLinearColor(.018f, .029f, .048f));
-		CloudSkyInstance->SetVectorParameterValue(TEXT("Horizon color"), FLinearColor(.09f, .11f, .15f));
-		CloudSkyInstance->SetVectorParameterValue(TEXT("Cloud color"), FLinearColor(.11f, .13f, .16f));
+		// 밤 값(ApplyExteriorTimeOfDay와 같다).
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Zenith Color"), FLinearColor(.012f, .019f, .034f));
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Horizon color"), FLinearColor(.055f, .066f, .088f));
+		CloudSkyInstance->SetVectorParameterValue(TEXT("Cloud color"), FLinearColor(.15f, .16f, .18f));
 		Dome->SetMaterial(0, CloudSkyInstance);
 		Dome->RegisterComponent();
 	}

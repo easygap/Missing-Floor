@@ -13,6 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import ig_blender_lib as ig
 from clerk_surface_finish import connect_neck, match_neck_material
+from clerk_hairline import apply_hairline
 
 ROOT = os.path.abspath(os.path.join(HERE, '../..'))
 NAME = 'SK_NarinClerk'
@@ -173,6 +174,8 @@ low_body.hide_render=False;low_head.hide_render=False
 low=connect_neck(low_body,low_head)
 low.name=NAME
 match_neck_material(low,textures,NAME,OUT)
+# 생성 머리의 가르마 둘레로 드러난 살색을 머리색으로 덮는다(clerk_hairline.py).
+apply_hairline(low,textures['D'])
 ig.preview_material_from_bakes(low, textures)
 ig.render_preview(low, os.path.join(OUT, NAME+'_preview.png'), camera_yaw_deg=180)
 ig.render_preview(low, os.path.join(OUT, NAME+'_preview_torch.png'), camera_yaw_deg=180, flashlight=True)
