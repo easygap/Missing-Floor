@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "IGListenerPursuitProbe.generated.h"
 
+class ACameraActor;
 class AIGListenerEntity;
 class AIGPlayerCharacter;
 class UIGNoiseSubsystem;
@@ -35,6 +36,12 @@ private:
 	void Report(const FVector& Location, float Loudness);
 	void Track(float DeltaSeconds);
 	float FeetZ() const;
+	/**
+	 * -IGListenerPursuitShots. 내려오는 길에 4층 참, 3·4층 사이 서쪽 계단, 3층 출입구의 고정 카메라로 몸이 디딤판과
+	 * 벽에 어떻게 얹히는지 찍는다. 유담은 옥상에 둔 그대로라 위층 사람 걸음은 검사와 같다. 카메라마다 작업등을 둔다.
+	 */
+	void UpdateShots();
+	void Shoot(const TCHAR* Name);
 
 	TWeakObjectPtr<AIGListenerEntity> Entity;
 	TWeakObjectPtr<AIGPlayerCharacter> Player;
@@ -67,4 +74,11 @@ private:
 	TArray<FVector> ClimbNoises;
 	int32 ClimbNoiseIndex = 0;
 	float ClimbNoiseSeconds = 0.0f;
+
+	// 촬영
+	bool bShots = false;
+	TArray<TWeakObjectPtr<ACameraActor>> ShotCameras;
+	int32 ActiveShotCamera = INDEX_NONE;
+	TSet<FName> ShotsTaken;
+	double LastShotSeconds = -1000.0;
 };

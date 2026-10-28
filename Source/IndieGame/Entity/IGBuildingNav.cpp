@@ -25,6 +25,37 @@ namespace IGBuildingNav
 	constexpr float LandingCenterY = -305.0f;
 	/** 시야 검사를 하는 높이. 문턱과 걸레받이를 넘고, 낮은 가구는 막는다. */
 	constexpr float SightHeight = 40.0f;
+
+	/**
+	 * 기는 몸은 머리끝에서 발끝까지 190 cm다. 반 층 참(깊이 140 cm)에서 서쪽 계단 끝에 선 채 돌면 엉덩이와 발이
+	 * 서쪽 벽에 묻히고, 층 참 가운데서 돌면 머리가 남쪽 벽이나 계단 사이 벽 끝에 박힌다. 그래서 계단탑 안에서 꺾는
+	 * 자리는 몸이 걸어가면서 조금씩 돌도록 원호를 따라간다. 원호는 15도마다 점을 둔다. 점마다 가는 쪽이 꺾이는
+	 * 만큼 몸이 늦게 돌아서, 더 성기면 머리가 벽에 닿는다.
+	 */
+	constexpr float ArcStepDegrees = 15.0f;
+	/**
+	 * 반 층 참은 두 계단 가운데선을 그대로 잇는 반원이다. 중심이 두 계단 사이 벽의 연장선(X -465)이라 동쪽을 볼
+	 * 때 몸이 참 폭 가운데에 오고, 비스듬할 때 발끝은 서쪽 벽, 머리는 북쪽 벽 앞 몇 cm에서 멈춘다. 계단에서
+	 * 원호로 옆걸음 없이 들어서야 앞으로 뻗은 손이 벽 쪽으로 쏠리지 않는다.
+	 */
+	constexpr float TurnArcCenterY = -5.0f;
+	constexpr float TurnArcRadius = 57.5f;
+	/**
+	 * 2·3층 참에서 올라온 계단(동쪽)과 올라갈 계단(서쪽)을 잇는 반원. 반 층 참과 같은 반원을 남쪽으로 뒤집었다.
+	 * 예전에는 층 참 가운데를 들러 거의 되돌아서, 머리가 동쪽 벽 모서리(X -355, Y -235)나 계단 사이 벽 끝에 박혔다.
+	 */
+	constexpr float LandingArcCenterY = -258.0f;
+	/**
+	 * 층 참 가운데에서 서쪽(올라가는) 계단으로 드는 사분원. 서쪽을 보고 가다 북쪽으로 꺾는다.
+	 */
+	constexpr float WestTurnRadius = 50.0f;
+	/**
+	 * 출입구에서 들어와 동쪽 계단(아래층으로 내려가는 계단) 머리로 바로 꺾는 사분원. 중심이 동쪽 벽 모서리
+	 * (X -355, Y -235) 가까이에 있어, 도는 동안 엉덩이는 복도 쪽으로, 머리는 계단 쪽으로 빠진다.
+	 */
+	constexpr float DoorwayArcCenterX = -337.5f;
+	constexpr float DoorwayArcCenterY = -235.0f;
+	constexpr float DoorwayArcRadius = 70.0f;
 }
 
 int32 FIGBuildingNav::Add(const FVector& Feet, const bool bOnStair, const bool bLookout)
@@ -54,12 +85,28 @@ void FIGBuildingNav::LinkChain(const TArray<int32>& Chain)
 	}
 }
 
+int32 FIGBuildingNav::AddArc(const int32 From, const FVector& Center, const float Radius, const float StartDegrees,
+	const float EndDegrees, const bool bOnStair)
+{
+	// 양 끝은 이을 점이 따로 있다. 그 사이만 15도마다 둔다.
+	const int32 Count = FMath::Max(1, FMath::RoundToInt(FMath::Abs(EndDegrees - StartDegrees) / IGBuildingNav::ArcStepDegrees));
+	int32 Previous = From;
+	for (int32 Segment = 1; Segment < Count; ++Segment)
+	{
+		const float Angle = FMath::DegreesToRadians(FMath::Lerp(StartDegrees, EndDegrees, static_cast<float>(Segment) / Count));
+		const int32 Point = Add(Center + FVector(Radius * FMath::Cos(Angle), Radius * FMath::Sin(Angle), 0.0f), bOnStair);
+		Link(Previous, Point);
+		Previous = Point;
+	}
+	return Previous;
+}
+
 void FIGBuildingNav::Build()
 {
 	using namespace IGBuildingNav;
 	Nodes.Reset();
 
-	// 계단탑. 층마다 출입구와 층 참 가운데 점을 두고, 계단 끝 점은 그 가운데 점에 잇는다.
+	// 계단탑. 층마다 출입구와 층 참 가운데 점을 둔다. 계단 끝 점은 아래의 원호들로 잇는다.
 	int32 Doorways[4] = {INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE};
 	int32 Landings[4] = {INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE};
 	for (int32 Floor = 0; Floor < 4; ++Floor)
@@ -69,20 +116,72 @@ void FIGBuildingNav::Build()
 		Landings[Floor] = Add(FVector(LandingCenterX, LandingCenterY, Z), false);
 		Link(Doorways[Floor], Landings[Floor]);
 	}
+	// 층마다 서쪽(올라가는) 계단이 시작하는 점과 동쪽(올라온) 계단이 끝나는 점.
+	int32 WestStarts[4] = {INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE};
+	int32 EastEnds[4] = {INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE};
 	for (int32 Floor = 0; Floor < 3; ++Floor)
 	{
 		TArray<FVector> Climb;
 		AIGPrologueWorldScene::GetStairClimbFeet(Floor, Climb);
-		// 0과 마지막은 출입구, 1과 끝에서 둘째는 층 참 위 계단 끝이다. 그 사이가 계단과 반 층 참이다.
-		int32 Previous = Landings[Floor];
+		check(Climb.Num() == 10);
+		// 0과 마지막은 출입구, 1과 끝에서 둘째는 층 참 위 계단 끝이다. 그 사이가 계단과 반 층 참이고, 4와 5가
+		// 반 층 참에서 꺾는 두 점이다. 그 두 점 대신 반원을 잇는다.
+		const float FloorZ = Climb[1].Z;
+		const float HalfZ = Climb[4].Z;
+		int32 Previous = INDEX_NONE;
 		for (int32 Index = 1; Index + 1 < Climb.Num(); ++Index)
 		{
+			if (Index == 5)
+			{
+				continue;
+			}
+			if (Index == 4)
+			{
+				const FVector Center(LandingCenterX, TurnArcCenterY, HalfZ);
+				const int32 West = Add(Center + FVector(-TurnArcRadius, 0.0f, 0.0f), true);
+				Link(Previous, West);
+				const int32 East = Add(Center + FVector(TurnArcRadius, 0.0f, 0.0f), true);
+				Link(AddArc(West, Center, TurnArcRadius, 180.0f, 0.0f, true), East);
+				Previous = East;
+				continue;
+			}
 			const bool bLanding = Index == 1 || Index + 2 == Climb.Num();
 			const int32 Step = Add(Climb[Index], !bLanding);
-			Link(Previous, Step);
+			if (Index == 1)
+			{
+				// 층 참 가운데에서 서쪽을 보고 가다 북쪽으로 꺾어 계단에 든다.
+				WestStarts[Floor] = Step;
+				const FVector Center(Climb[1].X + WestTurnRadius, Climb[1].Y, FloorZ);
+				const int32 Entry = Add(Center + FVector(0.0f, -WestTurnRadius, 0.0f), false);
+				Link(Landings[Floor], Entry);
+				Link(AddArc(Entry, Center, WestTurnRadius, -90.0f, -180.0f, false), Step);
+			}
+			else
+			{
+				Link(Previous, Step);
+			}
 			Previous = Step;
+			// 동쪽 계단 머리(위층 참 바로 앞 디딤판). 위층 출입구에서 사분원으로 바로 잇는다.
+			if (Index == 7)
+			{
+				const FVector Center(DoorwayArcCenterX, DoorwayArcCenterY, Nodes[Doorways[Floor + 1]].Feet.Z);
+				const int32 Entry = Add(Center + FVector(0.0f, -DoorwayArcRadius, 0.0f), false);
+				Link(Doorways[Floor + 1], Entry);
+				Link(AddArc(Entry, Center, DoorwayArcRadius, -90.0f, -180.0f, false), Step);
+			}
 		}
-		Link(Previous, Landings[Floor + 1]);
+		EastEnds[Floor + 1] = Previous;
+	}
+	// 2·3층 참은 올라온 계단과 올라갈 계단을 남쪽 반원으로 잇는다. 4층 참은 위로 가는 계단이 없어 가운데 점에 잇는다.
+	for (int32 Floor = 1; Floor < 4; ++Floor)
+	{
+		if (!Nodes.IsValidIndex(WestStarts[Floor]))
+		{
+			Link(EastEnds[Floor], Landings[Floor]);
+			continue;
+		}
+		const FVector Center(LandingCenterX, LandingArcCenterY, Nodes[Landings[Floor]].Feet.Z);
+		Link(AddArc(WestStarts[Floor], Center, TurnArcRadius, 180.0f, 360.0f, false), EastEnds[Floor]);
 	}
 
 	// 문 앞 점은 복도 줄에 끼우지 않고 곁가지로 단다. 줄에 끼우면 복도를 지나갈

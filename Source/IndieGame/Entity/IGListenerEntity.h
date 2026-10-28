@@ -437,8 +437,11 @@ private:
 	void PlayDoorHit();
 
 	// -- locomotion ---------------------------------------------------------
-	/** Sweeps toward Target; returns true on arrival (or when wedged). */
-	bool CrawlTowards(const FVector& Target, float Speed, float DeltaSeconds);
+	/**
+	 * Sweeps toward Target; returns true on arrival (or when wedged). bStopShortOfWalls면 목표 바로 앞이 벽일 때 손끝이
+	 * 벽에 닿는 거리에서 닿은 것으로 친다(길 위의 점과 수색할 자리).
+	 */
+	bool CrawlTowards(const FVector& Target, float Speed, float DeltaSeconds, bool bStopShortOfWalls = false);
 	/**
 	 * 어디든 간다. 같은 층에서 곧게 닿으면 기존 걸음(CrawlTowards)이고, 벽이나
 	 * 층이 가로막으면 건물 길(BuildingNav)을 따라 계단탑으로 돌아간다. 계단에서는
@@ -455,8 +458,32 @@ private:
 	bool IsCrawlLineClear(const FVector& FromFeet, const FVector& ToFeet, const AActor** OutBlocker = nullptr) const;
 	/** 캡슐 아래 바닥 높이. 액터 높이에서 캡슐 반 높이와 띄운 2 cm를 뺀다. */
 	FVector GetFeetLocation() const;
-	/** 계단 위에서는 몸이 경사를 따라 눕는다. 평지에 내려서면 천천히 편다. */
+	/**
+	 * 계단 위에서는 몸이 경사를 따라 눕는다. 평지에 내려서면 천천히 편다. 손·무릎·발 밑의 바닥을 재서 몸이 걸쳐
+	 * 놓일 기울기를 고르고, 몸 바닥면보다 높은 단 모서리나 마루 턱이 있으면 그만큼 몸을 띄운다.
+	 */
 	void UpdateStairPitch(float DeltaSeconds);
+	/**
+	 * 짚는 자리마다 몸 앞뒤 거리(몸 가운데 기준)와 그 밑 바닥 높이를 모은다. Pitch로 눕힌 몸의 바닥면에서 위아래
+	 * Reach 안만 본다. 바닥이 없는 자리(계단 밖 허공, 벽 속)는 뺀다.
+	 */
+	void GatherStairSupports(float Pitch, float Reach, TArray<FVector2D>& OutSupports) const;
+	/** Direction으로 돌아서 가는 걸음의 빠르기 배율. 몸이 많이 틀어져 있으면 돌 때까지 늦춘다. */
+	float TurnSpeedScale(const FVector& Direction) const;
+	/**
+	 * 몸 가운데에서 Direction으로 Reach만큼(옆으로 SideOffset 벌려) 그은 선이 벽·가구에 막히는가. 바닥에서 Height
+	 * 높이로 긋는다. 열린 문짝은 막지 않는 것으로 치고, 닫힌 문짝은 bClosedDoorsBlock일 때만 막는다.
+	 */
+	bool IsBodyBlockedAlong(const FVector& Direction, float Reach, float SideOffset, float Height, bool bClosedDoorsBlock) const;
+	/**
+	 * Desired에 가까우면서 몸(앞 92 cm, 뒤 90 cm, 옆 36 cm)이 벽에 박히지 않는 방향. 멈춰서 듣는 동안 바라볼 쪽이다.
+	 * 계단 위에서는 Desired 그대로다.
+	 */
+	FVector FitFacing(const FVector& Desired) const;
+	/** Direction으로 가는 걸음에 더할 옆걸음. 옆의 벽·가구가 팔꿈치(44 cm)보다 가까우면 반대쪽이나 가운데로 비킨다. */
+	FVector SideClearanceShift(const FVector& Direction, float DeltaSeconds) const;
+	/** 소리를 듣느라 멈춰 선 동안 바라볼 쪽. AttentionDirection을 FitFacing으로 맞춘 것을 잠시 기억한다. */
+	FVector GetListeningFacing();
 	/**
 	 * 2·3·4층 계단실 방화문(§4). 닫혀 있으면 그 문을 지나는 길은 막힌다. 문 앞까지 와서
 	 * 두드리고 듣는다 — 403호 현관문과 같은 문법이다. 이 걸음을 막는 문을 돌려준다.
@@ -818,6 +845,23 @@ private:
 	/** 검사 실행에서 몸이 벽·문·계단을 지나는지 잰다(CLIP_AUDIT). */
 	FIGClipAudit ClipAudit;
 	float StairBodyPitch = 0.0f;
+	/** 디딤판 모서리 위로 몸을 띄운 높이. 캡슐은 디딤판 가운데를 잇는 선을 따라가 모서리보다 낮다. */
+	float StairBodyLift = 0.0f;
+	/**
+	 * 바닥을 짚는 뼈. 왼쪽, 오른쪽 차례로 손목, 팔꿈치(lowerarm), 어깨(upperarm), 무릎(calf), 발목(foot)이다. 뼈대를
+	 * 만들 때 찾고, 하나라도 없으면 비워 둔다. 발끝은 발목에서 정강이 방향으로 늘여 잡고, 팔은 마디 가운데도 본다.
+	 * 골반은 단 모서리 위를 지날 때 본다.
+	 */
+	TArray<int32> StairHandBones;
+	TArray<int32> StairElbowBones;
+	TArray<int32> StairShoulderBones;
+	TArray<int32> StairKneeBones;
+	TArray<int32> StairAnkleBones;
+	int32 StairPelvisBone = INDEX_NONE;
+	/** GetListeningFacing이 기억하는 값. 어느 AttentionDirection을 어디서 맞췄는지와 그 결과다. */
+	FVector FittedAttentionFor = FVector::ZeroVector;
+	FVector FittedAttention = FVector::ZeroVector;
+	FVector FittedAttentionAt = FVector::ZeroVector;
 
 	// -- 놓친 뒤 ---------------------------------------------------------------
 	struct FHeardMark

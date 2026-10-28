@@ -50,6 +50,11 @@ public:
 private:
 	int32 Add(const FVector& Feet, bool bOnStair, bool bLookout = false);
 	void Link(int32 A, int32 B);
+	/**
+	 * From에서 Center를 도는 원호(StartDegrees에서 EndDegrees까지, X축에서 잰 각) 위의 점을 15도마다 더해 잇는다.
+	 * 양 끝 점은 넣지 않는다. 마지막으로 더한 점(없으면 From)을 돌려준다.
+	 */
+	int32 AddArc(int32 From, const FVector& Center, float Radius, float StartDegrees, float EndDegrees, bool bOnStair);
 	/** 한 층의 복도 점을 서쪽에서 동쪽으로 잇는다. 문 앞 점은 복도 줄에 끼워 넣는다. */
 	void LinkChain(const TArray<int32>& Chain);
 

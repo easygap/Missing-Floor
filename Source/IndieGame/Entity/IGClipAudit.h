@@ -79,4 +79,6 @@ private:
 	float Deepest = 0.0f;
 	FString DeepestKey;
 	TMap<FString, FPart> Parts;
+	/** 5 cm 넘게 지난 프레임을 그 프레임에서 가장 깊이 지난 물체와 Phase로 나눠 센다. */
+	TMap<FString, int32> Causes;
 };

@@ -161,6 +161,9 @@ namespace IGNightThreat
 	constexpr float GiveUpDistance = 900.0f;
 	// 잠긴 욕실 손잡이를 돌려 본 뒤 문 앞에 서 있는 시간.
 	constexpr float GuestRoomGiveUpSeconds = 4.0f;
+	// 잠긴 방문 앞에서 기다릴 때 문 앞 점(문면 30 cm)에서 더 물러서는 거리. 손님은 머리와 등을 앞으로 숙여 2 m
+	// 높이에서 30 cm 넘게 나오므로, 문 앞 점에 서면 상체가 문짝 속으로 들어간다.
+	constexpr float GuestRoomDoorStandBack = 20.0f;
 	// 발 높이가 이만큼 넘게 다르면 다른 층이다. 계단으로 달아났으면 손이 닿지 않고
 	// 소리도 듣지 못한다. 문 너머 층까지 따라가지 않는다.
 	constexpr float SameFloorTolerance = 150.0f;
@@ -1438,9 +1441,10 @@ bool AIGNightThreatDirector::UpdateGuestAtRoomDoor(
 			IGNightThreat::PursueSpeed);
 		return true;
 	}
-	if (FVector::Dist2D(BodyLocation, Outside) > 25.0f)
+	const FVector Wait = Outside + (Outside - Inside).GetSafeNormal2D() * IGNightThreat::GuestRoomDoorStandBack;
+	if (FVector::Dist2D(BodyLocation, Wait) > 25.0f)
 	{
-		Body.SetTargetLocation(Outside, IGNightThreat::PursueSpeed);
+		Body.SetTargetLocation(Wait, IGNightThreat::PursueSpeed);
 		return true;
 	}
 	if (!Door->IsLatched())

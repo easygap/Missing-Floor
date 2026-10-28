@@ -19,8 +19,9 @@ namespace IGClipAudit
 	constexpr int32 MaxSamples = 400;
 	// 이보다 짧게 지나간 것은 화면에서 안 보인다(손바닥이 바닥에 얹힌 정도).
 	constexpr float VisibleDepth = 2.0f;
-	// 보고에 줄줄이 적는 부위 수.
+	// 보고에 줄줄이 적는 부위 수와 원인 수.
 	constexpr int32 ReportedParts = 12;
+	constexpr int32 ReportedCauses = 24;
 
 	bool IsRequested()
 	{
@@ -242,6 +243,7 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 	}
 	TSet<FString> FrameKeys;
 	float FrameDepth = 0.0f;
+	FString FrameCause;
 
 	// 뼈 마디. 손잡이 뼈는 바닥에 놓여 있어 그 자식은 Core에서 긋는다. 마디가 막히면 그 아래 뼈와 살은
 	// 통째로 묻힌 것으로 보고 따로 세지 않는다.
@@ -283,7 +285,11 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 			Note(Handles[Bone] ? FString::Printf(TEXT("core/%s"), *IGClipAudit::HitName(Hit))
 				: FString::Printf(TEXT("bone/%s/%s"), *BoneNames[Bone], *IGClipAudit::HitName(Hit)), Depth, Phase, From, To,
 				Hit.ImpactPoint, FrameKeys);
-			FrameDepth = FMath::Max(FrameDepth, Depth);
+			if (Depth > FrameDepth)
+			{
+				FrameDepth = Depth;
+				FrameCause = IGClipAudit::HitName(Hit);
+			}
 		}
 	}
 
@@ -309,12 +315,20 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 		{
 			Note(FString::Printf(TEXT("skin/%s/%s"), *BoneNames[SampleBone], *IGClipAudit::HitName(Hit)), Depth, Phase,
 				From, SkinPoint, Hit.ImpactPoint, FrameKeys);
-			FrameDepth = FMath::Max(FrameDepth, Depth);
+			if (Depth > FrameDepth)
+			{
+				FrameDepth = Depth;
+				FrameCause = IGClipAudit::HitName(Hit);
+			}
 		}
 	}
 	++Frames;
 	FramesOver2 += FrameDepth >= 2.0f ? 1 : 0;
 	FramesOver5 += FrameDepth >= 5.0f ? 1 : 0;
+	if (FrameDepth >= 5.0f)
+	{
+		++Causes.FindOrAdd(FString::Printf(TEXT("%s %s"), *FrameCause, *Phase));
+	}
 }
 
 void FIGClipAudit::Report() const
@@ -336,5 +350,12 @@ void FIGClipAudit::Report() const
 		const FPart& Part = Sorted[Index].Value;
 		UE_LOG(LogIndieGame, Display, TEXT("CLIP_AUDIT_PART who=%s key=%s frames=%d max=%.1f phase=%s at=%s"),
 			*Who, *Sorted[Index].Key, Part.Frames, Part.Deepest, *Part.Phase, *Part.At.ToCompactString());
+	}
+	TArray<TPair<FString, int32>> ByFrames = Causes.Array();
+	ByFrames.Sort([](const TPair<FString, int32>& A, const TPair<FString, int32>& B) { return A.Value > B.Value; });
+	for (int32 Index = 0; Index < FMath::Min(ByFrames.Num(), IGClipAudit::ReportedCauses); ++Index)
+	{
+		UE_LOG(LogIndieGame, Display, TEXT("CLIP_AUDIT_CAUSE who=%s cause=%s frames=%d"), *Who, *ByFrames[Index].Key,
+			ByFrames[Index].Value);
 	}
 }

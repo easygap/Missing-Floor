@@ -1,14 +1,26 @@
 ﻿#include "Sequence/IGListenerPursuitProbe.h"
 
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGNoiseSubsystem.h"
+#include "Engine/PointLight.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/HUD.h"
+#include "GameFramework/PlayerController.h"
+#include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "Misc/Paths.h"
+#include "ShaderCompiler.h"
+#include "UnrealClient.h"
 #include "EngineUtils.h"
 #include "IndieGame.h"
 #include "Interaction/IGSwingDoor.h"
@@ -25,6 +37,22 @@ namespace IGPursuitProbe
 	constexpr float TeleportStep = 60.0f;
 	/** 계단 위에서 몸 밑 바닥과의 틈 상한. 디딤판 가운데를 잇는 선이라 반 단까지는 흔들린다. */
 	constexpr float StairFloorGapLimit = 22.0f;
+
+	/**
+	 * 촬영 카메라. 4층 참에서 동쪽 계단을 내려다보는 것, 3·4층 사이 서쪽 계단 위에서 반 층 참 쪽을 보는 것,
+	 * 3층 복도 출입구에서 참을 보는 것.
+	 */
+	struct FShotCamera
+	{
+		FVector Location;
+		FRotator Rotation;
+		FVector Lamp;
+	};
+	const FShotCamera ShotCameras[] = {
+		{FVector(-407.5f, -330.0f, 1040.0f), FRotator(-30.0f, 90.0f, 0.0f), FVector(-407.5f, -200.0f, 980.0f)},
+		{FVector(-522.5f, -140.0f, 880.0f), FRotator(-28.0f, 90.0f, 0.0f), FVector(-500.0f, -20.0f, 860.0f)},
+		{FVector(-300.0f, -300.0f, 760.0f), FRotator(-25.0f, 180.0f, 0.0f), FVector(-420.0f, -300.0f, 760.0f)},
+	};
 }
 
 AIGListenerPursuitProbe::AIGListenerPursuitProbe()
@@ -62,6 +90,106 @@ float AIGListenerPursuitProbe::FeetZ() const
 {
 	const AIGListenerEntity* Listener = Entity.Get();
 	return Listener ? Listener->GetActorLocation().Z - 60.0f : 0.0f;
+}
+
+void AIGListenerPursuitProbe::Shoot(const TCHAR* Name)
+{
+	if (GShaderCompilingManager)
+	{
+		GShaderCompilingManager->FinishAllCompilation();
+	}
+	const FString Directory = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("PursuitReview")));
+	IFileManager::Get().MakeDirectory(*Directory, true);
+	const FString Path = FPaths::Combine(Directory, FString::Printf(TEXT("%s.png"), Name));
+	FScreenshotRequest::RequestScreenshot(Path, false, false);
+	LastShotSeconds = TotalSeconds;
+	ShotsTaken.Add(FName(Name));
+	if (const AIGListenerEntity* Listener = Entity.Get())
+	{
+		UE_LOG(LogIndieGame, Display, TEXT("PURSUIT_SHOT %s at=%s"), *Path, *Listener->GetActorLocation().ToCompactString());
+	}
+}
+
+void AIGListenerPursuitProbe::UpdateShots()
+{
+	UWorld* World = GetWorld();
+	const AIGListenerEntity* Listener = Entity.Get();
+	if (!bShots || !World || !Listener)
+	{
+		return;
+	}
+	if (ShotCameras.IsEmpty())
+	{
+		for (const IGPursuitProbe::FShotCamera& Spec : IGPursuitProbe::ShotCameras)
+		{
+			ACameraActor* Camera = World->SpawnActor<ACameraActor>(Spec.Location, Spec.Rotation);
+			if (Camera)
+			{
+				Camera->GetCameraComponent()->SetFieldOfView(80.0f);
+			}
+			ShotCameras.Add(Camera);
+			if (APointLight* Lamp = World->SpawnActor<APointLight>(Spec.Lamp, FRotator::ZeroRotator))
+			{
+				Lamp->PointLightComponent->SetMobility(EComponentMobility::Movable);
+				Lamp->PointLightComponent->SetIntensity(2400.0f);
+				Lamp->PointLightComponent->SetAttenuationRadius(700.0f);
+				Lamp->PointLightComponent->SetCastShadows(true);
+			}
+		}
+	}
+	// 내려오는 길(3단계)만 찍는다. 반 층 참 카메라는 3·4층 사이, 참 카메라는 3층 참이다.
+	if (Phase != 3)
+	{
+		return;
+	}
+	const FVector At = Listener->GetActorLocation();
+	const float Feet = FeetZ();
+	// 동쪽 계단과 반 층 참 동쪽은 4층 참에서, 반 층 참 서쪽과 서쪽 계단은 서쪽 계단 위에서, 3층 참은 출입구에서
+	// 본다. 서쪽 계단 위 카메라에서는 두 계단 사이 벽이 반 층 참 동쪽을 가린다.
+	const int32 Want = Feet < 615.0f ? 2 : (At.X > -440.0f ? 0 : 1);
+	if (Want != ActiveShotCamera && ShotCameras.IsValidIndex(Want) && ShotCameras[Want].IsValid())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			PC->SetViewTargetWithBlend(ShotCameras[Want].Get(), 0.0f);
+			// 밤 제목과 안내 글자가 화면을 덮지 않게 한다.
+			if (AHUD* Hud = PC->GetHUD())
+			{
+				Hud->bShowHUD = false;
+			}
+		}
+		ActiveShotCamera = Want;
+		// 카메라를 바꾼 프레임은 아직 예전 화면이다.
+		LastShotSeconds = TotalSeconds;
+		return;
+	}
+	if (TotalSeconds - LastShotSeconds < 0.12)
+	{
+		return;
+	}
+	struct FMoment
+	{
+		const TCHAR* Name;
+		bool bNow;
+	};
+	const FMoment Moments[] = {
+		{TEXT("pursuit-east-flight"), Feet > 790.0f && Feet < 840.0f && At.X > -460.0f},
+		{TEXT("pursuit-half-turn-east"), FMath::Abs(Feet - 750.0f) < 4.0f && At.X > -440.0f && At.Y > 10.0f},
+		{TEXT("pursuit-half-turn-north"), FMath::Abs(Feet - 750.0f) < 4.0f && FMath::Abs(At.X + 465.0f) < 12.0f},
+		{TEXT("pursuit-half-turn-west"), FMath::Abs(Feet - 750.0f) < 4.0f && At.X < -490.0f && At.Y > 10.0f},
+		{TEXT("pursuit-west-flight"), Feet > 712.0f && Feet < 742.0f && At.X < -470.0f},
+		{TEXT("pursuit-landing-west"), FMath::Abs(Feet - 600.0f) < 4.0f && At.X < -500.0f && At.Y < -270.0f},
+		{TEXT("pursuit-landing-south"), FMath::Abs(Feet - 600.0f) < 4.0f && FMath::Abs(At.X + 465.0f) < 12.0f && At.Y < -300.0f},
+		{TEXT("pursuit-landing-east"), FMath::Abs(Feet - 600.0f) < 4.0f && At.X > -430.0f && At.Y < -270.0f},
+	};
+	for (const FMoment& Moment : Moments)
+	{
+		if (Moment.bNow && !ShotsTaken.Contains(FName(Moment.Name)))
+		{
+			Shoot(Moment.Name);
+			return;
+		}
+	}
 }
 
 void AIGListenerPursuitProbe::Track(const float DeltaSeconds)
@@ -130,6 +258,7 @@ void AIGListenerPursuitProbe::Tick(const float DeltaSeconds)
 	if (Phase >= 1)
 	{
 		Track(DeltaSeconds);
+		UpdateShots();
 	}
 	const EIGListenerState State = Listener->GetListenerState();
 	if (State == EIGListenerState::CaptureHold)
@@ -156,6 +285,7 @@ void AIGListenerPursuitProbe::Tick(const float DeltaSeconds)
 			}
 		}
 		Listener->RefreshNightTuning();
+		bShots = FParse::Param(FCommandLine::Get(), TEXT("IGListenerPursuitShots"));
 		Character->GetCharacterMovement()->StopMovementImmediately();
 		Character->SetActorLocation(IGPursuitProbe::PlayerParked, false, nullptr, ETeleportType::TeleportPhysics);
 		Listener->ParkForBeat(FVector(60.0f, -305.0f, AIGPrologueWorldScene::FourthFloorZ), 180.0f);
