@@ -1,12 +1,15 @@
 ﻿#include "Entity/IGShadowFigure.h"
 
 #include "AnimationRuntime.h"
+#include "Components/MeshComponent.h"
 #include "Components/PoseableMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "IndieGame.h"
+#include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -34,6 +37,42 @@ namespace IGShadow
 	// 다 숙이면 머리가 쉬는 자세의 경계 상자보다 50 cm 앞으로 나간다. 상자를 그만큼
 	// 키워 둬야 숙인 머리만 화면에 걸릴 때 몸이 통째로 컬링되지 않는다.
 	constexpr float SculptedBoundsScale = 2.8f;
+	// 배율 1일 때의 키와, 빚은 몸이 없을 때 쓰는 허리 높이(cm).
+	constexpr float RestHeight = 200.0f;
+	constexpr float RestWaist = 100.0f;
+	// 머리를 천장에서 이만큼 띄운다.
+	constexpr float CeilingGap = 6.0f;
+	// 움직일 때 벽에 닿는지 보는 몸통 공(배율 1, cm). 무릎 공은 문턱과 계단 한 단을 넘는 높이에 둔다.
+	constexpr float SlideRadius = 22.0f;
+	constexpr float StepClearance = 20.0f;
+	constexpr float ChestHeight = 130.0f;
+
+	// 보이는 메시에 처음 닿는 자리. 숨은 막과 트리거는 빼고 다시 굴린다.
+	bool SweepVisible(UWorld& World, const FVector& From, const FVector& To, const float Radius,
+		FCollisionQueryParams Params, FHitResult& OutHit)
+	{
+		FCollisionObjectQueryParams Objects;
+		Objects.AddObjectTypesToQuery(ECC_WorldStatic);
+		Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+		Objects.AddObjectTypesToQuery(ECC_PhysicsBody);
+		for (int32 Try = 0; Try < 4; ++Try)
+		{
+			const bool bHit = Radius > 0.0f
+				? World.SweepSingleByObjectType(OutHit, From, To, FQuat::Identity, Objects, FCollisionShape::MakeSphere(Radius), Params)
+				: World.LineTraceSingleByObjectType(OutHit, From, To, Objects, Params);
+			if (!bHit)
+			{
+				return false;
+			}
+			const UPrimitiveComponent* Component = OutHit.GetComponent();
+			if (Cast<UMeshComponent>(Component) && Component->IsVisible() && !Component->bHiddenInGame)
+			{
+				return true;
+			}
+			Params.AddIgnoredComponent(Component);
+		}
+		return false;
+	}
 
 	FName SpineBone()
 	{
@@ -112,6 +151,7 @@ void AIGShadowFigure::DressAsPaper()
 		return;
 	}
 	bPaper = true;
+	ClipAudit.Start(TEXT("guest"));
 	// 빚은 몸이 있으면 그것을 입히고 얼굴에 403호 문의 자석만 붙인다. 손님은 오빠와
 	// 상관없는 이 건물의 것이라, 몸의 종이에는 단서가 적힌 종이가 없다.
 	if (AttachSculptedBody(IGShadow::PaperBodyPath))
@@ -267,6 +307,8 @@ void AIGShadowFigure::DressAsEoduksini()
 	}
 	if (AttachSculptedBody(IGShadow::SculptedBodyPath))
 	{
+		ClipAudit.Start(TEXT("eoduksini"));
+		bSlideAlongWalls = true;
 		ApplyPose();
 		SetActorHiddenInGame(!bManifested);
 	}
@@ -341,6 +383,7 @@ void AIGShadowFigure::Manifest(const FVector& Location, const float YawDegrees, 
 	TargetGrowth = FMath::Clamp(Growth, 0.0f, 1.0f);
 	CurrentGrowth = TargetGrowth;
 	SetActorLocationAndRotation(Location, FRotator(0.0f, YawDegrees, 0.0f));
+	ProbeCeiling();
 	ApplyPose();
 	SetActorHiddenInGame(false);
 	SetActorTickEnabled(true);
@@ -370,8 +413,86 @@ void AIGShadowFigure::SetTargetLocation(const FVector& Location, const float Spe
 
 FVector AIGShadowFigure::GetChestLocation() const
 {
+	return GetActorLocation() + FVector(0.0f, 0.0f, 135.0f * GetBodyScale());
+}
+
+float AIGShadowFigure::GetBodyScale() const
+{
 	const float Scale = FMath::Lerp(IGShadow::MinScale, IGShadow::MaxScale, CurrentGrowth);
-	return GetActorLocation() + FVector(0.0f, 0.0f, 135.0f * Scale);
+	// 허리를 축으로 숙인 머리 꼭대기. 다 자란 2.9 m 몸은 숙여도 2.7 m라 복도 천장(2.5 m)을 뚫었다.
+	const float Waist = SculptedBody ? SpineRest.GetLocation().Z : IGShadow::RestWaist;
+	const float Lean = FMath::DegreesToRadians(IGShadow::MaxLeanDegrees * CurrentGrowth);
+	const float HeadTop = Waist + (IGShadow::RestHeight - Waist) * FMath::Cos(Lean);
+	const float Room = (CeilingRoom - IGShadow::CeilingGap) / FMath::Max(HeadTop, 1.0f);
+	return FMath::Max(IGShadow::MinScale, FMath::Min(Scale, Room));
+}
+
+void AIGShadowFigure::ProbeCeiling()
+{
+	UWorld* World = GetWorld();
+	const FVector Feet = GetActorLocation();
+	CeilingProbedAt = Feet;
+	CeilingRoom = 1000.0f;
+	if (!World)
+	{
+		return;
+	}
+	// 발에서 조금 띄워 쏜다. 계단 아래 선 몸이면 위층 계단 밑면이 천장이다.
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGShadowCeiling), false, this);
+	FHitResult Hit;
+	const FVector From = Feet + FVector(0.0f, 0.0f, 30.0f);
+	if (IGShadow::SweepVisible(*World, From, Feet + FVector(0.0f, 0.0f, 600.0f), 0.0f, Params, Hit) && !Hit.bStartPenetrating)
+	{
+		CeilingRoom = Hit.ImpactPoint.Z - Feet.Z;
+	}
+}
+
+FVector AIGShadowFigure::SlideAlongWalls(const FVector& From, const FVector& To) const
+{
+	UWorld* World = GetWorld();
+	if (!World || FVector::DistSquared(From, To) < 0.01f)
+	{
+		return To;
+	}
+	const float Scale = GetBodyScale();
+	const float Radius = IGShadow::SlideRadius * Scale;
+	// 무릎 높이 공은 문턱과 계단 한 단 위를 지나고, 가슴 높이 공은 천장 아래에 둔다.
+	const float Low = Radius + IGShadow::StepClearance;
+	const float High = FMath::Max(Low, FMath::Min(IGShadow::ChestHeight * Scale, CeilingRoom - Radius - 4.0f));
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGShadowSlide), false, this);
+	if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))
+	{
+		Params.AddIgnoredActor(Player);
+	}
+	FVector Start = From;
+	FVector Move = To - From;
+	for (int32 Pass = 0; Pass < 2; ++Pass)
+	{
+		float Time = 1.0f;
+		FVector Normal = FVector::ZeroVector;
+		for (const float Height : {Low, High})
+		{
+			const FVector Lift(0.0f, 0.0f, Height);
+			FHitResult Hit;
+			// 이미 벽 속에서 시작하면(나타난 자리가 벽에 걸친 때) 막지 않는다. 빠져나와야 한다.
+			if (IGShadow::SweepVisible(*World, Start + Lift, Start + Move + Lift, Radius, Params, Hit)
+				&& !Hit.bStartPenetrating && Hit.Time < Time)
+			{
+				Time = Hit.Time;
+				Normal = Hit.Normal.GetSafeNormal2D();
+			}
+		}
+		Start += Move * Time;
+		if (Time >= 1.0f || Normal.IsNearlyZero())
+		{
+			return Start;
+		}
+		// 닿은 면에서 살짝 떼고, 남은 걸음은 그 면을 따라 미끄러뜨린다.
+		Start += Normal * 0.5f;
+		Move = FVector::VectorPlaneProject(Move * (1.0f - Time), Normal);
+		Move.Z = 0.0f;
+	}
+	return Start;
 }
 
 void AIGShadowFigure::Tick(const float DeltaSeconds)
@@ -382,10 +503,22 @@ void AIGShadowFigure::Tick(const float DeltaSeconds)
 		SetActorTickEnabled(false);
 		return;
 	}
+	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다.
+	if (ClipAudit.IsOn())
+	{
+		ClipAudit.Measure(SculptedBody, GetChestLocation(), UGameplayStatics::GetPlayerPawn(this, 0),
+			FString::Printf(TEXT("grow%.1f%s"), CurrentGrowth, GetActorLocation().Equals(TargetLocation, 1.0f) ? TEXT("") : TEXT(".move")));
+	}
 	CurrentGrowth = FMath::FInterpTo(CurrentGrowth, TargetGrowth, DeltaSeconds, IGShadow::GrowthFollowSpeed);
 	if (MoveSpeed > 0.0f)
 	{
-		SetActorLocation(FMath::VInterpConstantTo(GetActorLocation(), TargetLocation, DeltaSeconds, MoveSpeed));
+		const FVector Here = GetActorLocation();
+		const FVector Next = FMath::VInterpConstantTo(Here, TargetLocation, DeltaSeconds, MoveSpeed);
+		SetActorLocation(bSlideAlongWalls ? SlideAlongWalls(Here, Next) : Next);
+		if (FVector::DistSquared2D(GetActorLocation(), CeilingProbedAt) > FMath::Square(20.0f))
+		{
+			ProbeCeiling();
+		}
 	}
 	const float Yaw = FMath::FInterpTo(
 		GetActorRotation().Yaw,
@@ -397,9 +530,15 @@ void AIGShadowFigure::Tick(const float DeltaSeconds)
 	ApplyPose();
 }
 
+void AIGShadowFigure::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ClipAudit.Report();
+	Super::EndPlay(EndPlayReason);
+}
+
 void AIGShadowFigure::ApplyPose()
 {
-	const float Scale = FMath::Lerp(IGShadow::MinScale, IGShadow::MaxScale, CurrentGrowth);
+	const float Scale = GetBodyScale();
 	FigureRoot->SetRelativeScale3D(FVector(Scale));
 	const float Tremble = bTrembling
 		? IGShadow::TrembleDegrees * CurrentGrowth * FMath::Sin(TremblePhase)

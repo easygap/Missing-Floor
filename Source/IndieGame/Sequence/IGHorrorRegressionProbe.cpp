@@ -679,7 +679,17 @@ void AIGHorrorRegressionProbe::Tick(const float DeltaSeconds)
 		}
 		if (StepSeconds >= 0.5f)
 		{
-			Threats->BeginEoduksiniCaptureForProbe(DarkSpot + FVector(-150.0f, 0.0f, 0.0f));
+			// 마주 보는 쪽 150 cm 앞에 세운다. 가장 어두운 자리가 복도 끝이면 그 앞이 벽이라, 벽까지 잰 거리에서 몸
+			// 반지름만큼 뺀 자리에 세운다. 예전에는 서쪽 벽 속에 세워 몸이 벽을 뚫고 다가왔다.
+			FVector Spot = DarkSpot + FVector(-150.0f, 0.0f, 0.0f);
+			FHitResult Wall;
+			const FVector Chest(0.0f, 0.0f, 100.0f);
+			if (GetWorld()->LineTraceSingleByChannel(Wall, DarkSpot + Chest, Spot + Chest, ECC_Visibility,
+					FCollisionQueryParams(SCENE_QUERY_STAT(IGHorrorEoduksiniSpot), false, Character)))
+			{
+				Spot = DarkSpot + FVector(-FMath::Max(0.0f, Wall.Distance - 45.0f), 0.0f, 0.0f);
+			}
+			Threats->BeginEoduksiniCaptureForProbe(Spot);
 			Next(81);
 		}
 		break;

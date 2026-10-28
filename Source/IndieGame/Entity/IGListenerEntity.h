@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "Entity/IGBuildingNav.h"
+#include "Entity/IGClipAudit.h"
 #include "Entity/IGListenerTuning.h"
 #include "Entity/IGNoiseSubsystem.h"
 #include "IGListenerEntity.generated.h"
@@ -807,6 +808,8 @@ private:
 	/** 이번 걸음이 계단 위였다. 몸을 경사대로 눕힌다. */
 	bool bOnStairLeg = false;
 	float StairPitchTarget = 0.0f;
+	/** 검사 실행에서 몸이 벽·문·계단을 지나는지 잰다(CLIP_AUDIT). */
+	FIGClipAudit ClipAudit;
 	float StairBodyPitch = 0.0f;
 
 	// -- 놓친 뒤 ---------------------------------------------------------------

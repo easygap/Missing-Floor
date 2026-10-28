@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Entity/IGClipAudit.h"
 #include "GameFramework/Actor.h"
 #include "IGShadowFigure.generated.h"
 
@@ -27,6 +28,7 @@ public:
 	AIGShadowFigure();
 
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** 나타난다. 바닥 위 Location에서 Growth 크기로, YawDegrees를 본다. */
 	void Manifest(const FVector& Location, float YawDegrees, float Growth);
@@ -67,6 +69,12 @@ private:
 	void ApplyPose();
 	/** 빚은 몸의 허리를 숙이고 팔을 늘어뜨린다. 각도는 도 단위다. */
 	void PoseSculptedBody(float LeanDegrees, float TrembleDegrees);
+	/** 크기(Growth)에 맞는 배율. 머리가 천장에 닿으면 그 아래에서 멈춘다. */
+	float GetBodyScale() const;
+	/** 몸 위 천장까지의 높이를 다시 잰다. 천장이 없으면 크게 둔다. */
+	void ProbeCeiling();
+	/** From에서 To로 가되 벽·문짝·가구에 막히면 그 면을 따라 미끄러진 자리를 준다. */
+	FVector SlideAlongWalls(const FVector& From, const FVector& To) const;
 	UStaticMeshComponent* AddPart(
 		const TCHAR* Name,
 		USceneComponent* Parent,
@@ -106,6 +114,9 @@ private:
 	FTransform SculptedFaceRest;
 
 	FVector TargetLocation = FVector::ZeroVector;
+	/** 발밑에서 천장까지(cm). ProbeCeiling이 몸이 옮길 때마다 다시 잰다. */
+	float CeilingRoom = 1000.0f;
+	FVector CeilingProbedAt = FVector(TNumericLimits<float>::Max());
 	float MoveSpeed = 0.0f;
 	float TargetGrowth = 0.0f;
 	float CurrentGrowth = 0.0f;
@@ -114,4 +125,8 @@ private:
 	bool bTrembling = false;
 	bool bManifested = false;
 	bool bPaper = false;
+	/** 벽에 막히면 면을 따라 미끄러진다. 어둑시니만 켠다. */
+	bool bSlideAlongWalls = false;
+	/** 검사 실행에서 빚은 몸이 벽·문·천장을 지나는지 잰다(CLIP_AUDIT). */
+	FIGClipAudit ClipAudit;
 };

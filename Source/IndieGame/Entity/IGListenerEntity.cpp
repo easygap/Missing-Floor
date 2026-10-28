@@ -225,6 +225,10 @@ void AIGListenerEntity::BeginPlay()
 	SpawnLocation = GetActorLocation();
 	SearchAnchor = SpawnLocation;
 	BuildGreyboxBody();
+	if (ListenerSkeletal)
+	{
+		ClipAudit.Start(TEXT("listener"));
+	}
 	// 층을 오가는 길. 계단 치수는 씬이 든 정적 값이라 씬이 서기 전에도 짤 수 있다.
 	BuildingNav.Build();
 
@@ -319,12 +323,19 @@ void AIGListenerEntity::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			AudioDirector->SetEntityListening(false);
 		}
 	}
+	ClipAudit.Report();
 	Super::EndPlay(EndPlayReason);
 }
 
 void AIGListenerEntity::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다.
+	if (ClipAudit.IsOn() && !bDormant && !IsHidden())
+	{
+		ClipAudit.Measure(ListenerSkeletal.Get(), Body ? Body->GetComponentLocation() : GetActorLocation(), CachedPlayer.Get(),
+			StaticEnum<EIGListenerState>()->GetNameStringByValue(static_cast<int64>(State)) + (bOnStairLeg ? TEXT(".stair") : TEXT("")));
+	}
 	StateSeconds += DeltaSeconds;
 	TickState(DeltaSeconds);
 	TexturePrefetchSeconds -= DeltaSeconds;
