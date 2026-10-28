@@ -86,6 +86,20 @@ namespace IGPrologueWorld
 	const FRotator PlayerActorRotation(0.0f, -128.0f, 0.0f);
 	const FRotator PlayerViewRotation(-14.0f, -128.0f, 0.0f);
 
+	// 낮과 입주 저녁의 국소 노출. 골목 바깥에서는 밝은 쪽을 더 누른다(UpdateAlleyLook).
+	constexpr float DayHighlightContrast = 0.84f;
+	constexpr float DayBlurredLuminanceBlend = 0.52f;
+	// 어두운 골목에 맞춘 자동 노출이 편의점 안을 하얗게 날려 유리 너머가 안 보였다. 넓게 흐린 밝기를 덜 섞어야
+	// 유리 안쪽만 따로 눌린다. 2026-10-28 README 골목 컷에서 유리 상자의 날아간 화소가 6.5%에서 0.03%로 줄었다.
+	constexpr float AlleyHighlightContrast = 0.45f;
+	constexpr float AlleyBlurredLuminanceBlend = 0.15f;
+	// 골목 범위(씬 좌표). 편의점 정면이 X 2398, 건물 파사드가 Y -375다. 옥상은 Z 1100 위라 빠진다.
+	constexpr float AlleyStoreFrontX = 2398.0f;
+	constexpr float AlleyNorthY = -380.0f;
+	constexpr float AlleyTopZ = 450.0f;
+	// 편의점 정면 앞 이만큼에서 원래 값으로 돌아온다. 문을 지날 때 화면이 튀지 않게.
+	constexpr float AlleyLookBlend = 150.0f;
+
 	// 403호가 앉은 층. 값은 클래스가 든다.
 	constexpr float FourthFloorZ = AIGPrologueWorldScene::FourthFloorZ;
 	constexpr float MissingFloorRoofZ = AIGPrologueWorldScene::RoofZ;
@@ -4238,6 +4252,7 @@ void AIGPrologueWorldScene::UpdateLightZones()
 	const FVector Eye = GetActorTransform().InverseTransformPosition(
 		Controller->PlayerCameraManager->GetCameraLocation());
 	UpdateCorridorSensors(Eye);
+	UpdateAlleyLook(Eye);
 	// 구역 번호: 0 1층(로비·골목·편의점), 4 2층, 5 3층, 1 4층, 2 옥상·별관.
 	// 층 경계는 그 층 슬래브 윗면 20 cm 아래다. 아래층에서 뛰어도 넘지 않고,
 	// 위층 침대 밑에 엎드려도 내려가지 않는다. 경계에서 40 cm는 앞의 판단을
@@ -4350,6 +4365,29 @@ void AIGPrologueWorldScene::UpdateLightZones()
 			}
 		}
 	}
+}
+
+void AIGPrologueWorldScene::UpdateAlleyLook(const FVector& LocalEye)
+{
+	if (!PostProcess)
+	{
+		return;
+	}
+	// 그 시간에는 건물이 잠겨 골목에 못 나간다. 밝은 쪽 압축은 ApplyNightAtmosphere가 쥔다.
+	if (bTheHourSealed)
+	{
+		PostProcess->Settings.LocalExposureBlurredLuminanceBlend = IGPrologueWorld::DayBlurredLuminanceBlend;
+		return;
+	}
+	const bool bOutside = LocalEye.Y < IGPrologueWorld::AlleyNorthY && LocalEye.Z < IGPrologueWorld::AlleyTopZ
+		&& LocalEye.X < IGPrologueWorld::AlleyStoreFrontX;
+	const float Weight = bOutside
+		? FMath::Clamp((IGPrologueWorld::AlleyStoreFrontX - LocalEye.X) / IGPrologueWorld::AlleyLookBlend, 0.0f, 1.0f)
+		: 0.0f;
+	PostProcess->Settings.LocalExposureHighlightContrastScale =
+		FMath::Lerp(IGPrologueWorld::DayHighlightContrast, IGPrologueWorld::AlleyHighlightContrast, Weight);
+	PostProcess->Settings.LocalExposureBlurredLuminanceBlend =
+		FMath::Lerp(IGPrologueWorld::DayBlurredLuminanceBlend, IGPrologueWorld::AlleyBlurredLuminanceBlend, Weight);
 }
 
 void AIGPrologueWorldScene::UpdateCorridorSensors(const FVector& LocalEye)

@@ -723,6 +723,8 @@ private:
 	void ApplyExteriorTimeOfDay();
 	/** 공용 복도의 센서등. 계량기 퍼즐과 야간 연출이 등을 끄면 개입하지 않는다. */
 	void UpdateCorridorSensors(const FVector& LocalEye);
+	/** 골목 바깥에서 보는 동안 밝은 쪽을 더 눌러 편의점 유리 안이 하얗게 날지 않게 한다. */
+	void UpdateAlleyLook(const FVector& LocalEye);
 	TArray<double> CorridorSensorLastSeen;
 	/**
 	 * 창 너머 도로. 그 시간에는 건물이 닫혀 바깥이 멀어지고, 새벽에는 천천히
