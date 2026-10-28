@@ -467,6 +467,11 @@ private:
 	 * 세 번 두드리고, 귀를 대고 듣는다. 12초 안에 다시 막히면 듣기만 한다.
 	 */
 	void ArriveAtClosedDoor();
+	/**
+	 * 닫힌 문 앞에서 두드리고 듣는 동안 손이 문면에 닿는 거리에 선다. 캡슐이 문짝에 닿은 자리에서 두드리면 앞으로
+	 * 뻗는 팔과 어깨가 문짝 속으로 들어가 반대쪽으로 나왔다. 그 거리에 섰으면(막혀서 더 못 가면) true다.
+	 */
+	bool SettleAtClosedDoor(float DeltaSeconds);
 	/** 몸 밑 한 뼘 안에 바닥이 있는가. 계단 가장자리를 넘지 않게 걸음마다 본다. */
 	bool HasFloorBeneath(const FVector& Location) const;
 	/**
@@ -739,6 +744,8 @@ private:
 	bool bAtClosedDoor = false;
 	/** 지금 두드리는 문. 문짝의 결을 여기서 읽는다. */
 	TWeakObjectPtr<AIGSwingDoor> KnockDoor;
+	/** 닫힌 문 앞에서 두드릴 거리에 섰다. 서기 전에는 두드리지 않는다. */
+	bool bClosedDoorSettled = true;
 	/** 문 앞에서 안쪽 소리에 한 번 더 두드렸다. 한 번뿐이다. */
 	bool bDoorReknocked = false;
 	/** 한 번 더 두드리기까지 남은 시간. 0 이하이면 예약이 없다. */

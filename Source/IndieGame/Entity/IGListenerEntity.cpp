@@ -103,6 +103,17 @@ namespace IGListener
 
 	/** 문 앞에 서는 자리. 밤2 대본의 인물 자리와 같은 47 cm다. */
 	constexpr float HomeDoorStandOffset = 47.0f;
+	/**
+	 * 닫힌 방화문·욕실 문 앞에서 문면과 캡슐 가운데 사이(cm). 두드리는 자세는 손을 캡슐 가운데에서 93 cm 앞까지
+	 * 뻗어, 캡슐이 문에 닿은 자리(33 cm)에서는 팔과 어깨가 문짝 속으로 들어가 반대쪽으로 나왔다. 손끝이 문면에 닿는
+	 * 거리에 선다.
+	 */
+	constexpr float ClosedDoorStandOff = 92.0f;
+	/** 이보다 멀리서 문을 알아봤으면 다가가지 않고 그 자리에서 두드린다. */
+	constexpr float ClosedDoorApproachLimit = 160.0f;
+	/** 그 거리로 물러서는 빠르기와 다가가는 빠르기(cm/s). */
+	constexpr float ClosedDoorRetreatSpeed = 300.0f;
+	constexpr float ClosedDoorApproachSpeed = 120.0f;
 	/** 노크는 복도 쪽 문짝 겉면에서 난다. */
 	constexpr float HomeDoorKnockOffset = 7.0f;
 	/** 문 앞을 떠난 뒤 닫힌 집 안의 소리를 흘려듣는 시간. */
@@ -685,6 +696,12 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		{
 			FaceDirection(AttentionDirection, DeltaSeconds);
 		}
+		// 손이 문면에 닿는 거리에 서기 전에는 치지 않는다. 시계를 붙잡아 두어야 문소리와 손이 닿는 순간이 맞는다.
+		if (!SettleAtClosedDoor(DeltaSeconds))
+		{
+			StateSeconds = 0.0f;
+			break;
+		}
 		// 문짝을 치는 녹음은 한 타씩이라 3연의 간격대로 이어 친다.
 		if ((bAtHomeDoor || bAtClosedDoor)
 			&& DoorSteelHitsPlayed < IGListener::DoorSteelHitCount
@@ -703,6 +720,7 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		{
 			FaceDirection(AttentionDirection, DeltaSeconds);
 		}
+		SettleAtClosedDoor(DeltaSeconds);
 		if (DoorReknockCountdown > 0.0f)
 		{
 			DoorReknockCountdown -= DeltaSeconds;
@@ -805,6 +823,7 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		{
 			FaceDirection(AttentionDirection, DeltaSeconds);
 		}
+		SettleAtClosedDoor(DeltaSeconds);
 		// §20.2 「INVESTIGATE 도착 청취」. 표는 밤마다 6·6·5·5초라고 적어 두었는데
 		// 실제로는 상수 6초만 읽고 있었다. 매복과 관찰은 들은 자리가 아니라 기다리는
 		// 자리라 따로 잰다.
@@ -2329,6 +2348,30 @@ bool AIGListenerEntity::CrawlTowards(
 		}
 		return false;
 	}
+	// 앞에 닫힌 문(관리실 문, 계단실 방화문, 욕실 문)이 있으면 손이 닿는 거리에서 멈춘다. 캡슐이 문짝에 닿을
+	// 때까지 기면 앞으로 뻗은 머리와 팔이 문짝 속으로 들어갔다. 403호 문 앞은 따로 선다(HomeDoorStandOffset).
+	if (UWorld* World = GetWorld())
+	{
+		FCollisionObjectQueryParams Doors;
+		Doors.AddObjectTypesToQuery(ECC_WorldStatic);
+		Doors.AddObjectTypesToQuery(ECC_WorldDynamic);
+		FHitResult Ahead;
+		if (World->LineTraceSingleByObjectType(Ahead, Before, Before + Direction * (IGListener::ClosedDoorStandOff + Step.Size()),
+				Doors, FCollisionQueryParams(SCENE_QUERY_STAT(IGListenerDoorAhead), false, this)))
+		{
+			// 비스듬히 스쳐 가는 문짝에는 서지 않는다. 문면을 마주하고 기어 갈 때만이다.
+			AIGSwingDoor* Door = Cast<AIGSwingDoor>(Ahead.GetActor());
+			if (Door && !Door->IsOpen() && Door != HomeDoor.Get() && Ahead.Distance <= IGListener::ClosedDoorStandOff
+				&& FVector::DotProduct(-Direction, Ahead.ImpactNormal.GetSafeNormal2D()) > 0.5f)
+			{
+				bBlockedByClosedDoor = true;
+				BlockingDoor = Door;
+				LastMoveSpeed = 0.0f;
+				StuckSeconds = 0.0f;
+				return false;
+			}
+		}
+	}
 	FHitResult SweepHit;
 	AddActorWorldOffset(Step, true, &SweepHit);
 	// 닫힌 403호 문짝에 막혔는지. 벽에 걸린 것과 문 앞에 닿은 것은 다르다.
@@ -2736,6 +2779,7 @@ void AIGListenerEntity::ArriveAtClosedDoor()
 	bCadenceEarsUp = false;
 	bAtHomeDoor = false;
 	bAtClosedDoor = false;
+	bClosedDoorSettled = false;
 	KnockDoor = Cast<AIGSwingDoor>(BlockingDoor.Get());
 	if (const AIGSwingDoor* Door = KnockDoor.Get())
 	{
@@ -2753,6 +2797,48 @@ void AIGListenerEntity::ArriveAtClosedDoor()
 	{
 		EnterState(EIGListenerState::Holding);
 	}
+}
+
+bool AIGListenerEntity::SettleAtClosedDoor(const float DeltaSeconds)
+{
+	const AIGSwingDoor* Door = KnockDoor.Get();
+	if (!bAtClosedDoor || !Door || Door->IsOpen())
+	{
+		bClosedDoorSettled = true;
+		return true;
+	}
+	if (bClosedDoorSettled)
+	{
+		return true;
+	}
+	// 문짝 겉면에서 몸 쪽으로 수평으로 잰다.
+	const FVector Here = GetActorLocation();
+	FVector Away = Here - Door->GetKnockPoint(Here);
+	Away.Z = 0.0f;
+	const float Distance = Away.Size();
+	const float Short = IGListener::ClosedDoorStandOff - Distance;
+	if (FMath::Abs(Short) <= 2.0f || Distance < KINDA_SMALL_NUMBER || Distance > IGListener::ClosedDoorApproachLimit)
+	{
+		bClosedDoorSettled = true;
+		return true;
+	}
+	if (DeltaSeconds <= 0.0f)
+	{
+		return false;
+	}
+	const FVector Direction = Away / Distance * FMath::Sign(Short);
+	const float Speed = Short > 0.0f ? IGListener::ClosedDoorRetreatSpeed : IGListener::ClosedDoorApproachSpeed;
+	const float Step = FMath::Min(FMath::Abs(Short), Speed * DeltaSeconds);
+	// 뒤가 계단 끝이거나 벽이면 거기서 선 것으로 친다. 그 자리에서 두드린다.
+	if (!HasFloorBeneath(Here + Direction * Step))
+	{
+		bClosedDoorSettled = true;
+		return true;
+	}
+	FHitResult Hit;
+	AddActorWorldOffset(Direction * Step, true, &Hit);
+	bClosedDoorSettled = Hit.bBlockingHit;
+	return bClosedDoorSettled;
 }
 
 bool AIGListenerEntity::StepAlongStair(
@@ -3435,6 +3521,11 @@ void AIGListenerEntity::UpdateSkeletalPose(
 		{
 			SetActorRotation(FRotator(0.0f, WallListenYaw, 0.0f));
 			PlayBodyAnim(EIGListenerBodyAnim::BangWall, false, KnockRate);
+			return;
+		}
+		if (!bClosedDoorSettled)
+		{
+			PlayBodyAnim(EIGListenerBodyAnim::Listen, true, 1.0f);
 			return;
 		}
 		PlayBodyAnim(EIGListenerBodyAnim::Bang, false, KnockRate);
