@@ -118,6 +118,11 @@ struct FIGDialogueScope
 	TWeakObjectPtr<const UObject> Owner;
 	/** 화면에 올리기 직전과 떠 있는 동안 본다. false면 거둔다. */
 	TFunction<bool()> StillValid;
+	/**
+	 * 화면에 오른 뒤로는 StillValid로 거두지 않는다(밀린 줄만 거른다). 들고 가는 물건의 감상이나 한 번만 하는 경고는
+	 * 플레이어가 그 자리를 떠나도 끝까지 읽혀야 한다.
+	 */
+	bool bKeepOnceShown = false;
 	EIGDialogueLifetime Lifetime = EIGDialogueLifetime::Story;
 	EIGDialogueInterruption Interruption = EIGDialogueInterruption::Resume;
 	/** 마지막 쪽이 끝나거나 거둬질 때 한 번 부른다. 자막을 끈 녹음 대사처럼 화면에 오르지 않으면 부르지 않는다. */
@@ -166,6 +171,8 @@ struct FIGDialogueMessage
 	bool bHasOwner = false;
 	/** 녹음된 말이었는가. 소리가 사라져도(끝나도) 이 줄은 녹음 대사로 다룬다. */
 	bool bVoiced = false;
+	/** 화면에 올랐다(FIGDialogueScope::bKeepOnceShown). */
+	bool bShown = false;
 	/** 이 줄(나눈 줄이면 앞쪽)에서 소리를 이미 냈다. 다음 쪽이 같은 소리를 다시 내지 않게. */
 	bool bVoiceStarted = false;
 	/** 소리가 제 길이대로 끝날 시각. 그 전에 멎으면 끝까지 들은 것으로 치지 않는다. */

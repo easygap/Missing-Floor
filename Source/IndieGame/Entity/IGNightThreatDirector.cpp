@@ -1188,7 +1188,7 @@ void AIGNightThreatDirector::ManifestEoduksiniAt(const FVector& Spot)
 		EIGAudioBus::Entity);
 	AIGHorrorHUD::PushAudioCaptionAt(
 		this,
-		NSLOCTEXT("IGMissingFloor", "CaptionDarknessInhale", "[어둠 속에서 무언가 숨을 들이쉰다]"),
+		NSLOCTEXT("IGMissingFloor", "CaptionDarknessInhale", "[어둠 속에서 숨 들이쉬는 소리]"),
 		2.8f,
 		Spot + FVector(0.0f, 0.0f, 130.0f));
 	if (EoduksiniBreath)
@@ -1952,12 +1952,12 @@ void AIGNightThreatDirector::PlayGuestLockStep(const int32 Step)
 				EIGAudioBus::World);
 		}
 		const FText Caption = Step == 0
-			? NSLOCTEXT("IGMissingFloor", "CaptionGuestKeypad", "[밖에서 도어락 번호를 누른다]")
+			? NSLOCTEXT("IGMissingFloor", "CaptionGuestKeypad", "[밖에서 도어락 번호 누르는 소리]")
 			: Step == 1
 				? NSLOCTEXT("IGMissingFloor", "CaptionGuestWrongCode", "[번호가 틀렸다는 경고음]")
 				: Step == 2
-					? NSLOCTEXT("IGMissingFloor", "CaptionGuestKeypadAgain", "[도어락 번호를 다시 누른다]")
-					: NSLOCTEXT("IGMissingFloor", "CaptionGuestUnlocked", "[도어락이 풀린다]");
+					? NSLOCTEXT("IGMissingFloor", "CaptionGuestKeypadAgain", "[도어락 번호를 다시 누르는 소리]")
+					: NSLOCTEXT("IGMissingFloor", "CaptionGuestUnlocked", "[도어락이 풀리는 소리]");
 		AIGHorrorHUD::PushAudioCaptionAt(this, Caption, Step == 0 ? 2.0f : Step == 3 ? 1.6f : 1.8f, Outside);
 		return;
 	}
@@ -1971,22 +1971,22 @@ void AIGNightThreatDirector::PlayGuestLockStep(const int32 Step)
 	case 2:
 		Sound = UIGToneSequenceSoundWave::CreateKeyRingJingle(this, Step == 2);
 		Caption = Step == 0
-			? NSLOCTEXT("IGMissingFloor", "CaptionGuestKeyring", "[밖에서 열쇠 꾸러미가 짤랑거린다]")
-			: NSLOCTEXT("IGMissingFloor", "CaptionGuestKeyAgain", "[다른 열쇠를 꽂는다]");
+			? NSLOCTEXT("IGMissingFloor", "CaptionGuestKeyring", "[밖에서 열쇠 꾸러미 짤랑거리는 소리]")
+			: NSLOCTEXT("IGMissingFloor", "CaptionGuestKeyAgain", "[다른 열쇠를 꽂는 소리]");
 		break;
 	case 1:
 		Sound = IGAudio::SampleOr(
 			TEXT("Lock_Rattle"),
 			[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateLockedRattle(this); });
 		Volume = 0.55f;
-		Caption = NSLOCTEXT("IGMissingFloor", "CaptionGuestWrongKey", "[열쇠가 맞지 않아 덜컥거린다]");
+		Caption = NSLOCTEXT("IGMissingFloor", "CaptionGuestWrongKey", "[맞지 않는 열쇠가 덜컥거리는 소리]");
 		break;
 	default:
 		Sound = IGAudio::SampleOr(
 			TEXT("Lock_Open"),
 			[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateSwitchClick(this, true); });
 		Volume = 0.75f;
-		Caption = NSLOCTEXT("IGMissingFloor", "CaptionGuestKeyTurns", "[자물쇠가 돌아간다]");
+		Caption = NSLOCTEXT("IGMissingFloor", "CaptionGuestKeyTurns", "[자물쇠 돌아가는 소리]");
 		break;
 	}
 	IGAudio::SpawnOneShotAt(this, Sound, LockAt, Volume, 1.0f, 140.0f, 1300.0f, EIGAudioBus::World);

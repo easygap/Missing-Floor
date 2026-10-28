@@ -473,7 +473,7 @@ void AIGElevatorOverloadDirector::TickCarriedUp()
 			// 4층을 지나친다. 누른 적 없는 5에 불이 들어온다.
 			Lift->ScriptSetButtonLit(TargetFloor, false);
 			Lift->ScriptSetButtonLit(AIGElevator::LandingCount, true);
-			AIGHorrorHUD::PushThought(this, NSLOCTEXT("IGElevatorOverload", "WhereThought", "…어디로 가는 거야."), 2.4f);
+			AIGHorrorHUD::PushThought(this, NSLOCTEXT("IGElevatorOverload", "WhereThought", "어디로 가는 거야?"), 2.4f);
 			Cue = 3;
 		}
 		break;
@@ -574,7 +574,7 @@ void AIGElevatorOverloadDirector::TickReturning()
 	{
 		AIGHorrorHUD::PushThought(this, bSawEmptyMirror
 			? NSLOCTEXT("IGElevatorOverload", "EmptyMirrorThought", "거울에 아무도 없었어.")
-			: NSLOCTEXT("IGElevatorOverload", "NoFifthAfterThought", "…4층 위로는 안 가는데."), 2.8f);
+			: NSLOCTEXT("IGElevatorOverload", "NoFifthAfterThought", "4층 위로는 안 가는데."), 2.8f);
 		bAbsentUntilExit = true;
 		Finish(false);
 	}

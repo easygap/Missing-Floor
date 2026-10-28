@@ -2318,9 +2318,9 @@ void AIGMissingFloorNightFourDirector::ActivateControl(
 	// 성공한 조작에만 결과를 말한다. 증거 액터가 판정 전에 대사를 띄우면
 	// 역순으로 밸브를 돌려도 '물이 빠진다'와 경보가 동시에 나왔다.
 	const FText Result = ControlId == IGNightFour::CleaningDrainId
-		? NSLOCTEXT("IGMissingFloor", "CleaningDrainThought", "아래쪽 배관으로 물이 빠진다.")
+		? NSLOCTEXT("IGMissingFloor", "CleaningDrainThought", "아래 배관으로 물이 빠지네.")
 		: ControlId == IGNightFour::FloatBypassId
-			? NSLOCTEXT("IGMissingFloor", "FloatBypassThought", "급수관에서도 물소리가 난다.")
+			? NSLOCTEXT("IGMissingFloor", "FloatBypassThought", "급수관에서도 물소리가 나.")
 			: NSLOCTEXT("IGMissingFloor", "TransferPumpThought", "펌프가 돌아가네.");
 	// 방금 돌린 밸브의 결과다. 밸브를 잇달아 돌리고 바로 망치를 들면 이 줄들이 벽 단서 앞을 막았다.
 	// 밀려서 늦게 뜨면 이미 지난 일이니 짧은 반응으로 낸다.
@@ -2392,11 +2392,11 @@ void AIGMissingFloorNightFourDirector::HandleControlMisorder(
 			? NSLOCTEXT(
 				"IGMissingFloor",
 				"P5OverflowAlarm",
-				"물이 넘친다. 어디로도 안 빠지고 있어.")
+				"물이 넘쳐. 빠질 데가 없어.")
 			: NSLOCTEXT(
 				"IGMissingFloor",
 				"P5PressureAlarm",
-				"펌프가 멈췄다. 고장등 꺼질 때까지 기다리자."),
+				"펌프가 멈췄어. 고장등 꺼질 때까지 기다리자."),
 		3.8f);
 	// 인터록이 선다. 그동안은 어느 손잡이도 안 돈다. 돌려 보면 막혔다는 것만 알려 준다.
 	bControlLockoutActive = true;
@@ -2763,7 +2763,7 @@ void AIGMissingFloorNightFourDirector::HandleWallStrike(
 				? NSLOCTEXT("IGMissingFloor", "NightFourStrikeFirst", "금 갔어.")
 				: StrikeCount == 2
 					? NSLOCTEXT("IGMissingFloor", "NightFourStrikeSecond", "조금만 더.")
-					: NSLOCTEXT("IGMissingFloor", "NightFourStrikeFourth", "손이 저리다. 한 번만 더."),
+					: NSLOCTEXT("IGMissingFloor", "NightFourStrikeFourth", "손이 저려. 한 번만 더."),
 			2.2f);
 		if (StrikeCount == 2)
 		{

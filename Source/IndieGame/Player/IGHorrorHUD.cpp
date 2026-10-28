@@ -243,7 +243,7 @@ namespace IGHorrorHUD
 				NSLOCTEXT("IGJournal", "FreshPlasterDating.Where", "5층 가운데 칸 벽 · 셋째 밤"), EJournalThumbnail::Plaster},
 			{TEXT("Fifth.PipeWaterComparison"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "PipeWaterComparison.Title", "배관에서 들은 소리"),
-				NSLOCTEXT("IGJournal", "PipeWaterComparison.Excerpt", "바로 뒤로 물이 흐른다. 이 벽만 소리가 달라."),
+				NSLOCTEXT("IGJournal", "PipeWaterComparison.Excerpt", "바로 뒤로 물이 흘러. 이 벽만 소리가 달라."),
 				NSLOCTEXT("IGJournal", "PipeWaterComparison.Where", "5층 밸브 옆 벽 · 셋째 밤"), EJournalThumbnail::Metal},
 			{TEXT("Fifth.WallEchoByHand"), EJournalLane::Life,
 				NSLOCTEXT("IGJournal", "WallEchoByHand.Title", "직접 두드린 벽"),
@@ -288,7 +288,7 @@ namespace IGHorrorHUD
 				NSLOCTEXT("IGJournal", "AnswerRhythmVoicemail.Where", "휴대폰 · 입주 전"), EJournalThumbnail::Metal},
 			{TEXT("Fifth.AnswerRhythmNotebook"), EJournalLane::Personal,
 				NSLOCTEXT("IGJournal", "AnswerRhythmNotebook.Title", "수첩에 그려진 박자"),
-				NSLOCTEXT("IGJournal", "AnswerRhythmNotebook.Excerpt", "●●  —  ●"),
+				NSLOCTEXT("IGJournal", "AnswerRhythmNotebook.Excerpt", "●●    ●"),
 				NSLOCTEXT("IGJournal", "AnswerRhythmNotebook.Where", "조율 수첩 여백 · 셋째 밤"), EJournalThumbnail::Document},
 			{TEXT("Unit401.AnswerRhythmJournal"), EJournalLane::Personal,
 				NSLOCTEXT("IGJournal", "AnswerRhythmJournal.Title", "일지에 적힌 박자"),
@@ -1211,6 +1211,10 @@ bool AIGHorrorHUD::IsDialogueStillValid(const FIGDialogueMessage& Message)
 	{
 		return false;
 	}
+	if (Message.bShown && Message.Scope.bKeepOnceShown)
+	{
+		return true;
+	}
 	return !Message.Scope.StillValid || Message.Scope.StillValid();
 }
 
@@ -1701,6 +1705,7 @@ void AIGHorrorHUD::ActivateDialogue(
 	const double CurrentTime)
 {
 	CurrentDialogue = MoveTemp(Message);
+	CurrentDialogue.bShown = true;
 	bHasCurrentDialogue = true;
 	// 긴급 대사 뒤에 앞쪽을 다시 띄워도 남은 쪽은 그대로 줄 서 있다.
 	// 이 상태를 잃으면 첫 쪽만 읽고도 원문 전체가 「들은 말」에 남았다.

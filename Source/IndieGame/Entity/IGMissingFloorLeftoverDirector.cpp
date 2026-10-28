@@ -365,9 +365,11 @@ void AIGMissingFloorLeftoverDirector::ThinkAboutItem(const FText& Line, const fl
 	FIGDialogueScope Scope;
 	Scope.Context = IGLeftoverDialogue::Examine;
 	Scope.Owner = this;
-	// 다른 말이 시작되거나 물건을 살피던 자리에서 떠나면 지난 감상을 다시 띄우지 않는다.
+	// 다른 말이 시작되거나 물건을 살피던 자리에서 떠나면 지난 감상을 다시 띄우지 않는다. 이미 뜬 감상은 끝까지 둔다.
+	// 집어 든 물건의 말이라 들고 걸어 나가면 2.5 m에서 잘렸다(덮개를 챙기며 하는 「이만한 덧판을 어디서 봤는데」).
 	Scope.Lifetime = EIGDialogueLifetime::Reaction;
 	Scope.Interruption = EIGDialogueInterruption::Drop;
+	Scope.bKeepOnceShown = true;
 	const APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
 	const TWeakObjectPtr<APawn> Observer(PC ? PC->GetPawn() : nullptr);
 	const FVector Origin = Observer.IsValid() ? Observer->GetActorLocation() : FVector::ZeroVector;
@@ -1376,7 +1378,7 @@ void AIGMissingFloorLeftoverDirector::HandleInnerTarget(AIGLeftoverTarget* Targe
 	if (Key == IGLeftover::PieceA)
 	{
 		Take(IGLeftover::PieceA);
-		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceAThought", "검은 막까지 같이 잘렸어."), 3.0f);
+		ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPieceAThought", "방수막째로 잘려 있네."), 3.0f);
 	}
 	else if (Key == IGLeftover::PieceB)
 	{
@@ -1485,7 +1487,7 @@ void AIGMissingFloorLeftoverDirector::HandleErrandOutside()
 	}
 	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		Think(NSLOCTEXT("IGMissingFloor", "LeftoverErrandOut", "밖으로 나갔네."), 2.6f);
+		Think(NSLOCTEXT("IGMissingFloor", "LeftoverErrandOut", "밖으로 나갔네. 안쪽 방 문이 열려 있어."), 3.6f);
 	}), 1.6f, false);
 }
 

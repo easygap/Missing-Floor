@@ -801,6 +801,9 @@ void AIGManagerPatrol::ThinkOnce(const TCHAR* BeatId, const FText& Thought)
 	Scope.Context = FName(BeatId);
 	Scope.Lifetime = EIGDialogueLifetime::Reaction;
 	Scope.Interruption = EIGDialogueInterruption::Drop;
+	// 한 번만 하는 말이라 이미 뜬 줄은 자리를 떠나도 끝까지 둔다. 4 m를 벗어나면 읽는 도중에 지워져, 불빛에서
+	// 비켜서라는 셋째 밤 경고가 비켜서는 사이 잘리고 다시 나오지 않았다.
+	Scope.bKeepOnceShown = true;
 	const TWeakObjectPtr<AIGManagerPatrol> WeakThis(this);
 	const FVector ObservedAt = GetPlayerFeet();
 	Scope.StillValid = [WeakThis, ObservedAt]()
@@ -2271,7 +2274,7 @@ void AIGManagerPatrol::TickHuntAction(const float DeltaSeconds)
 				this, UIGToneSequenceSoundWave::CreateDoorlockCode(this, true),
 				Latch + FVector(0.0f, -6.0f, 0.0f), 0.6f, 1.0f, 120.0f, 1400.0f, EIGAudioBus::World);
 			Caption(
-				NSLOCTEXT("IGMissingFloor", "CaptionGuestKeypad", "[밖에서 도어락 번호를 누른다]"),
+				NSLOCTEXT("IGMissingFloor", "CaptionGuestKeypad", "[밖에서 도어락 번호 누르는 소리]"),
 				Latch, LastAlarmCaptionSeconds, 0.0f);
 			NextStep(1);
 			return;
@@ -2569,7 +2572,7 @@ void AIGManagerPatrol::UpdateSenses(const float DeltaSeconds)
 	if (Exposure >= 0.35f)
 	{
 		ThinkOnce(TEXT("Night3.MokTorchWarning"),
-			NSLOCTEXT("IGMissingFloor", "YudamMokTorchWarning", "저 불빛에 오래 있으면 들켜."));
+			NSLOCTEXT("IGMissingFloor", "YudamMokTorchWarning", "저 불빛에 오래 비치면 들켜."));
 		if (State == EIGManagerPatrolState::Patrolling)
 		{
 			BeginInvestigation(GetPlayerFeet(), true);

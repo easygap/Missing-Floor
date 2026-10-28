@@ -423,7 +423,7 @@ void AIGMissingFloorNightFourDirector::HandleWallTarget(AIGMissingFloorEvidence*
 			// P6에서 덮개를 제자리에 대 봤으면 남쪽 덧판 밑을 이미 안다. 몰라도 여기서 보이는 것만으로 풀린다.
 			ThinkClue(this, State.bSiteMatched
 				? NSLOCTEXT("IGMissingFloor", "WallSurveyKnown", "가운데 칸에만 판을 한 겹 더 댔어. 구석 쪽 작은 덧판 밑은 점검구였고.")
-				: NSLOCTEXT("IGMissingFloor", "WallSurvey", "가운데 칸에만 판을 한 겹 더 댔어. 이음매에 테이프를 발랐네."),
+				: NSLOCTEXT("IGMissingFloor", "WallSurvey", "가운데 칸에만 판을 한 겹 더 댔어. 이음매에 테이프를 붙여 놨네."),
 				3.6f);
 			GetWorldTimerManager().SetTimer(WallThoughtTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
@@ -683,7 +683,7 @@ void AIGMissingFloorNightFourDirector::AdvanceWallStage(const int32 Stage, const
 		}
 		break;
 	case 4:
-		Think(this, NSLOCTEXT("IGMissingFloor", "NightFourStrikeFourth", "손이 저리다. 한 번만 더."), 2.2f);
+		Think(this, NSLOCTEXT("IGMissingFloor", "NightFourStrikeFourth", "손이 저려. 한 번만 더."), 2.2f);
 		BeginHammerCallStage();
 		if (bImmediate)
 		{

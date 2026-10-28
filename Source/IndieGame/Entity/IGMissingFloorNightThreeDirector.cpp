@@ -552,7 +552,7 @@ bool AIGMissingFloorNightThreeDirector::Configure(
 			NSLOCTEXT("IGMissingFloor", "Notebook3", "옥탑 벽 확인: 빈 곳은 낮게 울리고 소리가 오래 감."),
 			NSLOCTEXT("IGMissingFloor", "Notebook4", "기둥 있는 쪽은 짧고 둔함. 물 흐를 때 다시 들어 볼 것."),
 			FText::GetEmpty(),
-			NSLOCTEXT("IGMissingFloor", "Notebook5", "●●  —  ●"),
+			NSLOCTEXT("IGMissingFloor", "Notebook5", "●●    ●"),
 			NSLOCTEXT("IGMissingFloor", "Notebook6", "토요일 11시  ·  유담 연습실 예약"),
 			FText::GetEmpty(),
 			NSLOCTEXT("IGMissingFloor", "Notebook7", "유담 피아노 적금  180만 / 200만"),
@@ -1573,7 +1573,7 @@ void AIGMissingFloorNightThreeDirector::HandleValveOpened(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"ValveThought",
-			"물 내려가는 소리가 벽 안에서 난다."),
+			"벽 안에서 물 내려가는 소리가 나."),
 		3.8f);
 }
 
@@ -1748,7 +1748,7 @@ void AIGMissingFloorNightThreeDirector::HandleTunerCartPushed(
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"TunerCartThought",
-					"바퀴 하나가 깨졌네. 천장에서 들리던 소리랑 비슷하다."),
+					"바퀴 하나가 깨졌네. 천장에서 들리던 소리랑 비슷해."),
 				4.2f);
 		}),
 		1.6f,
@@ -1939,7 +1939,7 @@ void AIGMissingFloorNightThreeDirector::HandleTankAuditionExamined(
 			? NSLOCTEXT(
 				"IGMissingFloor",
 				"TankAuditionThoughtCrossed",
-				"탱크에 물이 가득 찼다. 벽 바로 뒤로 배관이 지나가네.")
+				"탱크에 물이 꽉 찼어. 벽 바로 뒤로 배관이 지나가네.")
 			: NSLOCTEXT(
 				"IGMissingFloor",
 				"TankAuditionThought",
@@ -1995,16 +1995,16 @@ void AIGMissingFloorNightThreeDirector::HandleWallListened(const int32 BayIndex)
 				? NSLOCTEXT(
 					"IGMissingFloor",
 					"ListenCavityFirst",
-					"바로 뒤로 물이 흐른다. 소리가 길게 울리네.")
+					"바로 뒤로 물이 흘러. 소리가 길게 울리네.")
 				: bKnowsCriterion
 					? NSLOCTEXT(
 						"IGMissingFloor",
 						"ListenCavity",
-						"바로 뒤로 물이 흐른다. 이 벽만 속이 빈 것 같아.")
+						"바로 뒤로 물이 흘러. 이 벽만 속이 빈 것 같아.")
 					: NSLOCTEXT(
 						"IGMissingFloor",
 						"ListenCavityUnread",
-						"바로 뒤로 물이 흐른다. 이 벽만 소리가 달라. 왜 이러지?"),
+						"바로 뒤로 물이 흘러. 이 벽만 소리가 달라. 왜 이러지?"),
 			4.0f,
 			IGNightThree::HollowThoughtDelaySeconds);
 	}
@@ -2104,11 +2104,11 @@ void AIGMissingFloorNightThreeDirector::HandleWallKnocked(const int32 BayIndex)
 					? NSLOCTEXT(
 						"IGMissingFloor",
 						"KnockCavity",
-						"소리가 오래 울린다. 안이 비어 있어.")
+						"소리가 오래 울려. 안이 비어 있어.")
 					: NSLOCTEXT(
 						"IGMissingFloor",
 						"KnockCavityUnread",
-						"소리가 오래 울린다. 이 벽만 달라. 오빠였으면 왜 그런지 알았을 텐데."),
+						"소리가 오래 울려. 이 벽만 달라. 오빠였으면 왜 그런지 알았을 텐데."),
 			3.8f,
 			IGNightThree::HollowThoughtDelaySeconds);
 	}
@@ -2119,7 +2119,7 @@ void AIGMissingFloorNightThreeDirector::HandleWallKnocked(const int32 BayIndex)
 				? NSLOCTEXT(
 					"IGMissingFloor",
 					"KnockSolid",
-					"소리가 금방 끊긴다.")
+					"소리가 금방 끊기네.")
 				: bKnowsCriterion
 					? NSLOCTEXT(
 						"IGMissingFloor",

@@ -859,7 +859,7 @@ void AIGMissingFloorPuzzleTwoDirector::HandleBoothValveOpened(
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"BoothValveThought",
-			"배관에서 물소리가 난다. 책상까지 울리네."),
+			"배관에서 물소리가 나. 책상까지 울리네."),
 		3.6f);
 }
 
@@ -1447,7 +1447,7 @@ void AIGMissingFloorPuzzleTwoDirector::HandleInnerRoomListenExamined(
 				NSLOCTEXT(
 					"IGMissingFloor",
 					"P2InnerRoomThought",
-					"안에서 누가 뒤척였어. 지금 문 열면 들킨다."),
+					"안에서 누가 뒤척였어. 지금 열면 들키겠어."),
 				4.4f);
 		}),
 		IGPuzzleTwo::InnerRoomThoughtSeconds,

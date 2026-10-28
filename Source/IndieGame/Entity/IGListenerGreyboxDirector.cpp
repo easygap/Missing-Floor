@@ -6243,7 +6243,7 @@ FText AIGListenerGreyboxDirector::GetHwangDoorLine() const
 		return NSLOCTEXT(
 			"IGMissingFloor",
 			"Hwang401HintP5",
-			"물탱크 청소할 때는 배관이 꽤 시끄러워요. 그거라도 틀어 놔 봐요. 누가 뭐라 하면 내가 얘기할게요.");
+			"물탱크 청소할 때는 배관이 꽤 시끄러워요. 그때처럼 물을 틀어 놔 봐요. 누가 뭐라 하면 내가 얘기할게요.");
 	}
 	if (bInWall && !bAnswered)
 	{
@@ -9258,7 +9258,7 @@ void AIGListenerGreyboxDirector::AdvanceProbe()
 		if (Narrative->HasSource(EIGMissingFloorTruth::StillCoveringIt,
 			EIGMissingFloorSource::EvictionWarning)
 			|| !NightPhase->GetObjectiveText().EqualTo(
-				NSLOCTEXT("IGMissingFloor", "DayObjectiveNotice", "엘리베이터 옆 통보문 읽기"))
+				NSLOCTEXT("IGMissingFloor", "DayObjectiveNotice", "엘리베이터 옆 안내문 읽기"))
 			|| IGListenerGreybox::NextFirstReportText(*Narrative, NightFour.Get())
 				!= IGListenerGreybox::EFirstReportText::None
 			|| !IsSleepBlocked())

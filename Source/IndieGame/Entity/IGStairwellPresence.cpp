@@ -521,7 +521,7 @@ void AIGStairwellPresence::PlayStep(const bool bExtra)
 		UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
 		if (Narrative && Narrative->MarkBeatPlayed(HeardBeat))
 		{
-			AIGHorrorHUD::PushThought(this, NSLOCTEXT("IGStairwell", "ExtraStepThought", "…한 발 더 들렸어."), 2.2f);
+			AIGHorrorHUD::PushThought(this, NSLOCTEXT("IGStairwell", "ExtraStepThought", "…발소리가 하나 더 들렸어."), 2.2f);
 		}
 	}
 }

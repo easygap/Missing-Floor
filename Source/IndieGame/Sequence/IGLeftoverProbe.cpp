@@ -1092,20 +1092,27 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Stand(FVector(-30.0f, 60.0f, 0.0f), FVector(-62.0f, 62.0f, 84.0f));
 			Use(Target(TEXT("PieceA")));
 			Check(Taken(IGLeftoverProbe::PieceA), TEXT("n2_piece_a_taken"));
-			// 실제 물건 상호작용이 낸 독백을 본다. 자리를 떠났다가 돌아와도 지난 감상을 다시 띄우지 않는다.
+			// 실제 물건 상호작용이 낸 독백을 본다. 이미 뜬 감상은 조각을 들고 걸어 나가도 끝까지 둔다(손에 든 물건의
+			// 말이다). 차례를 기다리던 감상은 자리를 떠나면 버린다. 돌아와도 처음부터 다시 띄우지 않는다.
 			APlayerController* Observer = GetWorld()->GetFirstPlayerController();
 			AIGHorrorHUD* Hud = Observer ? Cast<AIGHorrorHUD>(Observer->GetHUD()) : nullptr;
 			Check(Hud && Hud->HasDialogueInContextForTesting(IGLeftoverDialogue::Examine), TEXT("item_thought_belongs_to_examination"));
 			if (Hud && Player.IsValid())
 			{
+				const bool bShown = Hud->GetActiveDialogueLineForTesting().EqualTo(
+					NSLOCTEXT("IGMissingFloor", "LeftoverPieceAThought", "방수막째로 잘려 있네."));
+				const double Started = Hud->GetDialogueStartTimeForTesting();
 				const FVector Origin = Player->GetActorLocation();
 				const double Now = GetWorld()->GetTimeSeconds();
 				Player->SetActorLocation(Origin + FVector(300.0f, 0.0f, 0.0f));
 				Hud->AdvanceDialogueForTesting(Now);
-				Check(!Hud->HasDialogueInContextForTesting(IGLeftoverDialogue::Examine), TEXT("item_thought_dropped_after_leaving"));
+				Check(Hud->HasDialogueInContextForTesting(IGLeftoverDialogue::Examine) == bShown,
+					TEXT("item_thought_kept_only_once_shown"));
 				Player->SetActorLocation(Origin);
 				Hud->AdvanceDialogueForTesting(Now + 0.01);
-				Check(!Hud->HasDialogueInContextForTesting(IGLeftoverDialogue::Examine), TEXT("item_thought_does_not_return"));
+				Check(bShown ? Hud->GetDialogueStartTimeForTesting() == Started
+						: !Hud->HasDialogueInContextForTesting(IGLeftoverDialogue::Examine),
+					TEXT("item_thought_does_not_return"));
 			}
 			Use(Target(TEXT("Inner.GloveBoxOpen")));
 			Use(Target(TEXT("JeongwooGloves")));
@@ -2422,7 +2429,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('P'), NSLOCTEXT("IGMissingFloor", "JeongwooSpeaker", "정우"),
 				NSLOCTEXT("IGMissingFloor", "LeftoverJeongwooBoxAtDoor", "새벽엔 진짜 고마웠어요. 그 상자는 아침에 빼서 403호 문 앞에 뒀어요. 그 방엔 이제 혼자 들어가지 마세요."), TEXT("LeftoverJeongwooBoxAtDoor")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "YudamCounterSpeaker", "백유담"),
-				NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배요. 누가 언제 찾아갔는지 기록이 남아 있어요?"), TEXT("NarinReceiptQuestion")},
+				NSLOCTEXT("IGMissingFloor", "NarinReceiptQuestion", "그 마지막 택배, 누가 찾아갔는지 알 수 있을까요?"), TEXT("NarinReceiptQuestion")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "나린"),
 				NSLOCTEXT("IGMissingFloor", "NarinReceiptAnswer", "포스에 남아 있을 거예요. 잠깐만요, 찾아볼게요."), TEXT("NarinReceiptAnswer")},
 			{TEXT('D'), NSLOCTEXT("IGMissingFloor", "NarinSpeaker", "나린"),
@@ -2436,15 +2443,15 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverFitFlipped", "고정쇠가 방수막 위에서 미끄러져."), TEXT("LeftoverFitFlipped")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "자리는 맞는데 구멍 위치가 어긋나."), TEXT("LeftoverFitRotated")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverFitRotated", "자리는 맞는데 구멍이 어긋나."), TEXT("LeftoverFitRotated")},
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverCoverTakeThought", "이만한 덧판을 어디서 봤는데."), TEXT("LeftoverCoverTakeThought")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverFirstPickThought", "조각 셋에 틀 하나."), TEXT("LeftoverFirstPickThought")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverFirstPickThought", "잘린 데가 거칠어."), TEXT("LeftoverFirstPickThought")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverSackThought", "남은 조각 하나랑 금속 틀이야. 관리실에서 떼어 온 거랑 같은 막이 붙어 있어."), TEXT("LeftoverSackThought")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverSackThought", "관리실에 있던 거랑 같은 조각이네. 틀도 있어."), TEXT("LeftoverSackThought")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverSackAllPieces", "점검구 덮개 조각 셋이랑 금속 틀이야."), TEXT("LeftoverSackAllPieces")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverSackAllPieces", "덮개를 잘라 놓은 건가?"), TEXT("LeftoverSackAllPieces")},
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 고이는 나무 쐐기야."), TEXT("LeftoverWedgePicked")},
 			{TEXT('T'), FText::GetEmpty(),
@@ -2456,9 +2463,9 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverMovedToLarge", "저리로 옮겨 갔어."), TEXT("LeftoverMovedToLarge")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "이것도 방수막째 잘린 조각이야."), TEXT("LeftoverPieceBThought")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverPieceBThought", "여기도 같은 조각이 있네."), TEXT("LeftoverPieceBThought")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxThought", "정우 씨가 표시해 둔 그 상자야. 안에 오빠 공구 주머니가 있어."), TEXT("LeftoverDeliveredBoxThought")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverDeliveredBoxThought", "오빠 상자야. 안에 공구 주머니가 들어 있어."), TEXT("LeftoverDeliveredBoxThought")},
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "StoreReceiptThought", "8월 2일이면 오빠가 없어진 뒤잖아."), TEXT("StoreReceiptThought")},
 			{TEXT('C'), FText::GetEmpty(),

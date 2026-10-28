@@ -133,7 +133,7 @@ namespace
 		const bool bBraced = Leftover.WedgeSocket == FName(TEXT("Brace"));
 		const FText BraceIt = N->HasLeftover(EIGLeftoverList::Taken, FName(TEXT("Wedge")))
 			? NSLOCTEXT("IGHint", "NightThreeStorageBrace3Wedge", "쐐기는 장판 말고, 판 밑동이 철골 토막에 걸린 자리에 끼우자.")
-			: NSLOCTEXT("IGHint", "NightThreeStorageBrace3Find", "문 옆 공사 찌꺼기에서 받칠 걸 찾아, 판 밑동이 철골 토막에 걸린 자리에 끼우자.");
+			: NSLOCTEXT("IGHint", "NightThreeStorageBrace3Find", "문 옆에 쌓인 공사 자투리에서 받칠 걸 찾아서, 판 밑동이 철골 토막에 걸린 자리에 끼우자.");
 		if (Stage == FName(TEXT("Fallen")))
 		{
 			Out = Make(TEXT("Hint.Night3.Storage.Fallen"), {
@@ -148,7 +148,7 @@ namespace
 		{
 			Out = Make(TEXT("Hint.Night3.Storage.Brace"), {
 				NSLOCTEXT("IGHint", "NightThreeStorageBrace1", "판 밑동부터 보자."),
-				NSLOCTEXT("IGHint", "NightThreeStorageBrace2", "밑동이 밀리면 판이 더 누울 거야. 먼저 받쳐 두자."),
+				NSLOCTEXT("IGHint", "NightThreeStorageBrace2", "밑동이 밀리면 판이 더 넘어올 거야. 먼저 받쳐 두자."),
 				BraceIt });
 			return true;
 		}
@@ -342,10 +342,10 @@ namespace
 		if (!N->IsPuzzleSolved(FName(TEXT("P5"))))
 		{
 			const FText Last = !N->HasNightFourControl(FName(TEXT("P5.RoofCleaningDrain")))
-				? NSLOCTEXT("IGHint", "NightFour3Drain", "옥상 저수조의 세척 배수 밸브부터 열자.")
+				? NSLOCTEXT("IGHint", "NightFour3Drain", "옥상 물탱크 배수 밸브부터 열자.")
 				: (!N->HasNightFourControl(FName(TEXT("P5.RoofFloatBypass")))
 					? NSLOCTEXT("IGHint", "NightFour3Bypass", "다음은 옥상 우회 밸브야.")
-					: NSLOCTEXT("IGHint", "NightFour3Pump", "마지막으로 1층 관리실의 이송 펌프를 수동으로 돌리자."));
+					: NSLOCTEXT("IGHint", "NightFour3Pump", "마지막으로 1층 관리실 펌프를 손으로 돌리자."));
 			return Make(TEXT("Hint.Night4.P5"), {
 				NSLOCTEXT("IGHint", "NightFour1", "망치 소리가 너무 클 텐데. 좀 덜 들리게 할 수 없을까."),
 				NSLOCTEXT("IGHint", "NightFour2", "물탱크 물을 빼면 배관이 시끄럽겠지. 관리실에 점검 메모 같은 게 있을지도."),
@@ -513,7 +513,7 @@ FIGHintStep IGMissingFloorHints::Resolve(const UObject* WorldContext)
 				NSLOCTEXT("IGHint", "NightOneAfter3", "4층 복도 천장 밑에서 소리를 들어 보자. 그다음엔 403호 침대에서 쉬어도 돼.") });
 		}
 		return Make(TEXT("Hint.Night.Rest"), {
-			NSLOCTEXT("IGHint", "NightRest1", "오늘은 여기까지 보자."),
+			NSLOCTEXT("IGHint", "NightRest1", "오늘은 이쯤 하자."),
 			NSLOCTEXT("IGHint", "NightRest2", "더 볼 데가 남았으면 마저 보고, 아니면 이제 쉬자."),
 			NSLOCTEXT("IGHint", "NightRest3", "403호 침대에서 아침까지 쉬자. 밖이 조용할 때.") });
 	}
