@@ -159,60 +159,57 @@ void AIGBathroomProbe::Shoot(const TCHAR* Name)
 	UE_LOG(LogIndieGame, Display, TEXT("BATHROOM_SHOT %s"), *Path);
 }
 
-void AIGBathroomProbe::ShootListenerKnock(const float DeltaSeconds)
+bool AIGBathroomProbe::ShootFrom(const TCHAR* Name, const FVector& At, const FRotator& Rotation, const FVector& Lamp,
+	const float DeltaSeconds)
 {
-	// 두드리러 선 몸이 욕실 문을 똑바로 보는지, 팔이 현관 단이나 문짝에 얹히지 않는지 본다. 문 앞 자리로 옮겨 서고
-	// 방향을 바로잡을 때까지 1.5초 기다린다. 그녀는 욕실 안이라 그녀 눈으로는 보이지 않는다.
+	// 방 안 카메라와 작업등을 세워 한 장 찍고 그녀 화면으로 돌린다. 화면을 돌린 프레임은 아직 예전 화면이라 조금 기다린다.
 	UWorld* World = GetWorld();
 	AIGPlayerCharacter* Character = Player.Get();
 	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
-	if (!bShots || !World || !Character || !PC || ListenerShotStage >= 3 || PhaseSeconds - ListenerKnockSeconds < 1.5f)
+	if (!World || !Character || !PC || ShotStage >= 3)
 	{
-		return;
+		return true;
 	}
-	const FVector Floor(0.0f, 0.0f, AIGPrologueWorldScene::FourthFloorZ);
-	if (ListenerShotStage == 0)
+	if (ShotStage == 0)
 	{
-		ACameraActor* Camera = World->SpawnActor<ACameraActor>(
-			FVector(-25.0f, 10.0f, 175.0f) + Floor, FRotator(-34.0f, -40.0f, 0.0f));
+		ACameraActor* Camera = World->SpawnActor<ACameraActor>(At, Rotation);
 		if (Camera)
 		{
 			Camera->GetCameraComponent()->SetFieldOfView(80.0f);
-			ListenerCamera = Camera;
 			PC->SetViewTargetWithBlend(Camera, 0.0f);
 			if (AHUD* Hud = PC->GetHUD())
 			{
 				Hud->bShowHUD = false;
 			}
 		}
-		if (APointLight* Lamp = World->SpawnActor<APointLight>(FVector(60.0f, -60.0f, 170.0f) + Floor, FRotator::ZeroRotator))
+		if (APointLight* WorkLamp = World->SpawnActor<APointLight>(Lamp, FRotator::ZeroRotator))
 		{
-			Lamp->PointLightComponent->SetMobility(EComponentMobility::Movable);
-			Lamp->PointLightComponent->SetIntensity(2400.0f);
-			Lamp->PointLightComponent->SetAttenuationRadius(600.0f);
-			Lamp->PointLightComponent->SetCastShadows(true);
+			WorkLamp->PointLightComponent->SetMobility(EComponentMobility::Movable);
+			WorkLamp->PointLightComponent->SetIntensity(2400.0f);
+			WorkLamp->PointLightComponent->SetAttenuationRadius(600.0f);
+			WorkLamp->PointLightComponent->SetCastShadows(true);
 		}
-		ListenerShotStage = 1;
-		ListenerShotSeconds = 0.0f;
-		return;
+		ShotStage = 1;
+		ShotSeconds = 0.0f;
+		return false;
 	}
-	ListenerShotSeconds += DeltaSeconds;
-	// 화면을 돌린 프레임은 아직 예전 화면이다.
-	if (ListenerShotStage == 1 && ListenerShotSeconds >= 0.15f)
+	ShotSeconds += DeltaSeconds;
+	if (ShotStage == 1 && ShotSeconds >= 0.15f)
 	{
-		Shoot(TEXT("bathroom-listener-knock"));
-		ListenerShotStage = 2;
-		ListenerShotSeconds = 0.0f;
+		Shoot(Name);
+		ShotStage = 2;
+		ShotSeconds = 0.0f;
 	}
-	else if (ListenerShotStage == 2 && ListenerShotSeconds >= 0.15f)
+	else if (ShotStage == 2 && ShotSeconds >= 0.15f)
 	{
 		PC->SetViewTargetWithBlend(Character, 0.0f);
 		if (AHUD* Hud = PC->GetHUD())
 		{
 			Hud->bShowHUD = true;
 		}
-		ListenerShotStage = 3;
+		ShotStage = 3;
 	}
+	return ShotStage >= 3;
 }
 
 void AIGBathroomProbe::HandleNoise(const FIGNoiseEvent& Event)
@@ -471,9 +468,12 @@ void AIGBathroomProbe::Tick(const float DeltaSeconds)
 			UE_LOG(LogIndieGame, Display, TEXT("BATHROOM_LISTENER knock_at=%s t=%.1f"),
 				*ListenerKnockAt.ToCompactString(), PhaseSeconds);
 		}
-		if (bListenerKnocked)
+		// 촬영할 때는 두드리러 선 몸이 욕실 문을 똑바로 보는지, 팔이 현관 단이나 문짝에 얹히지 않는지 방 북서쪽 위에서
+		// 본다. 문 앞 자리로 옮겨 서고 방향을 바로잡을 때까지 1.5초 기다린다. 그녀는 욕실 안이라 그녀 눈으로는 안 보인다.
+		if (bShots && bListenerKnocked && PhaseSeconds - ListenerKnockSeconds >= 1.5f)
 		{
-			ShootListenerKnock(DeltaSeconds);
+			ShootFrom(TEXT("bathroom-listener-knock"), FVector(-25.0f, 10.0f, 175.0f) + Floor, FRotator(-34.0f, -40.0f, 0.0f),
+				FVector(60.0f, -60.0f, 170.0f) + Floor, DeltaSeconds);
 		}
 		if ((bListenerKnocked && PhaseSeconds >= 5.0f) || PhaseSeconds >= 25.0f)
 		{
@@ -489,6 +489,35 @@ void AIGBathroomProbe::Tick(const float DeltaSeconds)
 			Check(!bListenerEntered, TEXT("listener_stays_out_of_locked_bathroom"));
 			Check(RoomDoor->IsFullyClosed() && RoomDoor->IsLatched() && Character->IsConcealedInHidingSpot(),
 				TEXT("still_locked_and_hidden_after_knock"));
+			Upstairs->SetDormant(true);
+			HomeDoor->ForceOpenState(false);
+			Next(bShots ? 24 : 6);
+		}
+		break;
+	}
+
+	case 24:
+	{
+		// 촬영할 때만. 현관을 열어 둔 403호 앞 복도에 위층 사람을 세우고 방 안에서 소리를 낸다. 그의 캡슐은 현관
+		// 화강석 단(8 cm)을 넘지 못해 단 앞에서 선다. 그 모습을 집 안에서 찍는다.
+		if (PhaseSeconds < DeltaSeconds * 1.5f)
+		{
+			HomeDoor->ForceOpenState(true);
+			Upstairs->SetDormant(false);
+			Upstairs->ParkForBeat(FVector(131.0f, -345.0f, 0.0f) + Floor, 90.0f);
+			ShotStage = 0;
+			return;
+		}
+		if (PhaseSeconds >= 0.5f && PhaseSeconds - DeltaSeconds < 0.5f)
+		{
+			Noise->ReportNoiseUnmasked(FVector(20.0f, -20.0f, 90.0f) + Floor, 0.6f, nullptr);
+		}
+		if (PhaseSeconds >= 6.0f
+			&& ShootFrom(TEXT("home-doorstep-listener"), FVector(40.0f, -70.0f, 170.0f) + Floor,
+				FRotator(-38.0f, -61.0f, 0.0f), FVector(100.0f, -150.0f, 180.0f) + Floor, DeltaSeconds))
+		{
+			UE_LOG(LogIndieGame, Display, TEXT("BATHROOM_DOORSTEP listener_at=%s"),
+				*Upstairs->GetActorLocation().ToCompactString());
 			Upstairs->SetDormant(true);
 			HomeDoor->ForceOpenState(false);
 			Next(6);

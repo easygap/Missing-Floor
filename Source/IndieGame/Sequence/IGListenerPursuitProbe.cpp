@@ -41,7 +41,8 @@ namespace IGPursuitProbe
 	/**
 	 * 촬영 카메라. 4층 참에서 동쪽 계단을 내려다보는 것, 3·4층 사이 서쪽 계단 위에서 반 층 참 쪽을 보는 것,
 	 * 3층 복도 출입구에서 참을 보는 것, 1층 연결통로 서쪽에서 관리실 문 쪽을 보는 것, 3층 참 남서쪽 구석 위에서
-	 * 출입구 쪽을 내려다보는 것(되돌아서기), 1층 로비 남동쪽 구석 위에서 로비를 내려다보는 것.
+	 * 출입구 쪽을 내려다보는 것(되돌아서기), 1층 로비 남동쪽 구석 위에서 로비를 내려다보는 것, 1층 필로티 동쪽 위에서
+	 * 손수레 자리를 보는 것, 연결통로 남동쪽 위에서 관리실 문간을 보는 것.
 	 */
 	struct FShotCamera
 	{
@@ -56,10 +57,14 @@ namespace IGPursuitProbe
 		{FVector(-70.0f, -345.0f, 165.0f), FRotator(-10.0f, 14.0f, 0.0f), FVector(120.0f, -300.0f, 200.0f)},
 		{FVector(-565.0f, -365.0f, 790.0f), FRotator(-45.0f, 22.0f, 0.0f), FVector(-450.0f, -300.0f, 780.0f)},
 		{FVector(690.0f, -365.0f, 190.0f), FRotator(-48.0f, 144.0f, 0.0f), FVector(600.0f, -280.0f, 180.0f)},
+		{FVector(-95.0f, -335.0f, 175.0f), FRotator(-49.0f, 159.0f, 0.0f), FVector(-180.0f, -300.0f, 190.0f)},
+		{FVector(265.0f, -355.0f, 180.0f), FRotator(-51.0f, 132.0f, 0.0f), FVector(200.0f, -300.0f, 190.0f)},
 	};
 	constexpr int32 BoothCamera = 3;
 	constexpr int32 LandingTurnCamera = 4;
 	constexpr int32 LobbyCamera = 5;
+	constexpr int32 CartCamera = 6;
+	constexpr int32 BoothDoorwayCamera = 7;
 }
 
 AIGListenerPursuitProbe::AIGListenerPursuitProbe()
@@ -77,7 +82,8 @@ void AIGListenerPursuitProbe::Configure(
 	Entity = InEntity;
 	Player = InPlayer;
 	Noise = InNoise;
-	bShots = FParse::Param(FCommandLine::Get(), TEXT("IGListenerPursuitShots"));
+	bClipShots = FParse::Param(FCommandLine::Get(), TEXT("IGListenerPursuitClipShots"));
+	bShots = bClipShots || FParse::Param(FCommandLine::Get(), TEXT("IGListenerPursuitShots"));
 }
 
 void AIGListenerPursuitProbe::Check(const bool bCondition, const TCHAR* Name)
@@ -172,6 +178,11 @@ void AIGListenerPursuitProbe::UpdateShots()
 	}
 	const FVector At = Listener->GetActorLocation();
 	const float Feet = FeetZ();
+	if (bClipShots)
+	{
+		UpdateClipShots(At, Feet);
+		return;
+	}
 	// 1층 로비에서 크게 돌아서는 것은 돌기 시작한 때부터 0.3초마다 찍는다. 그녀가 계단을 오르는 발소리(6단계)를 듣고
 	// 돌아서는 일이 많다.
 	const bool bInLobby = Phase >= 3 && Phase <= 6 && Feet < 60.0f && At.X > 455.0f;
@@ -235,6 +246,45 @@ void AIGListenerPursuitProbe::UpdateShots()
 		if (Moment.bNow && !ShotsTaken.Contains(FName(Moment.Name)))
 		{
 			Shoot(Moment.Name);
+			return;
+		}
+	}
+}
+
+void AIGListenerPursuitProbe::UpdateClipShots(const FVector& At, const float Feet)
+{
+	// -IGListenerPursuitClipShots. 아직 남은 관통을 고를 때 보는 컷만 찍는다. 필로티에서 손수레를 지나는 몸(뒤질 때 동쪽으로,
+	// 쫓을 때 서쪽으로)과 관리실 문간으로 꺾어 들고 나오는 몸이다. 그 자리에 다가오면 미리 카메라를 돌려 두고, 그 자리에
+	// 들면 찍는다. 자리는 같은 빌드의 -IGClipAuditTrace에서 가장 깊이 묻힌 프레임이다.
+	struct FSpot
+	{
+		const TCHAR* Name;
+		bool bNear;
+		bool bNow;
+		int32 Camera;
+	};
+	const bool bGround = Feet < 60.0f;
+	const bool bCartLane = bGround && FMath::Abs(At.Y + 302.0f) < 12.0f;
+	const bool bBoothIn = bGround && At.Y > -275.0f && At.Y < -245.0f;
+	const bool bBoothOut = bGround && At.Y > -296.0f && At.Y < -240.0f;
+	const FSpot Spots[] = {
+		{TEXT("clip-cart-search"), bCartLane && Phase >= 4 && Phase <= 5 && At.X > -330.0f && At.X < -215.0f,
+			bCartLane && Phase >= 4 && Phase <= 5 && At.X > -245.0f && At.X < -215.0f, IGPursuitProbe::CartCamera},
+		{TEXT("clip-cart-chase"), bCartLane && Phase == 6 && At.X > -165.0f && At.X < -60.0f,
+			bCartLane && Phase == 6 && At.X > -200.0f && At.X < -165.0f, IGPursuitProbe::CartCamera},
+		{TEXT("clip-booth-turn-in"), bGround && Phase >= 4 && At.X > 100.0f && At.X < 175.0f && At.Y > -320.0f && At.Y < -245.0f,
+			bBoothIn && Phase >= 4 && At.X > 155.0f && At.X < 170.0f, IGPursuitProbe::BoothDoorwayCamera},
+		{TEXT("clip-booth-turn-out"), bBoothOut && Phase >= 4 && At.X > 175.0f && At.X < 225.0f,
+			bBoothOut && Phase >= 4 && At.X > 225.0f && At.X < 240.0f, IGPursuitProbe::BoothDoorwayCamera},
+	};
+	for (const FSpot& Spot : Spots)
+	{
+		if ((Spot.bNear || Spot.bNow) && !ShotsTaken.Contains(FName(Spot.Name)))
+		{
+			if (!ViewFromShotCamera(Spot.Camera) && Spot.bNow && TotalSeconds - LastShotSeconds >= 0.12)
+			{
+				Shoot(Spot.Name);
+			}
 			return;
 		}
 	}

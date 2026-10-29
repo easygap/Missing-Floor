@@ -42,6 +42,8 @@ private:
 	 * 둔 그대로라 위층 사람 걸음은 검사와 같다. 카메라마다 작업등을 둔다.
 	 */
 	void UpdateShots();
+	/** -IGListenerPursuitClipShots. 남은 관통(손수레, 관리실 문간)을 그 자리에서 찍는다. */
+	void UpdateClipShots(const FVector& At, float Feet);
 	/** Index 카메라로 화면을 돌린다. 이번에 돌렸으면 true(그 프레임은 아직 예전 화면이다). */
 	bool ViewFromShotCamera(int32 Index);
 	void Shoot(const TCHAR* Name);
@@ -84,6 +86,7 @@ private:
 
 	// 촬영
 	bool bShots = false;
+	bool bClipShots = false;
 	TArray<TWeakObjectPtr<ACameraActor>> ShotCameras;
 	int32 ActiveShotCamera = INDEX_NONE;
 	TSet<FName> ShotsTaken;
