@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "IGBathroomProbe.generated.h"
 
+class ACameraActor;
 class AIGBathroomRefuge;
 class AIGListenerEntity;
 class AIGPlayerCharacter;
@@ -43,6 +44,8 @@ protected:
 
 private:
 	void Check(bool bCondition, const TCHAR* Name);
+	/** 방 안 카메라로 욕실 문 앞에서 두드리는 위층 사람을 한 장 찍는다. */
+	void ShootListenerKnock(float DeltaSeconds);
 	void Finish();
 	void Stand(const FVector& Feet, const FVector& LookAt);
 	/** E를 툭 누른다. 초점이 Expected여야 누른다. */
@@ -72,4 +75,9 @@ private:
 	bool bGuestOpened = false;
 	bool bRattleHeard = false;
 	bool bShots = false;
+	/** 촬영할 때 방 북서쪽 위에서 욕실 문 앞의 위층 사람을 보는 카메라와, 그 컷을 찍는 차례(0 대기, 1 화면 돌림, 2 찍음). */
+	TWeakObjectPtr<ACameraActor> ListenerCamera;
+	int32 ListenerShotStage = 0;
+	float ListenerKnockSeconds = 0.0f;
+	float ListenerShotSeconds = 0.0f;
 };

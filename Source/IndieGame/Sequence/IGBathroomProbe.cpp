@@ -1,13 +1,18 @@
 ﻿#include "Sequence/IGBathroomProbe.h"
 
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGNoiseSubsystem.h"
+#include "Engine/PointLight.h"
 #include "EngineUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
@@ -35,8 +40,11 @@ namespace IGBathroomProbe
 	const FVector OpenLeaf(232.0f, -172.0f, 100.0f);
 	/** 욕실 안에서 소리가 나는 자리. 몸 높이 90 cm. */
 	const FVector RoomNoise(320.0f, -140.0f, 90.0f);
-	/** 위층 사람을 세우는 403호 방 안 북서쪽. */
-	const FVector ListenerStart(-40.0f, 60.0f, 0.0f);
+	/**
+	 * 위층 사람을 세우는 403호 방 가운데. 욕실 쪽(-40도)을 보고 선다. 예전 자리(-40, 60)는 그 방향으로 서면 2 m 몸의
+	 * 뒤쪽이 침대 틀에 걸쳐, 걷기 시작하는 몇 프레임 동안 왼쪽 종아리가 틀 속에 있었다.
+	 */
+	const FVector ListenerStart(0.0f, 20.0f, 0.0f);
 }
 
 AIGBathroomProbe::AIGBathroomProbe()
@@ -149,6 +157,62 @@ void AIGBathroomProbe::Shoot(const TCHAR* Name)
 	const FString Path = FPaths::Combine(Directory, FString::Printf(TEXT("%s.png"), Name));
 	FScreenshotRequest::RequestScreenshot(Path, false, false);
 	UE_LOG(LogIndieGame, Display, TEXT("BATHROOM_SHOT %s"), *Path);
+}
+
+void AIGBathroomProbe::ShootListenerKnock(const float DeltaSeconds)
+{
+	// 두드리러 선 몸이 욕실 문을 똑바로 보는지, 팔이 현관 단이나 문짝에 얹히지 않는지 본다. 문 앞 자리로 옮겨 서고
+	// 방향을 바로잡을 때까지 1.5초 기다린다. 그녀는 욕실 안이라 그녀 눈으로는 보이지 않는다.
+	UWorld* World = GetWorld();
+	AIGPlayerCharacter* Character = Player.Get();
+	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
+	if (!bShots || !World || !Character || !PC || ListenerShotStage >= 3 || PhaseSeconds - ListenerKnockSeconds < 1.5f)
+	{
+		return;
+	}
+	const FVector Floor(0.0f, 0.0f, AIGPrologueWorldScene::FourthFloorZ);
+	if (ListenerShotStage == 0)
+	{
+		ACameraActor* Camera = World->SpawnActor<ACameraActor>(
+			FVector(-25.0f, 10.0f, 175.0f) + Floor, FRotator(-34.0f, -40.0f, 0.0f));
+		if (Camera)
+		{
+			Camera->GetCameraComponent()->SetFieldOfView(80.0f);
+			ListenerCamera = Camera;
+			PC->SetViewTargetWithBlend(Camera, 0.0f);
+			if (AHUD* Hud = PC->GetHUD())
+			{
+				Hud->bShowHUD = false;
+			}
+		}
+		if (APointLight* Lamp = World->SpawnActor<APointLight>(FVector(60.0f, -60.0f, 170.0f) + Floor, FRotator::ZeroRotator))
+		{
+			Lamp->PointLightComponent->SetMobility(EComponentMobility::Movable);
+			Lamp->PointLightComponent->SetIntensity(2400.0f);
+			Lamp->PointLightComponent->SetAttenuationRadius(600.0f);
+			Lamp->PointLightComponent->SetCastShadows(true);
+		}
+		ListenerShotStage = 1;
+		ListenerShotSeconds = 0.0f;
+		return;
+	}
+	ListenerShotSeconds += DeltaSeconds;
+	// 화면을 돌린 프레임은 아직 예전 화면이다.
+	if (ListenerShotStage == 1 && ListenerShotSeconds >= 0.15f)
+	{
+		Shoot(TEXT("bathroom-listener-knock"));
+		ListenerShotStage = 2;
+		ListenerShotSeconds = 0.0f;
+	}
+	else if (ListenerShotStage == 2 && ListenerShotSeconds >= 0.15f)
+	{
+		PC->SetViewTargetWithBlend(Character, 0.0f);
+		if (AHUD* Hud = PC->GetHUD())
+		{
+			Hud->bShowHUD = true;
+		}
+		ListenerShotStage = 3;
+	}
 }
 
 void AIGBathroomProbe::HandleNoise(const FIGNoiseEvent& Event)
@@ -403,8 +467,13 @@ void AIGBathroomProbe::Tick(const float DeltaSeconds)
 		{
 			bListenerKnocked = true;
 			ListenerKnockAt = Upstairs->GetActorLocation();
+			ListenerKnockSeconds = PhaseSeconds;
 			UE_LOG(LogIndieGame, Display, TEXT("BATHROOM_LISTENER knock_at=%s t=%.1f"),
 				*ListenerKnockAt.ToCompactString(), PhaseSeconds);
+		}
+		if (bListenerKnocked)
+		{
+			ShootListenerKnock(DeltaSeconds);
 		}
 		if ((bListenerKnocked && PhaseSeconds >= 5.0f) || PhaseSeconds >= 25.0f)
 		{

@@ -105,11 +105,17 @@ namespace IGListener
 	/** 문 앞에 서는 자리. 밤2 대본의 인물 자리와 같은 47 cm다. */
 	constexpr float HomeDoorStandOffset = 47.0f;
 	/**
-	 * 닫힌 방화문·욕실 문 앞에서 문면과 캡슐 가운데 사이(cm). 두드리는 자세는 손을 캡슐 가운데에서 93 cm 앞까지
-	 * 뻗어, 캡슐이 문에 닿은 자리(33 cm)에서는 팔과 어깨가 문짝 속으로 들어가 반대쪽으로 나왔다. 손끝이 문면에 닿는
-	 * 거리에 선다.
+	 * 403호에서 나갈 때 먼저 서는 현관 안쪽 자리(문면에서 안으로). 현관 단 북쪽 끝이 문면에서 50 cm 안이고, 캡슐은
+	 * 단 모서리에서 20 cm 안으로 다가가면 단에 걸린다.
 	 */
-	constexpr float ClosedDoorStandOff = 92.0f;
+	constexpr float HomeExitApproachInset = 80.0f;
+	/**
+	 * 닫힌 방화문·욕실 문 앞에서 기던 걸음을 멈추는 문면과 캡슐 가운데 사이(cm). 두드리는 자세는 손을 캡슐 가운데에서
+	 * 93 cm 앞까지 뻗어, 캡슐이 문에 닿은 자리(33 cm)에서는 팔과 어깨가 문짝 속으로 들어가 반대쪽으로 나왔다. 기는 동안
+	 * 앞으로 뻗은 손끝은 103 cm까지 나가서, 92 cm에서 멈추면 멈추는 프레임과 두드리는 자리(ClosedDoorKnockStand)로
+	 * 물러서는 사이 손이 문짝에 5~6 cm 들어갔다. 손끝 바깥에서 멈추고 두드리는 자리로는 천천히 다가간다.
+	 */
+	constexpr float ClosedDoorStandOff = 106.0f;
 	/**
 	 * 두드리러 설 때 문짝 가운데 줄 위에서 문면까지. 문을 똑바로 보고 서면 바닥을 짚은 왼손(93.5 cm 앞)이 92 cm에서는
 	 * 두드리는 내내 문짝 아랫면에 묻혔다. 비스듬히 서던 때는 덜 닿았다.
@@ -224,8 +230,8 @@ namespace IGListener
 	/** 자세 점 사이를 뒤로 물러나는 빠르기. 기는 동작을 거꾸로 틀어 무릎으로 밀며 물러난다. */
 	constexpr float PoseBackwardSpeed = 200.0f;
 	/**
-	 * 몸 가운데에서 손끝까지. 기는 자세의 손목이 85 cm 앞에 있고 주먹이 그보다 몇 cm 더 나온다. 닫힌 문 앞에
-	 * 서는 거리(ClosedDoorStandOff)와 같은 몸이다.
+	 * 몸 가운데에서 손끝까지. 기는 자세의 손목이 85 cm 앞에 있고 주먹이 그보다 몇 cm 더 나온다. 벽 앞에 닿은 것으로
+	 * 치는 거리다. 앞으로 가장 멀리 뻗은 손끝은 103 cm라 닫힌 문 앞에서는 더 멀리 선다(ClosedDoorStandOff).
 	 */
 	constexpr float FrontReach = 92.0f;
 	/** 몸 가운데에서 발끝까지. */
@@ -2989,8 +2995,15 @@ bool AIGListenerEntity::SettleAtClosedDoor(const float DeltaSeconds)
 	}
 	if (bClosedDoorSettled)
 	{
-		// 선 자리 앞 문짝을 친다. 소리도 거기서 난다.
+		// 선 자리 앞 문짝을 친다. 소리도 거기서 난다. 문 쪽 방향도 선 자리에서 다시 잡는다. 도착한 자리에서 잡아 둔
+		// 방향은 문짝 가운데 줄로 옮겨 선 뒤에는 비스듬해서, 그대로 두드리면 왼쪽 위팔이 문 옆 턱에 얹혔다(403호 욕실
+		// 문 앞의 현관 단).
 		DoorKnockPoint = Door->GetKnockPoint(GetActorLocation() + FVector(0.0f, 0.0f, 40.0f));
+		const FVector ToDoor(DoorKnockPoint.X - GetActorLocation().X, DoorKnockPoint.Y - GetActorLocation().Y, 0.0f);
+		if (!ToDoor.IsNearlyZero())
+		{
+			AttentionDirection = ToDoor.GetSafeNormal();
+		}
 	}
 	return bClosedDoorSettled;
 }
@@ -3105,6 +3118,35 @@ void AIGListenerEntity::ClearNavPath()
 	NavPathYaw.Reset();
 	NavPathIndex = 0;
 	PoseLegTarget = FVector(TNumericLimits<float>::Max());
+}
+
+void AIGListenerEntity::InsertHomeExitApproach()
+{
+	FVector DoorCenter = FVector::ZeroVector;
+	FVector Outward = FVector::ZeroVector;
+	if (!NavPath.IsValidIndex(NavPathIndex) || NavPathPose[NavPathIndex] || !IsInsideHome(GetActorLocation())
+		|| IsInsideHome(NavPath[NavPathIndex]) || !GetHomeDoorFrame(DoorCenter, Outward))
+	{
+		return;
+	}
+	// 403호에서 밖으로 나가는 길이면 현관 안쪽, 문짝 가운데 줄 위에 먼저 선다. 방 안에서 현관 밖 문 앞으로 곧게 가면
+	// 비스듬히 문을 지나며 앞으로 뻗은 왼팔이 신발장 앞 모서리를 쓸었다. 그 자리는 현관 단(문면에서 50 cm 안까지)에
+	// 캡슐이 걸리지 않는 거리다. 이미 그 줄 위에서 문 쪽에 있으면 끼우지 않는다.
+	const FVector Feet = GetFeetLocation();
+	const FVector Approach =
+		FVector(DoorCenter.X, DoorCenter.Y, Feet.Z) - Outward * IGListener::HomeExitApproachInset;
+	const FVector FromDoor = Feet - FVector(DoorCenter.X, DoorCenter.Y, Feet.Z);
+	const float Inside = -FVector::DotProduct(FromDoor, Outward);
+	const float Aside = FMath::Abs(FVector::DotProduct(FromDoor, FVector(-Outward.Y, Outward.X, 0.0f)));
+	if (FVector::Dist2D(Feet, Approach) < 30.0f
+		|| (Aside < 20.0f && Inside < IGListener::HomeExitApproachInset))
+	{
+		return;
+	}
+	NavPath.Insert(Approach, NavPathIndex);
+	NavPathOnStair.Insert(false, NavPathIndex);
+	NavPathPose.Insert(false, NavPathIndex);
+	NavPathYaw.Insert(0.0f, NavPathIndex);
 }
 
 bool AIGListenerEntity::IsOnLandingLane(float& OutFloorZ) const
@@ -3284,7 +3326,10 @@ bool AIGListenerEntity::MoveTowardGoal(
 	const FVector ToGoal(GoalFeet.X - GetFeetLocation().X, GoalFeet.Y - GetFeetLocation().Y, 0.0f);
 	const bool bLandingReversal = IsOnLandingLane(LandingZ) && ToGoal.SizeSquared() > FMath::Square(60.0f)
 		&& FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, ToGoal.Rotation().Yaw)) >= 110.0f;
-	if (!bTurning && !bLandingReversal && CanCrawlStraightTo(GoalFeet))
+	// 403호 안에서 집 안의 목표로 갈 때는 건물 길을 쓰지 않는다. 건물 길에는 집 안 점이 없어서, 길을 짜면 현관 밖 문 앞
+	// 점까지 나갔다가 들어오는 길이 됐다. 욕실 문 앞으로 가던 몸이 신발장 앞 모서리를 왼팔로 쓸고 현관 단에 걸려 섰다.
+	const bool bWithinHome = IsInsideHome(GetActorLocation()) && IsInsideHome(GoalFeet);
+	if (!bTurning && !bLandingReversal && (bWithinHome || CanCrawlStraightTo(GoalFeet)))
 	{
 		ClearNavPath();
 		const bool bArrived = CrawlTowards(Goal, Speed, DeltaSeconds, true);
@@ -3308,6 +3353,7 @@ bool AIGListenerEntity::MoveTowardGoal(
 	{
 		SpliceLandingUTurn();
 	}
+	InsertHomeExitApproach();
 	const FVector Feet = GetFeetLocation();
 	const FVector Target = NavPath[NavPathIndex];
 	if (AIGSwingDoor* ClosedFireDoor = FindClosedFireDoorOnLeg(Feet, Target))
@@ -3461,7 +3507,7 @@ bool AIGListenerEntity::IsBodyBlockedAlong(const FVector& Direction, const float
 			return false;
 		}
 		// 열린 문짝은 사람이 지나다니는 자리라 몸이 비켜 서지 않는다(관리실 문은 통로를 거의 다 막는다). 닫힌 문
-		// 앞에 서는 일은 문마다 따로 맡는다(ClosedDoorStandOff, 403호 문 앞 자리).
+		// 앞에 서는 일은 문마다 따로 맡는다(ClosedDoorStandOff와 ClosedDoorKnockStand, 403호 문 앞 자리).
 		const AIGSwingDoor* Door = Cast<AIGSwingDoor>(Hit.GetActor());
 		if (!Door || (bClosedDoorsBlock && !Door->IsOpen()))
 		{

@@ -509,6 +509,8 @@ private:
 	bool IsOnLandingLane(float& OutFloorZ) const;
 	/** 계단에서 눕히고 띄운 몸을 바로 편다. 다른 자리로 옮겨 세울 때 쓴다. */
 	void ResetStairPose();
+	/** 403호 안에서 밖으로 나가는 길이면 현관 안쪽 문 앞 자리를 길 앞에 끼운다. 문을 곧게 지나게 한다. */
+	void InsertHomeExitApproach();
 	/** 소리를 듣느라 멈춰 선 동안 바라볼 쪽. AttentionDirection을 FitFacing으로 맞춘 것을 잠시 기억한다. */
 	FVector GetListeningFacing();
 	/**
