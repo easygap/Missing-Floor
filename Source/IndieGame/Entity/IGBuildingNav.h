@@ -44,6 +44,21 @@ public:
 	/** 계단탑 안(층 참, 반 층 참, 계단)인가. */
 	static bool IsInStairCore(const FVector& Feet);
 
+	/** 2·3·4층 층 참에서 되돌아서는 길. 어디서 어느 쪽을 보던 몸이 어디로 가는가. */
+	enum class ELandingUTurn : uint8
+	{
+		/** 출입구에서 동쪽(복도)을 보던 몸이 갈림 자리로 가서 서쪽을 본다. 서쪽 계단으로 오른다. */
+		DoorToJunction,
+		/** 출입구에서 동쪽을 보던 몸이 동쪽 계단 머리로 가서 북쪽을 본다. 동쪽 계단으로 내려간다. */
+		DoorToEastFlight,
+		/** 갈림 자리에서 서쪽을 보던 몸이 출입구로 가서 동쪽을 본다. 복도로 나간다. */
+		JunctionToDoor,
+		/** 갈림 자리에서 서쪽을 보던 몸이 동쪽 계단 머리로 가서 북쪽을 본다. */
+		JunctionToEastFlight,
+	};
+	/** 되돌아서는 자세(X, Y, Yaw). 층 참 바닥 높이에 둔다. 첫 자세와 끝 자세가 출입구·갈림 자리·계단 머리다. */
+	static TConstArrayView<FVector> GetLandingUTurn(ELandingUTurn Turn);
+
 	/**
 	 * Feet과 같은 층에서 벽에 막히지 않고 닿는 가장 가까운 점. 계단탑 안이면 계단
 	 * 점도 후보다. 찾지 못하면 INDEX_NONE.

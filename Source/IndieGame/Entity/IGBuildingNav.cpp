@@ -71,6 +71,39 @@ namespace IGBuildingNav
 		FVector(-406.5f, -247.0f, 280.0f), FVector(-402.0f, -249.5f, 290.0f), FVector(-398.5f, -251.0f, 300.0f),
 		FVector(-394.5f, -253.0f, 310.0f), FVector(-384.5f, -267.0f, 320.0f), FVector(-375.0f, -282.5f, 330.0f),
 		FVector(-365.0f, -291.5f, 340.0f), FVector(-349.0f, -304.0f, 350.0f), FVector(-337.5f, -305.0f, 360.0f)};
+
+	// 층 참에서 되돌아서는 자세. 출입구(-305, -305)에서 복도를 보던 몸이 계단 쪽으로 돌아서려면 깊이 140 cm 참에서
+	// 2 m 몸을 반 바퀴 돌려야 한다. 제자리에서 돌면 손끝과 발끝이 목 기둥(Y -245, -365)과 남벽, 열린 방화문을 쓸었다.
+	// 위의 자세들처럼 자리와 방향을 다 훑되, 목 기둥과 남벽 홈, 복도 벽, 열린 문짝까지 넣고 한 칸에 10 cm까지 옮길 수
+	// 있게 해서 골랐다. 서쪽으로 물러나며 30~40도 틀고, 북쪽 계단 위로 머리를 내밀며 마저 돈다. 둘레에서 벽까지
+	// 1 cm 넘게 남는다.
+	const FVector DoorToJunctionTurn[] = {
+		FVector(-305.0f, -305.0f, 0.0f), FVector(-422.5f, -305.0f, 30.0f), FVector(-430.0f, -305.0f, 32.5f),
+		FVector(-435.0f, -305.0f, 42.5f), FVector(-417.5f, -280.0f, 67.5f), FVector(-410.0f, -275.0f, 82.5f),
+		FVector(-387.5f, -280.0f, 127.5f), FVector(-370.0f, -292.5f, 145.0f), FVector(-400.0f, -305.0f, 180.0f)};
+	const FVector DoorToEastFlightTurn[] = {
+		FVector(-305.0f, -305.0f, 0.0f), FVector(-422.5f, -305.0f, 30.0f), FVector(-430.0f, -305.0f, 32.5f),
+		FVector(-435.0f, -305.0f, 42.5f), FVector(-407.5f, -235.0f, 90.0f)};
+	const FVector JunctionToDoorTurn[] = {
+		FVector(-400.0f, -305.0f, 180.0f), FVector(-370.0f, -290.0f, 145.0f), FVector(-395.0f, -277.5f, 120.0f),
+		FVector(-410.0f, -275.0f, 77.5f), FVector(-422.5f, -285.0f, 60.0f), FVector(-435.0f, -305.0f, 42.5f),
+		FVector(-430.0f, -305.0f, 32.5f), FVector(-305.0f, -305.0f, 0.0f)};
+	const FVector JunctionToEastFlightTurn[] = {
+		FVector(-400.0f, -305.0f, 180.0f), FVector(-375.0f, -295.0f, 147.5f), FVector(-370.0f, -287.5f, 145.0f),
+		FVector(-407.5f, -235.0f, 90.0f)};
+}
+
+TConstArrayView<FVector> FIGBuildingNav::GetLandingUTurn(const ELandingUTurn Turn)
+{
+	using namespace IGBuildingNav;
+	switch (Turn)
+	{
+	case ELandingUTurn::DoorToJunction: return MakeArrayView(DoorToJunctionTurn);
+	case ELandingUTurn::DoorToEastFlight: return MakeArrayView(DoorToEastFlightTurn);
+	case ELandingUTurn::JunctionToDoor: return MakeArrayView(JunctionToDoorTurn);
+	case ELandingUTurn::JunctionToEastFlight: return MakeArrayView(JunctionToEastFlightTurn);
+	default: return TConstArrayView<FVector>();
+	}
 }
 
 int32 FIGBuildingNav::Add(const FVector& Feet, const bool bOnStair, const bool bLookout)

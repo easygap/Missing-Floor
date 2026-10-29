@@ -96,6 +96,8 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Listener")
 	EIGListenerState GetListenerState() const { return State; }
+	/** 돌 자리를 찾아 제자리에서 크게 돌아서는 중이다. 검사 촬영이 그 순간을 찍는다. */
+	bool IsTurningAround() const { return bTurnaround; }
 	/** 닫힌 403호 문 앞에 와 있다(두드리거나 듣는 중). 다른 괴이가 그 문을 쓰지 않게 본다. */
 	bool IsAtHomeDoor() const { return bAtHomeDoor; }
 
@@ -489,6 +491,24 @@ private:
 	FVector FitFacing(const FVector& Desired) const;
 	/** Direction으로 가는 걸음에 더할 옆걸음. 옆의 벽·가구가 팔꿈치(44 cm)보다 가까우면 반대쪽이나 가운데로 비킨다. */
 	FVector SideClearanceShift(const FVector& Direction, float DeltaSeconds) const;
+	/** 기는 몸(손끝 앞 103 cm, 발끝 뒤 97 cm, 팔과 무릎 옆 41 cm)이 Feet 자리에 Yaw로 서면 보이는 벽·가구에 닿는가. */
+	bool IsBodyClearAt(const FVector& Feet, float Yaw) const;
+	/**
+	 * Target 쪽으로 크게 돌아서야 할 때 제자리에서 돌 수 있는 자리와 도는 쪽을 고른다. 지금 방향 그대로 옮겨 갈 수
+	 * 있고, 거기서 Target을 볼 때까지 도는 사이 몸이 어디에도 닿지 않는 자리다. 못 찾으면 false.
+	 */
+	bool PlanTurnaround(const FVector& Target);
+	/** 크게 돌아서는 한 걸음. 돌 자리로 옮기고 거기서 돈다. 다 돌았거나 그만둘 때 false. */
+	bool StepTurnaround(const FVector& Target, float DeltaSeconds);
+	/**
+	 * 2·3·4층 층 참에서 출입구와 갈림 자리 사이에 선 몸이 반대쪽으로 가야 하면, 미리 고른 되돌이 자세(LandingUTurn)를
+	 * 길 앞에 끼운다. 제자리에서 반 바퀴 돌면 출입구 문설주와 남벽을 쓸었다. 끼웠으면 true.
+	 */
+	bool SpliceLandingUTurn();
+	/** 2·3·4층 층 참에서 출입구와 갈림 자리 사이 바닥 위인가. 그 층 바닥 높이를 준다. */
+	bool IsOnLandingLane(float& OutFloorZ) const;
+	/** 계단에서 눕히고 띄운 몸을 바로 편다. 다른 자리로 옮겨 세울 때 쓴다. */
+	void ResetStairPose();
 	/** 소리를 듣느라 멈춰 선 동안 바라볼 쪽. AttentionDirection을 FitFacing으로 맞춘 것을 잠시 기억한다. */
 	FVector GetListeningFacing();
 	/**
@@ -824,6 +844,8 @@ private:
 	float SearchRetargetSeconds = 0.0f;
 	float StuckSeconds = 0.0f;
 	float LastMoveSpeed = 0.0f;
+	/** 이번 프레임에 보는 쪽 반대로 옮겨졌다. 기는 동작을 거꾸로 튼다. */
+	bool bCrawlingBackward = false;
 	float GaitCurrent = 1.0f;
 	float GaitTarget = 1.0f;
 	float GaitSecondsLeft = 0.0f;
@@ -855,6 +877,15 @@ private:
 	float PoseLegDone = 0.0f;
 	FVector NavGoal = FVector::ZeroVector;
 	double NavPlannedSeconds = -1000.0;
+	/** 크게 돌아서는 중. 돌 자리(TurnaroundPivot)로 옮긴 뒤 TurnaroundSign 쪽으로 TurnaroundSweep만큼 안에서 돈다. */
+	bool bTurnaround = false;
+	FVector TurnaroundPivot = FVector::ZeroVector;
+	float TurnaroundSign = 1.0f;
+	float TurnaroundSweep = 0.0f;
+	float TurnaroundTurned = 0.0f;
+	float TurnaroundSeconds = 0.0f;
+	/** 돌 자리를 못 찾았으면 이때까지 다시 찾지 않는다. */
+	double TurnaroundRetryAfter = -1000.0;
 	/** 이번 걸음이 계단 위였다. 몸을 경사대로 눕힌다. */
 	bool bOnStairLeg = false;
 	float StairPitchTarget = 0.0f;

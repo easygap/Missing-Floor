@@ -40,7 +40,8 @@ namespace IGPursuitProbe
 
 	/**
 	 * 촬영 카메라. 4층 참에서 동쪽 계단을 내려다보는 것, 3·4층 사이 서쪽 계단 위에서 반 층 참 쪽을 보는 것,
-	 * 3층 복도 출입구에서 참을 보는 것, 1층 연결통로 서쪽에서 관리실 문 쪽을 보는 것.
+	 * 3층 복도 출입구에서 참을 보는 것, 1층 연결통로 서쪽에서 관리실 문 쪽을 보는 것, 3층 참 남서쪽 구석 위에서
+	 * 출입구 쪽을 내려다보는 것(되돌아서기), 1층 로비 남동쪽 구석 위에서 로비를 내려다보는 것.
 	 */
 	struct FShotCamera
 	{
@@ -53,8 +54,12 @@ namespace IGPursuitProbe
 		{FVector(-522.5f, -140.0f, 880.0f), FRotator(-28.0f, 90.0f, 0.0f), FVector(-500.0f, -20.0f, 860.0f)},
 		{FVector(-300.0f, -300.0f, 760.0f), FRotator(-25.0f, 180.0f, 0.0f), FVector(-420.0f, -300.0f, 760.0f)},
 		{FVector(-70.0f, -345.0f, 165.0f), FRotator(-10.0f, 14.0f, 0.0f), FVector(120.0f, -300.0f, 200.0f)},
+		{FVector(-565.0f, -365.0f, 790.0f), FRotator(-45.0f, 22.0f, 0.0f), FVector(-450.0f, -300.0f, 780.0f)},
+		{FVector(690.0f, -365.0f, 190.0f), FRotator(-48.0f, 144.0f, 0.0f), FVector(600.0f, -280.0f, 180.0f)},
 	};
 	constexpr int32 BoothCamera = 3;
+	constexpr int32 LandingTurnCamera = 4;
+	constexpr int32 LobbyCamera = 5;
 }
 
 AIGListenerPursuitProbe::AIGListenerPursuitProbe()
@@ -165,16 +170,29 @@ void AIGListenerPursuitProbe::UpdateShots()
 	{
 		return;
 	}
-	// 내려오는 길(3단계)과 1층에 내려와 뒤지는 동안(4·5단계)만 찍는다.
-	if (Phase < 3 || Phase > 5)
+	const FVector At = Listener->GetActorLocation();
+	const float Feet = FeetZ();
+	// 1층 로비에서 크게 돌아서는 것은 돌기 시작한 때부터 0.3초마다 찍는다. 그녀가 계단을 오르는 발소리(6단계)를 듣고
+	// 돌아서는 일이 많다.
+	const bool bInLobby = Phase >= 3 && Phase <= 6 && Feet < 60.0f && At.X > 455.0f;
+	// 내려오는 길(3단계)과 1층에 내려와 뒤지는 동안(4·5단계), 로비에서 돌아서는 때, 3층 참에서 되돌아서는 동안(8단계)만
+	// 찍는다.
+	if (Phase < 3 || (Phase > 5 && Phase != 8 && !bInLobby))
 	{
 		return;
 	}
-	const FVector At = Listener->GetActorLocation();
-	const float Feet = FeetZ();
+	if (bInLobby && LobbyTurnStartedAt < 0.0f && Listener->IsTurningAround())
+	{
+		LobbyTurnStartedAt = TotalSeconds;
+	}
+	const float InLobby = LobbyTurnStartedAt < 0.0f ? -1.0f : TotalSeconds - LobbyTurnStartedAt;
+	const float InTurn = Phase == 8 ? PhaseSeconds : -1.0f;
 	// 동쪽 계단과 반 층 참 동쪽은 4층 참에서, 반 층 참 서쪽과 서쪽 계단은 서쪽 계단 위에서, 3층 참은 출입구에서
-	// 본다. 서쪽 계단 위 카메라에서는 두 계단 사이 벽이 반 층 참 동쪽을 가린다. 1층은 관리실 문 쪽을 본다.
-	const int32 Want = Phase >= 4 ? IGPursuitProbe::BoothCamera : (Feet < 615.0f ? 2 : (At.X > -440.0f ? 0 : 1));
+	// 본다. 서쪽 계단 위 카메라에서는 두 계단 사이 벽이 반 층 참 동쪽을 가린다. 1층은 관리실 문 쪽을 보고, 로비에서
+	// 돌아설 때는 로비 구석에서, 3층 참 되돌이는 참 남서쪽 구석에서 본다.
+	const int32 Want = Phase == 8 ? IGPursuitProbe::LandingTurnCamera
+		: bInLobby ? IGPursuitProbe::LobbyCamera
+		: Phase >= 4 ? IGPursuitProbe::BoothCamera : (Feet < 615.0f ? 2 : (At.X > -440.0f ? 0 : 1));
 	if (ViewFromShotCamera(Want) || TotalSeconds - LastShotSeconds < 0.12)
 	{
 		return;
@@ -195,6 +213,22 @@ void AIGListenerPursuitProbe::UpdateShots()
 		{TEXT("pursuit-landing-east"), FMath::Abs(Feet - 600.0f) < 4.0f && At.X > -440.0f && At.Y < -255.0f},
 		{TEXT("booth-open-pass"), Phase >= 4 && At.X > 30.0f && At.X < 110.0f && At.Y < -265.0f},
 		{TEXT("booth-open-enter"), Phase >= 4 && At.X > 130.0f && At.X < 200.0f && At.Y > -270.0f},
+		{TEXT("lobby-turn-1"), bInLobby && InLobby > 0.1f},
+		{TEXT("lobby-turn-2"), bInLobby && InLobby > 0.4f},
+		{TEXT("lobby-turn-3"), bInLobby && InLobby > 0.7f},
+		{TEXT("lobby-turn-4"), bInLobby && InLobby > 1.0f},
+		{TEXT("lobby-turn-5"), bInLobby && InLobby > 1.3f},
+		{TEXT("lobby-turn-6"), bInLobby && InLobby > 1.7f},
+		{TEXT("uturn-door-junction-1"), UTurnCase == 0 && InTurn > 0.3f},
+		{TEXT("uturn-door-junction-2"), UTurnCase == 0 && InTurn > 0.8f},
+		{TEXT("uturn-door-junction-3"), UTurnCase == 0 && InTurn > 1.3f},
+		{TEXT("uturn-door-east-1"), UTurnCase == 1 && InTurn > 0.3f},
+		{TEXT("uturn-door-east-2"), UTurnCase == 1 && InTurn > 0.7f},
+		{TEXT("uturn-junction-door-1"), UTurnCase == 2 && InTurn > 0.3f},
+		{TEXT("uturn-junction-door-2"), UTurnCase == 2 && InTurn > 0.7f},
+		{TEXT("uturn-junction-door-3"), UTurnCase == 2 && InTurn > 1.1f},
+		{TEXT("uturn-junction-east-1"), UTurnCase == 3 && InTurn > 0.3f},
+		{TEXT("uturn-junction-east-2"), UTurnCase == 3 && InTurn > 0.6f},
 	};
 	for (const FMoment& Moment : Moments)
 	{
@@ -486,9 +520,74 @@ void AIGListenerPursuitProbe::Tick(const float DeltaSeconds)
 		if (TotalSeconds - SilenceStartedAt >= 12.0f)
 		{
 			Check(!bReturnedToPatrolEarly, TEXT("does_not_give_up_on_silence"));
-			Finish();
+			Phase = 8;
+			PhaseSeconds = 0.0f;
+			UTurnCase = 0;
+			bUTurnParked = false;
 		}
 		break;
+
+	case 8:
+	{
+		// 3층 층 참에서 되돌아서기. 출입구에서 복도를 보던 몸과 갈림 자리에서 계단 쪽을 보던 몸을 세워 두고 반대쪽에서
+		// 소리를 낸다. 쫓는 길과 소리가 엇갈릴 때만 생겨서 위의 추격에서는 나왔다 안 나왔다 했다.
+		const float FloorZ = AIGPrologueWorldScene::GetStoreyFloorZ(2);
+		TArray<FVector> Up;
+		TArray<FVector> Down;
+		AIGPrologueWorldScene::GetStairClimbFeet(2, Up);
+		AIGPrologueWorldScene::GetStairClimbFeet(1, Down);
+		const FVector Door = AIGPrologueWorldScene::GetStairDoorwayFeet(2);
+		const FVector Junction(-400.0f, -305.0f, FloorZ);
+		const FVector Corridor(-150.0f, -305.0f, FloorZ);
+		struct FUTurnCase
+		{
+			const TCHAR* Name;
+			FVector Park;
+			float Yaw;
+			FVector Noise;
+		};
+		const FUTurnCase Cases[] = {
+			{TEXT("landing_uturn_door_to_junction"), Door, 0.0f, Up[3]},
+			{TEXT("landing_uturn_door_to_east_flight"), Door, 0.0f, Down[5]},
+			{TEXT("landing_uturn_junction_to_door"), Junction, 180.0f, Corridor},
+			{TEXT("landing_uturn_junction_to_east_flight"), Junction, 180.0f, Down[5]},
+		};
+		if (UTurnCase >= static_cast<int32>(UE_ARRAY_COUNT(Cases)))
+		{
+			Finish();
+			break;
+		}
+		const FUTurnCase& Case = Cases[UTurnCase];
+		if (!bUTurnParked)
+		{
+			Listener->ParkForBeat(Case.Park, Case.Yaw);
+			bHasLast = false;
+			bUTurnParked = true;
+			PhaseSeconds = 0.0f;
+			ClimbNoiseSeconds = 1.0f;
+		}
+		ClimbNoiseSeconds += DeltaSeconds;
+		if (ClimbNoiseSeconds >= 0.45f)
+		{
+			ClimbNoiseSeconds = 0.0f;
+			Report(Case.Noise + FVector(0.0f, 0.0f, 96.0f), 0.95f);
+		}
+		const FVector At = Listener->GetActorLocation();
+		const bool bArrived = Case.Noise.Z > FloorZ + 50.0f ? FeetZ() > FloorZ + 40.0f
+			: Case.Noise.Z < FloorZ - 50.0f ? FeetZ() < FloorZ - 40.0f
+			: At.X > -290.0f;
+		if (bArrived || PhaseSeconds > 8.0f)
+		{
+			UE_LOG(LogIndieGame, Display, TEXT("PURSUIT_UTURN %s seconds=%.2f at=%s"), Case.Name, PhaseSeconds,
+				*At.ToCompactString());
+			Check(bArrived, Case.Name);
+			++UTurnCase;
+			bUTurnParked = false;
+			// 다음 경우의 첫 컷이 이번 경우가 끝난 자리를 찍지 않게 한다.
+			PhaseSeconds = 0.0f;
+		}
+		break;
+	}
 
 	default:
 		break;

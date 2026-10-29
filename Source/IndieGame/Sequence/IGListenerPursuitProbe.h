@@ -78,10 +78,16 @@ private:
 	int32 ClimbNoiseIndex = 0;
 	float ClimbNoiseSeconds = 0.0f;
 
+	// 3층 층 참에서 되돌아서기. 몇째 경우인지와 그 경우를 시작했는지.
+	int32 UTurnCase = 0;
+	bool bUTurnParked = false;
+
 	// 촬영
 	bool bShots = false;
 	TArray<TWeakObjectPtr<ACameraActor>> ShotCameras;
 	int32 ActiveShotCamera = INDEX_NONE;
 	TSet<FName> ShotsTaken;
 	double LastShotSeconds = -1000.0;
+	/** 1층 로비에서 크게 돌아서기 시작한 때. 그때부터 찍는다. */
+	float LobbyTurnStartedAt = -1.0f;
 };
