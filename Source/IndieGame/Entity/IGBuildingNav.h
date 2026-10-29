@@ -15,13 +15,20 @@ struct INDIEGAME_API FIGBuildingNavNode
 	bool bOnStair = false;
 	/** 문 앞과 방 안, 복도 끝. 놓친 소리를 찾을 때 들러서 귀를 대 볼 만한 자리다. */
 	bool bLookout = false;
+	/**
+	 * 계단참에서 도는 자세. 몸 가운데가 Feet에 와서 Yaw를 본다. 내려갈 때와 올라갈 때 도는 길이 달라서 이런 점은
+	 * 앞 점에서 뒤 점으로 한쪽으로만 이어지고, 가까운 점을 찾을 때(FindNearest)는 빠진다.
+	 */
+	bool bPose = false;
+	float Yaw = 0.0f;
 	TArray<int32> Links;
 };
 
 /**
  * 위층 사람이 층을 오가는 길. 1~4층 복도의 점과 문 앞, 1층 연결통로와 관리실,
  * 그리고 서쪽 계단탑의 디딤판 위 점을 잇는다. 계단 치수는 씬이 한 곳에서 들고
- * (GetStairClimbFeet), 여기서는 그 점을 받아 잇기만 한다.
+ * (GetStairClimbFeet), 여기서는 그 점을 받아 잇기만 한다. 계단참에서 도는 길은
+ * 자리와 방향을 같이 정한 자세 점으로 잇는다.
  *
  * 옥상과 5층은 없다. 그는 자기가 갇혔던 층에는 올라가지 않는다(설정집 §8 3-3).
  */
@@ -51,10 +58,10 @@ private:
 	int32 Add(const FVector& Feet, bool bOnStair, bool bLookout = false);
 	void Link(int32 A, int32 B);
 	/**
-	 * From에서 Center를 도는 원호(StartDegrees에서 EndDegrees까지, X축에서 잰 각) 위의 점을 15도마다 더해 잇는다.
-	 * 양 끝 점은 넣지 않는다. 마지막으로 더한 점(없으면 From)을 돌려준다.
+	 * From에서 자세 점들을 차례로 지나 To로 가는 한쪽 길. Poses는 (X, Y, Yaw)이고 높이는 Z다. bHalfTurn이면 계단탑
+	 * 가운데를 축으로 반 바퀴 돌려 놓는다(반 층 참 길을 층 참에 쓴다).
 	 */
-	int32 AddArc(int32 From, const FVector& Center, float Radius, float StartDegrees, float EndDegrees, bool bOnStair);
+	void AddTurn(int32 From, int32 To, TConstArrayView<FVector> Poses, float Z, bool bHalfTurn);
 	/** 한 층의 복도 점을 서쪽에서 동쪽으로 잇는다. 문 앞 점은 복도 줄에 끼워 넣는다. */
 	void LinkChain(const TArray<int32>& Chain);
 

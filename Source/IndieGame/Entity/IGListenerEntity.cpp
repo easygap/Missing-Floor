@@ -109,6 +109,11 @@ namespace IGListener
 	 * 거리에 선다.
 	 */
 	constexpr float ClosedDoorStandOff = 92.0f;
+	/**
+	 * 두드리러 설 때 문짝 가운데 줄 위에서 문면까지. 문을 똑바로 보고 서면 바닥을 짚은 왼손(93.5 cm 앞)이 92 cm에서는
+	 * 두드리는 내내 문짝 아랫면에 묻혔다. 비스듬히 서던 때는 덜 닿았다.
+	 */
+	constexpr float ClosedDoorKnockStand = 97.0f;
 	/** 이보다 멀리서 문을 알아봤으면 다가가지 않고 그 자리에서 두드린다. */
 	constexpr float ClosedDoorApproachLimit = 160.0f;
 	/** 그 거리로 물러서는 빠르기와 다가가는 빠르기(cm/s). */
@@ -206,10 +211,15 @@ namespace IGListener
 	/** 몸이 경사를 따라 눕는 한계. 한 층 열여덟 단이 34도쯤이다. */
 	constexpr float StairPitchLimit = 38.0f;
 	/**
-	 * 계단탑 안에서 도는 빠르기. 평지(초당 160도)보다 빨리 돌아야 긴 몸이 옆으로 미끄러지지 않는다. 반 층 참
-	 * 원호(반지름 57.5 cm)를 쫓는 걸음(초당 4 m 남짓)으로 돌아도 몸이 원호를 놓치지 않는 빠르기다.
+	 * 계단탑 안에서 도는 빠르기. 평지(초당 160도)보다 빨리 돌아야 긴 몸이 옆으로 미끄러지지 않는다. 계단참에서 꺾는
+	 * 자리는 자세 점으로 돌고(StepAlongPose), 이 빠르기는 계단과 곧은 걸음에서 방향을 바로잡을 때 쓴다.
 	 */
 	constexpr float StairTurnDegreesPerSecond = 540.0f;
+	/**
+	 * 계단참 자세 점 사이에서 1도 도는 데 드는 걸음 거리. 제자리에서 40~50도 도는 자세도 시간이 걸린다. 반 층 참을
+	 * 다 도는 데 쫓는 빠르기로 0.85초쯤, 예전 원호와 같다.
+	 */
+	constexpr float PoseTurnCentimetersPerDegree = 2.0f;
 	/**
 	 * 몸 가운데에서 손끝까지. 기는 자세의 손목이 85 cm 앞에 있고 주먹이 그보다 몇 cm 더 나온다. 닫힌 문 앞에
 	 * 서는 거리(ClosedDoorStandOff)와 같은 몸이다.
@@ -672,8 +682,7 @@ void AIGListenerEntity::EnterState(const EIGListenerState NewState)
 
 	case EIGListenerState::Patrolling:
 		bReactingToSound = false;
-		NavPath.Reset();
-		NavPathOnStair.Reset();
+		ClearNavPath();
 		break;
 
 	case EIGListenerState::Chasing:
@@ -1995,8 +2004,7 @@ void AIGListenerEntity::ParkForBeat(const FVector& Where, const float Yaw)
 	PatrolIndex = 0;
 	// 연출이 세운 자리에서 새로 시작한다. 쫓던 길과 놓친 흔적, 경계를 남기면 카메오가
 	// 시작하자마자 엉뚱한 층으로 기어간다.
-	NavPath.Reset();
-	NavPathOnStair.Reset();
+	ClearNavPath();
 	PlayerTrail.Reset();
 	AlertUntilSeconds = -1000.0;
 	// 이 한 줄이 카메오를 성립시킨다. 남겨 두면 그는 조사 중인 상태로 서 있다가
@@ -2026,8 +2034,7 @@ void AIGListenerEntity::ResetToPatrolStart(const bool bRaiseAggression)
 	TeleportTo(SpawnLocation, GetActorRotation(), false, true);
 	SetActorEnableCollision(true);
 	PatrolIndex = 0;
-	NavPath.Reset();
-	NavPathOnStair.Reset();
+	ClearNavPath();
 	PlayerTrail.Reset();
 	AlertUntilSeconds = -1000.0;
 	StairPitchTarget = 0.0f;
@@ -2076,8 +2083,7 @@ void AIGListenerEntity::ReturnAfterCapture(const float GraceSeconds)
 	TeleportTo(SpawnLocation, GetActorRotation(), false, true);
 	SetActorEnableCollision(true);
 	PatrolIndex = 0;
-	NavPath.Reset();
-	NavPathOnStair.Reset();
+	ClearNavPath();
 	PlayerTrail.Reset();
 	AlertUntilSeconds = -1000.0;
 	StairPitchTarget = 0.0f;
@@ -2717,9 +2723,7 @@ bool AIGListenerEntity::IsCrawlLineClear(
 
 bool AIGListenerEntity::PlanNavPath(const FVector& GoalFeet)
 {
-	NavPath.Reset();
-	NavPathOnStair.Reset();
-	NavPathIndex = 0;
+	ClearNavPath();
 	UWorld* World = GetWorld();
 	if (!World || !BuildingNav.IsBuilt())
 	{
@@ -2753,6 +2757,8 @@ bool AIGListenerEntity::PlanNavPath(const FVector& GoalFeet)
 	{
 		NavPath.Add(Nodes[Node].Feet);
 		NavPathOnStair.Add(Nodes[Node].bOnStair);
+		NavPathPose.Add(Nodes[Node].bPose);
+		NavPathYaw.Add(Nodes[Node].Yaw);
 	}
 	// 끝 점은 목표 그 자체다. 계단 위 목표는 가까운 디딤판 점까지만 간다.
 	if (!FIGBuildingNav::IsInStairCore(GoalFeet)
@@ -2760,6 +2766,8 @@ bool AIGListenerEntity::PlanNavPath(const FVector& GoalFeet)
 	{
 		NavPath.Add(GoalFeet);
 		NavPathOnStair.Add(false);
+		NavPathPose.Add(false);
+		NavPathYaw.Add(0.0f);
 	}
 	NavGoal = GoalFeet;
 	NavPlannedSeconds = World->GetTimeSeconds();
@@ -2871,33 +2879,48 @@ bool AIGListenerEntity::SettleAtClosedDoor(const float DeltaSeconds)
 	{
 		return true;
 	}
-	// 문짝 겉면에서 몸 쪽으로 수평으로 잰다.
+	// 문짝 가운데 줄 위, 겉면에서 ClosedDoorKnockStand 떨어진 자리에 선다. 경첩 쪽으로 치우쳐 서면 바닥을 짚은 왼팔이
+	// 문 옆 턱에 걸쳤다(403호 욕실 문 앞에서 현관 단 모서리).
 	const FVector Here = GetActorLocation();
-	FVector Away = Here - Door->GetKnockPoint(Here);
-	Away.Z = 0.0f;
-	const float Distance = Away.Size();
-	const float Short = IGListener::ClosedDoorStandOff - Distance;
-	if (FMath::Abs(Short) <= 2.0f || Distance < KINDA_SMALL_NUMBER || Distance > IGListener::ClosedDoorApproachLimit)
+	FVector FromFace = Here - Door->GetKnockPoint(Here);
+	FromFace.Z = 0.0f;
+	if (FromFace.Size() > IGListener::ClosedDoorApproachLimit)
 	{
 		bClosedDoorSettled = true;
 		return true;
 	}
-	if (DeltaSeconds <= 0.0f)
-	{
-		return false;
-	}
-	const FVector Direction = Away / Distance * FMath::Sign(Short);
-	const float Speed = Short > 0.0f ? IGListener::ClosedDoorRetreatSpeed : IGListener::ClosedDoorApproachSpeed;
-	const float Step = FMath::Min(FMath::Abs(Short), Speed * DeltaSeconds);
-	// 뒤가 계단 끝이거나 벽이면 거기서 선 것으로 친다. 그 자리에서 두드린다.
-	if (!HasFloorBeneath(Here + Direction * Step))
+	FVector ToStand = Door->GetStandPoint(Here, IGListener::ClosedDoorKnockStand) - Here;
+	ToStand.Z = 0.0f;
+	const float Distance = ToStand.Size();
+	if (Distance <= 2.0f)
 	{
 		bClosedDoorSettled = true;
-		return true;
 	}
-	FHitResult Hit;
-	AddActorWorldOffset(Direction * Step, true, &Hit);
-	bClosedDoorSettled = Hit.bBlockingHit;
+	else if (DeltaSeconds > 0.0f)
+	{
+		// 문에서 물러날 때는 빨리, 다가가거나 옆으로 옮길 때는 천천히.
+		const FVector Direction = ToStand / Distance;
+		const float Speed = FVector::DotProduct(Direction, FromFace.GetSafeNormal()) > 0.5f
+			? IGListener::ClosedDoorRetreatSpeed
+			: IGListener::ClosedDoorApproachSpeed;
+		const float Step = FMath::Min(Distance, Speed * DeltaSeconds);
+		// 가는 쪽이 계단 끝이거나 벽이면 거기서 선 것으로 친다. 그 자리에서 두드린다.
+		if (!HasFloorBeneath(Here + Direction * Step))
+		{
+			bClosedDoorSettled = true;
+		}
+		else
+		{
+			FHitResult Hit;
+			AddActorWorldOffset(Direction * Step, true, &Hit);
+			bClosedDoorSettled = Hit.bBlockingHit;
+		}
+	}
+	if (bClosedDoorSettled)
+	{
+		// 선 자리 앞 문짝을 친다. 소리도 거기서 난다.
+		DoorKnockPoint = Door->GetKnockPoint(GetActorLocation() + FVector(0.0f, 0.0f, 40.0f));
+	}
 	return bClosedDoorSettled;
 }
 
@@ -2949,6 +2972,64 @@ bool AIGListenerEntity::StepAlongStair(
 	return false;
 }
 
+bool AIGListenerEntity::StepAlongPose(
+	const FVector& TargetFeet,
+	const float TargetYaw,
+	const float Speed,
+	const float DeltaSeconds)
+{
+	bOnStairLeg = true;
+	if (!PoseLegTarget.Equals(TargetFeet, 0.1f) || !FMath::IsNearlyEqual(PoseLegTargetYaw, TargetYaw, 0.1f))
+	{
+		PoseLegFrom = GetFeetLocation();
+		PoseLegFromYaw = GetActorRotation().Yaw;
+		PoseLegTarget = TargetFeet;
+		PoseLegTargetYaw = TargetYaw;
+		PoseLegDone = 0.0f;
+	}
+	if (HoldForWallRise())
+	{
+		LastMoveSpeed = 0.0f;
+		return false;
+	}
+	// 옮겨 갈 거리와 도는 각 중 큰 쪽이 이 걸음의 길이다. 자리와 방향이 같이 끝난다.
+	const float Turn = FMath::FindDeltaAngleDegrees(PoseLegFromYaw, TargetYaw);
+	const float Length = FMath::Max3(static_cast<float>(FVector::Dist(PoseLegFrom, TargetFeet)),
+		FMath::Abs(Turn) * IGListener::PoseTurnCentimetersPerDegree, 1.0f);
+	const float Rate = Speed
+		* (TargetFeet.Z > PoseLegFrom.Z + 2.0f ? IGListener::StairClimbSpeedScale : IGListener::StairDescendSpeedScale);
+	PoseLegDone = FMath::Min(PoseLegDone + Rate * DeltaSeconds, Length);
+	const float Alpha = PoseLegDone / Length;
+	const float HalfHeight = Body ? Body->GetScaledCapsuleHalfHeight() : 58.0f;
+	SetActorLocationAndRotation(
+		FMath::Lerp(PoseLegFrom, TargetFeet, Alpha) + FVector(0.0f, 0.0f, HalfHeight + 2.0f),
+		FRotator(0.0f, PoseLegFromYaw + Turn * Alpha, 0.0f));
+	// 자세 점은 참 위라 평평하다. 계단 끝 단과 잇는 걸음만 단 높이만큼 기운다. 받친 자리가 다시 고른다.
+	const FVector Delta = TargetFeet - PoseLegFrom;
+	StairPitchTarget = FMath::Clamp(
+		FMath::RadiansToDegrees(FMath::Atan2(Delta.Z, FMath::Max(Delta.Size2D(), 30.0f))),
+		-IGListener::StairPitchLimit,
+		IGListener::StairPitchLimit);
+	LastMoveSpeed = DeltaSeconds > 0.0f ? Rate : 0.0f;
+	StuckSeconds = 0.0f;
+	if (Alpha < 1.0f)
+	{
+		return false;
+	}
+	PoseLegTarget = FVector(TNumericLimits<float>::Max());
+	return true;
+}
+
+void AIGListenerEntity::ClearNavPath()
+{
+	NavPath.Reset();
+	NavPathOnStair.Reset();
+	NavPathPose.Reset();
+	NavPathYaw.Reset();
+	NavPathIndex = 0;
+	PoseLegTarget = FVector(TNumericLimits<float>::Max());
+}
+
 bool AIGListenerEntity::MoveTowardGoal(
 	const FVector& Goal,
 	const float Speed,
@@ -2961,19 +3042,26 @@ bool AIGListenerEntity::MoveTowardGoal(
 		return CrawlTowards(Goal, Speed, DeltaSeconds, true);
 	}
 	const FVector GoalFeet = ResolveFloorBelow(World, Goal, this, CachedPlayer.Get());
-	if (CanCrawlStraightTo(GoalFeet))
+	// 계단참에서 도는 중이면 그 길을 끝까지 돈다. 가운데에서 길을 다시 짜면 자세 없이 꺾여 손이 벽에 묻힌다.
+	const bool bTurning = NavPath.IsValidIndex(NavPathIndex) && NavPathPose[NavPathIndex];
+	// 도는 길에 막 들어서려는 참이면 쫓는 소리를 한 번 더 본다. 길을 짠 뒤 소리가 옮겨 갔으면 다른 쪽으로 돌아야
+	// 한다. 그대로 돌면 출입구까지 나갔다가 거기서 되돌아서느라 제자리에서 반 바퀴 돌았다.
+	const bool bEnteringTurn = bTurning && (NavPathIndex == 0 || !NavPathPose[NavPathIndex - 1])
+		&& !PoseLegTarget.Equals(NavPath[NavPathIndex], 0.1f);
+	if (!bTurning && CanCrawlStraightTo(GoalFeet))
 	{
-		NavPath.Reset();
-		NavPathOnStair.Reset();
-		NavPathIndex = 0;
+		ClearNavPath();
 		const bool bArrived = CrawlTowards(Goal, Speed, DeltaSeconds, true);
 		return bArrived || bBlockedByClosedDoor;
 	}
 	const double Now = World->GetTimeSeconds();
 	const bool bReplan = !NavPath.IsValidIndex(NavPathIndex)
-		|| FVector::DistSquared(GoalFeet, NavGoal) > FMath::Square(IGListener::ReplanGoalShift)
-		|| (State == EIGListenerState::Chasing
-			&& Now - NavPlannedSeconds >= IGListener::ChaseReplanSeconds);
+		|| (bEnteringTurn && State == EIGListenerState::Chasing
+			&& FVector::DistSquared(GoalFeet, NavGoal) > FMath::Square(30.0f))
+		|| (!bTurning
+			&& (FVector::DistSquared(GoalFeet, NavGoal) > FMath::Square(IGListener::ReplanGoalShift)
+				|| (State == EIGListenerState::Chasing
+					&& Now - NavPlannedSeconds >= IGListener::ChaseReplanSeconds)));
 	if (bReplan && !PlanNavPath(GoalFeet))
 	{
 		// 이어지는 길이 없다. 예전처럼 같은 층을 기어 간다.
@@ -2986,9 +3074,7 @@ bool AIGListenerEntity::MoveTowardGoal(
 		// 닫힌 방화문 앞. 문을 뚫고 지나가지 않는다.
 		bBlockedByClosedDoor = true;
 		BlockingDoor = ClosedFireDoor;
-		NavPath.Reset();
-		NavPathOnStair.Reset();
-		NavPathIndex = 0;
+		ClearNavPath();
 		return true;
 	}
 	// 계단탑 안은 미리 고른 길(계단 가운데, 층 참 가운데)만 지나므로 쓸지 않고 따라간다.
@@ -2999,7 +3085,11 @@ bool AIGListenerEntity::MoveTowardGoal(
 		|| FMath::Abs(Target.Z - Feet.Z) > 1.0f
 		|| (FIGBuildingNav::IsInStairCore(Feet) && FIGBuildingNav::IsInStairCore(Target));
 	bool bReached = false;
-	if (bStairLeg)
+	if (NavPathPose[NavPathIndex])
+	{
+		bReached = StepAlongPose(Target, NavPathYaw[NavPathIndex], Speed, DeltaSeconds);
+	}
+	else if (bStairLeg)
 	{
 		bReached = StepAlongStair(Target, Speed, DeltaSeconds);
 	}
@@ -3015,9 +3105,7 @@ bool AIGListenerEntity::MoveTowardGoal(
 		if (bBlockedByClosedDoor)
 		{
 			// 닫힌 문. 밀고 들어가지 않는다. 부르는 쪽이 문 앞에서 두드릴지 정한다.
-			NavPath.Reset();
-			NavPathOnStair.Reset();
-			NavPathIndex = 0;
+			ClearNavPath();
 			return true;
 		}
 	}
@@ -3028,9 +3116,7 @@ bool AIGListenerEntity::MoveTowardGoal(
 	++NavPathIndex;
 	if (NavPathIndex >= NavPath.Num())
 	{
-		NavPath.Reset();
-		NavPathOnStair.Reset();
-		NavPathIndex = 0;
+		ClearNavPath();
 		return true;
 	}
 	return false;
@@ -3103,8 +3189,9 @@ float AIGListenerEntity::TurnSpeedScale(const FVector& Direction) const
 		return 1.0f;
 	}
 	const float Error = FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, Flat.Rotation().Yaw));
-	// 5도까지는 그대로 가고, 35도 넘게 틀어져 있으면 거의 제자리에서 돈다. 기는 동작은 이어진다. 원호 점마다 가는
-	// 쪽이 15도씩 꺾이니, 그보다 많이 늦으면 바로 걸음을 줄여야 머리가 벽에 닿지 않는다.
+	// 5도까지는 그대로 가고, 35도 넘게 틀어져 있으면 거의 제자리에서 돈다. 기는 동작은 이어진다. 좁은 계단과 참에서는
+	// 조금만 늦어도 머리가 벽에 닿는다. 계단탑 밖에서 늦추면 폭 140 cm 복도에서 거의 제자리로 돌며 머리와 다리가 양쪽
+	// 벽을 쓸었다(4층 403호 문 앞). 걸으며 도는 편이 덜 닿는다.
 	return FMath::GetMappedRangeValueClamped(FVector2D(5.0f, 35.0f), FVector2D(1.0f, 0.1f), Error);
 }
 
@@ -3189,16 +3276,9 @@ FVector AIGListenerEntity::FitFacing(const FVector& Desired) const
 	{
 		return Desired;
 	}
-	// 바라는 쪽에서 가까운 차례로 돌려 보며, 손끝·머리·발끝과 팔꿈치·무릎 자리가 다 비는 방향을 고른다. 다 막히면
-	// 가장 덜 막히는 방향이다. 복도(폭 140 cm)에서는 몸이 벽을 향해 서지 못하고 복도를 따라 비스듬히 선다.
-	static const float Offsets[] = {0.0f, 15.0f, -15.0f, 30.0f, -30.0f, 45.0f, -45.0f, 60.0f, -60.0f, 75.0f, -75.0f,
-		90.0f, -90.0f, 120.0f, -120.0f, 150.0f, -150.0f, 180.0f};
-	const float WantedYaw = Wanted.Rotation().Yaw;
-	FVector Best = Wanted;
-	int32 BestBlocked = TNumericLimits<int32>::Max();
-	for (const float Offset : Offsets)
+	// 손끝·머리·발끝과 팔꿈치·무릎 자리 중 막힌 곳 수.
+	const auto CountBlocked = [this](const FVector& Facing)
 	{
-		const FVector Facing = FRotator(0.0f, WantedYaw + Offset, 0.0f).Vector();
 		int32 Blocked = 0;
 		Blocked += IsBodyBlockedAlong(Facing, IGListener::FrontReach, 0.0f, 12.0f, true) ? 1 : 0;
 		Blocked += IsBodyBlockedAlong(Facing, IGListener::FrontReach, 0.0f, 45.0f, true) ? 1 : 0;
@@ -3208,7 +3288,37 @@ FVector AIGListenerEntity::FitFacing(const FVector& Desired) const
 			Blocked += IsBodyBlockedAlong(Facing, 50.0f, Side, 12.0f, true) ? 1 : 0;
 			Blocked += IsBodyBlockedAlong(-Facing, 40.0f, Side, 12.0f, true) ? 1 : 0;
 		}
-		if (Blocked == 0)
+		return Blocked;
+	};
+	// 지금 방향에서 그 방향까지 제자리로 도는 사이를 20도마다 본다. 고른 방향이 비어도 도는 동안 머리나 발이 벽을
+	// 쓸고 지나갔다(4층 복도 동쪽 끝에서 83도를 돌며 종아리가 벽 속을 지났다).
+	const float CurrentYaw = GetActorRotation().Yaw;
+	const auto TurnIsClear = [&CountBlocked, CurrentYaw](const float Yaw)
+	{
+		const float Turn = FMath::FindDeltaAngleDegrees(CurrentYaw, Yaw);
+		const int32 Steps = FMath::FloorToInt(FMath::Abs(Turn) / 20.0f);
+		for (int32 Step = 1; Step <= Steps; ++Step)
+		{
+			if (CountBlocked(FRotator(0.0f, CurrentYaw + Turn * Step / (Steps + 1), 0.0f).Vector()) > 0)
+			{
+				return false;
+			}
+		}
+		return true;
+	};
+	// 바라는 쪽에서 가까운 차례로 돌려 보며, 그 방향도 비고 돌아가는 사이도 비는 방향을 고른다. 그런 방향이 없고 지금
+	// 방향이 비면 돌지 않고 그대로 듣는다. 다 막히면 가장 덜 막히는 방향이다. 복도(폭 140 cm)에서는 몸이 벽을 향해
+	// 서지 못하고 복도를 따라 비스듬히 선다.
+	static const float Offsets[] = {0.0f, 15.0f, -15.0f, 30.0f, -30.0f, 45.0f, -45.0f, 60.0f, -60.0f, 75.0f, -75.0f,
+		90.0f, -90.0f, 120.0f, -120.0f, 150.0f, -150.0f, 180.0f};
+	const float WantedYaw = Wanted.Rotation().Yaw;
+	FVector Best = Wanted;
+	int32 BestBlocked = TNumericLimits<int32>::Max();
+	for (const float Offset : Offsets)
+	{
+		const FVector Facing = FRotator(0.0f, WantedYaw + Offset, 0.0f).Vector();
+		const int32 Blocked = CountBlocked(Facing);
+		if (Blocked == 0 && TurnIsClear(WantedYaw + Offset))
 		{
 			return Facing;
 		}
@@ -3218,7 +3328,8 @@ FVector AIGListenerEntity::FitFacing(const FVector& Desired) const
 			Best = Facing;
 		}
 	}
-	return Best;
+	const FVector Current = FRotator(0.0f, CurrentYaw, 0.0f).Vector();
+	return CountBlocked(Current) == 0 ? Current : Best;
 }
 
 FVector AIGListenerEntity::GetListeningFacing()
@@ -3273,6 +3384,10 @@ void AIGListenerEntity::GatherStairSupports(const float Pitch, const float Reach
 		Points.Add(Knee);
 		Points.Add(Ankle);
 		Points.Add(Ankle + (Ankle - Knee).GetSafeNormal() * 14.0f);
+		// 넓적다리와 종아리 가운데. 계단을 내려가기 시작할 때 무릎은 아랫단, 발목은 참 위에 있어 그 사이 다리가 참
+		// 끝 모서리 밑으로 지나갔다.
+		Points.Add((Bone(StairHipBones[Side]) + Knee) * 0.5f);
+		Points.Add((Knee + Ankle) * 0.5f);
 	}
 	if (StairPelvisBone != INDEX_NONE)
 	{
@@ -3715,16 +3830,18 @@ bool AIGListenerEntity::BuildSkeletalBody()
 		StairHandBones.Add(Component->GetBoneIndex(FName(FString::Printf(TEXT("hand_%s"), Side))));
 		StairElbowBones.Add(Component->GetBoneIndex(FName(FString::Printf(TEXT("lowerarm_%s"), Side))));
 		StairShoulderBones.Add(Component->GetBoneIndex(FName(FString::Printf(TEXT("upperarm_%s"), Side))));
+		StairHipBones.Add(Component->GetBoneIndex(FName(FString::Printf(TEXT("thigh_%s"), Side))));
 		StairKneeBones.Add(Component->GetBoneIndex(FName(FString::Printf(TEXT("calf_%s"), Side))));
 		StairAnkleBones.Add(Component->GetBoneIndex(FName(FString::Printf(TEXT("foot_%s"), Side))));
 	}
 	StairPelvisBone = Component->GetBoneIndex(TEXT("pelvis"));
 	if (StairHandBones.Contains(INDEX_NONE) || StairElbowBones.Contains(INDEX_NONE) || StairShoulderBones.Contains(INDEX_NONE)
-		|| StairKneeBones.Contains(INDEX_NONE) || StairAnkleBones.Contains(INDEX_NONE))
+		|| StairHipBones.Contains(INDEX_NONE) || StairKneeBones.Contains(INDEX_NONE) || StairAnkleBones.Contains(INDEX_NONE))
 	{
 		StairHandBones.Reset();
 		StairElbowBones.Reset();
 		StairShoulderBones.Reset();
+		StairHipBones.Reset();
 		StairKneeBones.Reset();
 		StairAnkleBones.Reset();
 	}

@@ -43,6 +43,15 @@ namespace IGClipAudit
 		return bRequested;
 	}
 
+	bool IsTraceRequested()
+	{
+		static const bool bTrace = FParse::Param(FCommandLine::Get(), TEXT("IGClipAuditTrace"));
+		return bTrace;
+	}
+
+	// 몸 둘레를 나누는 칸. 5도마다 하나.
+	constexpr int32 FootprintSectors = 72;
+
 	// 보이는 메시에 처음 막히는 자리. 숨은 막이나 트리거, 충돌만 있는 상자는 빼고 다시 긋는다.
 	bool TraceVisible(UWorld& World, const FVector& From, const FVector& To, FCollisionQueryParams Params, FHitResult& OutHit)
 	{
@@ -244,6 +253,7 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 	TSet<FString> FrameKeys;
 	float FrameDepth = 0.0f;
 	FString FrameCause;
+	FString FrameKey;
 
 	// 뼈 마디. 손잡이 뼈는 바닥에 놓여 있어 그 자식은 Core에서 긋는다. 마디가 막히면 그 아래 뼈와 살은
 	// 통째로 묻힌 것으로 보고 따로 세지 않는다.
@@ -282,13 +292,14 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 		Buried[Bone] = !Handles[Bone];
 		if (Depth >= IGClipAudit::VisibleDepth)
 		{
-			Note(Handles[Bone] ? FString::Printf(TEXT("core/%s"), *IGClipAudit::HitName(Hit))
-				: FString::Printf(TEXT("bone/%s/%s"), *BoneNames[Bone], *IGClipAudit::HitName(Hit)), Depth, Phase, From, To,
-				Hit.ImpactPoint, FrameKeys);
+			const FString Key = Handles[Bone] ? FString::Printf(TEXT("core/%s"), *IGClipAudit::HitName(Hit))
+				: FString::Printf(TEXT("bone/%s/%s"), *BoneNames[Bone], *IGClipAudit::HitName(Hit));
+			Note(Key, Depth, Phase, From, To, Hit.ImpactPoint, FrameKeys);
 			if (Depth > FrameDepth)
 			{
 				FrameDepth = Depth;
 				FrameCause = IGClipAudit::HitName(Hit);
+				FrameKey = Key;
 			}
 		}
 	}
@@ -313,12 +324,13 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 		const float Depth = FVector::Distance(Hit.ImpactPoint, SkinPoint);
 		if (Depth >= IGClipAudit::VisibleDepth)
 		{
-			Note(FString::Printf(TEXT("skin/%s/%s"), *BoneNames[SampleBone], *IGClipAudit::HitName(Hit)), Depth, Phase,
-				From, SkinPoint, Hit.ImpactPoint, FrameKeys);
+			const FString Key = FString::Printf(TEXT("skin/%s/%s"), *BoneNames[SampleBone], *IGClipAudit::HitName(Hit));
+			Note(Key, Depth, Phase, From, SkinPoint, Hit.ImpactPoint, FrameKeys);
 			if (Depth > FrameDepth)
 			{
 				FrameDepth = Depth;
 				FrameCause = IGClipAudit::HitName(Hit);
+				FrameKey = Key;
 			}
 		}
 	}
@@ -328,6 +340,44 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 	if (FrameDepth >= 5.0f)
 	{
 		++Causes.FindOrAdd(FString::Printf(TEXT("%s %s"), *FrameCause, *Phase));
+	}
+	if (!IGClipAudit::IsTraceRequested() || !Owner)
+	{
+		return;
+	}
+	const FTransform Frame(FRotator(0.0f, Owner->GetActorRotation().Yaw, 0.0f), Owner->GetActorLocation());
+	if (Phase.Contains(TEXT(".stair")) || FrameDepth >= IGClipAudit::VisibleDepth)
+	{
+		UE_LOG(LogIndieGame, Display, TEXT("CLIP_TRACE who=%s phase=%s at=%.1f,%.1f,%.1f yaw=%.1f depth=%.1f key=%s"), *Who,
+			*Phase, Frame.GetLocation().X, Frame.GetLocation().Y, Frame.GetLocation().Z, Owner->GetActorRotation().Yaw,
+			FrameDepth, FrameKey.IsEmpty() ? TEXT("none") : *FrameKey);
+	}
+	// 기어 가는 몸만 모은다. 듣거나 두드리는 자세는 팔 자리가 다르다.
+	if (!Phase.StartsWith(TEXT("Chasing")))
+	{
+		return;
+	}
+	if (Footprint.IsEmpty())
+	{
+		Footprint.Init(FVector::ZeroVector, IGClipAudit::FootprintSectors);
+	}
+	const auto Gather = [this, &Frame](const FVector& Point)
+	{
+		const FVector Local = Frame.InverseTransformPosition(Point);
+		const float Degrees = FMath::RadiansToDegrees(FMath::Atan2(Local.Y, Local.X));
+		const int32 Sector = FMath::Clamp(FMath::FloorToInt((Degrees + 180.0f) / 5.0f), 0, IGClipAudit::FootprintSectors - 1);
+		if (Local.SizeSquared2D() > Footprint[Sector].SizeSquared2D())
+		{
+			Footprint[Sector] = Local;
+		}
+	};
+	for (const FVector& Joint : Joints)
+	{
+		Gather(Joint);
+	}
+	for (const FVector& SkinPoint : SkinPositions)
+	{
+		Gather(SkinPoint);
 	}
 }
 
@@ -357,5 +407,11 @@ void FIGClipAudit::Report() const
 	{
 		UE_LOG(LogIndieGame, Display, TEXT("CLIP_AUDIT_CAUSE who=%s cause=%s frames=%d"), *Who, *ByFrames[Index].Key,
 			ByFrames[Index].Value);
+	}
+	for (int32 Sector = 0; Sector < Footprint.Num(); ++Sector)
+	{
+		const FVector& Point = Footprint[Sector];
+		UE_LOG(LogIndieGame, Display, TEXT("CLIP_FOOTPRINT who=%s deg=%d r=%.1f x=%.1f y=%.1f z=%.1f"), *Who,
+			Sector * 5 - 180, Point.Size2D(), Point.X, Point.Y, Point.Z);
 	}
 }

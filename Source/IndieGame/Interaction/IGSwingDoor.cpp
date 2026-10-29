@@ -630,6 +630,15 @@ FVector AIGSwingDoor::GetKnockPoint(const FVector& From) const
 		FMath::Clamp(Local.Z, 25.0f, FMath::Max(25.0f, LeafSize.Z - 25.0f))));
 }
 
+FVector AIGSwingDoor::GetStandPoint(const FVector& From, const float Out) const
+{
+	const FTransform& Pivot = DoorPivot->GetComponentTransform();
+	const float Side = Pivot.InverseTransformPosition(From).X >= 0.0f ? 1.0f : -1.0f;
+	FVector Stand = Pivot.TransformPosition(FVector(Side * (LeafSize.X * 0.5f + Out), LeafSize.Y * 0.5f, 0.0f));
+	Stand.Z = From.Z;
+	return Stand;
+}
+
 FVector AIGSwingDoor::GetStrikeSoundLocation() const
 {
 	return DoorPivot->GetComponentTransform().TransformPosition(

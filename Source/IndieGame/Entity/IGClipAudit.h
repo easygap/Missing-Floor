@@ -10,6 +10,11 @@ namespace IGClipAudit
 {
 	/** -IGClipAudit나 괴물이 나오는 장면 검사로 띄웠는지. */
 	bool IsRequested();
+	/**
+	 * -IGClipAuditTrace. 계단탑 안 프레임과 2 cm 넘게 지난 프레임마다 몸 자리·방향·가장 깊은 곳을 남기고, 쫓는
+	 * 동안 몸 기준 좌표의 살과 관절이 어디까지 나오는지(5도마다 가장 먼 점)를 끝에 남긴다. 길을 다시 짤 때 쓴다.
+	 */
+	bool IsTraceRequested();
 }
 
 /**
@@ -81,4 +86,6 @@ private:
 	TMap<FString, FPart> Parts;
 	/** 5 cm 넘게 지난 프레임을 그 프레임에서 가장 깊이 지난 물체와 Phase로 나눠 센다. */
 	TMap<FString, int32> Causes;
+	/** -IGClipAuditTrace일 때 5도마다 몸 가운데에서 가장 먼 점(몸 기준 좌표). */
+	TArray<FVector> Footprint;
 };

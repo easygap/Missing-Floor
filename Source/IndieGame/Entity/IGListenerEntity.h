@@ -452,6 +452,13 @@ private:
 	bool PlanNavPath(const FVector& Goal);
 	/** 계단과 반 층 참 위의 한 걸음. 쓸지 않고 디딤판 위 점을 잇는 선을 따른다. */
 	bool StepAlongStair(const FVector& TargetFeet, float Speed, float DeltaSeconds);
+	/**
+	 * 계단참에서 도는 자세 점으로 가는 한 걸음. 자리와 방향을 같이 고르게 옮긴다. 제자리에서 도는 자세도 도는 각만큼
+	 * 걸음 거리를 친다(PoseTurnCentimetersPerDegree).
+	 */
+	bool StepAlongPose(const FVector& TargetFeet, float TargetYaw, float Speed, float DeltaSeconds);
+	/** 따라가던 길을 비운다. */
+	void ClearNavPath();
 	/** 같은 층에서 몸이 벽에 걸리지 않고 곧게 닿는가. */
 	bool CanCrawlStraightTo(const FVector& Goal) const;
 	/** 두 바닥점 사이를 몸과 같은 캡슐로 쓸어 본다. 막혔으면 막은 액터를 준다. */
@@ -836,7 +843,16 @@ private:
 	TArray<FVector> NavPath;
 	/** NavPath의 점 중 계단 위(디딤판을 따라야 하는) 점. */
 	TArray<bool> NavPathOnStair;
+	/** NavPath의 점 중 계단참에서 도는 자세 점과 그 방향. */
+	TArray<bool> NavPathPose;
+	TArray<float> NavPathYaw;
 	int32 NavPathIndex = 0;
+	/** 지금 가는 자세 점 걸음. 걸음이 바뀌면(PoseLegTarget이 다르면) 그 자리와 방향에서 새로 잰다. */
+	FVector PoseLegFrom = FVector::ZeroVector;
+	float PoseLegFromYaw = 0.0f;
+	FVector PoseLegTarget = FVector(TNumericLimits<float>::Max());
+	float PoseLegTargetYaw = 0.0f;
+	float PoseLegDone = 0.0f;
 	FVector NavGoal = FVector::ZeroVector;
 	double NavPlannedSeconds = -1000.0;
 	/** 이번 걸음이 계단 위였다. 몸을 경사대로 눕힌다. */
@@ -848,13 +864,14 @@ private:
 	/** 디딤판 모서리 위로 몸을 띄운 높이. 캡슐은 디딤판 가운데를 잇는 선을 따라가 모서리보다 낮다. */
 	float StairBodyLift = 0.0f;
 	/**
-	 * 바닥을 짚는 뼈. 왼쪽, 오른쪽 차례로 손목, 팔꿈치(lowerarm), 어깨(upperarm), 무릎(calf), 발목(foot)이다. 뼈대를
-	 * 만들 때 찾고, 하나라도 없으면 비워 둔다. 발끝은 발목에서 정강이 방향으로 늘여 잡고, 팔은 마디 가운데도 본다.
-	 * 골반은 단 모서리 위를 지날 때 본다.
+	 * 바닥을 짚는 뼈. 왼쪽, 오른쪽 차례로 손목, 팔꿈치(lowerarm), 어깨(upperarm), 엉덩이(thigh), 무릎(calf),
+	 * 발목(foot)이다. 뼈대를 만들 때 찾고, 하나라도 없으면 비워 둔다. 발끝은 발목에서 정강이 방향으로 늘여 잡고, 팔과
+	 * 다리는 마디 가운데도 본다. 골반은 단 모서리 위를 지날 때 본다.
 	 */
 	TArray<int32> StairHandBones;
 	TArray<int32> StairElbowBones;
 	TArray<int32> StairShoulderBones;
+	TArray<int32> StairHipBones;
 	TArray<int32> StairKneeBones;
 	TArray<int32> StairAnkleBones;
 	int32 StairPelvisBone = INDEX_NONE;

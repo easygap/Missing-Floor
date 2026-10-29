@@ -115,6 +115,8 @@ public:
 	 * 당긴다. 문 너머에서 두드리는 소리를 그 문에서 내게 할 때 쓴다.
 	 */
 	FVector GetKnockPoint(const FVector& From) const;
+	/** 닫힌 문짝의 가운데 줄 위, From 쪽 겉면에서 Out만큼 떨어진 자리. 높이는 From 그대로다. */
+	FVector GetStandPoint(const FVector& From, float Out) const;
 
 	/**
 	 * Swaps the box handle for an authored lever mesh (rose plate + swept
