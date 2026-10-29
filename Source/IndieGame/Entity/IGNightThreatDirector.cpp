@@ -164,6 +164,22 @@ namespace IGNightThreat
 	// 잠긴 방문 앞에서 기다릴 때 문 앞 점(문면 30 cm)에서 더 물러서는 거리. 손님은 머리와 등을 앞으로 숙여 2 m
 	// 높이에서 30 cm 넘게 나오므로, 문 앞 점에 서면 상체가 문짝 속으로 들어간다.
 	constexpr float GuestRoomDoorStandBack = 20.0f;
+	// 403호 현관문은 복도 쪽으로 열린다(경첩 X 78, 문짝 106 cm, 다 열면 복도 140 cm 중 106 cm를 덮는다).
+	// 문이 도는 동안 손님이 서 있는 자리. 경첩에서 문짝 쪽(+X)으로 137, 복도 쪽(−Y)으로 80 cm라 문짝 길이에
+	// 몸 반지름을 더한 것보다 멀고, 집 안에서 문간 너머로 비스듬히 보인다. 문간 30 cm 앞에 섰을 때는
+	// 열리고 닫히는 문짝이 몸을 쓸고 지나갔다.
+	constexpr float HomeDoorWaitAlong = 137.0f;
+	constexpr float HomeDoorWaitOut = 80.0f;
+	// 문 안팎을 오가는 길목(문 액터 좌표 X, +X가 바깥). 문짝 가운데 줄을 따라 문 앞에서 문간을 똑바로
+	// 지나고, 안쪽 점을 지나서 꺾는다. 403호는 신발장 앞, 5층은 안으로 다 열린 문짝 끝 너머다. 곧장
+	// 가면 몸이 문틀과 신발장 모서리, 열린 철문 문짝을 지났다.
+	constexpr float HomeLaneOuter = 40.0f;
+	constexpr float HomeLaneInner = -80.0f;
+	constexpr float AnnexLaneOuter = 45.0f;
+	constexpr float AnnexLaneInner = -125.0f;
+	// 문짝 가운데 줄 양옆으로 이만큼 안이면 길목 위다. 길목 점은 이만큼 지나면 지난 것으로 친다.
+	constexpr float LaneHalfWidth = 12.0f;
+	constexpr float LanePassed = 8.0f;
 	// 발 높이가 이만큼 넘게 다르면 다른 층이다. 계단으로 달아났으면 손이 닿지 않고
 	// 소리도 듣지 못한다. 문 너머 층까지 따라가지 않는다.
 	constexpr float SameFloorTolerance = 150.0f;
@@ -1435,16 +1451,18 @@ bool AIGNightThreatDirector::UpdateGuestAtRoomDoor(
 	const FVector Inside(Room.GetInsideApproach().X, Room.GetInsideApproach().Y, BodyLocation.Z);
 	if (Door->IsOpen())
 	{
-		// 열린 문. 문 앞을 거쳐 안으로 든다. 안에 들면 여느 추격으로 돌아간다.
+		// 열린 문. 문 앞을 거쳐 안으로 든다. 안에 들면 여느 추격으로 돌아간다. 아직 현관 밖이면 현관
+		// 문간부터 지난다.
 		Body.SetTargetLocation(
-			BodyLocation.X < Outside.X - 5.0f && FVector::Dist2D(BodyLocation, Outside) > 30.0f ? Outside : Inside,
+			RouteGuestTo(BodyLocation,
+				BodyLocation.X < Outside.X - 5.0f && FVector::Dist2D(BodyLocation, Outside) > 30.0f ? Outside : Inside),
 			IGNightThreat::PursueSpeed);
 		return true;
 	}
 	const FVector Wait = Outside + (Outside - Inside).GetSafeNormal2D() * IGNightThreat::GuestRoomDoorStandBack;
 	if (FVector::Dist2D(BodyLocation, Wait) > 25.0f)
 	{
-		Body.SetTargetLocation(Wait, IGNightThreat::PursueSpeed);
+		Body.SetTargetLocation(RouteGuestTo(BodyLocation, Wait), IGNightThreat::PursueSpeed);
 		return true;
 	}
 	if (!Door->IsLatched())
@@ -1616,6 +1634,78 @@ FVector AIGNightThreatDirector::GetDoorThreshold() const
 		AIGPrologueWorldScene::FourthFloorZ);
 }
 
+FVector AIGNightThreatDirector::GetGuestDoorWait() const
+{
+	if (GuestDoor == EIGGuestDoor::Annex)
+	{
+		// 철문은 안으로 열린다. 문간 바깥 자리는 문짝이 쓸고 가지 않는다.
+		return GetDoorThreshold();
+	}
+	return FVector(
+		AIGPrologueWorldScene::HomeDoorX + IGNightThreat::HomeDoorWaitAlong,
+		AIGPrologueWorldScene::HomeDoorY - IGNightThreat::HomeDoorWaitOut,
+		AIGPrologueWorldScene::FourthFloorZ);
+}
+
+FVector AIGNightThreatDirector::RouteGuestTo(const FVector& From, const FVector& Goal) const
+{
+	using namespace IGNightThreat;
+	const AIGSwingDoor* Door = GetGuestDoorActor();
+	if (!Door)
+	{
+		return Goal;
+	}
+	const bool bAnnex = GuestDoor == EIGGuestDoor::Annex;
+	// 문 액터 좌표. 경첩 축이 원점, 닫힌 문짝이 +Y, 바깥이 +X다.
+	const FTransform& Frame = Door->GetActorTransform();
+	const float LaneY = bAnnex ? 44.0f : AIGPrologueWorldScene::WideDoorLeafWidth * 0.5f;
+	const float Outer = bAnnex ? AnnexLaneOuter : HomeLaneOuter;
+	const float Inner = bAnnex ? AnnexLaneInner : HomeLaneInner;
+	const FVector A = Frame.InverseTransformPosition(From);
+	const bool bFromInside = A.X < 0.0f;
+	const bool bGoalInside = Frame.InverseTransformPosition(Goal).X < 0.0f;
+	const bool bInLane = FMath::Abs(A.Y - LaneY) <= LaneHalfWidth;
+	const auto LanePoint = [&Frame, &From, LaneY](const float X)
+	{
+		const FVector At = Frame.TransformPosition(FVector(X, LaneY, 0.0f));
+		return FVector(At.X, At.Y, From.Z);
+	};
+	if (bGoalInside)
+	{
+		// 들어간다. 문 앞에 서서 문간을 똑바로 지나고, 안쪽 점을 지나서 꺾는다.
+		if (!bFromInside && !(bInLane && A.X <= Outer + LanePassed))
+		{
+			return LanePoint(Outer);
+		}
+		return A.X > Inner + LanePassed ? LanePoint(Inner) : Goal;
+	}
+	if (bFromInside)
+	{
+		// 나간다. 안쪽 점으로 와서 문간을 똑바로 지난다.
+		return bInLane && A.X >= Inner - LanePassed ? LanePoint(Outer) : LanePoint(Inner);
+	}
+	// 문간을 막 나섰으면 문 앞까지는 똑바로 간다.
+	return bInLane && A.X < Outer - LanePassed ? LanePoint(Outer) : Goal;
+}
+
+float AIGNightThreatDirector::GetGuestRouteLength(const FVector& From, const FVector& Goal) const
+{
+	float Length = 0.0f;
+	FVector At = From;
+	// 길목 점은 둘이라 네 번 안에 Goal에 닿는다.
+	for (int32 Leg = 0; Leg < 4; ++Leg)
+	{
+		const FVector Next = RouteGuestTo(At, Goal);
+		Length += FVector::Dist2D(At, Next);
+		if (FVector::DistSquared2D(Next, Goal) < 1.0f)
+		{
+			break;
+		}
+		At = Next;
+	}
+	return Length;
+}
+
 FVector AIGNightThreatDirector::GetGuestRoomCenter() const
 {
 	if (const AIGSwingDoor* Gate = AnnexDoor.Get(); Gate && GuestDoor == EIGGuestDoor::Annex)
@@ -1762,10 +1852,11 @@ void AIGNightThreatDirector::StartGuest(const EIGGuestDoor Door)
 	}
 	else if (AIGSwingDoor* Front = HomeDoor.Get(); GuestDoor == EIGGuestDoor::Home && Front && Front->IsOpen() && Guest)
 	{
-		// 열어 둔 현관. 두드릴 문이 없으니 철문 때처럼 문간에 서서 안을 들여다본다.
+		// 열어 둔 현관. 두드릴 문이 없으니 문 앞 복도에 서서 안을 들여다본다. 문간 바로 앞에 서면
+		// 그녀가 닫는 문짝이 몸을 쓸고 지나간다.
 		GuestStage = EIGGuestStage::AtOpenDoor;
-		const FVector Threshold = GetDoorThreshold();
-		Guest->Manifest(Threshold, (GetGuestRoomCenter() - Threshold).Rotation().Yaw, IGNightThreat::GuestGrowth);
+		const FVector Wait = GetGuestDoorWait();
+		Guest->Manifest(Wait, (GetGuestRoomCenter() - Wait).Rotation().Yaw, IGNightThreat::GuestGrowth);
 	}
 }
 
@@ -2275,9 +2366,11 @@ void AIGNightThreatDirector::OpenDoorForGuest()
 		EndGuest(false);
 		return;
 	}
-	// 소리 없이 연다. 문 소리가 버스에 나가면 위층 사람이 그리로 온다. 두 문 모두 안쪽(+Y)으로 든다.
+	// 소리 없이 연다. 문 소리가 버스에 나가면 위층 사람이 그리로 온다. 몸은 문짝이 쓸고 가지 않는
+	// 자리에서 집 안을 보고 섰다가, 문이 다 열린 뒤에 들어온다(UpdateGuest). 두 문 모두 안쪽이 +Y다.
 	Door->BeginScriptedSwingWithLoudness(true, 0.0f, 1.3f);
-	Guest->Manifest(GetDoorThreshold(), 90.0f, IGNightThreat::GuestGrowth);
+	const FVector Wait = GetGuestDoorWait();
+	Guest->Manifest(Wait, (GetGuestRoomCenter() - Wait).Rotation().Yaw, IGNightThreat::GuestGrowth);
 	GuestStage = EIGGuestStage::Inside;
 	GuestElapsed = 0.0f;
 	bPlayerHiddenWhenOpened = Player->IsConcealedInHidingSpot();
@@ -2615,11 +2708,12 @@ void AIGNightThreatDirector::UpdateCanvass(AIGPlayerCharacter& Player)
 	}
 	if (Door->IsOpen())
 	{
-		// 옆집을 두드리는 사이 문을 열었다. 그 문 앞에 서 있던 몸이 이쪽으로 돌아선다.
+		// 옆집을 두드리는 사이 문을 열었다. 그 문 앞에 서 있던 몸이 이쪽으로 돌아선다. 문면에서 50 cm 남짓
+		// 떨어져 선다. 28 cm에 세웠을 때는 403호 쪽을 보는 몸의 늘어진 오른팔이 문짝 속에 들었다.
 		bCanvassLured = true;
 		CanvassLureStartSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 		const FVector From = GetNeighborDoorOutside(CanvassStop);
-		Body->Manifest(FVector(From.X, From.Y - 20.0f, AIGPrologueWorldScene::FourthFloorZ), 0.0f, GuestGrowth);
+		Body->Manifest(FVector(From.X, From.Y - 40.0f, AIGPrologueWorldScene::FourthFloorZ), 0.0f, GuestGrowth);
 		IGAudio::SpawnOneShotAt(
 			this,
 			IGAudio::SampleOr(TEXT("Stinger_CloseCall"),
@@ -2841,7 +2935,10 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 				EndGuest(false);
 				return;
 			}
-			Guest->Manifest(GetDoorThreshold(), 90.0f, GuestGrowth);
+			// 403호 문은 그녀가 미는 대로 복도 쪽으로 돈다. 몸은 문짝이 쓸고 가지 않는 자리에서 그녀를 본다.
+			const FVector Wait = GetGuestDoorWait();
+			const FVector PlayerAt = Player->GetActorLocation();
+			Guest->Manifest(Wait, (FVector(PlayerAt.X, PlayerAt.Y, Wait.Z) - Wait).Rotation().Yaw, GuestGrowth);
 			IGAudio::SpawnOneShotAt(
 				this,
 				IGAudio::SampleOr(TEXT("Stinger_CloseCall"),
@@ -3054,10 +3151,17 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		}
 		bGuestPlayerWasConcealed = bPlayerConcealed;
 		const bool bSawHide = bPlayerConcealed && bGuestSawHide;
+		// 문짝이 아직 열리고 있으면 쓸고 가는 반경 밖에서 기다린다. 찾는 시간은 다 열린 뒤부터 잰다.
+		const bool bDoorOpening = Door->IsOpen() && Door->IsSwinging();
+		if (bDoorOpening)
+		{
+			GuestElapsed = 0.0f;
+		}
 		// 욕실(§4). 그녀가 욕실 안이면 문을 거쳐서만 간다. 잠그지 않은 문은 열고 들어가고,
 		// 잠갔으면 손잡이만 덜컥거려 보고 돌아간다. 숨은 걸 못 봤고 소리도 못 들었으면
 		// 욕실까지 오지 않는다.
-		if (const AIGBathroomRefuge* Room = AIGBathroomRefuge::FindRoomAt(GetWorld(), Player->GetActorLocation()))
+		if (const AIGBathroomRefuge* Room = AIGBathroomRefuge::FindRoomAt(GetWorld(), Player->GetActorLocation());
+			Room && !bDoorOpening)
 		{
 			if (!Room->IsInside(BodyLocation)
 				&& (!bPlayerConcealed || bSawHide || bGuestHeardPlayer)
@@ -3068,7 +3172,10 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		}
 		if (!bPlayerConcealed || bSawHide || bGuestHeardPlayer)
 		{
-			Body->SetTargetLocation(PlayerFloor, PursueSpeed);
+			if (!bDoorOpening)
+			{
+				Body->SetTargetLocation(RouteGuestTo(BodyLocation, PlayerFloor), PursueSpeed);
+			}
 			if (Distance <= GuestReach)
 			{
 				BeginGuestCapture();
@@ -3080,15 +3187,20 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 			}
 			break;
 		}
-		// 숨은 사람을 못 봤다. 방 가운데로 천천히 들어와 서서 듣다가 돌아간다.
+		if (bDoorOpening)
+		{
+			break;
+		}
+		// 숨은 사람을 못 봤다. 방 가운데로 천천히 들어와 서서 듣다가 돌아간다. 걷는 시간은 문이 열리는
+		// 동안 서 있던 자리에서 문간을 지나 방 가운데까지의 길로 잰다.
 		const FVector Center = GetGuestRoomCenter();
 		const FVector Threshold = GetDoorThreshold();
 		const FVector RoomCenter(Center.X, Center.Y, BodyLocation.Z);
 		const FVector Doorway(Threshold.X, Threshold.Y, BodyLocation.Z);
-		const float WalkIn = FVector::Dist2D(Doorway, RoomCenter) / SearchSpeed;
+		const float WalkIn = GetGuestRouteLength(GetGuestDoorWait(), RoomCenter) / SearchSpeed;
 		if (GuestElapsed < WalkIn)
 		{
-			Body->SetTargetLocation(RoomCenter, SearchSpeed);
+			Body->SetTargetLocation(RouteGuestTo(BodyLocation, RoomCenter), SearchSpeed);
 		}
 		else if (GuestElapsed < WalkIn + SearchHoldSeconds)
 		{
@@ -3100,7 +3212,7 @@ void AIGNightThreatDirector::UpdateGuest(const float DeltaSeconds)
 		}
 		else if (GuestElapsed < WalkIn * 2.0f + SearchHoldSeconds)
 		{
-			Body->SetTargetLocation(Doorway, SearchSpeed);
+			Body->SetTargetLocation(RouteGuestTo(BodyLocation, Doorway), SearchSpeed);
 		}
 		else
 		{

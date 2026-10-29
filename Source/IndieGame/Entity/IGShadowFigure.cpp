@@ -46,6 +46,13 @@ namespace IGShadow
 	constexpr float SlideRadius = 22.0f;
 	constexpr float StepClearance = 20.0f;
 	constexpr float ChestHeight = 130.0f;
+	// 손님 발밑 바닥을 찾는 둘레(배율 1, cm)와 위아래로 찾는 범위. 둘레는 바닥에 끌리는 종이 자락 끝이다.
+	// 403호 현관 화강석 단(8 cm)을 넘을 때 자락이 단 속에 묻혔다.
+	constexpr float FootprintRadius = 30.0f;
+	constexpr float FloorProbeReach = 20.0f;
+	// 바닥 높이를 따라 오르내리는 빠르기(cm/s). 오를 때는 자락이 묻히기 전에 올라선다.
+	constexpr float FloorRiseSpeed = 120.0f;
+	constexpr float FloorSettleSpeed = 60.0f;
 
 	// 보이는 메시에 처음 닿는 자리. 숨은 막과 트리거는 빼고 다시 굴린다.
 	bool SweepVisible(UWorld& World, const FVector& From, const FVector& To, const float Radius,
@@ -151,6 +158,7 @@ void AIGShadowFigure::DressAsPaper()
 		return;
 	}
 	bPaper = true;
+	bFollowFloor = true;
 	ClipAudit.Start(TEXT("guest"));
 	// 빚은 몸이 있으면 그것을 입히고 얼굴에 403호 문의 자석만 붙인다. 손님은 오빠와
 	// 상관없는 이 건물의 것이라, 몸의 종이에는 단서가 적힌 종이가 없다.
@@ -383,6 +391,10 @@ void AIGShadowFigure::Manifest(const FVector& Location, const float YawDegrees, 
 	TargetGrowth = FMath::Clamp(Growth, 0.0f, 1.0f);
 	CurrentGrowth = TargetGrowth;
 	SetActorLocationAndRotation(Location, FRotator(0.0f, YawDegrees, 0.0f));
+	if (bFollowFloor)
+	{
+		FollowFloor(0.0f);
+	}
 	ProbeCeiling();
 	ApplyPose();
 	SetActorHiddenInGame(false);
@@ -495,6 +507,50 @@ FVector AIGShadowFigure::SlideAlongWalls(const FVector& From, const FVector& To)
 	return Start;
 }
 
+void AIGShadowFigure::FollowFloor(const float DeltaSeconds)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	const FVector Here = GetActorLocation();
+	const float Reach = IGShadow::FootprintRadius * GetBodyScale();
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGShadowFloor), false, this);
+	if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))
+	{
+		Params.AddIgnoredActor(Player);
+	}
+	// 가운데와 자락 둘레 여덟 곳 밑에서 가장 높은 바닥. 벽 속에서 시작한 선과 비탈은 셈하지 않는다.
+	bool bFound = false;
+	float Floor = Here.Z;
+	for (int32 Index = -1; Index < 8; ++Index)
+	{
+		const float Angle = UE_PI * 0.25f * Index;
+		const FVector Foot = Index < 0 ? Here : Here + FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.0f) * Reach;
+		const FVector Span(0.0f, 0.0f, IGShadow::FloorProbeReach);
+		FHitResult Hit;
+		if (IGShadow::SweepVisible(*World, Foot + Span, Foot - Span, 0.0f, Params, Hit)
+			&& !Hit.bStartPenetrating && Hit.ImpactNormal.Z > 0.7f)
+		{
+			Floor = bFound ? FMath::Max(Floor, Hit.ImpactPoint.Z) : Hit.ImpactPoint.Z;
+			bFound = true;
+		}
+	}
+	if (!bFound)
+	{
+		return;
+	}
+	const float Z = DeltaSeconds > 0.0f
+		? FMath::FInterpConstantTo(Here.Z, Floor, DeltaSeconds,
+			Floor > Here.Z ? IGShadow::FloorRiseSpeed : IGShadow::FloorSettleSpeed)
+		: Floor;
+	if (!FMath::IsNearlyEqual(Z, Here.Z, 0.01f))
+	{
+		SetActorLocation(FVector(Here.X, Here.Y, Z));
+	}
+}
+
 void AIGShadowFigure::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -503,22 +559,32 @@ void AIGShadowFigure::Tick(const float DeltaSeconds)
 		SetActorTickEnabled(false);
 		return;
 	}
-	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다.
+	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다. 바닥을 따르는 몸은 높이가 목표와
+	// 달라도 서 있는 것이다.
 	if (ClipAudit.IsOn())
 	{
+		const bool bArrived = bFollowFloor
+			? FVector::DistSquared2D(GetActorLocation(), TargetLocation) <= 1.0f
+			: GetActorLocation().Equals(TargetLocation, 1.0f);
 		ClipAudit.Measure(SculptedBody, GetChestLocation(), UGameplayStatics::GetPlayerPawn(this, 0),
-			FString::Printf(TEXT("grow%.1f%s"), CurrentGrowth, GetActorLocation().Equals(TargetLocation, 1.0f) ? TEXT("") : TEXT(".move")));
+			FString::Printf(TEXT("grow%.1f%s"), CurrentGrowth, bArrived ? TEXT("") : TEXT(".move")));
 	}
 	CurrentGrowth = FMath::FInterpTo(CurrentGrowth, TargetGrowth, DeltaSeconds, IGShadow::GrowthFollowSpeed);
 	if (MoveSpeed > 0.0f)
 	{
 		const FVector Here = GetActorLocation();
-		const FVector Next = FMath::VInterpConstantTo(Here, TargetLocation, DeltaSeconds, MoveSpeed);
+		// 바닥을 따르는 몸은 높이를 바닥이 정한다. 목표 높이로 끌려 내려가면 단 위에서 자락이 묻힌다.
+		const FVector Goal = bFollowFloor ? FVector(TargetLocation.X, TargetLocation.Y, Here.Z) : TargetLocation;
+		const FVector Next = FMath::VInterpConstantTo(Here, Goal, DeltaSeconds, MoveSpeed);
 		SetActorLocation(bSlideAlongWalls ? SlideAlongWalls(Here, Next) : Next);
-		if (FVector::DistSquared2D(GetActorLocation(), CeilingProbedAt) > FMath::Square(20.0f))
-		{
-			ProbeCeiling();
-		}
+	}
+	if (bFollowFloor)
+	{
+		FollowFloor(DeltaSeconds);
+	}
+	if (MoveSpeed > 0.0f && FVector::DistSquared2D(GetActorLocation(), CeilingProbedAt) > FMath::Square(20.0f))
+	{
+		ProbeCeiling();
 	}
 	const float Yaw = FMath::FInterpTo(
 		GetActorRotation().Yaw,

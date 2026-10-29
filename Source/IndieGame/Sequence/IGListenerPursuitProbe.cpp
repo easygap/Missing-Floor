@@ -40,7 +40,7 @@ namespace IGPursuitProbe
 
 	/**
 	 * 촬영 카메라. 4층 참에서 동쪽 계단을 내려다보는 것, 3·4층 사이 서쪽 계단 위에서 반 층 참 쪽을 보는 것,
-	 * 3층 복도 출입구에서 참을 보는 것.
+	 * 3층 복도 출입구에서 참을 보는 것, 1층 연결통로 서쪽에서 관리실 문 쪽을 보는 것.
 	 */
 	struct FShotCamera
 	{
@@ -52,7 +52,9 @@ namespace IGPursuitProbe
 		{FVector(-407.5f, -330.0f, 1040.0f), FRotator(-30.0f, 90.0f, 0.0f), FVector(-407.5f, -200.0f, 980.0f)},
 		{FVector(-522.5f, -140.0f, 880.0f), FRotator(-28.0f, 90.0f, 0.0f), FVector(-500.0f, -20.0f, 860.0f)},
 		{FVector(-300.0f, -300.0f, 760.0f), FRotator(-25.0f, 180.0f, 0.0f), FVector(-420.0f, -300.0f, 760.0f)},
+		{FVector(-70.0f, -345.0f, 165.0f), FRotator(-10.0f, 14.0f, 0.0f), FVector(120.0f, -300.0f, 200.0f)},
 	};
+	constexpr int32 BoothCamera = 3;
 }
 
 AIGListenerPursuitProbe::AIGListenerPursuitProbe()
@@ -70,6 +72,7 @@ void AIGListenerPursuitProbe::Configure(
 	Entity = InEntity;
 	Player = InPlayer;
 	Noise = InNoise;
+	bShots = FParse::Param(FCommandLine::Get(), TEXT("IGListenerPursuitShots"));
 }
 
 void AIGListenerPursuitProbe::Check(const bool bCondition, const TCHAR* Name)
@@ -110,13 +113,12 @@ void AIGListenerPursuitProbe::Shoot(const TCHAR* Name)
 	}
 }
 
-void AIGListenerPursuitProbe::UpdateShots()
+bool AIGListenerPursuitProbe::ViewFromShotCamera(const int32 Index)
 {
 	UWorld* World = GetWorld();
-	const AIGListenerEntity* Listener = Entity.Get();
-	if (!bShots || !World || !Listener)
+	if (!World)
 	{
-		return;
+		return false;
 	}
 	if (ShotCameras.IsEmpty())
 	{
@@ -137,33 +139,43 @@ void AIGListenerPursuitProbe::UpdateShots()
 			}
 		}
 	}
-	// 내려오는 길(3단계)만 찍는다. 반 층 참 카메라는 3·4층 사이, 참 카메라는 3층 참이다.
-	if (Phase != 3)
+	if (Index == ActiveShotCamera || !ShotCameras.IsValidIndex(Index) || !ShotCameras[Index].IsValid())
+	{
+		return false;
+	}
+	if (APlayerController* PC = World->GetFirstPlayerController())
+	{
+		PC->SetViewTargetWithBlend(ShotCameras[Index].Get(), 0.0f);
+		// 밤 제목과 안내 글자가 화면을 덮지 않게 한다.
+		if (AHUD* Hud = PC->GetHUD())
+		{
+			Hud->bShowHUD = false;
+		}
+	}
+	ActiveShotCamera = Index;
+	// 카메라를 바꾼 프레임은 아직 예전 화면이다.
+	LastShotSeconds = TotalSeconds;
+	return true;
+}
+
+void AIGListenerPursuitProbe::UpdateShots()
+{
+	const AIGListenerEntity* Listener = Entity.Get();
+	if (!bShots || !Listener)
+	{
+		return;
+	}
+	// 내려오는 길(3단계)과 1층에 내려와 뒤지는 동안(4·5단계)만 찍는다.
+	if (Phase < 3 || Phase > 5)
 	{
 		return;
 	}
 	const FVector At = Listener->GetActorLocation();
 	const float Feet = FeetZ();
 	// 동쪽 계단과 반 층 참 동쪽은 4층 참에서, 반 층 참 서쪽과 서쪽 계단은 서쪽 계단 위에서, 3층 참은 출입구에서
-	// 본다. 서쪽 계단 위 카메라에서는 두 계단 사이 벽이 반 층 참 동쪽을 가린다.
-	const int32 Want = Feet < 615.0f ? 2 : (At.X > -440.0f ? 0 : 1);
-	if (Want != ActiveShotCamera && ShotCameras.IsValidIndex(Want) && ShotCameras[Want].IsValid())
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			PC->SetViewTargetWithBlend(ShotCameras[Want].Get(), 0.0f);
-			// 밤 제목과 안내 글자가 화면을 덮지 않게 한다.
-			if (AHUD* Hud = PC->GetHUD())
-			{
-				Hud->bShowHUD = false;
-			}
-		}
-		ActiveShotCamera = Want;
-		// 카메라를 바꾼 프레임은 아직 예전 화면이다.
-		LastShotSeconds = TotalSeconds;
-		return;
-	}
-	if (TotalSeconds - LastShotSeconds < 0.12)
+	// 본다. 서쪽 계단 위 카메라에서는 두 계단 사이 벽이 반 층 참 동쪽을 가린다. 1층은 관리실 문 쪽을 본다.
+	const int32 Want = Phase >= 4 ? IGPursuitProbe::BoothCamera : (Feet < 615.0f ? 2 : (At.X > -440.0f ? 0 : 1));
+	if (ViewFromShotCamera(Want) || TotalSeconds - LastShotSeconds < 0.12)
 	{
 		return;
 	}
@@ -181,6 +193,8 @@ void AIGListenerPursuitProbe::UpdateShots()
 		{TEXT("pursuit-landing-west"), FMath::Abs(Feet - 600.0f) < 4.0f && At.X < -500.0f && At.Y < -270.0f},
 		{TEXT("pursuit-landing-south"), FMath::Abs(Feet - 600.0f) < 4.0f && FMath::Abs(At.X + 465.0f) < 12.0f && At.Y < -300.0f},
 		{TEXT("pursuit-landing-east"), FMath::Abs(Feet - 600.0f) < 4.0f && At.X > -430.0f && At.Y < -270.0f},
+		{TEXT("booth-open-pass"), Phase >= 4 && At.X > 30.0f && At.X < 110.0f && At.Y < -265.0f},
+		{TEXT("booth-open-enter"), Phase >= 4 && At.X > 130.0f && At.X < 200.0f && At.Y > -270.0f},
 	};
 	for (const FMoment& Moment : Moments)
 	{
@@ -271,6 +285,16 @@ void AIGListenerPursuitProbe::Tick(const float DeltaSeconds)
 	switch (Phase)
 	{
 	case 0:
+		// 촬영할 때는 문을 열기 전에 닫힌 관리실 문부터 찍는다. 셰이더와 텍스처가 다 올라오도록 몇 초 둔다.
+		if (bShots && PhaseSeconds < 4.0f)
+		{
+			ViewFromShotCamera(IGPursuitProbe::BoothCamera);
+			if (PhaseSeconds >= 3.5f && !ShotsTaken.Contains(FName(TEXT("booth-closed"))))
+			{
+				Shoot(TEXT("booth-closed"));
+			}
+			return;
+		}
 		if (PhaseSeconds < 0.5f)
 		{
 			return;
@@ -285,7 +309,6 @@ void AIGListenerPursuitProbe::Tick(const float DeltaSeconds)
 			}
 		}
 		Listener->RefreshNightTuning();
-		bShots = FParse::Param(FCommandLine::Get(), TEXT("IGListenerPursuitShots"));
 		Character->GetCharacterMovement()->StopMovementImmediately();
 		Character->SetActorLocation(IGPursuitProbe::PlayerParked, false, nullptr, ETeleportType::TeleportPhysics);
 		Listener->ParkForBeat(FVector(60.0f, -305.0f, AIGPrologueWorldScene::FourthFloorZ), 180.0f);

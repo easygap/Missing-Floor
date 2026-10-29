@@ -31,7 +31,12 @@ namespace IGPuzzleTwo
 	// BuildLobby erects behind the connector's north wall; duplicated by the
 	// same rule every night director follows, because the scene's coordinate
 	// namespace is .cpp-local.
-	const FVector BoothDoorHinge(112.0f, -235.0f, 0.0f);
+	// 관리실 문은 폭 120 cm 연결통로로 열린다. 문짝(106 cm)이 통로 쪽으로 90도쯤 서 있으면 통로가 24 cm만
+	// 남아, 사람도 위층 사람도 문짝을 지나가게 된다. 그래서 경첩 축을 문틀 앞면(Y -246.5) 바로 앞에 두고 문을
+	// 통로 벽에 붙도록 거의 다 젖혀 연다. 닫힌 문짝은 문틀 앞면에 맞춰 선다.
+	const FVector BoothDoorHinge(112.0f, -250.0f, 0.0f);
+	// 다 젖힌 문짝의 레버가 벽에 닿지 않게 10도를 남긴다.
+	constexpr float BoothDoorOpenYaw = -170.0f;
 	// Desk top is Z=76.  The 2.8 cm ledger rests at Z=77.5, never at the old
 	// upright-paper centre that made it intersect and appear to float.
 	const FVector FairCopyLocation(120.0f, -103.0f, 77.5f);
@@ -210,7 +215,9 @@ bool AIGMissingFloorPuzzleTwoDirector::Configure(AIGPrologueWorldScene* InScene)
 		BoothDoor->ConfigurePrototypeVisuals(CubeMesh, DarkPlasticMaterial, MetalMaterial,
 			FVector(6, AIGPrologueWorldScene::WideDoorLeafWidth, 204));
 	}
-	BoothDoor->SetOpenYaw(-95.0f);
+	BoothDoor->SetOpenYaw(IGPuzzleTwo::BoothDoorOpenYaw);
+	// 다른 문(1초에 95도 남짓)과 비슷한 빠르기로 돈다.
+	BoothDoor->SetSwingDuration(1.5f);
 	SetHourActive(false);
 
 	// The fair copy: what the building admits happened.

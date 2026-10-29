@@ -38,9 +38,12 @@ private:
 	float FeetZ() const;
 	/**
 	 * -IGListenerPursuitShots. 내려오는 길에 4층 참, 3·4층 사이 서쪽 계단, 3층 출입구의 고정 카메라로 몸이 디딤판과
-	 * 벽에 어떻게 얹히는지 찍는다. 유담은 옥상에 둔 그대로라 위층 사람 걸음은 검사와 같다. 카메라마다 작업등을 둔다.
+	 * 벽에 어떻게 얹히는지 찍고, 1층에서는 관리실 문(닫힌 것, 열어 둔 문 옆을 지나는 것)을 찍는다. 유담은 옥상에
+	 * 둔 그대로라 위층 사람 걸음은 검사와 같다. 카메라마다 작업등을 둔다.
 	 */
 	void UpdateShots();
+	/** Index 카메라로 화면을 돌린다. 이번에 돌렸으면 true(그 프레임은 아직 예전 화면이다). */
+	bool ViewFromShotCamera(int32 Index);
 	void Shoot(const TCHAR* Name);
 
 	TWeakObjectPtr<AIGListenerEntity> Entity;

@@ -75,6 +75,8 @@ private:
 	void ProbeCeiling();
 	/** From에서 To로 가되 벽·문짝·가구에 막히면 그 면을 따라 미끄러진 자리를 준다. */
 	FVector SlideAlongWalls(const FVector& From, const FVector& To) const;
+	/** 발밑 자락 둘레에서 가장 높은 바닥으로 몸을 올리거나 내린다. DeltaSeconds가 0이면 바로 맞춘다. */
+	void FollowFloor(float DeltaSeconds);
 	UStaticMeshComponent* AddPart(
 		const TCHAR* Name,
 		USceneComponent* Parent,
@@ -127,6 +129,8 @@ private:
 	bool bPaper = false;
 	/** 벽에 막히면 면을 따라 미끄러진다. 어둑시니만 켠다. */
 	bool bSlideAlongWalls = false;
+	/** 발밑 바닥 높이를 따라간다. 문간 단을 넘는 손님만 켠다. 높이는 목표가 아니라 바닥이 정한다. */
+	bool bFollowFloor = false;
 	/** 검사 실행에서 빚은 몸이 벽·문·천장을 지나는지 잰다(CLIP_AUDIT). */
 	FIGClipAudit ClipAudit;
 };

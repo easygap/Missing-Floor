@@ -277,6 +277,18 @@ private:
 	FVector GetDoorOutside() const;
 	/** 문이 열리면 몸이 서는 문간 바깥 자리(바닥). */
 	FVector GetDoorThreshold() const;
+	/**
+	 * 문이 도는 동안 몸이 서는 자리(바닥). 403호 문은 복도 쪽으로 열리니 문짝이 쓸고 가는 반경 밖의
+	 * 복도이고, 안으로 열리는 5층 철문은 문간 바깥 그대로다.
+	 */
+	FVector GetGuestDoorWait() const;
+	/**
+	 * 손님이 Goal로 갈 때 이번에 향할 자리. 문 안팎을 오가면 문짝 가운데 줄을 따라 문간을 똑바로
+	 * 지나고, 안쪽 길목 점(403호 신발장 앞, 5층 열린 문짝 끝 너머)에서 꺾는다.
+	 */
+	FVector RouteGuestTo(const FVector& From, const FVector& Goal) const;
+	/** RouteGuestTo를 따라 Goal까지 가는 길이(cm). */
+	float GetGuestRouteLength(const FVector& From, const FVector& Goal) const;
 	/** 들어와 둘러보는 방 가운데(바닥). */
 	FVector GetGuestRoomCenter() const;
 	/** 401호(0)와 402호(1) 문 앞, 노크하는 손 높이. */

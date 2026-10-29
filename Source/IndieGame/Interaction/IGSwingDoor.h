@@ -89,6 +89,8 @@ public:
 
 	/** Swing direction/extent; negative yaw opens toward local -Y. */
 	void SetOpenYaw(float InOpenYaw) { OpenYaw = InOpenYaw; }
+	/** 다 열고 닫는 데 걸리는 시간. 크게 젖히는 문은 그만큼 길게 둬야 빠르게 휙 돌지 않는다. */
+	void SetSwingDuration(float InSeconds) { SwingDuration = FMath::Max(0.05f, InSeconds); }
 	/**
 	 * 문 밖에 무엇이 붙어 있어 이 각도까지만 열린다(0이면 막는 것이 없다). 열다 걸리면 문짝이 거기서
 	 * 덜컥 서고 OnOpenBlocked가 온다. 닫는 것은 평소대로다. 밤2 문 앞에 엎드린 그가 쓴다.
