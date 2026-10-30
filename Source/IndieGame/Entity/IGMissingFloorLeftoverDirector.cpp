@@ -113,7 +113,7 @@ namespace IGLeftover
 	 * 게시판 밖인 X 568에서 판 앞면(-148.6)에 맞춰 두면 종이가 벽에서 3.6 cm 떠 있다.
 	 */
 	const FVector CollectionNoticeSpot(568.0f, -145.0f, 150.0f);
-	/** 필로티 적치 자리(뒷벽 앞). 낮2와 밤3 동안 마대와 상자가 쌓인다. */
+	/** 필로티 적치 자리(뒷벽 앞). 낮2 동안 마대와 상자가 쌓인다. */
 	const FVector LoadingSpot(-150.0f, -262.0f, 0.0f);
 
 	constexpr double DayOneDoorWaitSeconds = 26.0;
@@ -1641,7 +1641,7 @@ void AIGMissingFloorLeftoverDirector::BuildDayProps()
 			});
 		CollectionNotice->OnReadStateChanged.AddDynamic(this, &AIGMissingFloorLeftoverDirector::HandleNoticeRead);
 	}
-	// 필로티 적치 자리의 마대와 상자. 낮2부터 밤3까지 있다가 수거차가 가져간다.
+	// 필로티 적치 자리의 마대와 상자. 낮2에 쌓여 있다가 셋째 밤에 내놓고 새벽에 수거차가 가져간다.
 	// 뒷벽 앞면은 Y -240(X -90 서쪽)·-245(동쪽)이고 문짝은 -244까지 나온다. 평대차는 X -175 서쪽이다.
 	// 예전 자리에서는 상자가 벽을 10 cm, 마대가 벽·문을 3~6 cm 파고들었고 마대 하나는 평대차 짐판을 뚫었다.
 	SpawnProp(FName(TEXT("Day.Load1")), IGLeftover::Mesh(TEXT("SM_WasteSack")),
@@ -1743,10 +1743,12 @@ void AIGMissingFloorLeftoverDirector::RefreshDay()
 void AIGMissingFloorLeftoverDirector::RefreshLoadingArea()
 {
 	const int32 Night = GetNightIndex();
-	// 낮2(밤2 다음)부터 셋째 밤까지 필로티에 쌓여 있다. 셋째 밤이 끝난 새벽에 수거차가 가져간다. 밤2에는 아직 없다.
-	// 그가 빈 손수레를 가지러 나가는 밤이고, 짐은 그 손수레로 낮에 내다 쌓는다. 밤 번호는 밤이 시작할 때 바뀌어서
-	// 번호만 보면 밤2에도 쌓여 있었고, 뒷벽에 접어 세운 손수레를 판재가 뚫고 지나갔다.
-	const bool bStacked = !IsLegacyRun() && ((Night == 2 && !bHourActive) || (Night == 3 && bHourActive));
+	// 낮2(밤2 다음)에만 필로티 뒷벽 앞에 쌓여 있다. 밤2에는 아직 없다. 그가 빈 손수레를 가지러 나가는 밤이고, 짐은
+	// 그 손수레로 낮에 내다 쌓는다. 셋째 밤에는 새벽 수거를 앞두고 내놓아 필로티에 없고, 새벽에 수거차가 가져간다.
+	// 짐이 뒷벽에서 34~60 cm를 차지하면 밤 셔터까지 50~76 cm만 남는데, 셋째 밤에는 관리인이 순찰로 오가고 위층 사람이
+	// 내려오는 길이라 관리인은 마대와 판재를 뚫고 지나갔고 위층 사람은 상자에 걸려 섰다. 밤 번호는 밤이 시작할 때
+	// 바뀐다. 번호만 보면 밤2에도 쌓여 있어서 뒷벽에 접어 세운 손수레를 판재가 뚫고 지나갔다.
+	const bool bStacked = !IsLegacyRun() && Night == 2 && !bHourActive;
 	for (const TCHAR* Key : {TEXT("Day.Load1"), TEXT("Day.Load2"), TEXT("Day.Load3"), TEXT("Day.Load4"), TEXT("Day.Load5")})
 	{
 		ShowProp(FName(Key), bStacked);

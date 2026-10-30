@@ -219,6 +219,7 @@ void AIGManagerPatrol::BeginPlay()
 	BuildSkeletalBody();
 	ShowBody(false);
 	BuildGraph();
+	ClipAudit.Start(TEXT("manager"));
 }
 
 bool AIGManagerPatrol::BuildSkeletalBody()
@@ -261,6 +262,11 @@ bool AIGManagerPatrol::BuildSkeletalBody()
 	// 걸음 동작이 바운드 밖으로 팔과 발을 낸다.
 	Component->SetBoundsScale(1.4f);
 	Component->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	// 관통 측정은 화면 없이 돈다. 그대로 두면 뼈가 첫 자세로 굳은 채 잰다.
+	if (IGClipAudit::IsRequested())
+	{
+		Component->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	}
 	BodySkeletal = Component;
 	Workwear->SetStaticMesh(nullptr);
 	HeadHands->SetStaticMesh(nullptr);
@@ -316,6 +322,7 @@ void AIGManagerPatrol::Configure(
 
 void AIGManagerPatrol::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ClipAudit.Report();
 	GetWorldTimerManager().ClearTimer(DutyTimer);
 	GetWorldTimerManager().ClearTimer(EscortTimer);
 	if (AIGNightLoopDirector* Loop = NightLoop.Get())
@@ -1218,6 +1225,14 @@ void AIGManagerPatrol::Tick(const float DeltaSeconds)
 	if (!bOnDuty || !Player.IsValid())
 	{
 		return;
+	}
+	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다. 끌고 가는 손수레는 손이 손잡이를 쥐고 있다.
+	if (ClipAudit.IsOn() && BodySkeletal)
+	{
+		ClipAudit.Measure(BodySkeletal, GetFeet() + FVector(0.0f, 0.0f, 100.0f),
+			bErrandCartAttached ? ErrandCart.Get() : static_cast<const AActor*>(Player.Get()),
+			StaticEnum<EIGManagerPatrolState>()->GetNameStringByValue(static_cast<int64>(State))
+				+ (bErrand ? TEXT(".errand") : (bKeyHunt ? TEXT(".hunt") : TEXT(""))));
 	}
 	switch (State)
 	{

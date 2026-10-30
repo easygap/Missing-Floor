@@ -1285,6 +1285,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			return;
 		}
 		Check(Narrative->GetLeftover().JeongwooState == FName(TEXT("Trapped")), TEXT("n3_jeongwoo_trapped"));
+		// 적치 짐은 새벽 수거를 앞두고 내놓아 필로티에 없다. 관리인 순찰과 위층 사람이 지나는 길이다.
+		Check(!IGLeftoverProbe::PilotiPileShown(Director), TEXT("n3_piloti_pile_put_out"));
 		Check(Director->GetJeongwoo() && Director->GetJeongwoo()->IsShown(), TEXT("n3_jeongwoo_behind_board"));
 		Check(Lining && Lining->GetHeldGap() == FName(TEXT("Storage.Narrow")), TEXT("n3_lining_presses_work_gap"));
 		if (Lining)

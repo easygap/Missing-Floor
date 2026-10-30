@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Entity/IGClipAudit.h"
 #include "IGManagerPatrol.generated.h"
 
 class AIGListenerEntity;
@@ -356,6 +357,8 @@ private:
 	TObjectPtr<UStaticMesh> ErrandCartOpenMesh;
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> ErrandCartFoldedMesh;
+	/** 검사 실행에서 몸이 벽·문·소품을 지나는지 잰다(IGClipAudit). */
+	FIGClipAudit ClipAudit;
 	/** 2·3·4층 계단실 방화문. */
 	mutable TArray<TWeakObjectPtr<AIGSwingDoor>> FireDoors;
 	mutable bool bFireDoorResolved = false;

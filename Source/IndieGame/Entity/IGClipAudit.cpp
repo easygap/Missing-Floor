@@ -30,7 +30,8 @@ namespace IGClipAudit
 			const TCHAR* const Flags[] = {
 				TEXT("IGClipAudit"), TEXT("IGListenerPursuitProbe"), TEXT("IGGuestDoorsProbe"),
 				TEXT("IGCaptureVarietyProbe"), TEXT("IGHorrorRegressionProbe"), TEXT("IGStairSensorProbe"),
-				TEXT("IGNightFourHammerProbe"), TEXT("IGBathroomProbe"), TEXT("IGFireDoorProbe"), TEXT("IGNightFlowProbe")};
+				TEXT("IGNightFourHammerProbe"), TEXT("IGBathroomProbe"), TEXT("IGFireDoorProbe"), TEXT("IGNightFlowProbe"),
+				TEXT("IGManagerKeyHuntProbe"), TEXT("IGLeftoverProbe")};
 			for (const TCHAR* Flag : Flags)
 			{
 				if (FParse::Param(FCommandLine::Get(), Flag))
