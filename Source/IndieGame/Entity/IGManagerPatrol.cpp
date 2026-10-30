@@ -380,10 +380,15 @@ void AIGManagerPatrol::BuildGraph()
 	Route.Reset();
 
 	// 1층. 관리실 문 앞 연결통로에서 나와 주차장을 지나 계단탑으로 간다.
-	RestNode = AddNode(FVector(165.0f, -275.0f, 0.0f), false);
+	// 관리실 문 앞. 닫힌 문짝(Y -250 언저리)에서 25 cm면 북쪽 팔이 문짝 속에 들어갔다.
+	RestNode = AddNode(FVector(165.0f, -287.0f, 0.0f), false);
+	// 관리실 문은 경첩(112, -250)에서 연결통로 북벽 쪽으로 10도 기울어 열려 있어 문짝 끝이 (8, -268)까지 나온다. 문 앞에서
+	// 곧장 서쪽으로 가면 문짝과 25 cm 남짓이라 북쪽 팔이 문짝을 뚫고 지나갔다. 통로 가운데로 한 번 비켜 간다.
+	const int32 BoothFront = AddNode(FVector(115.0f, -315.0f, 0.0f), false);
 	const int32 Connector = AddNode(FVector(-40.0f, -300.0f, 0.0f), false);
 	const int32 Bay = AddNode(FVector(-230.0f, -295.0f, 0.0f), false);
-	LinkNodes(RestNode, Connector);
+	LinkNodes(RestNode, BoothFront);
+	LinkNodes(BoothFront, Connector);
 	LinkNodes(Connector, Bay);
 	// 밤2 손수레 심부름 길. 안쪽 방 간이침대 곁에서 문 안쪽, 문 바깥(관리실), 관리실 문 안쪽을
 	// 지나 문 밖으로. 손수레는 필로티 뒷벽에 사슬로 묶여 있고, 돌아와서는 관리실 문 동쪽
@@ -468,7 +473,11 @@ void AIGManagerPatrol::BuildGraph()
 	// 열쇠를 찾으러 갈 때만 밟는 길(밤3, 한 번). 4층 복도 서쪽 끝 옥상 계단 밑에서 403호 문
 	// 동쪽까지, 옥상 계단과 옥상 철문, 물탱크 통로, 5층 철문 앞이다. 403호 문은 바깥으로 열려
 	// 문짝이 복도 서쪽을 쓸고 지나서 문 동쪽에 선다. 옥상 철문은 계단 쪽으로 열려서 문선
-	// 110 cm 아래 단에서 연다. 5층 철문은 안으로 열려 문 앞 한 걸음에 선다. 손전등을 든 손이
+	// 128 cm 아래 아홉째 단에서 연다. 단 가장자리(110 cm)에 서면 두 단에 걸쳐 발이 위 단 속에 묻혔고, 서 있는 자세의
+	// 앞발이 19 cm 앞이라 단 한가운데(122 cm)에서도 열째 단 앞면에 발끝이 들어갔다.
+	// 계단 점은 단 한가운데 디딤판 높이라 그 사이를 곧게 가면 계단 기울기와 같다. 옥상에 나와서는 문틀 동쪽
+	// 기둥(Y 226)과 계단실 동쪽 벽 끝을 북쪽으로 비켜 돌아 물탱크 통로로 든다. 문 앞에서 곧장 통로로 꺾으면 허리와
+	// 팔이 기둥을 뚫고 지나갔다. 5층 철문은 안으로 열려 문 앞 한 걸음에 선다. 손전등을 든 손이
 	// 몸 앞 40 cm라 그보다 붙어 서면 닫힌 문짝 너머를 비춘다.
 	const float FourthZ = AIGPrologueWorldScene::GetStoreyFloorZ(3);
 	const int32 RoofStairFoot = AddNode(FVector(-262.0f, -292.0f, FourthZ), false, true);
@@ -477,10 +486,12 @@ void AIGManagerPatrol::BuildGraph()
 	const int32 HalfLanding = AddNode(FVector(-277.5f, -150.0f, FourthZ + 72.0f), true, true);
 	const int32 HalfLandingEnd = AddNode(FVector(-277.5f, -125.0f, FourthZ + 72.0f), true, true);
 	const int32 UpperFlight = AddNode(FVector(-277.5f, -100.0f, 980.0f), true, true);
-	const int32 RoofDoorInside = AddNode(FVector(-277.5f, 110.0f, 1142.3f), true, true);
+	const int32 RoofDoorInside = AddNode(FVector(-277.5f, 92.0f, 1133.0f), true, true);
+	const int32 TopStep = AddNode(FVector(-277.5f, 186.0f, 1201.0f), true, true);
 	const int32 TopTread = AddNode(FVector(-277.5f, 208.5f, 1200.0f), true, true);
-	const int32 RoofOutside = AddNode(FVector(-277.5f, 245.0f, 1200.0f), false, true);
-	const int32 PassageWest = AddNode(FVector(-200.0f, 225.0f, 1200.0f), false, true);
+	const int32 RoofOutside = AddNode(FVector(-277.5f, 265.0f, 1200.0f), false, true);
+	const int32 PassageWest = AddNode(FVector(-175.0f, 258.0f, 1200.0f), false, true);
+	const int32 PassageMiddle = AddNode(FVector(-110.0f, 235.0f, 1200.0f), false, true);
 	const int32 PassageEast = AddNode(FVector(130.0f, 220.0f, 1200.0f), false, true);
 	AnnexFrontNode = AddNode(FVector(130.0f, 390.0f, 1200.0f), false, true);
 	LinkNodes(Doorways[3], RoofStairFoot);
@@ -490,10 +501,12 @@ void AIGManagerPatrol::BuildGraph()
 	LinkNodes(HalfLanding, HalfLandingEnd);
 	LinkNodes(HalfLandingEnd, UpperFlight);
 	LinkNodes(UpperFlight, RoofDoorInside);
-	LinkNodes(RoofDoorInside, TopTread);
+	LinkNodes(RoofDoorInside, TopStep);
+	LinkNodes(TopStep, TopTread);
 	LinkNodes(TopTread, RoofOutside);
 	LinkNodes(RoofOutside, PassageWest);
-	LinkNodes(PassageWest, PassageEast);
+	LinkNodes(PassageWest, PassageMiddle);
+	LinkNodes(PassageMiddle, PassageEast);
 	LinkNodes(PassageEast, AnnexFrontNode);
 
 	HuntStops.Reset();
