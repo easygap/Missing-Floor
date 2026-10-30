@@ -43,6 +43,8 @@ public:
 	static int32 FloorOfFeet(float FeetZ);
 	/** 계단탑 안(층 참, 반 층 참, 계단)인가. */
 	static bool IsInStairCore(const FVector& Feet);
+	/** 1층 관리실 안이나 그 문간인가. 안팎을 오가는 걸음은 자세 길로 드나든다. */
+	static bool IsInBooth(const FVector& Feet);
 
 	/** 2·3·4층 층 참에서 되돌아서는 길. 어디서 어느 쪽을 보던 몸이 어디로 가는가. */
 	enum class ELandingUTurn : uint8

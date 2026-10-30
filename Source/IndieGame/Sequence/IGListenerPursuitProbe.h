@@ -87,6 +87,8 @@ private:
 	// 촬영
 	bool bShots = false;
 	bool bClipShots = false;
+	/** 관리실 책상 앞까지 들어갔었다. 확인 컷에서 들어가는 길과 나오는 길을 가른다. */
+	bool bBoothVisited = false;
 	TArray<TWeakObjectPtr<ACameraActor>> ShotCameras;
 	int32 ActiveShotCamera = INDEX_NONE;
 	TSet<FName> ShotsTaken;

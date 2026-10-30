@@ -253,9 +253,9 @@ void AIGListenerPursuitProbe::UpdateShots()
 
 void AIGListenerPursuitProbe::UpdateClipShots(const FVector& At, const float Feet)
 {
-	// -IGListenerPursuitClipShots. 아직 남은 관통을 고를 때 보는 컷만 찍는다. 필로티에서 손수레를 지나는 몸(뒤질 때 동쪽으로,
-	// 쫓을 때 서쪽으로)과 관리실 문간으로 꺾어 들고 나오는 몸이다. 그 자리에 다가오면 미리 카메라를 돌려 두고, 그 자리에
-	// 들면 찍는다. 자리는 같은 빌드의 -IGClipAuditTrace에서 가장 깊이 묻힌 프레임이다.
+	// -IGListenerPursuitClipShots. 관통을 고치며 보는 컷만 찍는다. 필로티에서 손수레를 지나는 몸(뒤질 때 동쪽으로, 쫓을 때
+	// 서쪽으로)과 관리실 문간으로 꺾어 들고 나오는 몸이다. 그 자리에 다가오면 미리 카메라를 돌려 두고, 그 자리에 들면
+	// 찍는다. 손수레 자리는 -IGClipAuditTrace에서 가장 깊이 묻혔던 프레임, 관리실은 문간에 들고 나는 때다.
 	struct FSpot
 	{
 		const TCHAR* Name;
@@ -265,17 +265,21 @@ void AIGListenerPursuitProbe::UpdateClipShots(const FVector& At, const float Fee
 	};
 	const bool bGround = Feet < 60.0f;
 	const bool bCartLane = bGround && FMath::Abs(At.Y + 302.0f) < 12.0f;
-	const bool bBoothIn = bGround && At.Y > -275.0f && At.Y < -245.0f;
-	const bool bBoothOut = bGround && At.Y > -296.0f && At.Y < -240.0f;
+	// 관리실 책상 앞까지 들어갔다 나온 뒤면 나가는 길이다.
+	if (bGround && At.X > 100.0f && At.X < 230.0f && At.Y > -210.0f)
+	{
+		bBoothVisited = true;
+	}
+	const bool bBoothDoorway = bGround && At.X > 120.0f && At.X < 215.0f;
 	const FSpot Spots[] = {
 		{TEXT("clip-cart-search"), bCartLane && Phase >= 4 && Phase <= 5 && At.X > -330.0f && At.X < -215.0f,
 			bCartLane && Phase >= 4 && Phase <= 5 && At.X > -245.0f && At.X < -215.0f, IGPursuitProbe::CartCamera},
 		{TEXT("clip-cart-chase"), bCartLane && Phase == 6 && At.X > -165.0f && At.X < -60.0f,
 			bCartLane && Phase == 6 && At.X > -200.0f && At.X < -165.0f, IGPursuitProbe::CartCamera},
-		{TEXT("clip-booth-turn-in"), bGround && Phase >= 4 && At.X > 100.0f && At.X < 175.0f && At.Y > -320.0f && At.Y < -245.0f,
-			bBoothIn && Phase >= 4 && At.X > 155.0f && At.X < 170.0f, IGPursuitProbe::BoothDoorwayCamera},
-		{TEXT("clip-booth-turn-out"), bBoothOut && Phase >= 4 && At.X > 175.0f && At.X < 225.0f,
-			bBoothOut && Phase >= 4 && At.X > 225.0f && At.X < 240.0f, IGPursuitProbe::BoothDoorwayCamera},
+		{TEXT("clip-booth-turn-in"), bGround && Phase >= 4 && !bBoothVisited && At.X > 40.0f && At.X < 300.0f && At.Y < -240.0f,
+			bBoothDoorway && Phase >= 4 && !bBoothVisited && At.Y > -270.0f && At.Y < -240.0f, IGPursuitProbe::BoothDoorwayCamera},
+		{TEXT("clip-booth-turn-out"), bBoothDoorway && Phase >= 4 && bBoothVisited && At.Y > -260.0f,
+			bBoothDoorway && Phase >= 4 && bBoothVisited && At.Y > -300.0f && At.Y < -270.0f, IGPursuitProbe::BoothDoorwayCamera},
 	};
 	for (const FSpot& Spot : Spots)
 	{

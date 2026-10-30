@@ -518,6 +518,8 @@ private:
 	 * 두드리고 듣는다 — 403호 현관문과 같은 문법이다. 이 걸음을 막는 문을 돌려준다.
 	 */
 	AIGSwingDoor* FindClosedFireDoorOnLeg(const FVector& FromFeet, const FVector& ToFeet);
+	/** 자세 점 걸음(FromFeet에서 ToFeet)이 지나는 닫힌 문. 403호 문은 따로 맡는다. */
+	AIGSwingDoor* FindClosedDoorOnPoseLeg(const FVector& FromFeet, const FVector& ToFeet) const;
 	/**
 	 * 닫힌 문(방화문, 관리실 문)에 막혔다. 그는 문을 열지도 부수지도 않는다. 문에 대고
 	 * 세 번 두드리고, 귀를 대고 듣는다. 12초 안에 다시 막히면 듣기만 한다.

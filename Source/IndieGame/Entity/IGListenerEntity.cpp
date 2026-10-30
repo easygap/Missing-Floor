@@ -2891,6 +2891,44 @@ AIGSwingDoor* AIGListenerEntity::FindClosedFireDoorOnLeg(const FVector& FromFeet
 	return nullptr;
 }
 
+AIGSwingDoor* AIGListenerEntity::FindClosedDoorOnPoseLeg(const FVector& FromFeet, const FVector& ToFeet) const
+{
+	// 자세 점 걸음은 쓸지 않고 옮겨서 닫힌 문짝을 그대로 지난다(관리실 문). 몸 높이로 걸음을 그어 닫힌 문을 찾는다.
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGListenerPoseDoor), false, this);
+	if (const APawn* Player = CachedPlayer.Get())
+	{
+		Params.AddIgnoredActor(Player);
+	}
+	FCollisionObjectQueryParams Objects;
+	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
+	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+	const FVector Lift(0.0f, 0.0f, 40.0f);
+	for (int32 Try = 0; Try < 4; ++Try)
+	{
+		FHitResult Hit;
+		if (!World->LineTraceSingleByObjectType(Hit, FromFeet + Lift, ToFeet + Lift, Objects, Params))
+		{
+			return nullptr;
+		}
+		AIGSwingDoor* Door = Cast<AIGSwingDoor>(Hit.GetActor());
+		if (Door && !Door->IsOpen() && Door != HomeDoor.Get())
+		{
+			return Door;
+		}
+		if (!Hit.GetActor())
+		{
+			return nullptr;
+		}
+		Params.AddIgnoredActor(Hit.GetActor());
+	}
+	return nullptr;
+}
+
 bool AIGListenerEntity::ArriveAtRoomDoor()
 {
 	AIGBathroomRefuge* Room = RoomAhead.Get();
@@ -3329,7 +3367,10 @@ bool AIGListenerEntity::MoveTowardGoal(
 	// 403호 안에서 집 안의 목표로 갈 때는 건물 길을 쓰지 않는다. 건물 길에는 집 안 점이 없어서, 길을 짜면 현관 밖 문 앞
 	// 점까지 나갔다가 들어오는 길이 됐다. 욕실 문 앞으로 가던 몸이 신발장 앞 모서리를 왼팔로 쓸고 현관 단에 걸려 섰다.
 	const bool bWithinHome = IsInsideHome(GetActorLocation()) && IsInsideHome(GoalFeet);
-	if (!bTurning && !bLandingReversal && (bWithinHome || CanCrawlStraightTo(GoalFeet)))
+	// 관리실 안팎을 오갈 때도 곧게 기지 않고 자세 길로 드나든다. 쫓기 시작한 몸이 책상 앞에서 바깥 소리 쪽으로 곧게
+	// 기어 나가며 폭 110 cm 문간에서 몸을 꺾어 문설주와 문짝을 쓸었다.
+	const bool bCrossingBooth = FIGBuildingNav::IsInBooth(GetFeetLocation()) != FIGBuildingNav::IsInBooth(GoalFeet);
+	if (!bTurning && !bLandingReversal && !bCrossingBooth && (bWithinHome || CanCrawlStraightTo(GoalFeet)))
 	{
 		ClearNavPath();
 		const bool bArrived = CrawlTowards(Goal, Speed, DeltaSeconds, true);
@@ -3363,6 +3404,17 @@ bool AIGListenerEntity::MoveTowardGoal(
 		BlockingDoor = ClosedFireDoor;
 		ClearNavPath();
 		return true;
+	}
+	if (NavPathPose[NavPathIndex])
+	{
+		if (AIGSwingDoor* ClosedDoor = FindClosedDoorOnPoseLeg(Feet, Target))
+		{
+			// 닫힌 관리실 문 앞. 자세 길로 꺾어 들다가 그 앞에서 선다.
+			bBlockedByClosedDoor = true;
+			BlockingDoor = ClosedDoor;
+			ClearNavPath();
+			return true;
+		}
 	}
 	// 계단탑 안은 미리 고른 길(계단 가운데, 층 참 가운데)만 지나므로 쓸지 않고 따라간다.
 	// 디딤판 경사에서 층 참으로 올라선 몸은 참 바닥보다 몇 cm 낮아서, 쓸며 가면 참
@@ -3749,45 +3801,38 @@ FVector AIGListenerEntity::FitFacing(const FVector& Desired) const
 		return Blocked;
 	};
 	// 지금 방향에서 그 방향까지 제자리로 도는 사이를 20도마다 본다. 고른 방향이 비어도 도는 동안 머리나 발이 벽을
-	// 쓸고 지나갔다(4층 복도 동쪽 끝에서 83도를 돌며 종아리가 벽 속을 지났다).
+	// 쓸고 지나갔다(4층 복도 동쪽 끝에서 83도를 돌며 종아리가 벽 속을 지났다). 선 몸 둘레(IsBodyClearAt)로도 본다.
+	// 몇 줄 긋는 것으로는 2 m 몸을 다 덮지 못해, 관리실 책상 앞에서 50도 넘게 돌며 엉덩이와 다리가 벽을 쓸었다.
 	const float CurrentYaw = GetActorRotation().Yaw;
-	const auto TurnIsClear = [&CountBlocked, CurrentYaw](const float Yaw)
+	const FVector Feet = GetFeetLocation();
+	const auto TurnIsClear = [this, &CountBlocked, CurrentYaw, &Feet](const float Yaw)
 	{
 		const float Turn = FMath::FindDeltaAngleDegrees(CurrentYaw, Yaw);
 		const int32 Steps = FMath::FloorToInt(FMath::Abs(Turn) / 20.0f);
 		for (int32 Step = 1; Step <= Steps; ++Step)
 		{
-			if (CountBlocked(FRotator(0.0f, CurrentYaw + Turn * Step / (Steps + 1), 0.0f).Vector()) > 0)
+			const float StepYaw = CurrentYaw + Turn * Step / (Steps + 1);
+			if (CountBlocked(FRotator(0.0f, StepYaw, 0.0f).Vector()) > 0 || !IsBodyClearAt(Feet, StepYaw))
 			{
 				return false;
 			}
 		}
-		return true;
+		return FMath::Abs(Turn) < 5.0f || IsBodyClearAt(Feet, Yaw);
 	};
-	// 바라는 쪽에서 가까운 차례로 돌려 보며, 그 방향도 비고 돌아가는 사이도 비는 방향을 고른다. 그런 방향이 없고 지금
-	// 방향이 비면 돌지 않고 그대로 듣는다. 다 막히면 가장 덜 막히는 방향이다. 복도(폭 140 cm)에서는 몸이 벽을 향해
-	// 서지 못하고 복도를 따라 비스듬히 선다.
+	// 바라는 쪽에서 가까운 차례로 돌려 보며, 그 방향도 비고 돌아가는 사이도 비는 방향을 고른다. 그런 방향이 없으면 돌지
+	// 않고 지금 방향 그대로 듣는다. 복도(폭 140 cm)에서는 몸이 벽을 향해 서지 못하고 복도를 따라 비스듬히 선다.
 	static const float Offsets[] = {0.0f, 15.0f, -15.0f, 30.0f, -30.0f, 45.0f, -45.0f, 60.0f, -60.0f, 75.0f, -75.0f,
 		90.0f, -90.0f, 120.0f, -120.0f, 150.0f, -150.0f, 180.0f};
 	const float WantedYaw = Wanted.Rotation().Yaw;
-	FVector Best = Wanted;
-	int32 BestBlocked = TNumericLimits<int32>::Max();
 	for (const float Offset : Offsets)
 	{
 		const FVector Facing = FRotator(0.0f, WantedYaw + Offset, 0.0f).Vector();
-		const int32 Blocked = CountBlocked(Facing);
-		if (Blocked == 0 && TurnIsClear(WantedYaw + Offset))
+		if (CountBlocked(Facing) == 0 && TurnIsClear(WantedYaw + Offset))
 		{
 			return Facing;
 		}
-		if (Blocked < BestBlocked)
-		{
-			BestBlocked = Blocked;
-			Best = Facing;
-		}
 	}
-	const FVector Current = FRotator(0.0f, CurrentYaw, 0.0f).Vector();
-	return CountBlocked(Current) == 0 ? Current : Best;
+	return FRotator(0.0f, CurrentYaw, 0.0f).Vector();
 }
 
 FVector AIGListenerEntity::GetListeningFacing()

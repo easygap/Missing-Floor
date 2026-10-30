@@ -91,6 +91,25 @@ namespace IGBuildingNav
 	const FVector JunctionToEastFlightTurn[] = {
 		FVector(-400.0f, -305.0f, 180.0f), FVector(-375.0f, -295.0f, 147.5f), FVector(-370.0f, -287.5f, 145.0f),
 		FVector(-407.5f, -235.0f, 90.0f)};
+
+	// 1층 관리실에 들고 나는 자세. 폭 120 cm 연결통로에서 폭 110 cm 문간으로 2 m 몸을 꺾어 넣으면 팔과 등이 문설주와
+	// 관리실 남벽에 30 cm 넘게 묻혔다. 계단참과 같은 방법으로 문설주, 통로 남벽, 열린 관리실 문짝(경첩 112, -250에서
+	// -170도), 책상 다리, 동쪽 벽에 기댄 석고보드와 페인트 통을 넣고 골랐다. 들 때는 통로를 따라 오던 쪽에서 비스듬히
+	// 문간으로 머리를 넣고, 나갈 때는 책상 앞에서 뒤로 물러나며 가는 쪽으로 돈다. 서쪽 길은 열린 문짝이 통로로 비스듬히
+	// 나와 있어 통로 가운데에서 남쪽으로 7 cm 비켜 선다. 둘레에서 벽까지 1 cm 넘게 남는다.
+	const FVector BoothInFromWest[] = {
+		FVector(60.0f, -312.5f, 0.0f), FVector(105.0f, -297.5f, 20.0f), FVector(115.0f, -292.5f, 27.5f),
+		FVector(152.5f, -260.0f, 72.5f), FVector(160.0f, -252.5f, 75.0f), FVector(162.5f, -242.5f, 77.5f),
+		FVector(160.0f, -195.0f, 90.0f)};
+	const FVector BoothInFromEast[] = {
+		FVector(270.0f, -305.0f, 180.0f), FVector(202.5f, -282.5f, 135.0f), FVector(187.5f, -267.5f, 130.0f),
+		FVector(182.5f, -257.5f, 112.5f), FVector(160.0f, -195.0f, 90.0f)};
+	const FVector BoothOutToEast[] = {
+		FVector(160.0f, -195.0f, 90.0f), FVector(160.0f, -252.5f, 75.0f), FVector(132.5f, -305.0f, 35.0f),
+		FVector(142.5f, -310.0f, 32.5f), FVector(270.0f, -305.0f, 0.0f)};
+	const FVector BoothOutToWest[] = {
+		FVector(160.0f, -195.0f, 90.0f), FVector(182.5f, -257.5f, 112.5f), FVector(207.5f, -302.5f, 147.5f),
+		FVector(207.5f, -302.5f, 155.0f), FVector(162.5f, -310.0f, 162.5f), FVector(60.0f, -312.5f, 180.0f)};
 }
 
 TConstArrayView<FVector> FIGBuildingNav::GetLandingUTurn(const ELandingUTurn Turn)
@@ -283,16 +302,18 @@ void FIGBuildingNav::Build()
 	{
 		const int32 Bay = Add(FVector(-230.0f, -300.0f, 0.0f), false);
 		const int32 ConnectorWest = Add(FVector(-40.0f, -305.0f, 0.0f), false);
-		const int32 Booth = Add(FVector(165.0f, -305.0f, 0.0f), false);
 		const int32 ConnectorEast = Add(FVector(330.0f, -305.0f, 0.0f), false);
 		const int32 LobbyDoor = Add(FVector(440.0f, -305.0f, 0.0f), false);
 		const int32 Lobby = Add(FVector(560.0f, -290.0f, 0.0f), false, true);
 		const int32 LiftFront = Add(FVector(680.0f, -305.0f, 0.0f), false, true);
-		LinkChain({Doorways[0], Bay, ConnectorWest, Booth, ConnectorEast, LobbyDoor, Lobby, LiftFront});
-		// 관리실. 문턱을 넘어 책상 앞까지. 안쪽 방 문은 열리지 않는다.
-		const int32 BoothThreshold = Add(FVector(165.0f, -232.0f, 0.0f), false);
-		const int32 BoothInside = Add(FVector(165.0f, -185.0f, 0.0f), false, true);
-		LinkChain({Booth, BoothThreshold, BoothInside});
+		LinkChain({Doorways[0], Bay, ConnectorWest, ConnectorEast, LobbyDoor, Lobby, LiftFront});
+		// 관리실. 책상 앞에서 북쪽(책상 밑)을 본다. 안쪽 방 문은 열리지 않는다. 드나드는 길은 통로를 따라 오던 쪽에
+		// 따라 다른 자세 길이다.
+		const int32 BoothInside = Add(FVector(160.0f, -195.0f, 0.0f), false, true);
+		AddTurn(ConnectorWest, BoothInside, MakeArrayView(BoothInFromWest), 0.0f, false);
+		AddTurn(ConnectorEast, BoothInside, MakeArrayView(BoothInFromEast), 0.0f, false);
+		AddTurn(BoothInside, ConnectorEast, MakeArrayView(BoothOutToEast), 0.0f, false);
+		AddTurn(BoothInside, ConnectorWest, MakeArrayView(BoothOutToWest), 0.0f, false);
 	}
 }
 
@@ -306,10 +327,17 @@ bool FIGBuildingNav::IsInStairCore(const FVector& Feet)
 	return AIGPrologueWorldScene::IsInsideStairCore(Feet);
 }
 
+bool FIGBuildingNav::IsInBooth(const FVector& Feet)
+{
+	// 관리실 안(X 60..280, Y -225..-85)과 연결통로 북벽 두께의 문간(Y -245..-225).
+	return FMath::Abs(Feet.Z) < 50.0f && Feet.X > 60.0f && Feet.X < 280.0f && Feet.Y > -245.0f && Feet.Y < -85.0f;
+}
+
 int32 FIGBuildingNav::FindNearest(const UWorld* World, const FVector& Feet, const AActor* Ignore) const
 {
 	const int32 Floor = FloorOfFeet(Feet.Z);
 	const bool bInCore = IsInStairCore(Feet);
+	const bool bInBooth = IsInBooth(Feet);
 	int32 BestSeen = INDEX_NONE;
 	float BestSeenDistance = TNumericLimits<float>::Max();
 	int32 BestAny = INDEX_NONE;
@@ -320,6 +348,12 @@ int32 FIGBuildingNav::FindNearest(const UWorld* World, const FVector& Feet, cons
 		const FIGBuildingNavNode& Node = Nodes[Index];
 		// 도는 자세 점은 앞 점에서만 들어간다. 길 가운데에서 시작하면 반대로 돌게 된다.
 		if (Node.bPose)
+		{
+			continue;
+		}
+		// 관리실 안 점은 관리실 안에서만, 바깥 점은 바깥에서만 고른다. 관리실 앞 통로를 지나던 몸에게 문간 너머
+		// 책상 앞 점이 더 가까워서, 거기까지 옆걸음으로 들어갔다가 자세 길로 나왔다.
+		if (IsInBooth(Node.Feet) != bInBooth)
 		{
 			continue;
 		}
