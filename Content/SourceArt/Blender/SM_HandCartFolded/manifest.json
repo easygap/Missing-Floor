@@ -1,0 +1,30 @@
+{
+  "name": "SM_HandCartFolded",
+  "mesh_class": "prop",
+  "fbx": "SM_HandCartFolded.fbx",
+  "textures": {
+    "D": "SM_HandCartFolded_D.png",
+    "N": "SM_HandCartFolded_N.png",
+    "ORM": "SM_HandCartFolded_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 2700,
+  "bounds_m": {
+    "min": [
+      0.0,
+      -0.3,
+      0.0
+    ],
+    "max": [
+      0.2032,
+      0.3,
+      0.905
+    ]
+  },
+  "origin": "bottom-center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "손잡이를 접어 세운 평대차. 바퀴 쪽이 벽(X 0), 매트 쪽 +X, 폭 Y 60, 높이 90, 두께 약 20"
+}

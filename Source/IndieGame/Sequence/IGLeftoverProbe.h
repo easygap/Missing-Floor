@@ -90,6 +90,8 @@ private:
 	void DumpHint(const TCHAR* Where);
 	/** 302호 안 소품의 받침·관통을 실제 메시로 잰다(에디터 실행에서만). 판·장롱·쐐기를 움직인 상태마다 부른다. */
 	void AuditStorage(const TCHAR* Label);
+	/** 필로티 뒷벽과 관리실 앞 연결통로 소품(손수레, 적치 짐)의 받침·관통을 잰다. 밤2 심부름 앞뒤에 부른다. */
+	void AuditPiloti(const TCHAR* Label);
 	/** -IGLeftoverShots면 302호를 네 자리에서 손전등으로 비춰 찍는다. 다 찍었으면 true. */
 	bool StorageViews(const TCHAR* Label);
 	int32 StorageViewIndex = 0;
@@ -230,6 +232,8 @@ private:
 	 * 검수 카메라로 한 장씩 찍는다(관통·뒤집힘 검수, 카메라에 작업등). 찍는 동안 검사 단계는 멈춘다.
 	 */
 	void QueueLiningInspection(AIGLiningEntity* Lining);
+	/** -IGLeftoverShots: 같은 검수 카메라로 정한 자리에서 한 장 찍는다(밤2 손수레 심부름). */
+	void QueueFixedShot(const TCHAR* Name, const FVector& Eye, const FVector& Look);
 	/** 검수 카메라 차례를 진행한다. 찍는 중이면 true. */
 	bool TickLiningInspection(float DeltaSeconds);
 	struct FLiningShot
@@ -237,6 +241,8 @@ private:
 		FString Name;
 		FVector Eye = FVector::ZeroVector;
 		FVector Look = FVector::ZeroVector;
+		/** 펼쳐 둔 종이를 찍고 닫을 때까지 기다린다. 기다리는 동안 검사 단계는 멈추지 않는다. */
+		bool bAfterNote = false;
 	};
 	TArray<FLiningShot> LiningShots;
 	TSet<FString> LiningMoments;

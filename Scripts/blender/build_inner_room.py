@@ -20,7 +20,7 @@ if HERE not in sys.path:
 
 import bpy  # noqa: E402
 import bmesh  # noqa: E402
-from mathutils import Vector  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import ig_blender_lib as ig  # noqa: E402
 
@@ -275,6 +275,62 @@ def build_hand_cart():
                    notes="필로티 평대차. 길이 X 90(손잡이 +X), 폭 Y 60, 손잡이 높이 98")
 
 
+def build_hand_cart_folded():
+    """손잡이를 접어 세운 평대차(Content/SourceArt/AI/HandCartFolded_20261029). 밤 동안 벽에 세워 둔다.
+
+    펼친 손수레와 같은 판·매트·바퀴를 쓰고, 손잡이를 경첩(손잡이 쪽 끝, 판 위)에서 매트 위로 눕힌 뒤 경첩 쪽 끝을 바닥에
+    대고 세운다. 손잡이 가로대에 사슬을 감아 자물쇠를 건다. 시안에는 바퀴가 한쪽에 셋으로 그려졌지만 펼친 손수레처럼
+    넷이다. 바퀴 쪽이 벽에 닿는 X 0, 매트 쪽(바깥)이 +X, 폭은 Y ±30, 바닥이 Z 0이다.
+    """
+    deck = tiled("CartDeck", "T_CabinetPaintGrey", 0.5, metallic=0.4, tint=(0.7, 0.72, 0.74))
+    mat = flat("CartMat", (0.03, 0.03, 0.032), 0.85)
+    blue = flat("CartHandle", (0.05, 0.08, 0.30), 0.45, metallic=0.5)
+    rubber = flat("CartWheel", (0.02, 0.02, 0.02), 0.8)
+    steel = flat("CartChain", (0.40, 0.40, 0.38), 0.45, metallic=0.9)
+    brass = flat("CartPadlock", (0.52, 0.38, 0.14), 0.4, metallic=0.9)
+    L, W = 0.90, 0.60
+    deck_z = 0.15
+    parts = [bx("Deck", (L, W, 0.03), (0, 0, deck_z), deck, bevel=0.004),
+             bx("Mat", (L - 0.04, W - 0.04, 0.006), (0, 0, deck_z + 0.018), mat)]
+    # 펼쳤을 때 높이 z이던 손잡이 점은 접으면 경첩에서 (z - deck_z)만큼 -X 쪽, 매트 위 관 반지름 높이에 눕는다.
+    hx = L * 0.5 - 0.02
+    lay = deck_z + 0.021 + 0.013
+    y0, y1 = -W * 0.5 + 0.03, W * 0.5 - 0.03
+
+    def fold(z):
+        return hx - (z - deck_z)
+
+    parts.append(tube("Handle", [(hx, y0, lay), (fold(0.98), y0, lay), (fold(0.98), y1, lay), (hx, y1, lay)], 0.013, blue))
+    bar_x = fold(0.60)
+    parts.append(tube("HandleBar", [(bar_x, y0, lay), (bar_x, y1, lay)], 0.010, blue))
+    for y in (y0, y1):
+        parts.append(bx(f"Hinge{y:+.2f}", (0.05, 0.022, 0.026), (hx, y, deck_z + 0.028), deck))
+    for x in (-L * 0.5 + 0.08, L * 0.5 - 0.08):
+        for y in (-W * 0.5 + 0.07, W * 0.5 - 0.07):
+            parts.append(part(ig.cylinder(f"Wheel{x:+.2f}{y:+.2f}", 0.05, 0.03, location=(x, y, 0.05), rotation=(math.pi * 0.5, 0, 0), material=rubber)))
+            parts.append(bx(f"Fork{x:+.2f}{y:+.2f}", (0.04, 0.05, 0.07), (x, y, 0.105), deck))
+    # 가로대를 감은 사슬. 세우면 아래(경첩 쪽, 지금 +X)로 늘어진다. 첫 고리가 가로대를 감고 고리마다 90도 돈다.
+    link = 0.026
+    for i in range(6):
+        rotation = (math.pi * 0.5, 0, 0) if i % 2 == 0 else (0, 0, 0)
+        parts.append(part(ig.torus(f"Link{i}", 0.012, 0.0032, location=(bar_x + i * link, 0.02, lay + 0.004), rotation=rotation,
+                                   major_segments=16, minor_segments=8, material=steel)))
+    lock_x = bar_x + 6 * link + 0.016
+    parts.append(part(ig.torus("Shackle", 0.011, 0.0028, location=(lock_x - 0.014, 0.02, lay + 0.004), rotation=(math.pi * 0.5, 0, 0),
+                               major_segments=16, minor_segments=8, material=steel)))
+    parts.append(bx("Padlock", (0.034, 0.030, 0.013), (lock_x + 0.010, 0.02, lay + 0.004), brass, bevel=0.003))
+    # 세운다. 매트 쪽(+Z)이 바깥(+X)으로, 경첩 쪽(+X)이 바닥(-Z)으로 가도록 Y축으로 90도 돌린 뒤 바닥과 벽에 맞춘다.
+    stand = Matrix.Rotation(math.radians(90.0), 4, "Y")
+    for ob in parts:
+        ob.data.transform(stand)
+    low = Vector((min(v.co.x for ob in parts for v in ob.data.vertices), 0.0,
+                  min(v.co.z for ob in parts for v in ob.data.vertices)))
+    for ob in parts:
+        ob.data.transform(Matrix.Translation(-low))
+    ig.build_asset("SM_HandCartFolded", "prop", parts, OUT, collision_parts=None, texture_size=1024,
+                   notes="손잡이를 접어 세운 평대차. 바퀴 쪽이 벽(X 0), 매트 쪽 +X, 폭 Y 60, 높이 90, 두께 약 20")
+
+
 # --------------------------------------------------------------------------
 # 마대·상자
 # --------------------------------------------------------------------------
@@ -412,6 +468,7 @@ if __name__ == "__main__":
         "SM_InnerRoomCabinet": build_cabinet,
         "SM_InnerRoomWorkbench": build_workbench,
         "SM_HandCart": build_hand_cart,
+        "SM_HandCartFolded": build_hand_cart_folded,
         "SM_WasteSack": build_sack,
         "SM_StorageBox": build_box,
         "SM_RemovedBoards": build_removed_boards,

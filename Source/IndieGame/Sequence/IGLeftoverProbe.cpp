@@ -66,6 +66,30 @@ namespace IGLeftoverProbe
 	const FName ToolPouch(TEXT("ToolPouch"));
 	const FName DohaBox(TEXT("DohaBox"));
 	const FName Cover(TEXT("Cover"));
+
+	/** 손수레가 지금 쓰는 메시 이름. 접어 세운 것과 펴서 끄는 것을 가른다. */
+	FName CartMeshName(const AIGMissingFloorLeftoverDirector* Director)
+	{
+		const AActor* Cart = Director ? Director->GetHandCart() : nullptr;
+		const UStaticMeshComponent* Mesh = Cart ? Cast<UStaticMeshComponent>(Cart->GetRootComponent()) : nullptr;
+		return Mesh && Mesh->GetStaticMesh() ? Mesh->GetStaticMesh()->GetFName() : NAME_None;
+	}
+
+	/** 필로티 적치 짐(판재)이 보이는지. */
+	bool PilotiPileShown(const AIGMissingFloorLeftoverDirector* Director)
+	{
+		const UStaticMeshComponent* Boards = Director ? Director->GetPropForTesting(FName(TEXT("Day.Load5"))) : nullptr;
+		return Boards && Boards->IsVisible() && !Boards->bHiddenInGame;
+	}
+
+	/** 손수레가 이 자리(바퀴 쪽 면 가운데)에 접어 세워져 있는지. */
+	bool CartStandsAt(const AIGMissingFloorLeftoverDirector* Director, const FVector& Spot)
+	{
+		const AActor* Cart = Director ? Director->GetHandCart() : nullptr;
+		return Cart && CartMeshName(Director) == FName(TEXT("SM_HandCartFolded"))
+			&& FVector::Dist2D(Cart->GetActorLocation(), Spot) < 5.0f
+			&& FMath::Abs(FMath::FindDeltaAngleDegrees(Cart->GetActorRotation().Yaw, -90.0f)) < 2.0f;
+	}
 }
 
 AIGLeftoverProbe::AIGLeftoverProbe()
@@ -762,6 +786,20 @@ void AIGLeftoverProbe::QueueLiningInspection(AIGLiningEntity* Lining)
 		*Up.ToCompactString());
 }
 
+void AIGLeftoverProbe::QueueFixedShot(const TCHAR* Name, const FVector& Eye, const FVector& Look)
+{
+	if (!bShots || bCleanShots)
+	{
+		return;
+	}
+	FLiningShot Shot;
+	Shot.Name = Name;
+	Shot.Eye = Eye;
+	Shot.Look = Look;
+	Shot.bAfterNote = true;
+	LiningShots.Add(Shot);
+}
+
 bool AIGLeftoverProbe::TickLiningInspection(const float DeltaSeconds)
 {
 	if (LiningShots.IsEmpty())
@@ -792,6 +830,10 @@ bool AIGLeftoverProbe::TickLiningInspection(const float DeltaSeconds)
 		LiningFill->RegisterComponent();
 	}
 	const FLiningShot& Shot = LiningShots[0];
+	if (Shot.bAfterNote && HintShotCountdown >= 0.0f && LiningShotWait < 0.0f)
+	{
+		return false;
+	}
 	if (LiningShotWait < 0.0f)
 	{
 		LiningCamera->SetActorLocationAndRotation(Shot.Eye, (Shot.Look - Shot.Eye).Rotation());
@@ -1035,6 +1077,12 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		{
 			// 필로티에서 사슬을 푸는 중이다. 안쪽 방으로 들어간다.
 			Check(Mok->IsOnErrand() && !Mok->IsErrandReturning(), TEXT("n2_manager_busy_at_cart"));
+			// 필로티에서 손수레 서쪽 끝에 서서 사슬을 푸는 그와, 뒷벽에 접어 세운 손수레.
+			Check(!IGLeftoverProbe::PilotiPileShown(Director)
+					&& IGLeftoverProbe::CartStandsAt(Director, FVector(-205.0f, -240.0f, 0.0f)),
+				TEXT("n2_cart_alone_on_piloti_wall"));
+			AuditPiloti(TEXT("n2.piloti.chained"));
+			QueueFixedShot(TEXT("n2_cart_unchain"), FVector(-95.0f, -335.0f, 170.0f), FVector(-245.0f, -280.0f, 85.0f));
 			Stand(FVector(120.0f, 40.0f, 0.0f), FVector(50.0f, 150.0f, 100.0f));
 			Shoot(TEXT("n2_inner_room_heap"));
 			Use(Target(TEXT("PieceB")));
@@ -1132,6 +1180,9 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		}
 		if (Step == 5 && bErrandReturning)
 		{
+			// 필로티 뒷벽에 접어 세워 둔 손수레를 펴서 끌고 온다.
+			Check(IGLeftoverProbe::CartMeshName(Director) == FName(TEXT("SM_HandCart")), TEXT("n2_cart_unfolded_to_push"));
+			QueueFixedShot(TEXT("n2_cart_lowered"), FVector(-95.0f, -335.0f, 170.0f), FVector(-215.0f, -295.0f, 50.0f));
 			// 손수레 소리가 다가온다. 책상 밑으로 다시 숨는다.
 			Stand(FVector(160.0f, -175.0f, 0.0f), FVector(160.0f, -110.0f, 80.0f));
 			for (TActorIterator<AIGHidingSpot> It(GetWorld()); It; ++It)
@@ -1151,6 +1202,10 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Check(Director->GetInnerDoor() && (!Director->GetInnerDoor()->IsOpen() || Director->GetInnerDoor()->IsSwinging()),
 				TEXT("n2_inner_door_closed_behind_him"));
 			Check(Narrative->HasBeatPlayed(FName(TEXT("Leftover.N2.Errand"))), TEXT("n2_errand_beat"));
+			// 관리실 동쪽 연결통로 북벽에 다시 접어 세웠다. 펼친 채 두면 통로를 60 cm만 남기고 막는다.
+			Check(IGLeftoverProbe::CartStandsAt(Director, FVector(330.0f, -245.0f, 0.0f)), TEXT("n2_cart_folded_at_booth"));
+			AuditPiloti(TEXT("n2.piloti.parked"));
+			QueueFixedShot(TEXT("n2_cart_parked"), FVector(200.0f, -335.0f, 165.0f), FVector(330.0f, -255.0f, 45.0f));
 			for (TActorIterator<AIGMissingFloorNightTwoBeatDirector> It(GetWorld()); It; ++It)
 			{
 				Check(It->GetReturnStage() == EIGNightTwoReturnStage::AwaitingExit, TEXT("n2_return_armed_after_errand"));
@@ -1207,6 +1262,11 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		Check(Director->TryJeongwooTalk(true, true), TEXT("day2_gloves_talk"));
 		Check(Narrative->HasLeftover(EIGLeftoverList::Taken, FName(TEXT("JeongwooGlovesGiven"))), TEXT("day2_gloves_returned"));
 		Check(!Director->TryJeongwooTalk(true, true), TEXT("day2_talk_once"));
+		// 필로티 뒷벽에 적치 짐이 쌓였고, 손수레는 관리실 앞에 접어 세워 둔 채다. 둘이 한 벽을 나눠 쓰지 않는다.
+		Check(IGLeftoverProbe::PilotiPileShown(Director)
+				&& IGLeftoverProbe::CartStandsAt(Director, FVector(330.0f, -245.0f, 0.0f)),
+			TEXT("day2_pile_stacked_cart_at_booth"));
+		AuditPiloti(TEXT("day2.piloti.stacked"));
 		Next(30);
 		return;
 
@@ -2645,6 +2705,25 @@ void AIGLeftoverProbe::AuditStorage(const TCHAR* Label)
 	if (Player.IsValid())
 	{
 		Options.Ignore.Add(Player.Get());
+	}
+	const IGPlacementAudit::FResult Result = IGPlacementAudit::Run(GetWorld(), Options);
+	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_PLACEMENT label=%s measured=%d props=%d attached=%d floating=%d penetrations=%d"),
+		Label, Result.bMeasured ? 1 : 0, Result.Props, Result.Attached, Result.Floating, Result.Penetrations);
+}
+
+void AIGLeftoverProbe::AuditPiloti(const TCHAR* Label)
+{
+	IGPlacementAudit::FOptions Options;
+	Options.Label = Label;
+	// 계단탑 1층 출입구(X -340)에서 관리실 동쪽 연결통로까지, 밤 셔터(Y -350)에서 뒷벽(Y -240)까지.
+	Options.Area = FBox(FVector(-345.0, -360.0, -5.0), FVector(400.0, -232.0, 260.0));
+	if (Player.IsValid())
+	{
+		Options.Ignore.Add(Player.Get());
+	}
+	if (Manager.IsValid())
+	{
+		Options.Ignore.Add(Manager.Get());
 	}
 	const IGPlacementAudit::FResult Result = IGPlacementAudit::Run(GetWorld(), Options);
 	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_PLACEMENT label=%s measured=%d props=%d attached=%d floating=%d penetrations=%d"),

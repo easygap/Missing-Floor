@@ -84,7 +84,7 @@ $builders = [ordered]@{
 	'apartment_fixtures' = @('SM_ApartmentWindow', 'SM_VenetianBlind', 'SM_WallSwitch', 'SM_ShoeCabinet')
 	'villa_window' = @('SM_VillaWindow')
 	'store_products' = @('SM_TobaccoCabinet', 'SM_WindowBar', 'SM_HotWaterDispenser', 'SM_TrashBin')
-	'inner_room' = @('SM_InnerRoomCot', 'SM_InnerRoomCabinet', 'SM_InnerRoomWorkbench', 'SM_HandCart', 'SM_WasteSack', 'SM_StorageBox', 'SM_RemovedBoards', 'SM_BareBulb', 'SM_LinedWallPanelA', 'SM_LinedWallPanelB')
+	'inner_room' = @('SM_InnerRoomCot', 'SM_InnerRoomCabinet', 'SM_InnerRoomWorkbench', 'SM_HandCart', 'SM_HandCartFolded', 'SM_WasteSack', 'SM_StorageBox', 'SM_RemovedBoards', 'SM_BareBulb', 'SM_LinedWallPanelA', 'SM_LinedWallPanelB')
 	'leftover_props' = @('SM_AccessHatchFrameS', 'SM_AccessHatchFrameM', 'SM_AccessHatchFrameL', 'SM_AccessHatchDoorS', 'SM_AccessHatchDoorM', 'SM_AccessHatchDoorL', 'SM_HatchSealPlug', 'SM_CoverPieceA', 'SM_CoverPieceB', 'SM_CoverPieceC', 'SM_CoverFlapA', 'SM_CoverFlapB', 'SM_CoverFrame', 'SM_CoverClamp', 'SM_ToolPouch', 'SM_GlovePouch', 'SM_InspectionOverlayBoard', 'SM_BentShieldSheet', 'SM_FinishBoard', 'SM_TimberWedge', 'SM_LeftoverLabelJeongwoo', 'SM_LeftoverLabelDoha', 'SM_LeftoverLabelMarked', 'SM_CollectionNoticePrint')
 	'annex_wall_props' = @('SM_AnnexOverlayTop', 'SM_AnnexJointTape', 'SM_AnnexJointTorn', 'SM_AnnexBatten', 'SM_AnnexInnerFixings', 'SM_AnnexAngleClip', 'SM_AnnexBraceFrame', 'SM_HammerDent')
 }

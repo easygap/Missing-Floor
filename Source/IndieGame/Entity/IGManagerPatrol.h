@@ -14,6 +14,7 @@ class UAnimSequence;
 class USceneComponent;
 class USkeletalMeshComponent;
 class USpotLightComponent;
+class UStaticMesh;
 class UStaticMeshComponent;
 class UIGMissingFloorNarrativeSubsystem;
 class UIGNoiseSubsystem;
@@ -105,15 +106,18 @@ public:
 	/**
 	 * 밤2, 관리실 장부를 맞춰 본 뒤(P2). 안쪽 방에서 깨어 문을 열고 필로티로 빈 손수레를
 	 * 가지러 나간다. 사슬을 한참 풀고, 손수레를 밀고 돌아와 관리실 앞에 세우고, 안쪽 방에
-	 * 다시 눕는다. 보고 듣고 쫓고 잡는 것은 밤3 순찰과 같다. Cart는 필로티에 묶어 둔 손수레,
-	 * ParkTransform은 돌아와 세워 둘 자리다. 안쪽 방 문은 감독이 미리 연다.
+	 * 다시 눕는다. 보고 듣고 쫓고 잡는 것은 밤3 순찰과 같다. Cart는 필로티에 손잡이를 접어 세워 묶어 둔
+	 * 손수레, ParkTransform은 돌아와 다시 접어 세워 둘 자리다. OpenMesh는 펴서 끌 때, FoldedMesh는 세워 둘 때의
+	 * 모습이다. 안쪽 방 문은 감독이 미리 연다.
 	 */
 	void StartCartErrand(
 		AIGSwingDoor* InnerDoor,
 		AIGSwingDoor* BoothDoor,
 		AActor* Cart,
 		const FTransform& ParkTransform,
-		float FetchSeconds);
+		float FetchSeconds,
+		UStaticMesh* OpenMesh = nullptr,
+		UStaticMesh* FoldedMesh = nullptr);
 	bool IsOnErrand() const { return bErrand; }
 	/**
 	 * 밤3, 302호에 정우가 갇혀 있는 동안은 3층(302호와 복도 끝)을 돌지 않고 3층 소리도 보러 가지
@@ -347,6 +351,11 @@ private:
 	TObjectPtr<UAnimSequence> GrabAnim;
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> ActiveAnim;
+	/** 밤2 심부름에서 펴서 끄는 손수레와 다시 접어 세운 손수레. 심부름 동안 한쪽은 아무도 쓰지 않아 여기서 붙든다. */
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> ErrandCartOpenMesh;
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> ErrandCartFoldedMesh;
 	/** 2·3·4층 계단실 방화문. */
 	mutable TArray<TWeakObjectPtr<AIGSwingDoor>> FireDoors;
 	mutable bool bFireDoorResolved = false;

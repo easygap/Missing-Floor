@@ -300,13 +300,15 @@ void FIGBuildingNav::Build()
 
 	// 1층. 계단탑 출입구에서 필로티를 지나 연결통로, 관리실, 로비와 승강기 앞까지.
 	{
-		const int32 Bay = Add(FVector(-230.0f, -300.0f, 0.0f), false);
+		// 필로티는 출입구에서 연결통로 어귀까지 한 번에 곧게 지난다. 밤 셔터(Y -350)와 뒷벽에 접어 세운 손수레(Y -260)
+		// 사이가 90 cm라, 그 사이에 길 점을 두면 몸이 셔터를 비키며 그 점을 비스듬히 찾아가다 사선으로 섰다. 뒷발은 뒷벽에,
+		// 왼팔은 셔터에 묻혔다.
 		const int32 ConnectorWest = Add(FVector(-40.0f, -305.0f, 0.0f), false);
 		const int32 ConnectorEast = Add(FVector(330.0f, -305.0f, 0.0f), false);
 		const int32 LobbyDoor = Add(FVector(440.0f, -305.0f, 0.0f), false);
 		const int32 Lobby = Add(FVector(560.0f, -290.0f, 0.0f), false, true);
 		const int32 LiftFront = Add(FVector(680.0f, -305.0f, 0.0f), false, true);
-		LinkChain({Doorways[0], Bay, ConnectorWest, ConnectorEast, LobbyDoor, Lobby, LiftFront});
+		LinkChain({Doorways[0], ConnectorWest, ConnectorEast, LobbyDoor, Lobby, LiftFront});
 		// 관리실. 책상 앞에서 북쪽(책상 밑)을 본다. 안쪽 방 문은 열리지 않는다. 드나드는 길은 통로를 따라 오던 쪽에
 		// 따라 다른 자세 길이다.
 		const int32 BoothInside = Add(FVector(160.0f, -195.0f, 0.0f), false, true);

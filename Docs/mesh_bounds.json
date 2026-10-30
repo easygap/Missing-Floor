@@ -1356,6 +1356,18 @@
         49.4371
       ]
     },
+    "SM_HandCartFolded": {
+      "origin": [
+        10.16,
+        -0.0,
+        45.25
+      ],
+      "extent": [
+        10.16,
+        30.0,
+        45.25
+      ]
+    },
     "SM_HangingWorkVest": {
       "origin": [
         0.0215,

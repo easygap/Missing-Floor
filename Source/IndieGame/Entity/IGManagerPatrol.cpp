@@ -117,6 +117,12 @@ namespace IGManagerPatrol
 	// 느리고, 바퀴 하나가 일정하게 끽끽거린다. 사슬은 6~9초마다 한 번씩 철컥거린다.
 	constexpr float CartPushSpeed = 50.0f;
 	const FVector CartHoldOffset(60.0f, 0.0f, 0.0f);
+	/** 사슬을 풀 때 보는 쪽. 필로티 뒷벽에 접어 세운 손수레의 서쪽 끝에 서서 손수레 가운데를 본다. */
+	constexpr float CartUnchainYaw = 40.0f;
+	/** 손수레를 펴서 내려놓을 때 보는 쪽. 손수레가 필로티를 따라 그의 앞(동쪽)에 길게 눕는다. */
+	constexpr float CartLowerYaw = 5.0f;
+	/** 사슬을 다 풀어 갈 무렵 손잡이 쪽으로 돌아서는 시간. */
+	constexpr double CartGrabTurnSeconds = 1.0;
 	constexpr double CartTurnSeconds = 5.0;
 	constexpr double CartParkSeconds = 2.0;
 	constexpr double ChainIntervalMin = 6.0;
@@ -379,7 +385,9 @@ void AIGManagerPatrol::BuildGraph()
 	ErrandInnerInNode = AddErrandNode(FVector(240.0f, 15.0f, 0.0f));
 	ErrandInnerOutNode = AddErrandNode(FVector(240.0f, -118.0f, 0.0f));
 	ErrandOfficeNode = AddErrandNode(FVector(165.0f, -200.0f, 0.0f));
-	ErrandCartNode = AddErrandNode(FVector(-205.0f, -345.0f, 0.0f));
+	// 손수레 서쪽 끝 앞. 손수레(X -235..-175, Y -260..-240)에 손이 닿고, 밤 셔터(Y -350)와 뒷벽에서 50 cm 넘게 떨어진다.
+	// 예전 자리(-205, -345)는 등이 셔터에 묻혔고, 접어 세운 손수레까지 팔이 닿지 않았다.
+	ErrandCartNode = AddErrandNode(FVector(-265.0f, -300.0f, 0.0f));
 	ErrandParkNode = AddErrandNode(FVector(235.0f, -290.0f, 0.0f));
 	LinkNodes(ErrandCotNode, ErrandInnerInNode);
 	LinkNodes(ErrandInnerInNode, ErrandInnerOutNode);
@@ -1752,7 +1760,9 @@ void AIGManagerPatrol::StartCartErrand(
 	AIGSwingDoor* BoothDoor,
 	AActor* Cart,
 	const FTransform& ParkTransform,
-	const float FetchSeconds)
+	const float FetchSeconds,
+	UStaticMesh* OpenMesh,
+	UStaticMesh* FoldedMesh)
 {
 	if (bErrand || !Nodes.IsValidIndex(ErrandCotNode))
 	{
@@ -1762,6 +1772,8 @@ void AIGManagerPatrol::StartCartErrand(
 	ErrandBoothDoor = BoothDoor;
 	ErrandCart = Cart;
 	ErrandCartPark = ParkTransform;
+	ErrandCartOpenMesh = OpenMesh;
+	ErrandCartFoldedMesh = FoldedMesh;
 	ErrandFetchSeconds = FMath::Max(5.0f, FetchSeconds);
 	bErrand = true;
 	bErrandCartAttached = false;
@@ -1913,9 +1925,11 @@ void AIGManagerPatrol::TickErrand(const float DeltaSeconds)
 	{
 	case EErrandStep::Fetching:
 	{
-		// 손수레 앞에 서서 사슬을 푼다. 손전등은 손수레를 비춘다.
+		// 손수레 서쪽 끝에 서서 사슬을 푼다. 손전등은 손수레를 비춘다. 다 풀어 갈 무렵 동쪽으로 돌아서서, 펴서 내려놓은
+		// 손수레가 필로티를 따라 그의 앞에 눕게 한다. 벽을 본 채 펴면 손수레 앞쪽이 뒷벽 속에 들어간다.
 		AnimateGait(DeltaSeconds, 0.0f);
-		FaceYaw(90.0f, DeltaSeconds, 120.0f);
+		const bool bUnchained = Now - ErrandStepStart >= ErrandFetchSeconds - IGManagerPatrol::CartGrabTurnSeconds;
+		FaceYaw(bUnchained ? IGManagerPatrol::CartLowerYaw : IGManagerPatrol::CartUnchainYaw, DeltaSeconds, 120.0f);
 		if (const AActor* Cart = ErrandCart.Get())
 		{
 			AimTorch(Cart->GetActorLocation() + FVector(0.0f, 0.0f, 30.0f), DeltaSeconds);
@@ -2027,9 +2041,14 @@ void AIGManagerPatrol::AttachErrandCart(const bool bAttach, const bool bPark)
 		return;
 	}
 	bErrandCartAttached = bAttach;
+	UStaticMeshComponent* CartMesh = Cast<UStaticMeshComponent>(Cart->GetRootComponent());
 	if (bAttach)
 	{
-		// 손잡이(손수레 +X)가 그를 향하고, 몸은 그의 앞 60 cm에 온다.
+		// 접어 세워 둔 손수레를 펴서 끈다. 손잡이(손수레 +X)가 그를 향하고, 몸은 그의 앞 60 cm에 온다.
+		if (CartMesh && ErrandCartOpenMesh)
+		{
+			CartMesh->SetStaticMesh(ErrandCartOpenMesh);
+		}
 		Cart->AttachToComponent(Root, FAttachmentTransformRules::KeepWorldTransform);
 		Cart->SetActorRelativeLocation(IGManagerPatrol::CartHoldOffset);
 		Cart->SetActorRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
@@ -2045,6 +2064,11 @@ void AIGManagerPatrol::AttachErrandCart(const bool bAttach, const bool bPark)
 	Cart->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	if (bPark)
 	{
+		// 관리실 앞 벽에 다시 접어 세운다. 펼친 채 두면 연결통로를 60 cm만 남기고 막았다.
+		if (CartMesh && ErrandCartFoldedMesh)
+		{
+			CartMesh->SetStaticMesh(ErrandCartFoldedMesh);
+		}
 		Cart->SetActorTransform(ErrandCartPark);
 		return;
 	}

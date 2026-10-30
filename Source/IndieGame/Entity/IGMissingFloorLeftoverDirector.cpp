@@ -86,10 +86,14 @@ namespace IGLeftover
 	const FVector InnerLiningRest(50.0f, 170.0f, 112.0f);
 	/** 눌렸다 깨어나는 넓은 자리. 문 앞 빈 바닥. */
 	const FVector InnerRecovery(150.0f, 15.0f, 100.0f);
-	const FVector CartHome(-205.0f, -285.0f, 0.0f);
-	constexpr float CartHomeYaw = 270.0f;
-	const FVector CartPark(300.0f, -275.0f, 0.0f);
-	constexpr float CartParkYaw = 180.0f;
+	/**
+	 * 손잡이를 접어 세운 손수레 자리(바퀴가 벽에 닿는 면 가운데, 매트 쪽이 -Y). 필로티 뒷벽과, 심부름 뒤로는 관리실 동쪽
+	 * 연결통로 북벽이다. 펼친 채 두면 밤 셔터가 내려온 필로티(깊이 110 cm)를 90 cm, 연결통로(폭 120 cm)를 60 cm 막아
+	 * 위층 사람이 손수레를 뚫고 지나갔다.
+	 */
+	const FVector CartHome(-205.0f, -240.0f, 0.0f);
+	const FVector CartPark(330.0f, -245.0f, 0.0f);
+	constexpr float CartFoldedYaw = -90.0f;
 	/** 사슬을 푸는 시간. 깨는 장면(약 7초)과 오가는 길(약 20초)을 더하면 안쪽 방에 3분 남짓이다. */
 	constexpr float ErrandFetchSeconds = 125.0f;
 	constexpr float WakeToDoorSeconds = 7.5f;
@@ -1203,20 +1207,20 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 		Heap->OnCompleted.AddUObject(this, &AIGMissingFloorLeftoverDirector::HandleInnerTarget);
 	}
 
-	// 필로티 뒷벽에 사슬로 묶어 둔 평대차. 밤2에 그가 가지러 나간다.
+	// 필로티 뒷벽에 손잡이를 접어 세우고 사슬로 묶어 둔 평대차. 밤2에 그가 가지러 나가 펴서 끌고 온다.
 	Parameters.Name = TEXT("MissingFloorHandCart");
-	Cart = World->SpawnActor<AActor>(AActor::StaticClass(), FTransform(FRotator(0.0f, IGLeftover::CartHomeYaw, 0.0f), IGLeftover::CartHome), Parameters);
+	Cart = World->SpawnActor<AActor>(AActor::StaticClass(), FTransform(FRotator(0.0f, IGLeftover::CartFoldedYaw, 0.0f), IGLeftover::CartHome), Parameters);
 	if (Cart)
 	{
 		UStaticMeshComponent* CartMesh = NewObject<UStaticMeshComponent>(Cart, TEXT("CartMesh"));
 		CartMesh->SetMobility(EComponentMobility::Movable);
-		CartMesh->SetStaticMesh(IGLeftover::Mesh(TEXT("SM_HandCart")));
+		CartMesh->SetStaticMesh(IGLeftover::Mesh(TEXT("SM_HandCartFolded")));
 		CartMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 		CartMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		CartMesh->SetCanEverAffectNavigation(false);
 		Cart->SetRootComponent(CartMesh);
 		CartMesh->RegisterComponent();
-		Cart->SetActorTransform(FTransform(FRotator(0.0f, IGLeftover::CartHomeYaw, 0.0f), IGLeftover::CartHome));
+		Cart->SetActorTransform(FTransform(FRotator(0.0f, IGLeftover::CartFoldedYaw, 0.0f), IGLeftover::CartHome));
 	}
 }
 
@@ -1357,13 +1361,17 @@ void AIGMissingFloorLeftoverDirector::RefreshInnerRoom()
 			Hatch->SetSealed(Narrative && Narrative->HasLeftover(EIGLeftoverList::GapsSealed, Id));
 		}
 	}
-	// 손수레: 밤2 심부름이 끝난 뒤로는 관리실 앞에 세워 둔 채다.
+	// 손수레: 밤2 심부름이 끝난 뒤로는 관리실 앞에 접어 세워 둔 채다. 심부름을 못 봤어도 낮2부터는 그 손수레로 필로티에
+	// 짐을 내다 쌓은 뒤라 관리실 앞에 있다. 필로티 뒷벽은 적치 짐 자리다.
 	if (Cart && !(Manager && Manager->IsOnErrand()))
 	{
-		const bool bParked = HasBeat(IGLeftover::BeatNightTwoErrand);
-		Cart->SetActorTransform(bParked
-			? FTransform(FRotator(0.0f, IGLeftover::CartParkYaw, 0.0f), IGLeftover::CartPark)
-			: FTransform(FRotator(0.0f, IGLeftover::CartHomeYaw, 0.0f), IGLeftover::CartHome));
+		const bool bParked = HasBeat(IGLeftover::BeatNightTwoErrand) || Night >= 3 || (Night == 2 && !bHourActive);
+		if (UStaticMeshComponent* CartMesh = Cast<UStaticMeshComponent>(Cart->GetRootComponent()))
+		{
+			CartMesh->SetStaticMesh(IGLeftover::Mesh(TEXT("SM_HandCartFolded")));
+		}
+		Cart->SetActorTransform(FTransform(FRotator(0.0f, IGLeftover::CartFoldedYaw, 0.0f),
+			bParked ? IGLeftover::CartPark : IGLeftover::CartHome));
 	}
 }
 
@@ -1474,7 +1482,8 @@ void AIGMissingFloorLeftoverDirector::StartManagerErrand()
 	InnerDoor->BeginScriptedSwingWithLoudness(true, 0.3f, 1.0f);
 	SetBoothHooksEnabled(false);
 	Manager->StartCartErrand(InnerDoor, BoothDoor, Cart,
-		FTransform(FRotator(0.0f, IGLeftover::CartParkYaw, 0.0f), IGLeftover::CartPark), IGLeftover::ErrandFetchSeconds);
+		FTransform(FRotator(0.0f, IGLeftover::CartFoldedYaw, 0.0f), IGLeftover::CartPark), IGLeftover::ErrandFetchSeconds,
+		IGLeftover::Mesh(TEXT("SM_HandCart")), IGLeftover::Mesh(TEXT("SM_HandCartFolded")));
 	RefreshInnerRoom();
 	UE_LOG(LogTemp, Display, TEXT("LEFTOVER_N2 errand start"));
 }
@@ -1734,8 +1743,10 @@ void AIGMissingFloorLeftoverDirector::RefreshDay()
 void AIGMissingFloorLeftoverDirector::RefreshLoadingArea()
 {
 	const int32 Night = GetNightIndex();
-	// 낮2(밤2 다음)부터 셋째 밤까지 필로티에 쌓여 있다. 셋째 밤이 끝난 새벽에 수거차가 가져간다.
-	const bool bStacked = !IsLegacyRun() && (Night == 2 || (Night == 3 && bHourActive));
+	// 낮2(밤2 다음)부터 셋째 밤까지 필로티에 쌓여 있다. 셋째 밤이 끝난 새벽에 수거차가 가져간다. 밤2에는 아직 없다.
+	// 그가 빈 손수레를 가지러 나가는 밤이고, 짐은 그 손수레로 낮에 내다 쌓는다. 밤 번호는 밤이 시작할 때 바뀌어서
+	// 번호만 보면 밤2에도 쌓여 있었고, 뒷벽에 접어 세운 손수레를 판재가 뚫고 지나갔다.
+	const bool bStacked = !IsLegacyRun() && ((Night == 2 && !bHourActive) || (Night == 3 && bHourActive));
 	for (const TCHAR* Key : {TEXT("Day.Load1"), TEXT("Day.Load2"), TEXT("Day.Load3"), TEXT("Day.Load4"), TEXT("Day.Load5")})
 	{
 		ShowProp(FName(Key), bStacked);

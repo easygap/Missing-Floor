@@ -470,6 +470,11 @@ IGPlacementAudit::FResult IGPlacementAudit::Run(UWorld* World, const FOptions& O
 				{
 					continue;
 				}
+				// 하늘 돔(지름 수 km의 닫힌 구)은 모든 소품을 품고 있어 소품마다 그 속에 묻힌 것으로 잡힌다.
+				if (Box.GetExtent().GetMax() > 50000.0)
+				{
+					continue;
+				}
 				TSharedPtr<FMeshData>& Data = Meshes.FindOrAdd(Mesh);
 				if (!Data)
 				{

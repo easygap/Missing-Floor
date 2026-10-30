@@ -177,6 +177,7 @@ public:
 	AIGReadableNote* GetCollectionNotice() const { return CollectionNotice; }
 	AIGReadableNote* GetCabinetLedger() const { return CabinetLedger; }
 	AIGJeongwooFigure* GetJeongwoo() const { return Jeongwoo; }
+	AActor* GetHandCart() const { return Cart; }
 	AIGAccessHatch* GetHatch(FName Id) const;
 	AIGLeftoverTarget* FindTarget(FName Key) const;
 	/** 검사용. 세운 소품 하나(없으면 null). */
