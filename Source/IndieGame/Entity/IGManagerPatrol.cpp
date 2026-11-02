@@ -383,9 +383,10 @@ void AIGManagerPatrol::BuildGraph()
 	// 관리실 문 앞. 닫힌 문짝(Y -250 언저리)에서 25 cm면 북쪽 팔이 문짝 속에 들어갔다.
 	RestNode = AddNode(FVector(165.0f, -287.0f, 0.0f), false);
 	// 관리실 문은 경첩(112, -250)에서 연결통로 북벽 쪽으로 10도 기울어 열려 있어 문짝 끝이 (8, -268)까지 나온다. 문 앞에서
-	// 곧장 서쪽으로 가면 문짝과 25 cm 남짓이라 북쪽 팔이 문짝을 뚫고 지나갔다. 통로 가운데로 한 번 비켜 간다.
-	const int32 BoothFront = AddNode(FVector(115.0f, -315.0f, 0.0f), false);
-	const int32 Connector = AddNode(FVector(-40.0f, -300.0f, 0.0f), false);
+	// 곧장 서쪽으로 가면 문짝과 25 cm 남짓이라 북쪽 팔이 문짝을 뚫고 지나갔다. 통로 가운데로 비켜 가서 문짝 끝과
+	// 40 cm 넘게 떨어져 지난다. 더 남쪽(Y -318)에 두면 이 점에서 돌며 앞으로 내민 오른손이 남벽(Y -365)에 닿았다.
+	const int32 BoothFront = AddNode(FVector(115.0f, -312.0f, 0.0f), false);
+	const int32 Connector = AddNode(FVector(-40.0f, -308.0f, 0.0f), false);
 	const int32 Bay = AddNode(FVector(-230.0f, -295.0f, 0.0f), false);
 	LinkNodes(RestNode, BoothFront);
 	LinkNodes(BoothFront, Connector);
@@ -393,17 +394,32 @@ void AIGManagerPatrol::BuildGraph()
 	// 밤2 손수레 심부름 길. 안쪽 방 간이침대 곁에서 문 안쪽, 문 바깥(관리실), 관리실 문 안쪽을
 	// 지나 문 밖으로. 손수레는 필로티 뒷벽에 사슬로 묶여 있고, 돌아와서는 관리실 문 동쪽
 	// 연결통로에 세운다. 이 점들은 심부름 때만 쓴다(밤3 순찰은 안쪽 방에 몸이 없다).
-	ErrandCotNode = AddErrandNode(FVector(40.0f, 30.0f, 0.0f));
-	ErrandInnerInNode = AddErrandNode(FVector(240.0f, 15.0f, 0.0f));
-	ErrandInnerOutNode = AddErrandNode(FVector(240.0f, -118.0f, 0.0f));
+	// 안쪽 방 문은 동쪽 문설주(275, -80)에 달려 방 쪽으로 80도 열리면 동벽 곁에 서고, 동벽 판재는 Y 19부터다. 문 안쪽
+	// 점은 문짝이 쓸고 지나는 반경(70 cm) 밖, 판재 서쪽에 둔다. 문간 점은 문짝이 다 열린 뒤에만 밟는다. 관리실 쪽은
+	// 옮긴 책상 모서리(188, -137.5)와 동벽 석고보드, 페인트 통 사이를 지난다. 걸을 때 팔꿈치가 몸 가운데서 38 cm까지
+	// 벌어진다.
+	// 예전 길(240, 15)-(240, -118)은 판재와 책상 모서리를 뚫고 지나갔다.
+	ErrandCotNode = AddErrandNode(FVector(55.0f, 40.0f, 0.0f));
+	ErrandInnerInNode = AddErrandNode(FVector(195.0f, 25.0f, 0.0f));
+	// 문간 안쪽 점은 열린 문짝(이 높이에서 X 268)에서 서쪽으로 비켜 둔다. 문짝을 연 문간이 71 cm라 팔꿈치가 문설주
+	// 벽이나 문짝을 조금씩 스치는데, 길 점으로는 더 줄지 않는다.
+	ErrandDoorwayNode = AddErrandNode(FVector(230.0f, -50.0f, 0.0f));
+	ErrandDoorFrameNode = AddErrandNode(FVector(237.0f, -80.0f, 0.0f));
+	ErrandInnerOutNode = AddErrandNode(FVector(229.0f, -112.0f, 0.0f));
+	const int32 ErrandBoothEast = AddErrandNode(FVector(217.0f, -150.0f, 0.0f));
+	const int32 ErrandBoothSouth = AddErrandNode(FVector(206.5f, -164.0f, 0.0f));
 	ErrandOfficeNode = AddErrandNode(FVector(165.0f, -200.0f, 0.0f));
 	// 손수레 서쪽 끝 앞. 손수레(X -235..-175, Y -260..-240)에 손이 닿고, 밤 셔터(Y -350)와 뒷벽에서 50 cm 넘게 떨어진다.
 	// 예전 자리(-205, -345)는 등이 셔터에 묻혔고, 접어 세운 손수레까지 팔이 닿지 않았다.
 	ErrandCartNode = AddErrandNode(FVector(-265.0f, -300.0f, 0.0f));
 	ErrandParkNode = AddErrandNode(FVector(235.0f, -290.0f, 0.0f));
 	LinkNodes(ErrandCotNode, ErrandInnerInNode);
-	LinkNodes(ErrandInnerInNode, ErrandInnerOutNode);
-	LinkNodes(ErrandInnerOutNode, ErrandOfficeNode);
+	LinkNodes(ErrandInnerInNode, ErrandDoorwayNode);
+	LinkNodes(ErrandDoorwayNode, ErrandDoorFrameNode);
+	LinkNodes(ErrandDoorFrameNode, ErrandInnerOutNode);
+	LinkNodes(ErrandInnerOutNode, ErrandBoothEast);
+	LinkNodes(ErrandBoothEast, ErrandBoothSouth);
+	LinkNodes(ErrandBoothSouth, ErrandOfficeNode);
 	LinkNodes(ErrandOfficeNode, RestNode);
 	LinkNodes(Bay, ErrandCartNode);
 	LinkNodes(RestNode, ErrandParkNode);
@@ -748,7 +764,9 @@ void AIGManagerPatrol::SnapToRestNode()
 	DwellRemaining = 0.0f;
 	if (Nodes.IsValidIndex(RestNode))
 	{
-		SetActorLocation(Nodes[RestNode].Feet);
+		// 다음에 관리실 문을 나올 때 통로 쪽을 보고 나온다. 처음 놓인 대로 동쪽을 보고 서 있으면 걸음을 떼며 도는 동안
+		// 오른팔이 닫힌 관리실 문짝에 들어갔다.
+		SetActorLocationAndRotation(Nodes[RestNode].Feet, FRotator(0.0f, -90.0f, 0.0f));
 	}
 }
 
@@ -1918,14 +1936,15 @@ bool AIGManagerPatrol::WaitForErrandDoor(const float DeltaSeconds)
 	const int32 Next = Path[PathCursor];
 	const int32 Here = FindNearestNode(GetFeet());
 	AIGSwingDoor* Door = nullptr;
-	// 안쪽 방 문은 안팎 두 점 사이, 관리실 문은 관리실 안쪽 점과 문 밖 점 사이에 있다.
+	// 안쪽 방 문은 안팎 두 점 사이(문간 점을 거친다), 관리실 문은 관리실 안쪽 점과 문 밖 점 사이에 있다.
 	const auto Crosses = [&](const int32 A, const int32 B)
 	{
 		return (Here == A && Next == B) || (Here == B && Next == A)
 			|| (Next == B && FVector::Dist2D(GetFeet(), Nodes[A].Feet) < 60.0f)
 			|| (Next == A && FVector::Dist2D(GetFeet(), Nodes[B].Feet) < 60.0f);
 	};
-	if (Crosses(ErrandInnerInNode, ErrandInnerOutNode))
+	if (Crosses(ErrandInnerInNode, ErrandDoorwayNode) || Crosses(ErrandDoorwayNode, ErrandDoorFrameNode)
+		|| Crosses(ErrandDoorFrameNode, ErrandInnerOutNode))
 	{
 		Door = ErrandInnerDoor.Get();
 	}
@@ -2013,8 +2032,10 @@ void AIGManagerPatrol::TickErrand(const float DeltaSeconds)
 	{
 		return;
 	}
-	// 안쪽 방에 들어서면 문을 닫는다. 그 뒤로는 문을 다시 열지 않는다.
+	// 안쪽 방에 들어서면 문을 닫는다. 그 뒤로는 문을 다시 열지 않는다. 문 안쪽 점을 지나 간이침대로 가는 길에서만 닫는다.
+	// 문간에서 닫으면 닫히는 문짝이 몸을 쓸고, 문간을 건너는 걸음이 문을 기다리며 닫히는 문을 다시 열었다.
 	if (ErrandStep == EErrandStep::Returning && !bErrandDoorClosedBehind
+		&& PathCursor < Path.Num() && Path[PathCursor] == ErrandCotNode
 		&& FVector::Dist2D(GetFeet(), Nodes[ErrandInnerInNode].Feet) < 40.0f)
 	{
 		if (AIGSwingDoor* Door = ErrandInnerDoor.Get(); Door && Door->IsOpen() && !Door->IsSwinging())

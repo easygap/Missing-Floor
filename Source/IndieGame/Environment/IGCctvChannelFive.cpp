@@ -68,7 +68,7 @@ namespace IGCctvFive
 	constexpr float ExposureBias = 0.85f;
 
 	/** 녹화기 위 모니터의 액정 개구부. 씬과 같은 중심 높이를 쓴다. */
-	const FVector ScreenCenter(150.0f, -105.45f, AIGPrologueWorldScene::CctvScreenCenterZ);
+	const FVector ScreenCenter(123.0f, -105.45f, AIGPrologueWorldScene::CctvScreenCenterZ);
 	// 화면을 세운 것은 씬이다. 렌더 면은 그 치수를 받아 쓴다.
 	constexpr float ScreenWidth = AIGPrologueWorldScene::CctvScreenWidth;
 	constexpr float ScreenHeight = AIGPrologueWorldScene::CctvScreenHeight;
@@ -79,7 +79,7 @@ namespace IGCctvFive
 	 * monitor pushed up against a wall is not somewhere anyone can read — and it
 	 * is legible from the front when she leans over the desk.
 	 */
-	const FVector LabelCenter(150.0f, -97.6f, 121.5f);
+	const FVector LabelCenter(123.0f, -97.6f, 121.5f);
 	const FVector LabelSize(12.8f, 4.8f, 0.5f);
 
 	/**

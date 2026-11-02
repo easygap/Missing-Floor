@@ -88,7 +88,7 @@ namespace IGNightThree
 	// 관리실 책상 위. (118, -96, 80)은 P2 민원 대장 정서본(X 108.6~130.8,
 	// Y -118.3~-87.7) 한가운데였고 상판(Z=76)에도 1cm 박혀 있었다. 서로
 	// 다른 디렉터가 같은 책상에 놓으면서 부딪혔다. 대장 앞쪽 빈자리로 뺀다.
-	const FVector KeyringLocation(118.0f, -126.0f, 76.16f);
+	const FVector KeyringLocation(91.0f, -126.0f, 76.16f);
 
 	// Day papers: the mover's labels in 403, the forum printout by the
 	// mailboxes, the tally journal at 401's threshold once it is earned.

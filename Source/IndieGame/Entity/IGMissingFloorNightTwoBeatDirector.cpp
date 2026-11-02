@@ -191,7 +191,7 @@ namespace IGNightTwo
 	constexpr float BoothExitY = -242.0f;
 	constexpr float BoothNorthY = -75.0f;
 	/** 관리실 책상(밑장 자리). 관리실 안인지 가를 때 X 범위를 대신한다. */
-	const FVector BoothDeskLocation(179.0f, -103.0f, 76.0f);
+	const FVector BoothDeskLocation(152.0f, -103.0f, 76.0f);
 	constexpr float BoothDeskReach = 300.0f;
 	const FName PuzzleTwoId(TEXT("P2"));
 	const FName NightTwoGoalBeatId(TEXT("Night2.Goal"));

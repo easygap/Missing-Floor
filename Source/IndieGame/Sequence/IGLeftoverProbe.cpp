@@ -1031,7 +1031,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			return;
 		}
 		// 장부 책상 앞. 그가 깨면 책상 밑에 숨는다(관리실은 좁아서 그냥 서 있으면 지나가다 안다).
-		Stand(FVector(160.0f, -175.0f, 0.0f), FVector(160.0f, -110.0f, 80.0f));
+		Stand(FVector(133.0f, -175.0f, 0.0f), FVector(133.0f, -110.0f, 80.0f));
 		if (Player.IsValid() && Player->GetFlashlight())
 		{
 			Player->GetFlashlight()->SetOn(false);
@@ -1053,7 +1053,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		Check(Director->IsInnerRoomErrandRunning(), TEXT("n2_p2_wakes_inner_room"));
 		for (TActorIterator<AIGHidingSpot> It(GetWorld()); It; ++It)
 		{
-			if (FVector::Dist2D(It->GetActorLocation(), FVector(160.0f, -137.5f, 0.0f)) < 20.0f)
+			if (FVector::Dist2D(It->GetActorLocation(), FVector(133.0f, -137.5f, 0.0f)) < 20.0f)
 			{
 				Check(Use(*It), TEXT("n2_hide_under_desk"));
 			}
@@ -1072,6 +1072,12 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Check(Director->GetInnerDoor() && Director->GetInnerDoor()->IsOpen(), TEXT("n2_inner_door_left_open"));
 			Check(Scene.IsValid() && Scene->IsInnerRoomBulbOn(), TEXT("n2_bulb_on"));
 			Check(HintIs(TEXT("Hint.Night2.InnerRoom"), TEXT("n2_hint")), TEXT("n2_hint_points_to_inner_room"));
+			// 관리실 문 안에서 책상 동쪽 끝과 페인트 통 사이를 지나, 책상과 석고보드 사이로 안쪽 방 문에 들고, 열린 문짝
+			// 서쪽으로 꺾어 방 가운데까지 걸어갈 수 있어야 한다.
+			Check(IsWalkableForPlayer(TEXT("n2.booth_to_inner_room"), {FVector2D(165.0f, -200.0f), FVector2D(206.5f, -164.0f),
+					FVector2D(217.0f, -150.0f), FVector2D(225.0f, -128.0f), FVector2D(228.0f, -110.0f), FVector2D(236.0f, -90.0f),
+					FVector2D(232.0f, -29.0f), FVector2D(212.0f, -2.0f), FVector2D(185.0f, 40.0f), FVector2D(150.0f, 45.0f)}),
+				TEXT("n2_inner_room_walkable"));
 		}
 		if (Step == 1 && PhaseSeconds > 34.0f)
 		{
@@ -1082,6 +1088,10 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 					&& IGLeftoverProbe::CartStandsAt(Director, FVector(-205.0f, -240.0f, 0.0f)),
 				TEXT("n2_cart_alone_on_piloti_wall"));
 			AuditPiloti(TEXT("n2.piloti.chained"));
+			// 관리실과 안쪽 방. 옮긴 책상과 펌프 배관, 줄인 석고보드, 판재와 보관함, 옮긴 마대와 간이침대.
+			AuditArea(TEXT("n2.booth"), FBox(FVector(40.0, -240.0, -5.0), FVector(300.0, 185.0, 260.0)));
+			QueueFixedShot(TEXT("n2_booth_desk"), FVector(268.0f, -220.0f, 175.0f), FVector(150.0f, -105.0f, 70.0f));
+			QueueFixedShot(TEXT("n2_inner_door_open"), FVector(110.0f, 70.0f, 170.0f), FVector(245.0f, -60.0f, 95.0f));
 			QueueFixedShot(TEXT("n2_cart_unchain"), FVector(-95.0f, -335.0f, 170.0f), FVector(-245.0f, -280.0f, 85.0f));
 			Stand(FVector(120.0f, 40.0f, 0.0f), FVector(50.0f, 150.0f, 100.0f));
 			Shoot(TEXT("n2_inner_room_heap"));
@@ -1184,10 +1194,10 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Check(IGLeftoverProbe::CartMeshName(Director) == FName(TEXT("SM_HandCart")), TEXT("n2_cart_unfolded_to_push"));
 			QueueFixedShot(TEXT("n2_cart_lowered"), FVector(-95.0f, -335.0f, 170.0f), FVector(-215.0f, -295.0f, 50.0f));
 			// 손수레 소리가 다가온다. 책상 밑으로 다시 숨는다.
-			Stand(FVector(160.0f, -175.0f, 0.0f), FVector(160.0f, -110.0f, 80.0f));
+			Stand(FVector(133.0f, -175.0f, 0.0f), FVector(133.0f, -110.0f, 80.0f));
 			for (TActorIterator<AIGHidingSpot> It(GetWorld()); It; ++It)
 			{
-				if (FVector::Dist2D(It->GetActorLocation(), FVector(160.0f, -137.5f, 0.0f)) < 20.0f)
+				if (FVector::Dist2D(It->GetActorLocation(), FVector(133.0f, -137.5f, 0.0f)) < 20.0f)
 				{
 					Check(Use(*It), TEXT("n2_hide_again"));
 				}
@@ -2713,12 +2723,53 @@ void AIGLeftoverProbe::AuditStorage(const TCHAR* Label)
 		Label, Result.bMeasured ? 1 : 0, Result.Props, Result.Attached, Result.Floating, Result.Penetrations);
 }
 
+bool AIGLeftoverProbe::IsWalkableForPlayer(const TCHAR* Label, std::initializer_list<FVector2D> Feet)
+{
+	UWorld* World = GetWorld();
+	const UCapsuleComponent* Capsule = Player.IsValid() ? Player->GetCapsuleComponent() : nullptr;
+	if (!World || !Capsule || Feet.size() < 2)
+	{
+		return false;
+	}
+	const float Radius = Capsule->GetScaledCapsuleRadius();
+	const float HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(LeftoverWalk), false, Player.Get());
+	if (Manager.IsValid())
+	{
+		Params.AddIgnoredActor(Manager.Get());
+	}
+	bool bClear = true;
+	const FVector2D* Points = Feet.begin();
+	for (int32 Index = 1; Index < static_cast<int32>(Feet.size()); ++Index)
+	{
+		// 바닥에서 2 cm 띄운다. 문턱과 바닥 이음매는 걸음이 넘는다.
+		const FVector From(Points[Index - 1], HalfHeight + 2.0f);
+		const FVector To(Points[Index], HalfHeight + 2.0f);
+		FHitResult Hit;
+		if (World->SweepSingleByChannel(Hit, From, To, FQuat::Identity, ECC_Pawn,
+				FCollisionShape::MakeCapsule(Radius, HalfHeight), Params))
+		{
+			bClear = false;
+			UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_WALK label=%s segment=%d from=%s to=%s blocked=%s at=%s"),
+				Label, Index, *From.ToCompactString(), *To.ToCompactString(),
+				Hit.GetComponent() ? *Hit.GetComponent()->GetReadableName() : TEXT("none"),
+				*Hit.ImpactPoint.ToCompactString());
+		}
+	}
+	return bClear;
+}
+
 void AIGLeftoverProbe::AuditPiloti(const TCHAR* Label)
+{
+	// 계단탑 1층 출입구(X -340)에서 관리실 동쪽 연결통로까지, 밤 셔터(Y -350)에서 뒷벽(Y -240)까지.
+	AuditArea(Label, FBox(FVector(-345.0, -360.0, -5.0), FVector(400.0, -232.0, 260.0)));
+}
+
+void AIGLeftoverProbe::AuditArea(const TCHAR* Label, const FBox& Area)
 {
 	IGPlacementAudit::FOptions Options;
 	Options.Label = Label;
-	// 계단탑 1층 출입구(X -340)에서 관리실 동쪽 연결통로까지, 밤 셔터(Y -350)에서 뒷벽(Y -240)까지.
-	Options.Area = FBox(FVector(-345.0, -360.0, -5.0), FVector(400.0, -232.0, 260.0));
+	Options.Area = Area;
 	if (Player.IsValid())
 	{
 		Options.Ignore.Add(Player.Get());

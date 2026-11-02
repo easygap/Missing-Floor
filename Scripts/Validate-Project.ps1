@@ -1461,7 +1461,7 @@ if ($python) {
 	if ($LASTEXITCODE -ne 0) {
 		throw "World geometry audit found impossible placements ($LASTEXITCODE)"
 	}
-	Assert-AuditBlindSpot $worldGeometryOutput '자리를 풀지 못한 상자 (?<count>\d+)건' 9 `
+	Assert-AuditBlindSpot $worldGeometryOutput '자리를 풀지 못한 상자 (?<count>\d+)건' 7 `
 		'좌표가 트랜스폼 지역 변수나 포인터 삼항에 걸려 자리를 풀지 못한 상자'
 
 	$atlasPacker = Join-Path $projectRoot 'Scripts/build_texture_atlas.py'

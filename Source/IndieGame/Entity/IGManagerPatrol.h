@@ -402,6 +402,9 @@ private:
 	bool bErrandDoorClosedBehind = false;
 	int32 ErrandCotNode = INDEX_NONE;
 	int32 ErrandInnerInNode = INDEX_NONE;
+	/** 안쪽 방 문간의 방 쪽 점과 문틀 점. 문짝이 방 쪽으로 쓸고 지나는 자리라 문이 다 열린 뒤에만 밟는다. */
+	int32 ErrandDoorwayNode = INDEX_NONE;
+	int32 ErrandDoorFrameNode = INDEX_NONE;
 	int32 ErrandInnerOutNode = INDEX_NONE;
 	int32 ErrandOfficeNode = INDEX_NONE;
 	int32 ErrandCartNode = INDEX_NONE;

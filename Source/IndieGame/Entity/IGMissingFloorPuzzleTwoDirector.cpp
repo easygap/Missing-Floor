@@ -39,31 +39,32 @@ namespace IGPuzzleTwo
 	constexpr float BoothDoorOpenYaw = -170.0f;
 	// Desk top is Z=76.  The 2.8 cm ledger rests at Z=77.5, never at the old
 	// upright-paper centre that made it intersect and appear to float.
-	const FVector FairCopyLocation(120.0f, -103.0f, 77.5f);
+	const FVector FairCopyLocation(93.0f, -103.0f, 77.5f);
 	// 접수철의 얇은 받침이 상판(Z=76)에 닿는다.
-	const FVector CarbonLocation(179.0f, -103.0f, 76.35f);
+	const FVector CarbonLocation(152.0f, -103.0f, 76.35f);
 	// 책상에 놓인 종이다. 세워 놓고 중심을 Z=80에 두면 24cm 높이의 절반이
 	// 상판(Z=76) 아래로 들어가 책상에 박힌다 — 위 두 장에서 이미 한 번 고친
 	// 실수다. 눕히고 상판 위에 올린다.
-	const FVector AgentNoteLocation(205.0f, -103.0f, 76.08f);
+	const FVector AgentNoteLocation(178.0f, -103.0f, 76.08f);
 	// 별도 상자 대신 모니터 하단 INPUT 버튼을 누른다.
-	const FVector CctvLocation(134.8f, -105.6f, 91.3f);
-	const FVector FoamGapLocation(272.0f, -90.0f, 105.0f);
+	const FVector CctvLocation(107.8f, -105.6f, 91.3f);
+	// 문짝 손잡이 쪽 틈(경첩은 동쪽 문설주라 서쪽 끝)에 방음재가 비친다.
+	const FVector FoamGapLocation(208.0f, -90.0f, 105.0f);
 	/**
-	 * 자재 반입 영수증 두 장. 관리실 상판(X 105..215, Y -137.5..-82.5, Z=76)
-	 * 앞쪽 오른편의 빈자리다 — 대리인 쪽지(X 196..214, Y -115..-91)와는
-	 * Y로 갈라진다. 접수철은 X 168..190, Y -118..-88에 놓인다.
+	 * 자재 반입 영수증 두 장. 관리실 상판(X 78..188, Y -137.5..-82.5, Z=76)
+	 * 앞쪽 오른편의 빈자리다 — 대리인 쪽지(X 169..187, Y -115..-91)와는
+	 * Y로 갈라진다. 접수철은 X 141..163, Y -118..-88에 놓인다.
 	 * 눕혀서 얹는다. 세우면 절반이 상판 아래로 들어간다.
 	 */
-	const FVector BoardReceiptsLocation(196.0f, -126.0f, 76.08f);
+	const FVector BoardReceiptsLocation(169.0f, -126.0f, 76.08f);
 	/**
 	 * §22.3 관리실 달력. 북벽 안쪽 면이 Y=-85이다. 동쪽은 벽이 아니라
 	 * 안쪽 방 문짝(X 205..275)이라 처음에 거기 걸었다가 문을 뚫었다.
-	 * 책상(X 105..215) 서쪽, 서벽(X 45..60)과도 떨어진 빈 벽에 건다.
+	 * 책상(X 78..188) 서쪽 끝 위, 서벽(X 45..60)과도 떨어진 벽에 건다.
 	 */
 	const FVector WallCalendarLocation(82.0f, -85.12f, 150.0f);
 	// 녹화기 앞면의 표시등을 확인하는 범위다. 모델과 같은 위치를 쓴다.
-	const FVector RecorderBayLocation(150.0f, -111.5f, 78.5f);
+	const FVector RecorderBayLocation(123.0f, -111.5f, 78.5f);
 	/**
 	 * 1층 배관 밸브. 펌프 토출관(X 75, Y -170) 앞, 책상 서쪽. 열면 관에 물이
 	 * 흐르고 그 소리가 책상을 덮는다 — 밸브라는 동사를 여기서 처음 배운다.
@@ -73,7 +74,7 @@ namespace IGPuzzleTwo
 	constexpr float BoothValveHoldSeconds = 0.8f;
 	constexpr float BoothValveLoudness = 0.55f;
 	/** 책상 둘레의 마스킹. 문지르기 0.25가 이 안에서 삼켜진다. */
-	const FVector BoothMaskCenter(160.0f, -108.0f, 80.0f);
+	const FVector BoothMaskCenter(133.0f, -108.0f, 80.0f);
 	constexpr float BoothMaskRadius = 420.0f;
 	constexpr float BoothMaskAmount = 0.30f;
 	/**

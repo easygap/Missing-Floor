@@ -100,15 +100,15 @@ namespace IGBuildingNav
 	const FVector BoothInFromWest[] = {
 		FVector(60.0f, -312.5f, 0.0f), FVector(105.0f, -297.5f, 20.0f), FVector(115.0f, -292.5f, 27.5f),
 		FVector(152.5f, -260.0f, 72.5f), FVector(160.0f, -252.5f, 75.0f), FVector(162.5f, -242.5f, 77.5f),
-		FVector(160.0f, -195.0f, 90.0f)};
+		FVector(160.0f, -215.0f, 90.0f)};
 	const FVector BoothInFromEast[] = {
 		FVector(270.0f, -305.0f, 180.0f), FVector(202.5f, -282.5f, 135.0f), FVector(187.5f, -267.5f, 130.0f),
-		FVector(182.5f, -257.5f, 112.5f), FVector(160.0f, -195.0f, 90.0f)};
+		FVector(182.5f, -257.5f, 112.5f), FVector(160.0f, -215.0f, 90.0f)};
 	const FVector BoothOutToEast[] = {
-		FVector(160.0f, -195.0f, 90.0f), FVector(160.0f, -252.5f, 75.0f), FVector(132.5f, -305.0f, 35.0f),
+		FVector(160.0f, -215.0f, 90.0f), FVector(160.0f, -252.5f, 75.0f), FVector(132.5f, -305.0f, 35.0f),
 		FVector(142.5f, -310.0f, 32.5f), FVector(270.0f, -305.0f, 0.0f)};
 	const FVector BoothOutToWest[] = {
-		FVector(160.0f, -195.0f, 90.0f), FVector(182.5f, -257.5f, 112.5f), FVector(207.5f, -302.5f, 147.5f),
+		FVector(160.0f, -215.0f, 90.0f), FVector(182.5f, -257.5f, 112.5f), FVector(207.5f, -302.5f, 147.5f),
 		FVector(207.5f, -302.5f, 155.0f), FVector(162.5f, -310.0f, 162.5f), FVector(60.0f, -312.5f, 180.0f)};
 }
 
@@ -310,8 +310,9 @@ void FIGBuildingNav::Build()
 		const int32 LiftFront = Add(FVector(680.0f, -305.0f, 0.0f), false, true);
 		LinkChain({Doorways[0], ConnectorWest, ConnectorEast, LobbyDoor, Lobby, LiftFront});
 		// 관리실. 책상 앞에서 북쪽(책상 밑)을 본다. 안쪽 방 문은 열리지 않는다. 드나드는 길은 통로를 따라 오던 쪽에
-		// 따라 다른 자세 길이다.
-		const int32 BoothInside = Add(FVector(160.0f, -195.0f, 0.0f), false, true);
+		// 따라 다른 자세 길이다. 2 m 몸의 뒤쪽 절반이 문간에 걸리므로 문간 가운데에 서고, 책상이 서쪽으로 옮겨 간 뒤로는
+		// 팔이 책상 다리(X 183)에 닿지 않게 예전보다 20 cm 뒤(Y -215)에서 들여다본다.
+		const int32 BoothInside = Add(FVector(160.0f, -215.0f, 0.0f), false, true);
 		AddTurn(ConnectorWest, BoothInside, MakeArrayView(BoothInFromWest), 0.0f, false);
 		AddTurn(ConnectorEast, BoothInside, MakeArrayView(BoothInFromEast), 0.0f, false);
 		AddTurn(BoothInside, ConnectorEast, MakeArrayView(BoothOutToEast), 0.0f, false);

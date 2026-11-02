@@ -266,7 +266,7 @@ void AIGListenerPursuitProbe::UpdateClipShots(const FVector& At, const float Fee
 	const bool bGround = Feet < 60.0f;
 	const bool bCartLane = bGround && FMath::Abs(At.Y + 302.0f) < 12.0f;
 	// 관리실 책상 앞까지 들어갔다 나온 뒤면 나가는 길이다.
-	if (bGround && At.X > 100.0f && At.X < 230.0f && At.Y > -210.0f)
+	if (bGround && At.X > 100.0f && At.X < 230.0f && At.Y > -222.0f)
 	{
 		bBoothVisited = true;
 	}

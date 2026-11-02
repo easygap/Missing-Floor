@@ -92,6 +92,13 @@ private:
 	void AuditStorage(const TCHAR* Label);
 	/** 필로티 뒷벽과 관리실 앞 연결통로 소품(손수레, 적치 짐)의 받침·관통을 잰다. 밤2 심부름 앞뒤에 부른다. */
 	void AuditPiloti(const TCHAR* Label);
+	/** 상자 안 소품의 받침·관통을 잰다. 플레이어와 관리인은 보지 않는다. */
+	void AuditArea(const TCHAR* Label, const FBox& Area);
+	/**
+	 * 플레이어 캡슐을 바닥 위 점들을 따라 쓸어 걸어서 지나갈 수 있는지 본다. 검사는 순간 이동으로 옮겨 다녀서 가구
+	 * 사이가 막혀도 몰랐다. 막힌 구간마다 LEFTOVER_WALK 줄에 막은 물건을 남긴다.
+	 */
+	bool IsWalkableForPlayer(const TCHAR* Label, std::initializer_list<FVector2D> Feet);
 	/** -IGLeftoverShots면 302호를 네 자리에서 손전등으로 비춰 찍는다. 다 찍었으면 true. */
 	bool StorageViews(const TCHAR* Label);
 	int32 StorageViewIndex = 0;

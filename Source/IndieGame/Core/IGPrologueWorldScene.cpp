@@ -5773,21 +5773,25 @@ void AIGPrologueWorldScene::BuildLobby()
 			false, Vest, FRotator(0,90,0));
 		if (Visual) Visual->ComponentTags.Add(TEXT("Visual.WorkVest"));
 	}
-	// 상판 아래가 빈 사무용 책상. 받침대와 녹화기, 장부의 자리를 따로 둔다.
-	CreateBlock(FVector(160, -110, 74.5f), FVector(110, 55, 3), ShelfSteel);
-	for (float LegX : {110.0f, 210.0f})
+	// 상판 아래가 빈 사무용 책상. 받침대와 녹화기, 장부의 자리를 따로 둔다. 안쪽 방 문(개구부 X 202..278) 앞을 비우고
+	// 서쪽 배관(X 77.5까지)에 붙여 X 78..188에 둔다. 예전 자리(X 105..215)는 동쪽 끝이 문 앞을 막고 동쪽 벽에 기댄
+	// 석고보드와 49 cm만 남아, 플레이어도 관리인도 걸어서 안쪽 방에 들어갈 수 없었다.
+	CreateBlock(FVector(133, -110, 74.5f), FVector(110, 55, 3), ShelfSteel);
+	// 다리 넷과 뒤쪽 가로대. 가로대 양 끝이 뒷다리 안쪽 면에 닿는다. 다리 자리를 FVector 목록으로 적어야 배치 감사가
+	// 다리를 읽고 가로대가 다리에 걸린 것을 안다.
+	for (const FVector& Leg : {FVector(83, -132.5f, 36.5f), FVector(83, -87.5f, 36.5f), FVector(183, -132.5f, 36.5f),
+		FVector(183, -87.5f, 36.5f)})
 	{
-		for (float LegY : {-132.5f, -87.5f})
-			CreateBlock(FVector(LegX, LegY, 36.5f), FVector(3.5f, 3.5f, 73), ShelfSteel);
+		CreateBlock(Leg, FVector(3.5f, 3.5f, 73), ShelfSteel);
 	}
-	CreateBlock(FVector(160, -87.5f, 24), FVector(96.5f, 2, 4), ShelfSteel, false);
+	CreateBlock(FVector(133, -87.5f, 24), FVector(96.5f, 2, 4), ShelfSteel, false);
 	// 배관 밸브가 토출관과 맞물리는 몸체와 축이다.
 	CreateBlock(FVector(75, -170, 52), FVector(9, 9, 8), ShelfSteel, false, CylinderMesh);
 	CreateBlock(FVector(75, -177, 52), FVector(2, 2, 12), ShelfSteel, false, CylinderMesh, FRotator(0, 0, 90));
-	CreateProp(TEXT("SM_BoothRecorder"), FVector(150, -100, 76), nullptr, 0, 1, false);
-	CreateProp(TEXT("SM_BoothMonitor"), FVector(150, -100, 80.5f), nullptr, 0, 1, false);
+	CreateProp(TEXT("SM_BoothRecorder"), FVector(123, -100, 76), nullptr, 0, 1, false);
+	CreateProp(TEXT("SM_BoothMonitor"), FVector(123, -100, 80.5f), nullptr, 0, 1, false);
 	// 일반 네 채널은 실제 맵에서 구운 화면을 쓴다. 외부 입력 5번만 순간 렌더한다.
-	CreateBlock(FVector(150, -105.2f, CctvScreenCenterZ), FVector(CctvScreenWidth, CctvScreenHeight, 100),
+	CreateBlock(FVector(123, -105.2f, CctvScreenCenterZ), FVector(CctvScreenWidth, CctvScreenHeight, 100),
 		TexMat(TEXT("M_CctvStandby"), ScreenGlowMaterial), false,
 		LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane")), FRotator(0, 180, 90));
 	// 안쪽 방 문틀. 문짝은 짐 줄기 감독이 단다(AIGMissingFloorLeftoverDirector). 403호 욕실과
@@ -5804,8 +5808,9 @@ void AIGPrologueWorldScene::BuildLobby()
 	CreateBlock(
 		FVector(267, -164, 59.74f), FVector(75, 150, 100), nullptr,
 		true, PropMesh(TEXT("SM_GypsumCutBoard")), FRotator(0, 90, 96));
+	// 작은 판은 줄여서 남벽 쪽에 붙인다. 책상 모서리와 66 cm를 남겨야 안쪽 방 문 앞까지 걸어갈 수 있다.
 	CreateBlock(
-		FVector(254, -166, 39.61f), FVector(50, 100, 100), nullptr,
+		FVector(254, -198, 39.61f), FVector(45, 100, 100), nullptr,
 		true, PropMesh(TEXT("SM_GypsumCutBoard")), FRotator(0, 90, 99));
 	CreateProp(TEXT("SM_WorkPaintCan"), FVector(230, -198, 0), nullptr, -60, 1, true);
 
@@ -6041,19 +6046,21 @@ void AIGPrologueWorldScene::BuildInnerRoom()
 	CreateProp(TEXT("SM_LinedWallPanelB"), FVector(280, 30, 0), nullptr, -90.0f, 1.0f, false);
 	CreateProp(TEXT("SM_LinedWallPanelA"), FVector(280, 30, 100), nullptr, -90.0f, 1.0f, false);
 
-	// 남벽 서쪽 간이침대, 서벽 작업대(점검구 밑), 동벽 북쪽 보관함, 동벽 가운데 떼어 낸 판재.
+	// 남벽 서쪽 간이침대, 서벽 작업대(점검구 밑), 동벽 북쪽 보관함과 그 앞에 떼어 낸 판재.
 	CreateProp(TEXT("SM_InnerRoomCot"), FVector(3, -30, 0), nullptr, 180.0f, 1.0f, true);
 	CreateProp(TEXT("SM_InnerRoomWorkbench"), FVector(-65, 85, 0), nullptr, 90.0f, 1.0f, true);
 	CreateProp(TEXT("SM_InnerRoomCabinet"), FVector(256, 122, 0), nullptr, -90.0f, 1.0f, true);
 	if (UStaticMesh* Boards = PropMesh(TEXT("SM_RemovedBoards")))
 	{
-		// 메시 바닥이 0.8 mm 아래로 내려와 있어 그만큼 올려 바닥에 얹는다.
-		CreateBlock(FVector(262, 30, 0.08f), FVector(65, 100, 85), nullptr, true, Boards, FRotator(0, -90, 0));
+		// 메시 바닥이 0.8 mm 아래로 내려와 있어 그만큼 올려 바닥에 얹는다. 보관함(Y 77) 앞까지 북쪽으로 붙여 문 앞(Y 19
+		// 아래)을 비운다. 문 앞까지 내려와 있으면 열린 문짝 끝과 판재 사이가 36 cm라 방으로 꺾어 들 수 없었다.
+		CreateBlock(FVector(262, 46.5f, 0.08f), FVector(45, 100, 85), nullptr, true, Boards, FRotator(0, -90, 0));
 	}
 	CreateProp(TEXT("SM_StorageBox"), FVector(256, 124, 180), nullptr, -84.0f, 1.0f, true);
 	CreateProp(TEXT("SM_StorageBox"), FVector(254, 118, 214.2f), nullptr, -97.0f, 1.0f, true);
 	CreateProp(TEXT("SM_WasteSack"), FVector(125, -40, 0), nullptr, 20.0f, 1.0f, true);
-	CreateProp(TEXT("SM_WasteSack"), FVector(160, -22, 0), nullptr, -35.0f, 1.0f, true);
+	// 마대 하나는 간이침대와 작업대 사이에 둔다. 문 앞(160, -22)에 두면 문에서 방으로 꺾어 드는 길을 막았다.
+	CreateProp(TEXT("SM_WasteSack"), FVector(-5, 28, 0), nullptr, 10.0f, 1.0f, true);
 
 	// 줄에 매단 백열등. 그가 깨면 켜고 나간 사이에도 켜 둔다. 연출은 세기로만 끈다.
 	InnerRoomBulb = CreateProp(TEXT("SM_BareBulb"), FVector(90, 50, 235), nullptr, 0.0f, 1.0f, false);
@@ -7780,13 +7787,15 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 			12.0f,
 			true);
 	}
-	// 1층 관리실 책상 밑. 상판 아래 73 cm가 비어 있다. 책상 앞면은 남쪽(-Y)을 본다.
-	if (AIGHidingSpot* BoothDesk = SpawnHidingSpot(FVector(160.0f, -137.5f, 0.0f), -90.0f))
+	// 1층 관리실 책상 밑. 상판 아래 73 cm가 비어 있다. 책상 앞면은 남쪽(-Y)을 본다. 나와 서는 자리는 책상 앞 남동쪽
+	// (160, -215)이고, 찾는 쪽이 귀를 대러 오는 자리이기도 하다. 위층 사람은 몸 뒤쪽 절반이 관리실 문간에 걸린 채
+	// 들여다봐서, 문간 가운데(X 151..179)를 벗어나면 무릎이 문설주에 묻힌다.
+	if (AIGHidingSpot* BoothDesk = SpawnHidingSpot(FVector(133.0f, -137.5f, 0.0f), -90.0f))
 	{
 		BoothDesk->Configure(
 			EIGHidingView::UnderBed,
 			FVector(-24.0f, 0.0f, 50.0f),
-			FVector(62.0f, 0.0f, 0.0f),
+			FVector(77.5f, 27.0f, 0.0f),
 			FVector(2.5f, 0.0f, 36.0f),
 			FVector(1.5f, 50.0f, 34.0f),
 			45.0f,
@@ -7840,7 +7849,7 @@ void AIGPrologueWorldScene::SpawnShelterProps(const FActorSpawnParameters& Spawn
 	// 관리실 책상 상판(Z 76)의 빈 자리.
 	AIGBatteryPickup* BoothBattery = World->SpawnActor<AIGBatteryPickup>(
 		AIGBatteryPickup::StaticClass(),
-		FTransform(FRotator(0.0f, -21.0f, 0.0f), FVector(145.0f, -127.0f, 76.8f)),
+		FTransform(FRotator(0.0f, -21.0f, 0.0f), FVector(118.0f, -127.0f, 76.8f)),
 		SpawnParameters);
 	if (BoothBattery)
 	{

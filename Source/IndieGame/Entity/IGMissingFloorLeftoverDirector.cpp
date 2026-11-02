@@ -76,9 +76,13 @@ namespace IGLeftover
 	const FName JeongwooSelfEscaped(TEXT("SelfEscaped"));
 
 	// -- 관리실 안쪽 방(1층) ------------------------------------------------------
-	/** 문짝 경첩 축. 문틀 개구부 X 202..278, 문 닫힘 턱이 관리실 쪽(Y -82)에 선다. */
-	const FVector InnerDoorHinge(205.0f, -80.2f, 0.0f);
-	constexpr float InnerDoorOpenYaw = 95.0f;
+	/**
+	 * 문짝 경첩 축. 문틀 개구부 X 202..278, 문 닫힘 턱이 관리실 쪽(Y -82)에 선다. 경첩은 동쪽 문설주다. 서쪽에 달면
+	 * 방 쪽으로 연 문짝이 문간에서 방으로 꺾어 드는 길(X 200 언저리)에 서서, 지나는 관리인의 팔이 문짝을 뚫었다.
+	 */
+	const FVector InnerDoorHinge(275.0f, -80.2f, 0.0f);
+	/** 방 쪽으로 80도 연다. 90도까지 열면 레버(문짝 면에서 6 cm)가 동벽(X 280)에, 방음재가 동벽 판재(Y -19부터)에 들어갔다. */
+	constexpr float InnerDoorOpenYaw = -80.0f;
 	/** 점검구 둘. 액터 +X가 방 쪽 법선. */
 	const FVector InnerSmallHatch(-100.0f, 85.0f, 140.0f);
 	const FVector InnerLargeHatch(190.0f, 170.0f, 60.0f);
@@ -1071,7 +1075,7 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 	// 안쪽 방 문. 403호 욕실과 같은 ABS 문짝이고, 방 쪽 면에 방음재 판 둘을 대 붙였다.
 	Parameters.Name = TEXT("MissingFloorInnerRoomDoor");
 	InnerDoor = World->SpawnActor<AIGSwingDoor>(
-		AIGSwingDoor::StaticClass(), FTransform(FRotator(0.0f, -90.0f, 0.0f), IGLeftover::InnerDoorHinge), Parameters);
+		AIGSwingDoor::StaticClass(), FTransform(FRotator(0.0f, 90.0f, 0.0f), IGLeftover::InnerDoorHinge), Parameters);
 	if (InnerDoor)
 	{
 		if (UStaticMesh* Leaf = IGLeftover::Mesh(TEXT("SM_BathroomDoorLeaf")))
@@ -1089,9 +1093,10 @@ void AIGMissingFloorLeftoverDirector::BuildInnerRoom()
 				Panel->SetStaticMesh(Foam);
 				Panel->SetMobility(EComponentMobility::Movable);
 				Panel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-				Panel->SetRelativeLocation(FVector(-1.8f, 35.0f, Bottom));
-				Panel->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-				Panel->SetRelativeScale3D(FVector(0.68f, 1.0f, 0.95f));
+				// 경첩 쪽 12 cm는 비워 둔다. 문을 열면 그 끝이 동쪽 문설주 벽(X 278..290, Y -85..-70)에 닿는다.
+				Panel->SetRelativeLocation(FVector(1.8f, 40.5f, Bottom));
+				Panel->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+				Panel->SetRelativeScale3D(FVector(0.58f, 1.0f, 0.95f));
 				Panel->RegisterComponent();
 			}
 		}

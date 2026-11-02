@@ -11949,9 +11949,9 @@ void AIGListenerGreyboxDirector::EnterCaptureStep(const int32 StepIndex)
 		// 이 컷의 주어는 「두 기록이 다르다」이므로 서류 두 장이 주인공이어야
 		// 한다. 예전 자리는 책상에서 1.1m 떨어져 -25도라 모니터가 화면을
 		// 차지하고 정서본과 먹지는 아래로 잘렸다. 책상 앞턱(Y=-137.5)에
-		// 닿지 않는 선까지 다가가 두 장의 가운데(X=140)를 내려다본다.
+		// 닿지 않는 선까지 다가가 두 장의 가운데(X=113)를 내려다본다.
 		// 모니터는 위쪽에 남아 관리실이라는 것을 계속 말해 준다.
-		CaptureTeleportPlayer(FVector(140.0f, -180.0f, 92.0f), 90.0f, -45.0f);
+		CaptureTeleportPlayer(FVector(113.0f, -180.0f, 92.0f), 90.0f, -45.0f);
 		break;
 	case 7:
 		// Burst: the extinguisher fall, with the entity resting so the
