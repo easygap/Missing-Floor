@@ -31,7 +31,9 @@ namespace IGClipAudit
 				TEXT("IGClipAudit"), TEXT("IGListenerPursuitProbe"), TEXT("IGGuestDoorsProbe"),
 				TEXT("IGCaptureVarietyProbe"), TEXT("IGHorrorRegressionProbe"), TEXT("IGStairSensorProbe"),
 				TEXT("IGNightFourHammerProbe"), TEXT("IGBathroomProbe"), TEXT("IGFireDoorProbe"), TEXT("IGNightFlowProbe"),
-				TEXT("IGManagerKeyHuntProbe"), TEXT("IGLeftoverProbe")};
+				TEXT("IGManagerKeyHuntProbe"), TEXT("IGLeftoverProbe"),
+				// 계단을 오르내리는 303호·경찰관·관리인(현장 확인)도 잰다. 정우 첫째 날 계단은 남은 짐 검사가 걷는다.
+				TEXT("IGNeighbor303Probe"), TEXT("IGSiteCheckProbe"), TEXT("IGDayScenesProbe")};
 			for (const TCHAR* Flag : Flags)
 			{
 				if (FParse::Param(FCommandLine::Get(), Flag))

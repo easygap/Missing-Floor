@@ -2,7 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Entity/IGClipAudit.h"
 #include "Entity/IGWalkerKit.h"
+#include "Entity/IGWalkerLegIK.h"
 #include "IGJeongwooFigure.generated.h"
 
 class UAnimSequence;
@@ -79,7 +81,13 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 private:
+	/** 걷거나 돌아선다. 몸은 여기서 다 옮긴다. */
+	void TickWalk(float DeltaSeconds);
 	void PlayPose(EPose Pose, float Rate);
 	UAnimSequence* AnimFor(EPose Pose) const;
 	void PlayStep();
@@ -128,4 +136,8 @@ private:
 	float StepPhase = 0.0f;
 	uint32 StepSeed = 202u;
 	int32 StepCount = 0;
+	/** 계단에서는 걷는 애니메이션의 다리 대신 한 단씩 디딘다. */
+	FIGWalkerStairBody StairBody;
+	/** 검사 실행에서 몸이 벽·문·계단을 지나는지 잰다(IGClipAudit). */
+	FIGClipAudit ClipAudit;
 };

@@ -5,6 +5,7 @@
 #include "IGWalkerLegIK.generated.h"
 
 class AActor;
+class USceneComponent;
 class USkeletalMeshComponent;
 class UWorld;
 
@@ -70,10 +71,11 @@ public:
 	 */
 	void SetPathAhead(TConstArrayView<FVector> Points);
 	/**
-	 * 몸을 옮긴 뒤 틱마다 부른다. AnimPhase는 지금 걷는 애니메이션의 재생 위치(0..1)다. 계단에 들어설 때 어느 발부터
-	 * 이을지 정한다.
+	 * 몸을 옮긴 뒤 틱마다 부른다. Body는 발밑 가운데 자리와 몸이 보는 yaw다. AnimPhase는 지금 걷는 애니메이션의 재생
+	 * 위치(0..1)로, 계단에 들어설 때 어느 발부터 이을지 정한다.
 	 */
-	void Update(const UWorld& World, const USkeletalMeshComponent& Mesh, float DeltaSeconds, float AnimPhase);
+	void Update(const UWorld& World, const USkeletalMeshComponent& Mesh, const FTransform& Body, float DeltaSeconds,
+		float AnimPhase);
 
 	bool IsActive() const { return Alpha > 0.0f; }
 	FIGWalkerIKRequest GetRequest() const;
@@ -148,4 +150,32 @@ private:
 	FVector Heading = FVector::ForwardVector;
 	float PlanarSpeed = 0.0f;
 	TArray<FVector, TInlineAllocator<4>> PathAhead;
+};
+
+/**
+ * 정해진 길을 걷는 사람(rig_walker 뼈대)의 몸에 계단 걸음을 붙인다. 계단에서는 걷는 애니메이션의 다리 대신
+ * 디딤판을 한 단씩 딛고, 낮은 단의 발이 닿게 몸을 낮추고, 애니메이션을 딛는 발에 맞춰 돌린다. 몸 메시는 발밑
+ * 컴포넌트에 회전 없이 붙어 있어야 한다.
+ */
+class INDIEGAME_API FIGWalkerStairBody
+{
+public:
+	/**
+	 * 다리 IK 재생기를 끼우고, 몸 메시가 주인 액터 다음에 틱하게 한다. 메시를 넣은 뒤 부른다. 다리 뼈가 없으면 false고
+	 * 평지 걷는 애니메이션 그대로다.
+	 */
+	bool Attach(USkeletalMeshComponent& Body, AActor& Owner);
+	/** 몸을 숨기거나 순간 이동시켰다. 발을 버리고 애니메이션 다리로 돌아간다. */
+	void Reset();
+	/** 몸을 옮긴 뒤 틱마다 부른다. Ahead는 앞으로 지날 길 점, bGait는 걷는 애니메이션을 트는 중인가. */
+	void Tick(const USceneComponent& Feet, TConstArrayView<FVector> Ahead, bool bGait, float DeltaSeconds);
+	/** 계단 걸음이 다리를 쥐고 있다. 다 풀릴 때까지는 멈춰 서도 틱을 끄지 않는다. */
+	bool IsActive() const { return Stairs.IsActive(); }
+
+private:
+	TWeakObjectPtr<USkeletalMeshComponent> Mesh;
+	FIGStairFeet Stairs;
+	/** 붙일 때 몸 메시가 발밑 컴포넌트에서 놓인 자리. 계단에서는 여기서 몸을 낮춘다. */
+	FVector RestLocation = FVector::ZeroVector;
+	bool bAttached = false;
 };

@@ -110,7 +110,26 @@ bool AIGStairNeighbor::LoadBody()
 		return false;
 	}
 	Body->SetSkeletalMesh(Mesh);
+	// 계단에서 발을 디딤판에 맞춘다(관리인과 같은 재생기).
+	StairBody.Attach(*Body, *this);
+	// 관통 측정은 화면 없이 돈다. 그대로 두면 뼈가 첫 자세로 굳은 채 잰다.
+	if (IGClipAudit::IsRequested())
+	{
+		Body->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	}
 	return true;
+}
+
+void AIGStairNeighbor::BeginPlay()
+{
+	Super::BeginPlay();
+	ClipAudit.Start(TEXT("neighbor303"));
+}
+
+void AIGStairNeighbor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ClipAudit.Report();
+	Super::EndPlay(EndPlayReason);
 }
 
 FVector AIGStairNeighbor::GetStartFeet()
@@ -237,6 +256,7 @@ void AIGStairNeighbor::Show(const bool bVisible)
 	{
 		Body->Stop();
 		ActiveAnim = nullptr;
+		StairBody.Reset();
 	}
 }
 
@@ -336,6 +356,27 @@ bool AIGStairNeighbor::IsPlayerInTheWay() const
 void AIGStairNeighbor::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	const bool bShown = Body && Body->IsVisible();
+	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다.
+	if (ClipAudit.IsOn() && bShown)
+	{
+		const TCHAR* const StageNames[] = {
+			TEXT("Hidden"), TEXT("Arriving"), TEXT("Waiting"), TEXT("Talking"), TEXT("Leaving"), TEXT("Gone")};
+		const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		ClipAudit.Measure(Body, GetFeet() + FVector(0.0f, 0.0f, 100.0f), PC ? PC->GetPawn() : nullptr,
+			StageNames[FMath::Min(static_cast<int32>(Stage), 5)]);
+	}
+	TickStage(DeltaSeconds);
+	if (bShown && Body->IsVisible())
+	{
+		TArray<FVector, TInlineAllocator<4>> Ahead;
+		Path.Ahead(Travelled, 3, Ahead);
+		StairBody.Tick(*FeetRoot, Ahead, ActiveAnim == WalkAnim, DeltaSeconds);
+	}
+}
+
+void AIGStairNeighbor::TickStage(const float DeltaSeconds)
+{
 	const double Now = GetWorld()->GetTimeSeconds();
 	switch (Stage)
 	{

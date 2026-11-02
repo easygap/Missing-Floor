@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "Components/SkeletalMeshComponent.h"
 
 class AActor;
@@ -28,6 +29,8 @@ struct INDIEGAME_API FIGWalkerRoute
 	bool IsEmpty() const { return Points.IsEmpty(); }
 	/** Distance만큼 이동한 위치. 경로가 비었으면 Fallback을 돌려준다. */
 	FVector At(float Distance, const FVector& Fallback, FVector* OutDirection = nullptr, bool* bOutOnStair = nullptr) const;
+	/** Distance 뒤로 지날 경로 점을 MaxPoints개까지. 계단 걸음이 꺾이는 길에서 발을 길을 따라 놓는 데 쓴다. */
+	void Ahead(float Distance, int32 MaxPoints, TArray<FVector, TInlineAllocator<4>>& OutPoints) const;
 };
 
 /** 경로를 걷는 NPC가 같이 쓰는 것. 애니메이션 전환, 회전, 걸음 박자, 발소리, 계단실 방화문 판정. */
@@ -50,7 +53,16 @@ namespace IGWalker
 		}
 		if (Active != Sequence)
 		{
-			Body->PlayAnimation(Sequence, bLoop);
+			// PlayAnimation은 재생기를 엔진 기본 것으로 갈아 끼워, 계단 걸음 IK를 얹은 재생기가 빠진다. 재생기에 바로 건다.
+			if (UAnimSingleNodeInstance* Single = Body->GetSingleNodeInstance())
+			{
+				Single->SetAnimationAsset(Sequence, bLoop, Rate);
+				Single->SetPlaying(true);
+			}
+			else
+			{
+				Body->PlayAnimation(Sequence, bLoop);
+			}
 			Active = Sequence;
 		}
 		Body->SetPlayRate(Rate);

@@ -2,7 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Entity/IGClipAudit.h"
 #include "Entity/IGWalkerKit.h"
+#include "Entity/IGWalkerLegIK.h"
 #include "IGStairNeighbor.generated.h"
 
 class AIGStairNeighbor;
@@ -84,7 +86,13 @@ public:
 	/** 그녀가 이 자리에 있으면 303호 문 앞이 보일 수 있다. 그동안은 나오지 않는다. */
 	static bool CanWatchThirdFloorDoor(const FVector& PlayerFeet);
 
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 private:
+	/** 지금 단계의 일을 한 틱 한다. 몸은 여기서 다 옮긴다. */
+	void TickStage(float DeltaSeconds);
 	void SetRoute(const TArray<FVector>& Points);
 	FVector RoutePoint(float Distance, FVector* OutDirection = nullptr, bool* bOutOnStair = nullptr) const;
 	float GetRouteLength() const { return Path.Length(); }
@@ -133,4 +141,8 @@ private:
 	double StageStartedAt = 0.0;
 	double MetAt = -1.0;
 	double LastSightCheckAt = -1.0;
+	/** 계단에서는 걷는 애니메이션의 다리 대신 한 단씩 디딘다. */
+	FIGWalkerStairBody StairBody;
+	/** 검사 실행에서 몸이 벽·문·계단을 지나는지 잰다(IGClipAudit). */
+	FIGClipAudit ClipAudit;
 };

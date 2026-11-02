@@ -61,6 +61,18 @@ FVector FIGWalkerRoute::At(
 	return FMath::Lerp(From, To, Alpha);
 }
 
+void FIGWalkerRoute::Ahead(const float Distance, const int32 MaxPoints, TArray<FVector, TInlineAllocator<4>>& OutPoints) const
+{
+	OutPoints.Reset();
+	for (int32 Index = 0; Index < Points.Num() && OutPoints.Num() < MaxPoints; ++Index)
+	{
+		if (Distances[Index] > Distance + 0.5f)
+		{
+			OutPoints.Add(Points[Index]);
+		}
+	}
+}
+
 float IGWalker::TurnYaw(const float CurrentYaw, const float TargetYaw, const float DeltaSeconds, const float Speed)
 {
 	const float Delta = FMath::FindDeltaAngleDegrees(CurrentYaw, TargetYaw);

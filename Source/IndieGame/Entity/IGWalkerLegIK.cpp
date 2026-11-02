@@ -439,15 +439,14 @@ FIGWalkerIKRequest FIGStairFeet::GetRequest() const
 	return Request;
 }
 
-void FIGStairFeet::Update(
-	const UWorld& World, const USkeletalMeshComponent& Mesh, const float DeltaSeconds, const float AnimPhase)
+void FIGStairFeet::Update(const UWorld& World, const USkeletalMeshComponent& Mesh, const FTransform& Body,
+	const float DeltaSeconds, const float AnimPhase)
 {
-	const AActor* Body = Owner.Get();
-	if (!bBound || !Body || DeltaSeconds <= 0.0f)
+	if (!bBound || DeltaSeconds <= 0.0f)
 	{
 		return;
 	}
-	const FVector BodyFeet = Body->GetActorLocation();
+	const FVector BodyFeet = Body.GetLocation();
 	if (bHasLastBody && FVector::DistSquared(BodyFeet, LastBody) > FMath::Square(IGStairFeet::StairTeleportDistance))
 	{
 		Reset();
@@ -457,7 +456,7 @@ void FIGStairFeet::Update(
 	bHasLastBody = true;
 	const FVector Planar(Moved.X, Moved.Y, 0.0f);
 	PlanarSpeed = FMath::FInterpTo(PlanarSpeed, Planar.Size() / DeltaSeconds, DeltaSeconds, 10.0f);
-	const float Yaw = Body->GetActorRotation().Yaw;
+	const float Yaw = Body.Rotator().Yaw;
 	Heading = Planar.SizeSquared() > FMath::Square(0.3f)
 		? Planar.GetSafeNormal()
 		: FRotator(0.0f, Yaw, 0.0f).Vector();
@@ -858,4 +857,55 @@ void FIGStairFeet::UpdateBodyDrop(const FTransform& Body, const float DeltaSecon
 	Need = FMath::Clamp(Need, 0.0f, IGStairFeet::MaxBodyDrop);
 	// 뒷발이 멀어질 때는 바로 낮추고, 다시 가까워지면 천천히 일어선다.
 	BodyDrop = FMath::FInterpTo(BodyDrop, Need, DeltaSeconds, Need > BodyDrop ? 14.0f : 4.0f);
+}
+
+bool FIGWalkerStairBody::Attach(USkeletalMeshComponent& Body, AActor& Owner)
+{
+	bAttached = false;
+	Mesh = &Body;
+	Body.SetAnimInstanceClass(UIGWalkerAnimInstance::StaticClass());
+	// 발 자리는 그 틱에 몸을 옮긴 뒤에 정한다. 메시가 먼저 틱하면 한 프레임 전 자리로 그린다.
+	Body.AddTickPrerequisiteActor(&Owner);
+	RestLocation = Body.GetRelativeLocation();
+	bAttached = Stairs.Bind(Body);
+	return bAttached;
+}
+
+void FIGWalkerStairBody::Reset()
+{
+	Stairs.Reset();
+	USkeletalMeshComponent* Body = Mesh.Get();
+	if (!Body)
+	{
+		return;
+	}
+	Body->SetRelativeLocation(RestLocation);
+	if (UIGWalkerAnimInstance* Anim = Cast<UIGWalkerAnimInstance>(Body->GetAnimInstance()))
+	{
+		Anim->SetIK(FIGWalkerIKRequest());
+	}
+}
+
+void FIGWalkerStairBody::Tick(
+	const USceneComponent& Feet, const TConstArrayView<FVector> Ahead, const bool bGait, const float DeltaSeconds)
+{
+	USkeletalMeshComponent* Body = Mesh.Get();
+	UIGWalkerAnimInstance* Anim = Body ? Cast<UIGWalkerAnimInstance>(Body->GetAnimInstance()) : nullptr;
+	const UWorld* World = Body ? Body->GetWorld() : nullptr;
+	if (!bAttached || !Anim || !World)
+	{
+		return;
+	}
+	Stairs.SetPathAhead(Ahead);
+	const float Length = Anim->GetLength();
+	Stairs.Update(*World, *Body, FTransform(FRotator(0.0f, Feet.GetComponentRotation().Yaw, 0.0f), Feet.GetComponentLocation()),
+		DeltaSeconds, bGait && Length > 0.0f ? Anim->GetCurrentTime() / Length : 0.0f);
+	Anim->SetIK(Stairs.GetRequest());
+	Body->SetRelativeLocation(RestLocation - FVector(0.0f, 0.0f, Stairs.GetBodyDrop()));
+	if (Stairs.IsActive() && bGait && Length > 0.0f)
+	{
+		// 계단에서는 걷는 애니메이션을 딛는 발에 맞춰 돌린다. 팔과 몸통이 다리와 같은 박자로 간다.
+		Anim->SetPlayRate(0.0f);
+		Anim->SetPosition(Stairs.GetGaitPhase() * Length, false);
+	}
 }

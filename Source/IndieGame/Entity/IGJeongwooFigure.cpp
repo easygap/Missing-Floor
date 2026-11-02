@@ -11,6 +11,7 @@
 #include "Engine/World.h"
 #include "Entity/IGWalkerKit.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
 namespace IGJeongwoo
@@ -93,13 +94,21 @@ bool AIGJeongwooFigure::LoadBody()
 		return false;
 	}
 	Body->SetSkeletalMesh(Mesh);
+	// 계단에서 발을 디딤판에 맞춘다(관리인과 같은 재생기).
+	StairBody.Attach(*Body, *this);
+	// 관통 측정은 화면 없이 돈다. 그대로 두면 뼈가 첫 자세로 굳은 채 잰다.
+	if (IGClipAudit::IsRequested())
+	{
+		Body->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	}
 	if (UStaticMesh* BoxMesh = LoadObject<UStaticMesh>(
 			nullptr, TEXT("/Game/Meshes/SM_StorageBox.SM_StorageBox"), nullptr, LOAD_NoWarn))
 	{
 		for (int32 Index = 0; Index < 2; ++Index)
 		{
 			UStaticMeshComponent* Box = NewObject<UStaticMeshComponent>(this, *FString::Printf(TEXT("HeldBox%d"), Index));
-			Box->SetupAttachment(FeetRoot);
+			// 몸에 붙인다. 계단에서 몸을 낮추면 안은 상자도 같이 내려간다.
+			Box->SetupAttachment(Body);
 			Box->SetStaticMesh(BoxMesh);
 			Box->SetMobility(EComponentMobility::Movable);
 			Box->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -126,6 +135,7 @@ void AIGJeongwooFigure::Appear(const FVector& Feet, const float Yaw, const EPose
 	bTurning = false;
 	TurnToYaw.Reset();
 	Route = FIGWalkerRoute();
+	StairBody.Reset();
 	SetActorLocationAndRotation(Feet, FRotator(0.0f, Yaw, 0.0f));
 	SetActorHiddenInGame(false);
 	Body->SetVisibility(true);
@@ -143,6 +153,7 @@ void AIGJeongwooFigure::Vanish()
 	TurnToYaw.Reset();
 	bShown = false;
 	SetActorTickEnabled(false);
+	StairBody.Reset();
 	Body->SetVisibility(false);
 	for (UStaticMeshComponent* Box : Boxes)
 	{
@@ -268,17 +279,46 @@ void AIGJeongwooFigure::PlayPose(const EPose Pose, const float Rate)
 	{
 		return;
 	}
-	if (ActiveAnim != Sequence)
-	{
-		Body->PlayAnimation(Sequence, Pose != EPose::LookBack);
-		ActiveAnim = Sequence;
-	}
-	Body->SetPlayRate(Rate);
+	IGWalker::PlayBody(Body.Get(), ActiveAnim, Sequence, Rate, Pose != EPose::LookBack);
+}
+
+void AIGJeongwooFigure::BeginPlay()
+{
+	Super::BeginPlay();
+	ClipAudit.Start(TEXT("jeongwoo"));
+}
+
+void AIGJeongwooFigure::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ClipAudit.Report();
+	Super::EndPlay(EndPlayReason);
 }
 
 void AIGJeongwooFigure::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다.
+	if (ClipAudit.IsOn() && bShown)
+	{
+		const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		ClipAudit.Measure(Body, GetActorLocation() + FVector(0.0f, 0.0f, 100.0f), PC ? PC->GetPawn() : nullptr,
+			bWalking ? (bCarryWalk ? TEXT("Carry") : TEXT("Walk")) : (bTurning ? TEXT("Turn") : TEXT("Stand")));
+	}
+	TickWalk(DeltaSeconds);
+	if (bShown)
+	{
+		TArray<FVector, TInlineAllocator<4>> Ahead;
+		if (bWalking)
+		{
+			Route.Ahead(Travelled, 3, Ahead);
+		}
+		StairBody.Tick(*FeetRoot, Ahead,
+			ActiveAnim && (ActiveAnim == AnimFor(EPose::Walk) || ActiveAnim == AnimFor(EPose::Carry)), DeltaSeconds);
+	}
+}
+
+void AIGJeongwooFigure::TickWalk(const float DeltaSeconds)
+{
 	if (bTurning)
 	{
 		// 다 걸은 자리에서 돌아선다. 발을 옮기며 돌도록 걷기를 느리게 튼다.
@@ -303,7 +343,11 @@ void AIGJeongwooFigure::Tick(const float DeltaSeconds)
 				return;
 			}
 		}
-		SetActorTickEnabled(false);
+		// 계단 걸음이 다리를 다 풀 때까지는 틱을 끄지 않는다. 낮춘 몸 그대로 멈춰 서게 된다.
+		if (!StairBody.IsActive())
+		{
+			SetActorTickEnabled(false);
+		}
 		return;
 	}
 	FVector Direction = FVector::ForwardVector;

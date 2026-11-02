@@ -1325,8 +1325,8 @@ void AIGManagerPatrol::UpdateBodyIK(const float DeltaSeconds)
 	StairFeet.SetPathAhead(Ahead);
 	const bool bGait = ActiveAnim && (ActiveAnim == WalkAnim || ActiveAnim == RunAnim);
 	const float Length = Anim->GetLength();
-	StairFeet.Update(*GetWorld(), *BodySkeletal, DeltaSeconds,
-		bGait && Length > 0.0f ? Anim->GetCurrentTime() / Length : 0.0f);
+	StairFeet.Update(*GetWorld(), *BodySkeletal, FTransform(FRotator(0.0f, GetActorRotation().Yaw, 0.0f), GetFeet()),
+		DeltaSeconds, bGait && Length > 0.0f ? Anim->GetCurrentTime() / Length : 0.0f);
 	UpdateArmRoom(DeltaSeconds);
 	FIGWalkerIKRequest Request = StairFeet.GetRequest();
 	Request.ArmLimit[0] = ArmLimit[0];

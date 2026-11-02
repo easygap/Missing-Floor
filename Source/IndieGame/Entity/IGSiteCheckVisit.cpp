@@ -56,9 +56,13 @@ namespace IGSiteCheckVisit
 
 	// 문. 관리인이 열쇠를 꺼내고 이만큼 뒤에 자물쇠가 돈다.
 	constexpr double KeysToSwingSeconds = 1.1;
-	/** 문짝이 쓸고 가는 쪽에서 다가오면 문짝 길이보다 멀리 선다. 반대쪽에서는 손잡이 앞이다. */
-	constexpr float SweepSideClearance = 110.0f;
-	constexpr float FarSideClearance = 45.0f;
+	/**
+	 * 문짝이 쓸고 가는 쪽에서 다가오면 문짝 길이보다 멀리 선다. 반대쪽에서는 손잡이 앞이다. 쓸리는 쪽에서 110 cm에
+	 * 서면 계단을 오르며 앞 단에 내디딘 발과 손전등 든 손이 옥상 철문이 열리며 쓰는 원(경첩에서 85 cm)에 들어갔고,
+	 * 반대쪽 45 cm에서는 손전등 든 손(몸 앞 48 cm)이 닫힌 5층 문짝에 닿았다.
+	 */
+	constexpr float SweepSideClearance = 135.0f;
+	constexpr float FarSideClearance = 55.0f;
 	/** 안에서 빗장이 걸려 있으면 이 간격으로 두드린다. */
 	constexpr double DoorKnockInterval = 5.0;
 
@@ -107,8 +111,12 @@ namespace IGSiteCheckVisit
 	constexpr float SpawnSightDistance = 1800.0f;
 	constexpr float WithHerSightDistance = 700.0f;
 
-	const FVector ManagerSpot(205.0f, 540.0f, RoofZ);
-	const FVector OfficerSpot(216.0f, 696.0f, RoofZ);
+	/**
+	 * 관리인은 동쪽으로 걸어와 서서, X 205에 서면 앞으로 내민 손이 칸막이 벽(X 250)에 닿았다. 경찰관은 노크하는 주먹이
+	 * 몸 앞 43 cm까지 나와, X 216에 서면 칸막이 벽 속으로 9 cm 들어갔다.
+	 */
+	const FVector ManagerSpot(198.0f, 540.0f, RoofZ);
+	const FVector OfficerSpot(207.0f, 696.0f, RoofZ);
 	/** 노크가 닿는 자리. 가운데 칸 석고 면(X 250)의 주먹 높이다. */
 	const FVector KnockPoint(250.0f, 698.0f, 1318.0f);
 	/** 관리인이 바라보는 5층 철문 문간. */
@@ -116,14 +124,19 @@ namespace IGSiteCheckVisit
 
 	static float FourthFloorZ() { return AIGPrologueWorldScene::GetStoreyFloorZ(3); }
 
-	/** 4층 복도 서쪽 끝, 옥상 계단 밑. 관리인이 앞, 경찰관이 계단탑 출입구 쪽에 선다. */
+	/**
+	 * 4층 복도 서쪽 끝, 옥상 계단 밑. 관리인이 앞, 경찰관이 계단탑 출입구 쪽에 선다. 경찰관이 Y -340에 서면 열린 4층
+	 * 방화문 문짝(Y -361)에 발이 들어갔다.
+	 */
 	static FVector ManagerStart() { return FVector(-262.0f, -292.0f, FourthFloorZ()); }
-	static FVector OfficerStart() { return FVector(-298.0f, -340.0f, FourthFloorZ()); }
+	static FVector OfficerStart() { return FVector(-298.0f, -325.0f, FourthFloorZ()); }
 
 	/**
 	 * 옥상 계단 밑에서 5층 문 안까지. 아래 네 단(18 cm)과 참, 위 열네 단(17 cm)의 디딤판
-	 * 가운데를 잇는다. 옥상 철문을 나서면 난간 사이 120 cm 통로의 한가운데(Y 220)를 걷고,
-	 * 문틀 기둥(X -227.5)을 비켜 돌아선다.
+	 * 가운데를 잇는다. 옥상 철문을 나서면 문 앞(Y 265)까지 곧게 나와, 문틀 동쪽 기둥(X -232.5,
+	 * Y 226)과 계단실 동벽 끝(Y 215)을 북쪽으로 비켜 돌아 물탱크 통로로 든다. 관리인 순찰과 같은
+	 * 길이다. 예전에는 문 앞 (-277.5, 245)에서 (-200, 225)로 곧장 꺾어 두 사람 넓적다리와 팔이 기둥과
+	 * 벽 끝을 40 cm 넘게 지나갔다.
 	 */
 	static void AppendClimb(TArray<FVector>& Points)
 	{
@@ -134,8 +147,9 @@ namespace IGSiteCheckVisit
 		Points.Add(FVector(-277.5f, -100.0f, 980.0f));
 		Points.Add(FVector(-277.5f, 186.0f, 1201.0f));
 		Points.Add(FVector(-277.5f, 208.5f, RoofZ));
-		Points.Add(FVector(-277.5f, 245.0f, RoofZ));
-		Points.Add(FVector(-200.0f, 225.0f, RoofZ));
+		Points.Add(FVector(-277.5f, 265.0f, RoofZ));
+		Points.Add(FVector(-175.0f, 258.0f, RoofZ));
+		Points.Add(FVector(-110.0f, 235.0f, RoofZ));
 		Points.Add(FVector(130.0f, 220.0f, RoofZ));
 		Points.Add(FVector(130.0f, 415.0f, RoofZ));
 		Points.Add(FVector(130.0f, 500.0f, RoofZ));
@@ -228,7 +242,56 @@ bool AIGSiteCheckVisit::LoadBodies()
 	OfficerBody->SetSkeletalMesh(OfficerMesh);
 	ManagerBody->SetSkeletalMesh(ManagerMesh);
 	Animations = {Officer.IdleAnim, Officer.WalkAnim, Manager.IdleAnim, Manager.WalkAnim};
+	for (FWalker* Walker : {&Officer, &Manager})
+	{
+		// 옥상 계단과 건물 계단에서 발을 디딤판에 맞춘다(관리인 순찰과 같은 재생기).
+		Walker->Stairs.Attach(*Walker->Body, *this);
+		// 관통 측정은 화면 없이 돈다. 그대로 두면 뼈가 첫 자세로 굳은 채 잰다.
+		if (IGClipAudit::IsRequested())
+		{
+			Walker->Body->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+		}
+	}
 	return true;
+}
+
+void AIGSiteCheckVisit::BeginPlay()
+{
+	Super::BeginPlay();
+	Officer.ClipAudit.Start(TEXT("officer"));
+	Manager.ClipAudit.Start(TEXT("sitecheck_manager"));
+}
+
+void AIGSiteCheckVisit::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Officer.ClipAudit.Report();
+	Manager.ClipAudit.Report();
+	Super::EndPlay(EndPlayReason);
+}
+
+void AIGSiteCheckVisit::MeasureWalker(FWalker& Walker, const TCHAR* Phase)
+{
+	if (!Walker.ClipAudit.IsOn() || !Walker.bShown)
+	{
+		return;
+	}
+	const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	Walker.ClipAudit.Measure(Walker.Body, Walker.Feet->GetComponentLocation() + FVector(0.0f, 0.0f, 100.0f),
+		PC ? PC->GetPawn() : nullptr, Phase);
+}
+
+void AIGSiteCheckVisit::TickWalkerBody(FWalker& Walker, const float DeltaSeconds)
+{
+	if (!Walker.bShown)
+	{
+		return;
+	}
+	TArray<FVector, TInlineAllocator<4>> Ahead;
+	if (Walker.bWalking)
+	{
+		Walker.Path.Ahead(Walker.Travelled, 3, Ahead);
+	}
+	Walker.Stairs.Tick(*Walker.Feet, Ahead, Walker.ActiveAnim == Walker.WalkAnim, DeltaSeconds);
 }
 
 void AIGSiteCheckVisit::SetGates(AIGSwingDoor* InStairGate, AIGSwingDoor* InAnnexGate)
@@ -281,6 +344,8 @@ FVector AIGSiteCheckVisit::RoutePoint(
 void AIGSiteCheckVisit::Place(FWalker& Walker, const FVector& Feet, const float Yaw) const
 {
 	Walker.Feet->SetWorldLocationAndRotation(Feet, FRotator(0.0f, Yaw, 0.0f));
+	// 순간 이동이다. 계단 발은 새 자리에서 다시 잡는다.
+	Walker.Stairs.Reset();
 }
 
 void AIGSiteCheckVisit::Show(FWalker& Walker, const bool bVisible)
@@ -293,6 +358,7 @@ void AIGSiteCheckVisit::Show(FWalker& Walker, const bool bVisible)
 		Walker.Body->Stop();
 		Walker.ActiveAnim = nullptr;
 		Walker.bWalking = false;
+		Walker.Stairs.Reset();
 	}
 	SetActorHiddenInGame(!Officer.bShown && !Manager.bShown);
 }
@@ -745,6 +811,19 @@ void AIGSiteCheckVisit::PlayStep(FWalker& Walker, const bool bOnStair)
 void AIGSiteCheckVisit::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다.
+	const TCHAR* const StageNames[] = {TEXT("Hidden"), TEXT("Climbing"), TEXT("Waiting"), TEXT("Knocking"), TEXT("Talking"),
+		TEXT("Lingering"), TEXT("Leaving"), TEXT("Gone")};
+	const TCHAR* const StageName = StageNames[FMath::Min(static_cast<int32>(Stage), 7)];
+	MeasureWalker(Officer, StageName);
+	MeasureWalker(Manager, StageName);
+	TickStage(DeltaSeconds);
+	TickWalkerBody(Officer, DeltaSeconds);
+	TickWalkerBody(Manager, DeltaSeconds);
+}
+
+void AIGSiteCheckVisit::TickStage(const float DeltaSeconds)
+{
 	const double Now = GetWorld()->GetTimeSeconds();
 	switch (Stage)
 	{

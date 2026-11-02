@@ -2,7 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Entity/IGClipAudit.h"
 #include "Entity/IGWalkerKit.h"
+#include "Entity/IGWalkerLegIK.h"
 #include "IGSiteCheckVisit.generated.h"
 
 class AIGSiteCheckVisit;
@@ -92,6 +94,10 @@ public:
 	/** 5층 철문 안이나 그 앞에서 그녀가 두 사람을 볼 수 있는가. */
 	static bool IsInAnnex(const FVector& Feet);
 
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 private:
 	/** 한 사람의 걸음. 컴포넌트와 동작은 액터의 UPROPERTY가 쥔다. */
 	struct FWalker
@@ -113,6 +119,10 @@ private:
 		bool bWalking = false;
 		bool bShown = false;
 		double LastSeenAt = 0.0;
+		/** 계단에서는 걷는 애니메이션의 다리 대신 한 단씩 디딘다. */
+		FIGWalkerStairBody Stairs;
+		/** 검사 실행에서 몸이 벽·문·계단을 지나는지 잰다(IGClipAudit). */
+		FIGClipAudit ClipAudit;
 	};
 
 	void SetRoute(FWalker& Walker, const TArray<FVector>& Points) const;
@@ -127,9 +137,15 @@ private:
 	void Place(FWalker& Walker, const FVector& Feet, float Yaw) const;
 	void Show(FWalker& Walker, bool bVisible);
 	bool IsPlayerInTheWay(const FWalker& Walker) const;
+	/** 움직이기 전에 관통을 잰다. */
+	void MeasureWalker(FWalker& Walker, const TCHAR* Phase);
+	/** 몸을 옮긴 뒤 계단 발을 맞춘다. */
+	void TickWalkerBody(FWalker& Walker, float DeltaSeconds);
 
 	/** 관리인이 문 앞에서 열쇠로 연다. 열려 있거나 다 열렸으면 true. */
 	bool OpenGateAhead(float DeltaSeconds, double Now);
+	/** 지금 단계의 일을 한 틱 한다. 두 사람 몸은 여기서 다 옮긴다. */
+	void TickStage(float DeltaSeconds);
 	void TickClimbing(float DeltaSeconds, double Now);
 	void TickWaiting(float DeltaSeconds, double Now);
 	void TickKnocking(float DeltaSeconds, double Now);
