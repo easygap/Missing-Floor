@@ -1,9 +1,13 @@
 ﻿#include "Sequence/IGFireDoorProbe.h"
 
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
+#include "Engine/PointLight.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "Entity/IGListenerEntity.h"
@@ -12,6 +16,7 @@
 #include "Entity/IGNoiseSubsystem.h"
 #include "EngineUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
@@ -44,6 +49,18 @@ namespace IGFireDoorProbe
 	constexpr float DoorPlaneX = -322.5f;
 	/** 문 소리를 세는 반경. 문짝 가운데에서 잰다. */
 	constexpr float NoiseWatchRadius = 260.0f;
+	/**
+	 * 촬영 실행에서 관리인 계단 걸음을 보는 카메라와 작업등. 서쪽 계단(1층→반 층 참)은 반 층 참 북서 구석에서,
+	 * 동쪽 계단(반 층 참→2층)은 2층 참 남동 구석에서 내려다본다. 두 계단 사이 벽 때문에 서로 안 보인다.
+	 */
+	const FVector WestFlightCamera(-565.0f, 95.0f, 290.0f);
+	const FVector WestFlightLook(-520.0f, -150.0f, 60.0f);
+	const FVector WestFlightLamp(-520.0f, -60.0f, 250.0f);
+	const FVector EastFlightCamera(-365.0f, -365.0f, 470.0f);
+	const FVector EastFlightLook(-410.0f, -110.0f, 230.0f);
+	const FVector EastFlightLamp(-410.0f, -150.0f, 400.0f);
+	/** 관리인이 내려오기를 기다리는 동안 유담을 세우는 옥상 물탱크 통로. 4층 복도를 비추는 손전등에 걸리지 않는다. */
+	const FVector RoofParked(130.0f, 225.0f, 1200.0f);
 }
 
 AIGFireDoorProbe::AIGFireDoorProbe()
@@ -225,7 +242,8 @@ void AIGFireDoorProbe::Tick(const float DeltaSeconds)
 	}
 	PhaseSeconds += DeltaSeconds;
 	TotalSeconds += DeltaSeconds;
-	if (TotalSeconds > 220.0f)
+	// 촬영 실행은 관리인이 한 바퀴 돌고 내려오는 것까지 본다.
+	if (TotalSeconds > (bShots ? 480.0f : 220.0f))
 	{
 		Check(false, TEXT("probe_timeout"));
 		Finish();
@@ -496,6 +514,15 @@ void AIGFireDoorProbe::Tick(const float DeltaSeconds)
 
 	case 9:
 	{
+		UpdateManagerStairShots(*Mok);
+		if (bShots && StairShotsTaken.Num() >= 4)
+		{
+			// 촬영 실행은 오르는 네 장을 찍으면 관리인이 한 바퀴 돌고 1층으로 내려올 때까지 본다. 문 확인은 촬영
+			// 없는 실행이 맡는다. 유담은 4층 복도를 비추는 손전등에 걸리지 않게 옥상 통로에 세운다.
+			Stand(IGFireDoorProbe::RoofParked, IGFireDoorProbe::RoofParked + FVector(100.0f, 0.0f, 160.0f));
+			Next(17);
+			break;
+		}
 		const FVector At = Mok->GetActorLocation();
 		const bool bOnSecondFloor = FMath::Abs(At.Z - 300.0f) < 60.0f;
 		if (SecondDoor && bOnSecondFloor && FVector::Dist2D(At, FVector(-320.0f, -305.0f, 0.0f)) < 160.0f
@@ -526,7 +553,115 @@ void AIGFireDoorProbe::Tick(const float DeltaSeconds)
 		break;
 	}
 
+	case 17:
+		UpdateManagerStairShots(*Mok);
+		if (StairShotsTaken.Num() >= 8 || PhaseSeconds >= 240.0f)
+		{
+			UE_LOG(LogIndieGame, Display, TEXT("FIRE_DOOR_STAIR_SHOTS taken=%d"), StairShotsTaken.Num());
+			Finish();
+		}
+		break;
+
 	default:
 		break;
+	}
+}
+
+void AIGFireDoorProbe::UpdateManagerStairShots(const AIGManagerPatrol& Mok)
+{
+	UWorld* World = GetWorld();
+	if (!bShots || !World)
+	{
+		return;
+	}
+	if (StairCameras.IsEmpty())
+	{
+		const FVector Specs[2][3] = {
+			{IGFireDoorProbe::WestFlightCamera, IGFireDoorProbe::WestFlightLook, IGFireDoorProbe::WestFlightLamp},
+			{IGFireDoorProbe::EastFlightCamera, IGFireDoorProbe::EastFlightLook, IGFireDoorProbe::EastFlightLamp}};
+		for (const FVector (&Spec)[3] : Specs)
+		{
+			ACameraActor* Camera = World->SpawnActor<ACameraActor>(Spec[0], (Spec[1] - Spec[0]).Rotation());
+			if (Camera)
+			{
+				Camera->GetCameraComponent()->SetFieldOfView(80.0f);
+			}
+			StairCameras.Add(Camera);
+			if (APointLight* Lamp = World->SpawnActor<APointLight>(Spec[2], FRotator::ZeroRotator))
+			{
+				Lamp->PointLightComponent->SetMobility(EComponentMobility::Movable);
+				Lamp->PointLightComponent->SetIntensity(2400.0f);
+				Lamp->PointLightComponent->SetAttenuationRadius(700.0f);
+				Lamp->PointLightComponent->SetCastShadows(true);
+			}
+		}
+		LastManagerZ = Mok.GetActorLocation().Z;
+		// 촬영 카메라로 보는 동안에는 유담 손전등이 카메라 쪽을 비추는 것으로 잡혀, 관리인이 비친 줄 알고 유담 쪽으로
+		// 조사하러 갔다. 손전등을 끈다.
+		if (AIGPlayerCharacter* Character = Player.Get())
+		{
+			if (UIGFlashlightComponent* Torch = Character->GetFlashlight())
+			{
+				Torch->SetOn(false);
+			}
+		}
+	}
+	const FVector Feet = Mok.GetActorLocation();
+	const bool bRising = Feet.Z > LastManagerZ + 0.01f;
+	const bool bFalling = Feet.Z < LastManagerZ - 0.01f;
+	LastManagerZ = Feet.Z;
+	// 서쪽 계단은 1층에서 북쪽으로, 동쪽 계단은 반 층 참에서 남쪽으로 오른다. 계단 아래 끝이 0, 위 끝이 1이다.
+	int32 Flight = INDEX_NONE;
+	float Progress = 0.0f;
+	if (Feet.Y > -235.0f && Feet.Y < -35.0f && Feet.Z < 301.0f)
+	{
+		if (Feet.X < -470.0f && Feet.Z < 151.0f)
+		{
+			Flight = 0;
+			Progress = (Feet.Y + 235.0f) / 200.0f;
+		}
+		else if (Feet.X > -460.0f && Feet.X < -355.0f && Feet.Z > 149.0f)
+		{
+			Flight = 1;
+			Progress = (-35.0f - Feet.Y) / 200.0f;
+		}
+	}
+	if (Flight == INDEX_NONE || (!bRising && !bFalling))
+	{
+		return;
+	}
+	if (ActiveStairCamera != Flight)
+	{
+		APlayerController* PC = World->GetFirstPlayerController();
+		if (!PC || !StairCameras.IsValidIndex(Flight) || !StairCameras[Flight].IsValid())
+		{
+			return;
+		}
+		PC->SetViewTargetWithBlend(StairCameras[Flight].Get(), 0.0f);
+		// 밤 제목과 안내 글자가 화면을 덮지 않게 한다.
+		if (AHUD* Hud = PC->GetHUD())
+		{
+			Hud->bShowHUD = false;
+		}
+		ActiveStairCamera = Flight;
+		StairCameraSince = TotalSeconds;
+		return;
+	}
+	// 카메라를 바꾼 직후 프레임은 아직 예전 화면이다.
+	if (TotalSeconds - StairCameraSince < 0.3f)
+	{
+		return;
+	}
+	for (int32 Mark = 1; Mark <= 2; ++Mark)
+	{
+		const float Threshold = bRising ? Mark / 3.0f : 1.0f - Mark / 3.0f;
+		const FString Name = FString::Printf(TEXT("manager-stair-%s-%s-%d"),
+			Flight == 0 ? TEXT("west") : TEXT("east"), bRising ? TEXT("up") : TEXT("down"), Mark);
+		if ((bRising ? Progress >= Threshold : Progress <= Threshold) && !StairShotsTaken.Contains(Name))
+		{
+			StairShotsTaken.Add(Name);
+			Shoot(*Name);
+			return;
+		}
 	}
 }

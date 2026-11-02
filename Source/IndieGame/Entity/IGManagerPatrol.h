@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Entity/IGClipAudit.h"
+#include "Entity/IGWalkerLegIK.h"
 #include "IGManagerPatrol.generated.h"
 
 class AIGListenerEntity;
@@ -71,7 +72,8 @@ enum class EIGManagerPatrolState : uint8
  *
  * 몸에는 충돌이 없다. 길은 계단탑과 복도의 빈 자리만 지나는 점 그래프다. 몸은
  * 리깅한 스켈레탈(SK_MokHansooPatrol)이 슬리퍼를 끌며 걷고, 쫓을 때는 허둥지둥
- * 뛴다. 서서 훑을 때와 노크에 굳을 때, 손목을 잡을 때 동작이 따로 있다.
+ * 뛴다. 계단에서는 한 단씩(뛸 때는 두 단씩) 디딘다. 서서 훑을 때와 노크에 굳을 때,
+ * 손목을 잡을 때 동작이 따로 있다.
  */
 UCLASS(NotBlueprintable, Transient)
 class INDIEGAME_API AIGManagerPatrol : public AActor
@@ -241,6 +243,10 @@ private:
 	/** 403호 문밖에서 열쇠 꾸러미, 도어락, 멀어지는 슬리퍼. 데려다 놓고 가는 소리다. */
 	void PlayEscortAftermath(bool bKeyTaken);
 
+	/** 지금 상태의 일을 한 틱 한다. 몸은 여기서 다 옮긴다. */
+	void TickState(float DeltaSeconds);
+	/** 몸을 다 옮긴 뒤 계단에서 발을 디딤판에 딛게 한다. */
+	void UpdateStairFeet(float DeltaSeconds);
 	void TickResting(float DeltaSeconds);
 	void TickWalking(float DeltaSeconds, float Speed);
 	void TickChase(float DeltaSeconds);
@@ -359,6 +365,8 @@ private:
 	TObjectPtr<UStaticMesh> ErrandCartFoldedMesh;
 	/** 검사 실행에서 몸이 벽·문·소품을 지나는지 잰다(IGClipAudit). */
 	FIGClipAudit ClipAudit;
+	/** 계단에서는 걷는 애니메이션의 다리 대신 한 단씩 디딘다. */
+	FIGStairFeet StairFeet;
 	/** 2·3·4층 계단실 방화문. */
 	mutable TArray<TWeakObjectPtr<AIGSwingDoor>> FireDoors;
 	mutable bool bFireDoorResolved = false;

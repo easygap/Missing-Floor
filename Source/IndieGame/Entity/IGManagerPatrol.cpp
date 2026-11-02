@@ -261,13 +261,17 @@ bool AIGManagerPatrol::BuildSkeletalBody()
 	Component->SetCastShadow(true);
 	// 걸음 동작이 바운드 밖으로 팔과 발을 낸다.
 	Component->SetBoundsScale(1.4f);
-	Component->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	// 애니메이션 하나를 돌리는 재생기에 다리 IK를 얹은 것이다. 계단에서 발을 디딤판에 맞춘다.
+	Component->SetAnimInstanceClass(UIGWalkerAnimInstance::StaticClass());
+	// 발 자리는 이 틱에 몸을 옮긴 뒤에 정한다. 메시가 먼저 틱하면 한 프레임 전 자리로 그린다.
+	Component->AddTickPrerequisiteActor(this);
 	// 관통 측정은 화면 없이 돈다. 그대로 두면 뼈가 첫 자세로 굳은 채 잰다.
 	if (IGClipAudit::IsRequested())
 	{
 		Component->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 	}
 	BodySkeletal = Component;
+	StairFeet.Bind(*Component);
 	Workwear->SetStaticMesh(nullptr);
 	HeadHands->SetStaticMesh(nullptr);
 	PlayBodyAnim(IdleAnim, true, 1.0f);
@@ -280,12 +284,19 @@ void AIGManagerPatrol::PlayBodyAnim(UAnimSequence* Sequence, const bool bLoop, c
 	{
 		return;
 	}
+	// PlayAnimation은 재생기를 기본 것으로 갈아 끼워 다리 IK가 빠진다. 재생기에 바로 건다.
+	UAnimSingleNodeInstance* Single = BodySkeletal->GetSingleNodeInstance();
+	if (!Single)
+	{
+		return;
+	}
 	if (ActiveAnim != Sequence)
 	{
-		BodySkeletal->PlayAnimation(Sequence, bLoop);
+		Single->SetAnimationAsset(Sequence, bLoop, Rate);
+		Single->SetPlaying(true);
 		ActiveAnim = Sequence;
 	}
-	BodySkeletal->SetPlayRate(Rate);
+	Single->SetPlayRate(Rate);
 }
 
 void AIGManagerPatrol::Configure(
@@ -380,8 +391,10 @@ void AIGManagerPatrol::BuildGraph()
 	Route.Reset();
 
 	// 1층. 관리실 문 앞 연결통로에서 나와 주차장을 지나 계단탑으로 간다.
-	// 관리실 문 앞. 닫힌 문짝(Y -250 언저리)에서 25 cm면 북쪽 팔이 문짝 속에 들어갔다.
-	RestNode = AddNode(FVector(165.0f, -287.0f, 0.0f), false);
+	// 관리실 문 앞. 닫힌 문짝(Y -252.5)에서 25 cm면 북쪽 팔이 문짝 속에 들어갔다. 35 cm(Y -287)에서도 한 바퀴 돌고
+	// 연결통로에서 북동쪽으로 걸어 들어오면 손전등 든 오른손이 문짝에 10 cm 들어갔다가 사라졌다. 10 cm 더 물려
+	// 들어오는 각을 눕힌다.
+	RestNode = AddNode(FVector(165.0f, -297.0f, 0.0f), false);
 	// 관리실 문은 경첩(112, -250)에서 연결통로 북벽 쪽으로 10도 기울어 열려 있어 문짝 끝이 (8, -268)까지 나온다. 문 앞에서
 	// 곧장 서쪽으로 가면 문짝과 25 cm 남짓이라 북쪽 팔이 문짝을 뚫고 지나갔다. 통로 가운데로 비켜 가서 문짝 끝과
 	// 40 cm 넘게 떨어져 지난다. 더 남쪽(Y -318)에 두면 이 점에서 돌며 앞으로 내민 오른손이 남벽(Y -365)에 닿았다.
@@ -750,6 +763,13 @@ void AIGManagerPatrol::ShowBody(const bool bShow)
 		BodySkeletal->SetVisibility(bShow);
 		// 안쪽 방에 있는 동안은 뼈대도 쉰다.
 		BodySkeletal->bPauseAnims = !bShow;
+		// 다시 나올 때 지난번 계단의 발 자리로 다리를 뻗지 않게 한다.
+		StairFeet.Reset();
+		BodyPivot->SetRelativeLocation(FVector::ZeroVector);
+		if (UIGWalkerAnimInstance* Anim = Cast<UIGWalkerAnimInstance>(BodySkeletal->GetAnimInstance()))
+		{
+			Anim->SetLegIK(FIGLegIKRequest());
+		}
 	}
 	Torch->SetVisibility(bShow);
 }
@@ -1265,6 +1285,47 @@ void AIGManagerPatrol::Tick(const float DeltaSeconds)
 			StaticEnum<EIGManagerPatrolState>()->GetNameStringByValue(static_cast<int64>(State))
 				+ (bErrand ? TEXT(".errand") : (bKeyHunt ? TEXT(".hunt") : TEXT(""))));
 	}
+	TickState(DeltaSeconds);
+	if (bOnDuty && bBodyShown)
+	{
+		UpdateStairFeet(DeltaSeconds);
+	}
+}
+
+void AIGManagerPatrol::UpdateStairFeet(const float DeltaSeconds)
+{
+	UIGWalkerAnimInstance* Anim = BodySkeletal ? Cast<UIGWalkerAnimInstance>(BodySkeletal->GetAnimInstance()) : nullptr;
+	if (!Anim)
+	{
+		return;
+	}
+	// 계단 앞에서 길이 꺾이면 발도 길을 따라 놓는다.
+	TArray<FVector, TInlineAllocator<4>> Ahead;
+	for (int32 Index = PathCursor; Index < Path.Num() && Ahead.Num() < 3; ++Index)
+	{
+		Ahead.Add(Nodes[Path[Index]].Feet);
+	}
+	if (bHasFinalTarget && Ahead.Num() < 3)
+	{
+		Ahead.Add(FinalTarget);
+	}
+	StairFeet.SetPathAhead(Ahead);
+	const bool bGait = ActiveAnim && (ActiveAnim == WalkAnim || ActiveAnim == RunAnim);
+	const float Length = Anim->GetLength();
+	StairFeet.Update(*GetWorld(), *BodySkeletal, DeltaSeconds,
+		bGait && Length > 0.0f ? Anim->GetCurrentTime() / Length : 0.0f);
+	Anim->SetLegIK(StairFeet.GetRequest());
+	BodyPivot->SetRelativeLocation(FVector(0.0f, 0.0f, -StairFeet.GetBodyDrop()));
+	if (StairFeet.IsActive() && bGait && Length > 0.0f)
+	{
+		// 계단에서는 걷는 애니메이션을 딛는 발에 맞춰 돌린다. 팔과 몸통이 다리와 같은 박자로 간다.
+		Anim->SetPlayRate(0.0f);
+		Anim->SetPosition(StairFeet.GetGaitPhase() * Length, false);
+	}
+}
+
+void AIGManagerPatrol::TickState(const float DeltaSeconds)
+{
 	switch (State)
 	{
 	case EIGManagerPatrolState::Resting:

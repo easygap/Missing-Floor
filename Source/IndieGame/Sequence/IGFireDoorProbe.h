@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "IGFireDoorProbe.generated.h"
 
+class ACameraActor;
 class AIGFireDoorWedge;
 class AIGListenerEntity;
 class AIGManagerPatrol;
@@ -21,7 +22,9 @@ struct FIGNoiseEvent;
  * 않고 문 앞에서 두드리는지, 셋째 밤의 관리인은 닫힌 2층 문을 열고 지나가는지 본다.
  * 202호 쪽지, 303호 안내문, 그 시간의 새벽배송 가방도 그 자리에 있는지 같이 본다.
  *
- * -IGFireDoorShots를 같이 주면 렌더가 있는 실행에서 몇 장면을 찍는다.
+ * -IGFireDoorShots를 같이 주면 렌더가 있는 실행에서 몇 장면을 찍는다. 관리인이 1·2층 사이 두 계단을
+ * 오르고, 한 바퀴 돌고 내려오는 것도 계단마다 두 장씩 찍는다(디딤판에 발을 딛는지 본다). 이 실행은 오르는
+ * 장면을 찍고 나면 관리인의 문 확인 대신 내려오기를 기다린다.
  */
 UCLASS()
 class INDIEGAME_API AIGFireDoorProbe : public AActor
@@ -51,6 +54,8 @@ private:
 	void HandleNoise(const FIGNoiseEvent& Event);
 	/** 처음 한 번. 문 셋, 종이 둘, 가방을 센다. */
 	void CheckStage();
+	/** 촬영 실행. 관리인이 1·2층 사이 계단에 있으면 그 계단 카메라로 보고 계단 3분의 1, 3분의 2에서 찍는다. */
+	void UpdateManagerStairShots(const AIGManagerPatrol& Mok);
 
 	TWeakObjectPtr<AIGPrologueWorldScene> Scene;
 	TWeakObjectPtr<AIGPlayerCharacter> Player;
@@ -78,4 +83,10 @@ private:
 	bool bManagerOpenedDoor = false;
 	bool bManagerCrossedClosedDoor = false;
 	bool bShots = false;
+	/** 서쪽 계단(1층→반 층 참)과 동쪽 계단(반 층 참→2층)을 보는 카메라. */
+	TArray<TWeakObjectPtr<ACameraActor>> StairCameras;
+	int32 ActiveStairCamera = INDEX_NONE;
+	float StairCameraSince = 0.0f;
+	float LastManagerZ = 0.0f;
+	TSet<FString> StairShotsTaken;
 };
