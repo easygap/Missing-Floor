@@ -596,15 +596,6 @@ void AIGFireDoorProbe::UpdateManagerStairShots(const AIGManagerPatrol& Mok)
 			}
 		}
 		LastManagerZ = Mok.GetActorLocation().Z;
-		// 촬영 카메라로 보는 동안에는 유담 손전등이 카메라 쪽을 비추는 것으로 잡혀, 관리인이 비친 줄 알고 유담 쪽으로
-		// 조사하러 갔다. 손전등을 끈다.
-		if (AIGPlayerCharacter* Character = Player.Get())
-		{
-			if (UIGFlashlightComponent* Torch = Character->GetFlashlight())
-			{
-				Torch->SetOn(false);
-			}
-		}
 	}
 	const FVector Feet = Mok.GetActorLocation();
 	const bool bRising = Feet.Z > LastManagerZ + 0.01f;

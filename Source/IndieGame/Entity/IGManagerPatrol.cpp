@@ -67,6 +67,16 @@ namespace IGManagerPatrol
 	constexpr float TorchOuterCone = 25.0f;
 	const FVector TorchOffset(40.0f, 19.0f, 96.0f);
 
+	/** 양옆 빈 데를 재는 거리와, 팔 바깥면을 벽에서 띄울 틈. */
+	constexpr float ArmRoomReach = 55.0f;
+	constexpr float ArmWallGap = 2.0f;
+	/** 이보다 크게 돌 때는 손이 쓸고 지나갈 자리가 빈 쪽으로 돈다. */
+	constexpr float WideTurnDegrees = 90.0f;
+	/** 도는 쪽을 고를 때 손을 그어 보는 높이와 두 손 자리(몸 기준, 손끝 너머 8 cm까지). */
+	constexpr float TurnSweepHeight = 95.0f;
+	const FVector TorchHandReach(48.0f, 21.0f, 0.0f);
+	const FVector FreeHandReach(4.0f, -44.0f, 0.0f);
+
 	// 리깅한 몸의 걸음 주기. Scripts/blender/rig_walker.py의 보폭과 같다.
 	/** Walk 한 주기(1.2초)에 두 걸음 46 cm씩. */
 	constexpr float WalkCycleSpeed = 0.92f * 100.0f / 1.2f;
@@ -414,10 +424,11 @@ void AIGManagerPatrol::BuildGraph()
 	// 예전 길(240, 15)-(240, -118)은 판재와 책상 모서리를 뚫고 지나갔다.
 	ErrandCotNode = AddErrandNode(FVector(55.0f, 40.0f, 0.0f));
 	ErrandInnerInNode = AddErrandNode(FVector(195.0f, 25.0f, 0.0f));
-	// 문간 안쪽 점은 열린 문짝(이 높이에서 X 268)에서 서쪽으로 비켜 둔다. 문짝을 연 문간이 71 cm라 팔꿈치가 문설주
-	// 벽이나 문짝을 조금씩 스치는데, 길 점으로는 더 줄지 않는다.
+	// 문간 안쪽 점은 열린 문짝(이 높이에서 X 268)에서 서쪽으로 비켜 둔다. 문짝을 연 문간이 66 cm라 양팔이 문설주
+	// 벽과 문짝에 닿아, 여기를 지날 때는 팔을 몸 쪽으로 모은다(UpdateArmRoom). 문틀 점이 X 237이면 돌아올 때
+	// 왼발 바깥 바짓단이 문짝에 4.7 cm 스쳤다.
 	ErrandDoorwayNode = AddErrandNode(FVector(230.0f, -50.0f, 0.0f));
-	ErrandDoorFrameNode = AddErrandNode(FVector(237.0f, -80.0f, 0.0f));
+	ErrandDoorFrameNode = AddErrandNode(FVector(234.0f, -80.0f, 0.0f));
 	ErrandInnerOutNode = AddErrandNode(FVector(229.0f, -112.0f, 0.0f));
 	const int32 ErrandBoothEast = AddErrandNode(FVector(217.0f, -150.0f, 0.0f));
 	const int32 ErrandBoothSouth = AddErrandNode(FVector(206.5f, -164.0f, 0.0f));
@@ -765,10 +776,12 @@ void AIGManagerPatrol::ShowBody(const bool bShow)
 		BodySkeletal->bPauseAnims = !bShow;
 		// 다시 나올 때 지난번 계단의 발 자리로 다리를 뻗지 않게 한다.
 		StairFeet.Reset();
+		ArmLimit[0] = ArmLimit[1] = FIGWalkerIKRequest::ArmFreeReach;
+		TurnSide = 0;
 		BodyPivot->SetRelativeLocation(FVector::ZeroVector);
 		if (UIGWalkerAnimInstance* Anim = Cast<UIGWalkerAnimInstance>(BodySkeletal->GetAnimInstance()))
 		{
-			Anim->SetLegIK(FIGLegIKRequest());
+			Anim->SetIK(FIGWalkerIKRequest());
 		}
 	}
 	Torch->SetVisibility(bShow);
@@ -1288,11 +1301,11 @@ void AIGManagerPatrol::Tick(const float DeltaSeconds)
 	TickState(DeltaSeconds);
 	if (bOnDuty && bBodyShown)
 	{
-		UpdateStairFeet(DeltaSeconds);
+		UpdateBodyIK(DeltaSeconds);
 	}
 }
 
-void AIGManagerPatrol::UpdateStairFeet(const float DeltaSeconds)
+void AIGManagerPatrol::UpdateBodyIK(const float DeltaSeconds)
 {
 	UIGWalkerAnimInstance* Anim = BodySkeletal ? Cast<UIGWalkerAnimInstance>(BodySkeletal->GetAnimInstance()) : nullptr;
 	if (!Anim)
@@ -1314,13 +1327,58 @@ void AIGManagerPatrol::UpdateStairFeet(const float DeltaSeconds)
 	const float Length = Anim->GetLength();
 	StairFeet.Update(*GetWorld(), *BodySkeletal, DeltaSeconds,
 		bGait && Length > 0.0f ? Anim->GetCurrentTime() / Length : 0.0f);
-	Anim->SetLegIK(StairFeet.GetRequest());
+	UpdateArmRoom(DeltaSeconds);
+	FIGWalkerIKRequest Request = StairFeet.GetRequest();
+	Request.ArmLimit[0] = ArmLimit[0];
+	Request.ArmLimit[1] = ArmLimit[1];
+	Anim->SetIK(Request);
 	BodyPivot->SetRelativeLocation(FVector(0.0f, 0.0f, -StairFeet.GetBodyDrop()));
 	if (StairFeet.IsActive() && bGait && Length > 0.0f)
 	{
 		// 계단에서는 걷는 애니메이션을 딛는 발에 맞춰 돌린다. 팔과 몸통이 다리와 같은 박자로 간다.
 		Anim->SetPlayRate(0.0f);
 		Anim->SetPosition(StairFeet.GetGaitPhase() * Length, false);
+	}
+}
+
+void AIGManagerPatrol::UpdateArmRoom(const float DeltaSeconds)
+{
+	// 양옆 빈 데를 잰다. 팔 바깥면은 걸을 때 몸 가운데서 38 cm까지 나와, 문짝을 연 안쪽 방 문간(66 cm)에서는 양팔이
+	// 문설주와 문짝에 들어갔다. 손전등 든 오른손이 몸 앞 40 cm라 그 앞까지 본다.
+	const FRotator Facing(0.0f, GetActorRotation().Yaw, 0.0f);
+	const FVector Forward = Facing.Vector();
+	const FVector Right = FRotationMatrix(Facing).GetScaledAxis(EAxis::Y);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGManagerArmRoom), false, this);
+	if (const AActor* Watcher = Player.Get())
+	{
+		Params.AddIgnoredActor(Watcher);
+	}
+	if (const AActor* Cart = bErrandCartAttached ? ErrandCart.Get() : nullptr)
+	{
+		Params.AddIgnoredActor(Cart);
+	}
+	const FVector Center = GetFeet() - FVector(0.0f, 0.0f, StairFeet.GetBodyDrop());
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		const FVector Out = Right * (Side == 0 ? -1.0f : 1.0f) * IGManagerPatrol::ArmRoomReach;
+		float Room = IGManagerPatrol::ArmRoomReach;
+		for (const float Ahead : {-8.0f, 8.0f, 24.0f, 40.0f})
+		{
+			for (const float Height : {85.0f, 105.0f, 125.0f})
+			{
+				const FVector From = Center + Forward * Ahead + FVector(0.0f, 0.0f, Height);
+				FHitResult Hit;
+				if (GetWorld()->LineTraceSingleByChannel(Hit, From, From + Out, ECC_Visibility, Params) && !Hit.bStartPenetrating)
+				{
+					Room = FMath::Min(Room, Hit.Distance);
+				}
+			}
+		}
+		// 좁아질 때는 바로 모으고, 넓어지면 천천히 편다.
+		const float Goal = Room - IGManagerPatrol::ArmWallGap;
+		ArmLimit[Side] = ArmLimit[Side] >= FIGWalkerIKRequest::ArmFreeReach
+			? Goal
+			: FMath::FInterpTo(ArmLimit[Side], Goal, DeltaSeconds, Goal < ArmLimit[Side] ? 25.0f : 6.0f);
 	}
 }
 
@@ -2776,12 +2834,9 @@ bool AIGManagerPatrol::IsPlayerTorchOnMe() const
 	{
 		return false;
 	}
-	FVector ViewLocation = Character->GetPawnViewLocation();
-	FRotator ViewRotation = Character->GetControlRotation();
-	if (const AController* Controller = Character->GetController())
-	{
-		Controller->GetPlayerViewPoint(ViewLocation, ViewRotation);
-	}
+	// 손전등은 유담 1인칭 카메라에 붙어 있다. 화면이 CCTV나 검사 카메라로 넘어가도 빛은 손전등에서 나간다.
+	// 예전에는 컨트롤러 시점을 써서, 검사 카메라가 관리인을 보면 비친 줄 알고 그쪽으로 조사를 갔다.
+	const FVector ViewLocation = PlayerTorch->GetComponentLocation();
 	const FVector Face = GetFeet() + FVector(0.0f, 0.0f, 150.0f);
 	const FVector ToFace = Face - ViewLocation;
 	if (ToFace.Size() > 1500.0f)
@@ -2789,7 +2844,7 @@ bool AIGManagerPatrol::IsPlayerTorchOnMe() const
 		return false;
 	}
 	// 빛이 얼굴에 닿았거나, 9 m 안에서 불빛 자체가 보인다.
-	const bool bBeamOnFace = FVector::DotProduct(ViewRotation.Vector(), ToFace.GetSafeNormal()) >= 0.92f;
+	const bool bBeamOnFace = FVector::DotProduct(PlayerTorch->GetForwardVector(), ToFace.GetSafeNormal()) >= 0.92f;
 	if (!bBeamOnFace && ToFace.Size() > 900.0f)
 	{
 		return false;
@@ -2990,9 +3045,64 @@ bool AIGManagerPatrol::StepToward(const FVector& Target, const float Speed, cons
 void AIGManagerPatrol::FaceYaw(const float DesiredYaw, const float DeltaSeconds, const float DegreesPerSecond)
 {
 	const FRotator Current = GetActorRotation();
-	const float Delta = FMath::FindDeltaAngleDegrees(Current.Yaw, DesiredYaw);
+	float Delta = FMath::FindDeltaAngleDegrees(Current.Yaw, DesiredYaw);
+	// 크게 돌 때는 두 손이 쓸고 지나갈 자리가 빈 쪽으로 돈다. 가까운 쪽으로만 돌면 3층 복도에 들어서다 물러날 때
+	// 손전등 든 오른손이 계단실 출입구 모서리에 들어갔다. 다 돌기 전에는 도는 쪽을 바꾸지 않는다.
+	if (FMath::Abs(Delta) >= IGManagerPatrol::WideTurnDegrees)
+	{
+		if (TurnSide == 0 || FMath::Abs(FMath::FindDeltaAngleDegrees(TurnGoalYaw, DesiredYaw)) > 45.0f)
+		{
+			TurnSide = ChooseTurnSide(Current.Yaw, Delta);
+			TurnGoalYaw = DesiredYaw;
+		}
+		if ((Delta > 0.0f ? 1 : -1) != TurnSide)
+		{
+			Delta += TurnSide * 360.0f;
+		}
+	}
+	else
+	{
+		TurnSide = 0;
+	}
 	const float Turn = FMath::Clamp(Delta, -DegreesPerSecond * DeltaSeconds, DegreesPerSecond * DeltaSeconds);
 	SetActorRotation(FRotator(0.0f, Current.Yaw + Turn, 0.0f));
+}
+
+int32 AIGManagerPatrol::ChooseTurnSide(const float FromYaw, const float Delta) const
+{
+	const int32 Near = Delta > 0.0f ? 1 : -1;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGManagerTurnSide), false, this);
+	if (const AActor* Watcher = Player.Get())
+	{
+		Params.AddIgnoredActor(Watcher);
+	}
+	if (const AActor* Cart = bErrandCartAttached ? ErrandCart.Get() : nullptr)
+	{
+		Params.AddIgnoredActor(Cart);
+	}
+	const FVector Shoulder = GetFeet() + FVector(0.0f, 0.0f, IGManagerPatrol::TurnSweepHeight - StairFeet.GetBodyDrop());
+	// 그 쪽으로 돌며 15도마다 두 손(손전등 든 오른손은 몸 앞, 왼손은 옆구리)이 닿는 자리까지 그어 본다.
+	const auto CountHits = [&](const int32 Side, const float Arc)
+	{
+		int32 Hits = 0;
+		for (float Step = 15.0f; Step < Arc; Step += 15.0f)
+		{
+			const FRotator Facing(0.0f, FromYaw + Side * Step, 0.0f);
+			for (const FVector& HandAt : {IGManagerPatrol::TorchHandReach, IGManagerPatrol::FreeHandReach})
+			{
+				FHitResult Hit;
+				Hits += GetWorld()->LineTraceSingleByChannel(
+					Hit, Shoulder, Shoulder + Facing.RotateVector(HandAt), ECC_Visibility, Params) ? 1 : 0;
+			}
+		}
+		return Hits;
+	};
+	const int32 NearHits = CountHits(Near, FMath::Abs(Delta));
+	if (NearHits == 0)
+	{
+		return Near;
+	}
+	return CountHits(-Near, 360.0f - FMath::Abs(Delta)) < NearHits ? -Near : Near;
 }
 
 void AIGManagerPatrol::AimTorch(const FVector& WorldTarget, const float DeltaSeconds)

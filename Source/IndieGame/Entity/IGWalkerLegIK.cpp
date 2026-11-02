@@ -17,8 +17,21 @@ namespace IGWalkerLegIK
 	const FName ThighBones[2] = {TEXT("thigh_l"), TEXT("thigh_r")};
 	const FName CalfBones[2] = {TEXT("calf_l"), TEXT("calf_r")};
 	const FName FootBones[2] = {TEXT("foot_l"), TEXT("foot_r")};
+	const FName UpperArmBones[2] = {TEXT("upperarm_l"), TEXT("upperarm_r")};
+	const FName LowerArmBones[2] = {TEXT("lowerarm_l"), TEXT("lowerarm_r")};
+	const FName HandBones[2] = {TEXT("hand_l"), TEXT("hand_r")};
 	/** 무릎은 몸 앞(+X)으로, 바깥으로 조금 벌려 굽힌다. */
 	constexpr float KneeOutward = 0.12f;
+	/**
+	 * 팔 바깥면을 잴 때 관절에 더하는 굵기(cm). SK_MokHansooPatrol 작업복 소매는 팔꿈치·손목께에서 뼈 바깥 6 cm 남짓,
+	 * 손은 5 cm, 손전등을 쥔 오른손은 손전등까지 10 cm 남짓 나온다. 손끝은 손목에서 손 뼈 길이만큼 앞이다.
+	 */
+	constexpr float SleeveRadius = 6.5f;
+	constexpr float HandRadius = 5.5f;
+	constexpr float TorchHandRadius = 10.0f;
+	constexpr float WalkerHandLength = 8.5f;
+	/** 팔을 이보다 더 모으면 소매가 옆구리 속으로 많이 들어간다. */
+	constexpr float MaxArmTuckDegrees = 14.0f;
 }
 
 namespace IGStairFeet
@@ -157,6 +170,48 @@ namespace
 		OutBones.Add(FBoneTransform(Foot, NewFoot));
 	}
 
+	/**
+	 * 어깨를 축으로 팔을 몸 쪽으로 모아 팔꿈치·손목·손끝 바깥면이 몸 가운데에서 Limit 안에 들게 한다. 몸 앞뒤 축으로만
+	 * 돌리니 애니메이션의 팔 흔들기는 그대로 남는다. 모으면 소매 안쪽이 옆구리에 조금 묻히지만 팔에 가려 보이지 않는다.
+	 */
+	void TuckWalkerArm(FCSPose<FCompactPose>& Pose, const FCompactPoseBoneIndex UpperArm, const FCompactPoseBoneIndex LowerArm,
+		const FCompactPoseBoneIndex Hand, const int32 Side, const float Limit, TArray<FBoneTransform, TInlineAllocator<3>>& OutBones)
+	{
+		const FTransform ShoulderPose = Pose.GetComponentSpaceTransform(UpperArm);
+		const FVector Shoulder = ShoulderPose.GetLocation();
+		const FVector Elbow = Pose.GetComponentSpaceTransform(LowerArm).GetLocation();
+		const FVector Wrist = Pose.GetComponentSpaceTransform(Hand).GetLocation();
+		const FVector Tip = Wrist + (Wrist - Elbow).GetSafeNormal() * IGWalkerLegIK::WalkerHandLength;
+		const float Outward = Side == 0 ? -1.0f : 1.0f;
+		// 바깥으로 얼마나 나갔나를 어깨에서 잰다. 팔이 어깨 밑으로 늘어져 있으니 앞뒤 축으로 몸 쪽으로 돌리면 줄어든다.
+		float Tuck = 0.0f;
+		const FVector Points[3] = {Elbow, Wrist, Tip};
+		const float Radii[3] = {IGWalkerLegIK::SleeveRadius, IGWalkerLegIK::SleeveRadius,
+			Side == 0 ? IGWalkerLegIK::HandRadius : IGWalkerLegIK::TorchHandRadius};
+		for (int32 Index = 0; Index < 3; ++Index)
+		{
+			const double Across = Outward * (Points[Index].Y - Shoulder.Y);
+			const double Below = Shoulder.Z - Points[Index].Z;
+			const double Reach = FMath::Sqrt(Across * Across + Below * Below);
+			const double Allowed = Limit - Radii[Index] - Outward * Shoulder.Y;
+			if (Reach < 1.0 || Across <= Allowed)
+			{
+				continue;
+			}
+			const double Angle = FMath::Atan2(Across, Below);
+			Tuck = FMath::Max(Tuck, static_cast<float>(Angle - FMath::Asin(FMath::Clamp(Allowed / Reach, -1.0, 1.0))));
+		}
+		Tuck = FMath::Min(Tuck, FMath::DegreesToRadians(IGWalkerLegIK::MaxArmTuckDegrees));
+		if (Tuck <= 0.0f)
+		{
+			return;
+		}
+		// 앞(+X) 축으로 돌리면 어깨 밑의 점이 +Y로 간다. 왼팔은 +Y가 몸 쪽이고 오른팔은 -Y가 몸 쪽이다.
+		FTransform NewShoulder = ShoulderPose;
+		NewShoulder.SetRotation((FQuat(FVector::ForwardVector, -Outward * Tuck) * ShoulderPose.GetRotation()).GetNormalized());
+		OutBones.Add(FBoneTransform(UpperArm, NewShoulder));
+	}
+
 	struct FIGWalkerAnimProxy final : public FAnimSingleNodeInstanceProxy
 	{
 		explicit FIGWalkerAnimProxy(UAnimInstance* InAnimInstance)
@@ -167,10 +222,16 @@ namespace
 		virtual void PreUpdate(UAnimInstance* InAnimInstance, const float DeltaSeconds) override
 		{
 			FAnimSingleNodeInstanceProxy::PreUpdate(InAnimInstance, DeltaSeconds);
-			const FIGLegIKRequest& Request = CastChecked<UIGWalkerAnimInstance>(InAnimInstance)->GetLegIK();
+			const FIGWalkerIKRequest& Request = CastChecked<UIGWalkerAnimInstance>(InAnimInstance)->GetIK();
 			const USkeletalMeshComponent* Mesh = InAnimInstance->GetSkelMeshComponent();
 			Alpha = Mesh ? Request.Alpha : 0.0f;
-			if (Alpha <= 0.0f)
+			bArms = false;
+			for (int32 Side = 0; Side < 2; ++Side)
+			{
+				ArmLimits[Side] = Request.ArmLimit[Side];
+				bArms = bArms || (Mesh && ArmLimits[Side] < FIGWalkerIKRequest::ArmFreeReach);
+			}
+			if (Alpha <= 0.0f && !bArms)
 			{
 				return;
 			}
@@ -182,6 +243,9 @@ namespace
 					Bones[Side][0] = Mesh->GetBoneIndex(IGWalkerLegIK::ThighBones[Side]);
 					Bones[Side][1] = Mesh->GetBoneIndex(IGWalkerLegIK::CalfBones[Side]);
 					Bones[Side][2] = Mesh->GetBoneIndex(IGWalkerLegIK::FootBones[Side]);
+					ArmBones[Side][0] = Mesh->GetBoneIndex(IGWalkerLegIK::UpperArmBones[Side]);
+					ArmBones[Side][1] = Mesh->GetBoneIndex(IGWalkerLegIK::LowerArmBones[Side]);
+					ArmBones[Side][2] = Mesh->GetBoneIndex(IGWalkerLegIK::HandBones[Side]);
 				}
 			}
 			// 이 틱에 몸을 다 옮긴 뒤의 메시 자리다(관리인이 메시보다 먼저 틱한다).
@@ -198,36 +262,51 @@ namespace
 		virtual bool Evaluate(FPoseContext& Output) override
 		{
 			const bool bEvaluated = FAnimSingleNodeInstanceProxy::Evaluate(Output);
-			if (Alpha <= 0.0f)
+			if (Alpha <= 0.0f && !bArms)
 			{
 				return bEvaluated;
 			}
 			const FBoneContainer& Required = Output.Pose.GetBoneContainer();
+			const auto Compact = [&Required](const int32 MeshIndex)
+			{
+				return MeshIndex == INDEX_NONE
+					? FCompactPoseBoneIndex(INDEX_NONE)
+					: Required.MakeCompactPoseIndex(FMeshPoseBoneIndex(MeshIndex));
+			};
 			FCSPose<FCompactPose> Pose;
 			Pose.InitPose(Output.Pose);
 			bool bChanged = false;
-			TArray<FBoneTransform, TInlineAllocator<3>> Leg;
+			TArray<FBoneTransform, TInlineAllocator<3>> Chain;
 			for (int32 Side = 0; Side < 2; ++Side)
 			{
-				if (Bones[Side][0] == INDEX_NONE || Bones[Side][1] == INDEX_NONE || Bones[Side][2] == INDEX_NONE)
+				const FCompactPoseBoneIndex Thigh = Compact(Bones[Side][0]);
+				const FCompactPoseBoneIndex Calf = Compact(Bones[Side][1]);
+				const FCompactPoseBoneIndex Foot = Compact(Bones[Side][2]);
+				if (Alpha > 0.0f && Thigh.IsValid() && Calf.IsValid() && Foot.IsValid())
 				{
-					continue;
+					Chain.Reset();
+					const float Outward = Side == 0 ? -IGWalkerLegIK::KneeOutward : IGWalkerLegIK::KneeOutward;
+					SolveWalkerLeg(Pose, Thigh, Calf, Foot, Targets[Side], FVector(1.0f, Outward, 0.0f), FootTurns[Side],
+						Alpha, Chain);
+					if (!Chain.IsEmpty())
+					{
+						Pose.LocalBlendCSBoneTransforms(Chain, 1.0f);
+						bChanged = true;
+					}
 				}
-				const FCompactPoseBoneIndex Thigh = Required.MakeCompactPoseIndex(FMeshPoseBoneIndex(Bones[Side][0]));
-				const FCompactPoseBoneIndex Calf = Required.MakeCompactPoseIndex(FMeshPoseBoneIndex(Bones[Side][1]));
-				const FCompactPoseBoneIndex Foot = Required.MakeCompactPoseIndex(FMeshPoseBoneIndex(Bones[Side][2]));
-				if (!Thigh.IsValid() || !Calf.IsValid() || !Foot.IsValid())
+				const FCompactPoseBoneIndex UpperArm = Compact(ArmBones[Side][0]);
+				const FCompactPoseBoneIndex LowerArm = Compact(ArmBones[Side][1]);
+				const FCompactPoseBoneIndex Hand = Compact(ArmBones[Side][2]);
+				if (ArmLimits[Side] < FIGWalkerIKRequest::ArmFreeReach && UpperArm.IsValid() && LowerArm.IsValid()
+					&& Hand.IsValid())
 				{
-					continue;
-				}
-				Leg.Reset();
-				const float Outward = Side == 0 ? -IGWalkerLegIK::KneeOutward : IGWalkerLegIK::KneeOutward;
-				SolveWalkerLeg(Pose, Thigh, Calf, Foot, Targets[Side], FVector(1.0f, Outward, 0.0f), FootTurns[Side],
-					Alpha, Leg);
-				if (!Leg.IsEmpty())
-				{
-					Pose.LocalBlendCSBoneTransforms(Leg, 1.0f);
-					bChanged = true;
+					Chain.Reset();
+					TuckWalkerArm(Pose, UpperArm, LowerArm, Hand, Side, ArmLimits[Side], Chain);
+					if (!Chain.IsEmpty())
+					{
+						Pose.LocalBlendCSBoneTransforms(Chain, 1.0f);
+						bChanged = true;
+					}
 				}
 			}
 			if (bChanged)
@@ -238,9 +317,12 @@ namespace
 		}
 
 		float Alpha = 0.0f;
+		bool bArms = false;
 		FVector Targets[2] = {FVector::ZeroVector, FVector::ZeroVector};
 		FQuat FootTurns[2] = {FQuat::Identity, FQuat::Identity};
+		float ArmLimits[2] = {FIGWalkerIKRequest::ArmFreeReach, FIGWalkerIKRequest::ArmFreeReach};
 		int32 Bones[2][3] = {{INDEX_NONE, INDEX_NONE, INDEX_NONE}, {INDEX_NONE, INDEX_NONE, INDEX_NONE}};
+		int32 ArmBones[2][3] = {{INDEX_NONE, INDEX_NONE, INDEX_NONE}, {INDEX_NONE, INDEX_NONE, INDEX_NONE}};
 		const USkeletalMesh* BoundMesh = nullptr;
 	};
 }
@@ -345,9 +427,9 @@ FVector FIGStairFeet::AimAlongPath(const FVector& Body, const float Distance) co
 	return Chord.SizeSquared() > 25.0f ? Chord.GetSafeNormal() : Heading;
 }
 
-FIGLegIKRequest FIGStairFeet::GetRequest() const
+FIGWalkerIKRequest FIGStairFeet::GetRequest() const
 {
-	FIGLegIKRequest Request;
+	FIGWalkerIKRequest Request;
 	Request.Alpha = Alpha;
 	for (int32 Side = 0; Side < 2; ++Side)
 	{

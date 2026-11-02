@@ -800,6 +800,35 @@ void AIGLeftoverProbe::QueueFixedShot(const TCHAR* Name, const FVector& Eye, con
 	LiningShots.Add(Shot);
 }
 
+void AIGLeftoverProbe::QueueManagerDoorwayShots()
+{
+	const AIGManagerPatrol* Mok = Manager.Get();
+	if (!bShots || bCleanShots || !Mok || !Mok->IsOnErrand())
+	{
+		return;
+	}
+	// 안쪽 방 문간(X 202..278)을 지나는 관리인. 나갈 때는 관리실에서, 돌아올 때는 안쪽 방에서 앞모습을 본다. 카메라를
+	// 세우고 찍기까지 0.7초 남짓이라 문틀 50 cm 앞에서 건다.
+	const FVector At = Mok->GetActorLocation();
+	if (At.Z > 50.0f || At.X < 200.0f || At.X > 260.0f)
+	{
+		return;
+	}
+	const bool bGoingOut = At.Y < LastManagerDoorwayY - 0.1f;
+	const bool bComingBack = At.Y > LastManagerDoorwayY + 0.1f;
+	LastManagerDoorwayY = At.Y;
+	if (!bDoorwayOutShot && bGoingOut && At.Y < -25.0f && At.Y > -45.0f)
+	{
+		bDoorwayOutShot = true;
+		QueueFixedShot(TEXT("n2_manager_doorway_out"), FVector(232.0f, -185.0f, 165.0f), FVector(236.0f, -75.0f, 105.0f));
+	}
+	if (!bDoorwayBackShot && bComingBack && At.Y < -125.0f && At.Y > -140.0f)
+	{
+		bDoorwayBackShot = true;
+		QueueFixedShot(TEXT("n2_manager_doorway_back"), FVector(200.0f, 40.0f, 165.0f), FVector(236.0f, -75.0f, 105.0f));
+	}
+}
+
 bool AIGLeftoverProbe::TickLiningInspection(const float DeltaSeconds)
 {
 	if (LiningShots.IsEmpty())
@@ -873,6 +902,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 	{
 		return;
 	}
+	QueueManagerDoorwayShots();
 	if (TickLiningInspection(DeltaSeconds))
 	{
 		return;

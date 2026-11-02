@@ -241,6 +241,11 @@ private:
 	void QueueLiningInspection(AIGLiningEntity* Lining);
 	/** -IGLeftoverShots: 같은 검수 카메라로 정한 자리에서 한 장 찍는다(밤2 손수레 심부름). */
 	void QueueFixedShot(const TCHAR* Name, const FVector& Eye, const FVector& Look);
+	/** -IGLeftoverShots: 심부름 가는 관리인이 안쪽 방 문간을 나갈 때와 돌아올 때 한 장씩 건다(문간을 지나는 팔). */
+	void QueueManagerDoorwayShots();
+	bool bDoorwayOutShot = false;
+	bool bDoorwayBackShot = false;
+	float LastManagerDoorwayY = 0.0f;
 	/** 검수 카메라 차례를 진행한다. 찍는 중이면 true. */
 	bool TickLiningInspection(float DeltaSeconds);
 	struct FLiningShot

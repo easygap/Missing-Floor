@@ -8,8 +8,8 @@ class AActor;
 class USkeletalMeshComponent;
 class UWorld;
 
-/** rig_walker 뼈대의 다리 IK 요청. 발목이 갈 월드 자리다. 애니메이션을 갱신하기 직전에 메시 좌표로 옮긴다. */
-struct FIGLegIKRequest
+/** rig_walker 뼈대의 다리·팔 IK 요청. 발목은 월드 자리다. 애니메이션을 갱신하기 직전에 메시 좌표로 옮긴다. */
+struct FIGWalkerIKRequest
 {
 	/** 0이면 애니메이션 다리 그대로다. */
 	float Alpha = 0.0f;
@@ -17,13 +17,20 @@ struct FIGLegIKRequest
 	FVector Ankle[2] = {FVector::ZeroVector, FVector::ZeroVector};
 	/** 발이 향한 월드 yaw(도). 디딘 발은 몸이 돌아도 따라 돌지 않는다. */
 	float FootYaw[2] = {0.0f, 0.0f};
+	/**
+	 * 왼팔(0)과 오른팔(1) 바깥면이 몸 가운데에서 나갈 수 있는 거리(cm). 넘으면 어깨를 축으로 팔을 몸 쪽으로 모은다.
+	 * ArmFreeReach 이상이면 모으지 않는다.
+	 */
+	float ArmLimit[2] = {ArmFreeReach, ArmFreeReach};
+
+	static constexpr float ArmFreeReach = 1000.0f;
 };
 
 /**
- * 애니메이션 하나를 돌리는 재생기에 다리 IK를 얹었다. 넓적다리와 종아리를 돌려 발목을 요청한 자리에 두고,
+ * 애니메이션 하나를 돌리는 재생기에 다리·팔 IK를 얹었다. 넓적다리와 종아리를 돌려 발목을 요청한 자리에 두고,
  * 발은 애니메이션이 둔 자세를 요청한 yaw로만 돌린다. 무릎은 몸 앞쪽으로 굽힌다. 켜고 끌 때는 관절 회전을
  * 섞지 않고 발목 자리와 무릎 쪽을 애니메이션에서 요청한 곳으로 옮긴다. 회전을 섞으면 두 자리 사이에서 발이
- * 바닥 밑으로 처진다.
+ * 바닥 밑으로 처진다. 좁은 데서는 팔을 어깨에서 몸 쪽으로 모아 팔꿈치와 손이 요청한 폭 안에 들게 한다.
  */
 UCLASS(Transient, NotBlueprintable)
 class INDIEGAME_API UIGWalkerAnimInstance : public UAnimSingleNodeInstance
@@ -31,14 +38,14 @@ class INDIEGAME_API UIGWalkerAnimInstance : public UAnimSingleNodeInstance
 	GENERATED_BODY()
 
 public:
-	void SetLegIK(const FIGLegIKRequest& InLegIK) { LegIK = InLegIK; }
-	const FIGLegIKRequest& GetLegIK() const { return LegIK; }
+	void SetIK(const FIGWalkerIKRequest& InRequest) { Request = InRequest; }
+	const FIGWalkerIKRequest& GetIK() const { return Request; }
 
 protected:
 	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override;
 
 private:
-	FIGLegIKRequest LegIK;
+	FIGWalkerIKRequest Request;
 };
 
 /**
@@ -69,7 +76,7 @@ public:
 	void Update(const UWorld& World, const USkeletalMeshComponent& Mesh, float DeltaSeconds, float AnimPhase);
 
 	bool IsActive() const { return Alpha > 0.0f; }
-	FIGLegIKRequest GetRequest() const;
+	FIGWalkerIKRequest GetRequest() const;
 	/** 몸을 이만큼 내린다. 낮은 디딤판에 남은 발까지 다리가 닿게 한다. */
 	float GetBodyDrop() const { return BodyDrop * Alpha; }
 	/** 걷는 애니메이션을 둘 재생 위치(0..1). 오른발은 0.6~1, 왼발은 0.1~0.5에 든다. */

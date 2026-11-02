@@ -245,8 +245,10 @@ private:
 
 	/** 지금 상태의 일을 한 틱 한다. 몸은 여기서 다 옮긴다. */
 	void TickState(float DeltaSeconds);
-	/** 몸을 다 옮긴 뒤 계단에서 발을 디딤판에 딛게 한다. */
-	void UpdateStairFeet(float DeltaSeconds);
+	/** 몸을 다 옮긴 뒤 계단에서 발을 디딤판에 딛게 하고, 좁은 데서 팔을 모은다. */
+	void UpdateBodyIK(float DeltaSeconds);
+	/** 양옆 빈 데를 재서 팔 바깥면이 나갈 수 있는 거리를 정한다. */
+	void UpdateArmRoom(float DeltaSeconds);
 	void TickResting(float DeltaSeconds);
 	void TickWalking(float DeltaSeconds, float Speed);
 	void TickChase(float DeltaSeconds);
@@ -255,6 +257,8 @@ private:
 	/** 한 걸음 옮긴다. 도착했으면 참이다. */
 	bool StepToward(const FVector& Target, float Speed, float DeltaSeconds);
 	void FaceYaw(float DesiredYaw, float DeltaSeconds, float DegreesPerSecond = 220.0f);
+	/** 크게 돌 때 손이 쓸고 지나갈 자리가 빈 쪽(1이면 왼쪽으로, -1이면 오른쪽으로 돈다). */
+	int32 ChooseTurnSide(float FromYaw, float Delta) const;
 	void AimTorch(const FVector& WorldTarget, float DeltaSeconds);
 	void RelaxTorch(float DeltaSeconds);
 	void AnimateGait(float DeltaSeconds, float Speed);
@@ -367,6 +371,11 @@ private:
 	FIGClipAudit ClipAudit;
 	/** 계단에서는 걷는 애니메이션의 다리 대신 한 단씩 디딘다. */
 	FIGStairFeet StairFeet;
+	/** 왼팔과 오른팔 바깥면이 몸 가운데에서 나갈 수 있는 거리(cm). 좁은 문간에서 팔을 모은다. */
+	float ArmLimit[2] = {FIGWalkerIKRequest::ArmFreeReach, FIGWalkerIKRequest::ArmFreeReach};
+	/** 크게 도는 중이면 도는 쪽과 그때 바라던 방향. 0이면 가까운 쪽으로 돈다. */
+	int32 TurnSide = 0;
+	float TurnGoalYaw = 0.0f;
 	/** 2·3·4층 계단실 방화문. */
 	mutable TArray<TWeakObjectPtr<AIGSwingDoor>> FireDoors;
 	mutable bool bFireDoorResolved = false;
