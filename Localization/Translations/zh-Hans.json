@@ -585,7 +585,7 @@
  "IGJournal,AgentMoveOutMessage.Excerpt": "老板，楼顶房间的东西都清走了。（7/26 14:02）",
  "IGJournal,AgentMoveOutMessage.Where": "管理室桌上 · 第二夜",
  "IGJournal,EvictionWarning.Title": "退租通知",
- "IGJournal,EvictionWarning.Excerpt": "403室。违反租约（擅自操作设施）。请于本周内搬离。明日07:00天台漏水施工。",
+ "IGJournal,EvictionWarning.Excerpt": "403室。违反租约（擅自操作设施）。请于本周内搬离。",
  "IGJournal,EvictionWarning.Where": "四楼走廊 · 第四天白天",
  "IGJournal,NoisePosts.Title": "楼上噪音的帖子",
  "IGJournal,NoisePosts.Excerpt": "6/30 一到凌晨四点，楼上就开始拖东西。",

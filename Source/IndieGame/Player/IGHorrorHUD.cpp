@@ -221,8 +221,8 @@ namespace IGHorrorHUD
 				NSLOCTEXT("IGJournal", "AgentMoveOutMessage.Excerpt", "사장님, 옥탑 짐은 다 뺐습니다. (7/26 14:02)"),
 				NSLOCTEXT("IGJournal", "AgentMoveOutMessage.Where", "관리실 책상 · 둘째 밤"), EJournalThumbnail::Document},
 			{TEXT("Office.EvictionWarning"), EJournalLane::Administration,
-				NSLOCTEXT("IGJournal", "EvictionWarning.Title", "퇴거 통보문"),
-				NSLOCTEXT("IGJournal", "EvictionWarning.Excerpt", "403호. 계약 위반(무단 시설 조작). 이번 주 내 퇴거 바랍니다. 내일 07:00 옥상 누수 공사."),
+				NSLOCTEXT("IGJournal", "EvictionWarning.Title", "퇴거 요구서"),
+				NSLOCTEXT("IGJournal", "EvictionWarning.Excerpt", "403호. 계약 위반(무단 시설 조작). 이번 주 안으로 퇴거 바랍니다."),
 				NSLOCTEXT("IGJournal", "EvictionWarning.Where", "4층 복도 · 넷째 날 낮"), EJournalThumbnail::Document},
 
 			{TEXT("Forum.NoisePosts"), EJournalLane::Life,

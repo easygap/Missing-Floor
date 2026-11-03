@@ -1860,6 +1860,18 @@
         16.2569
       ]
     },
+    "SM_NoticeEvictionA4": {
+      "origin": [
+        0.0,
+        -0.003,
+        0.0
+      ],
+      "extent": [
+        10.5,
+        0.0105,
+        14.85
+      ]
+    },
     "SM_NoticeLightsOutA4": {
       "origin": [
         0.0,

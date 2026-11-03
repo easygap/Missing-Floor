@@ -2,9 +2,12 @@
 
 SM_NoticeLightsOutA4: 1층 엘리베이터 옆 벽의 「복도 소등 안내」. 인쇄면은
 Content/SourceArt/AI/NoticeLightsOut_20261007.png이고, 게임의 읽기 화면 문구와 글자가 같다.
-종이는 0.15 mm라 충돌을 넣지 않는다. 읽기는 씬이 같은 크기의 상자로 받는다.
+SM_NoticeEvictionA4: 셋째 낮에 관리인이 4층 엘리베이터 옆에 붙이는 「퇴거 요구서」. 인쇄면은
+Content/SourceArt/AI/NoticeEviction_20261103.png이고, 설정집 §8 3-9의 종이 문구(사유와 기한)와 같다.
+종이는 0.15 mm라 충돌을 넣지 않는다. 소등 안내는 씬이, 요구서는 증거 액터가 같은 크기의 상자로 읽기를 받는다.
 
     blender -b --factory-startup --python Scripts/blender/build_notice_prints.py -- <out_dir>
+    (IG_ONLY=SM_NoticeEvictionA4 로 한 장만)
 """
 import os
 import sys
@@ -12,11 +15,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ig_blender_lib as ig  # noqa: E402
 
+SOURCE_ART = os.path.join(os.path.dirname(__file__), '../../Content/SourceArt/AI')
 
-def lights_out_notice():
-    ig.reset_scene()
-    source = os.path.join(os.path.dirname(__file__), '../../Content/SourceArt/AI/NoticeLightsOut_20261007.png')
-    ink = ig.mat_image_uv('LightsOutPrint', source, roughness=.86)
+
+def taped_a4(asset_name, ink, notes):
     blank = ig.mat_plastic('PaperBack', (.79, .80, .77), roughness=.9, bump=0)
     paper = ig.image_quad('paper', (.21, .297), (0, 0, 0), ink, thickness=.00015)
     paper.data.materials.append(blank)
@@ -29,10 +31,43 @@ def lights_out_notice():
     for x in (-.080, .080):
         parts.append(ig.box('tape', (.018, .00005, .009), (x, -.00011, .135), material=tape))
     # 글자가 읽혀야 하는 종이라 굽기는 1024로 한다. 512로는 본문 획이 뭉개진다.
-    ig.build_asset('SM_NoticeLightsOutA4', 'prop', parts, ig.out_root_from_argv(),
+    ig.build_asset(asset_name, 'prop', parts, ig.out_root_from_argv(),
                    collision_parts=[], texture_size=1024, mirror_print_for_ue=True, origin="center",
-                   notes='A4 21×29.7cm, 종이 0.15mm. 앞 -Y, 원점 중앙. 관리실 공지 「복도 소등 안내」. '
-                         '앞면만 인쇄, 위쪽 테이프 2개, 충돌 없음(읽기는 씬의 상자).')
+                   notes=notes)
 
 
-lights_out_notice()
+def lights_out_notice():
+    ig.reset_scene()
+    ink = ig.mat_image_uv('LightsOutPrint', os.path.join(SOURCE_ART, 'NoticeLightsOut_20261007.png'), roughness=.86)
+    taped_a4('SM_NoticeLightsOutA4', ink,
+             'A4 21×29.7cm, 종이 0.15mm. 앞 -Y, 원점 중앙. 관리실 공지 「복도 소등 안내」. '
+             '앞면만 인쇄, 위쪽 테이프 2개, 충돌 없음(읽기는 씬의 상자).')
+
+
+def srgb_to_linear(value):
+    value /= 255.0
+    return value / 12.92 if value <= .04045 else ((value + .055) / 1.055) ** 2.4
+
+
+def eviction_notice():
+    ig.reset_scene()
+    ink = ig.mat_image_uv('EvictionPrint', os.path.join(SOURCE_ART, 'NoticeEviction_20261103.png'), roughness=.86)
+    # 원본 바탕은 순백(255)이라 그대로 구우면 복도 벽 옆에서 종이만 떠 보인다. 아침에 막 뽑은
+    # 복사용지 밝기를 곱한다. 몇 달 붙어 누레진 소등 안내(242, 238, 227)보다 덜 누렇다.
+    nodes, links = ink.node_tree.nodes, ink.node_tree.links
+    image = next(node for node in nodes if node.type == 'TEX_IMAGE')
+    bsdf = next(node for node in nodes if node.type == 'BSDF_PRINCIPLED')
+    paper_white = nodes.new('ShaderNodeVectorMath')
+    paper_white.operation = 'MULTIPLY'
+    paper_white.inputs[1].default_value = tuple(srgb_to_linear(v) for v in (242, 241, 237))
+    links.new(image.outputs['Color'], paper_white.inputs[0])
+    links.new(paper_white.outputs['Vector'], bsdf.inputs['Base Color'])
+    taped_a4('SM_NoticeEvictionA4', ink,
+             'A4 21×29.7cm, 종이 0.15mm. 앞 -Y, 원점 중앙. 관리인이 붙인 「퇴거 요구서」. '
+             '앞면만 인쇄, 위쪽 테이프 2개, 충돌 없음(겨누기는 증거 액터가 메시 경계로 세운다).')
+
+
+only = set(filter(None, os.environ.get('IG_ONLY', '').split(',')))
+for name, build in (('SM_NoticeLightsOutA4', lights_out_notice), ('SM_NoticeEvictionA4', eviction_notice)):
+    if not only or name in only:
+        build()

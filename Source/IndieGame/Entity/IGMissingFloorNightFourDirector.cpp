@@ -65,10 +65,10 @@ namespace IGNightFour
 	constexpr float FailureListingDelaySeconds = 2.2f;
 	constexpr float FailureRetryDelaySeconds = 3.2f;
 
-	// 4층 엘리베이터 옆 복도 북쪽 벽. 벽 앞면이 Y -235라 두께 1 cm 종이의 가운데를 -235.6에 둔다(뒷면이
-	// 벽에서 1 mm). 예전 자리 -232는 벽 속이라 보이지도 않고 겨눌 수도 없어서 「엘리베이터 옆 안내문 읽기」를
-	// 끝낼 수 없었다.
-	const FVector EvictionNoticeLocation(640.0f, -235.6f, 1042.0f);
+	// 4층 엘리베이터 옆 복도 북쪽 벽. 벽 앞면이 Y -235라 종이 메시(경계 두께 0.21 mm)의 가운데를
+	// -235.06에 둔다(뒷면이 벽에서 0.5 mm). 예전 자리 -232는 벽 속이라 보이지도 않고 겨눌 수도 없어서
+	// 「엘리베이터 옆 안내문 읽기」를 끝낼 수 없었다.
+	const FVector EvictionNoticeLocation(640.0f, -235.06f, 1042.0f);
 	/** 요구서가 붙은 낮. 경찰 문자 뒤에 한 번 붙고 저장에 남는다. */
 	const FName EvictionPostedBeat(TEXT("Day.EvictionPosted"));
 	/**
@@ -356,6 +356,9 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 		nullptr, TEXT("/Game/Meshes/SM_P3ValveWheelLarge.SM_P3ValveWheelLarge"));
 	UStaticMesh* SmallValveMesh = LoadObject<UStaticMesh>(
 		nullptr, TEXT("/Game/Meshes/SM_P3ValveWheelSmall.SM_P3ValveWheelSmall"));
+	// 관리인이 아침에 뽑아 붙인 A4. 인쇄면과 테이프를 구운 메시라 제 재질과 실치수를 쓴다.
+	UStaticMesh* EvictionNoticeMesh = LoadObject<UStaticMesh>(
+		nullptr, TEXT("/Game/Meshes/SM_NoticeEvictionA4.SM_NoticeEvictionA4"));
 	UMaterialInterface* MetalMaterial = LoadObject<UMaterialInterface>(
 		nullptr,
 		TEXT("/Game/Prototype/Materials/M_P3CabinetMetalUV.M_P3CabinetMetalUV"));
@@ -453,13 +456,14 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 	}
 
 	EvictionNotice->Configure(
-		CubeMesh,
-		PaperMaterial,
-		FVector(21.0f, 1.0f, 29.7f),
+		EvictionNoticeMesh ? EvictionNoticeMesh : CubeMesh,
+		EvictionNoticeMesh ? nullptr : PaperMaterial,
+		EvictionNoticeMesh ? FVector::ZeroVector : FVector(21.0f, 1.0f, 29.7f),
 		NSLOCTEXT("IGMissingFloor", "EvictionNoticePrompt", "읽기"),
-		// 종이에서 읽는 것은 사유와 기한이다(§8 3-8). 아침 일곱 시 보수와 석고보드는
+		// 종이에서 읽는 것은 사유와 기한이다(§8 3-9). 아침 일곱 시 보수와 석고보드는
 		// 이어서 담당 수사관에게 보내는 사진 문자가 말한다 — 그레이박스 감독의
-		// 신고 문자 줄기가 이 종이를 읽은 뒤에 민다.
+		// 신고 문자 줄기가 이 종이를 읽은 뒤에 민다. 인쇄면(NoticeEviction_20261103.png)의
+		// 「이번 주 안으로 퇴거」를 이 속말이 되받으니 둘은 같이 고친다.
 		NSLOCTEXT(
 			"IGMissingFloor",
 			"EvictionNoticeThought",
@@ -468,6 +472,9 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 		EIGMissingFloorSource::EvictionWarning,
 		0.0f,
 		0.02f);
+	// 벽에 붙은 얇은 종이라 그림자와 디스턴스 필드를 끈다. 0.5 mm 틈에서는 그림자 여드름만 생긴다.
+	EvictionNotice->GetPresentationMesh()->SetCastShadow(false);
+	EvictionNotice->GetPresentationMesh()->SetAffectDistanceFieldLighting(false);
 	EvictionNotice->OnExamined.AddUObject(
 		this, &AIGMissingFloorNightFourDirector::HandleEvictionNotice);
 

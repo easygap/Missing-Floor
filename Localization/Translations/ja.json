@@ -585,7 +585,7 @@
  "IGJournal,AgentMoveOutMessage.Excerpt": "オーナー、屋上の部屋の荷物は全部運び出しました。（7/26 14:02）",
  "IGJournal,AgentMoveOutMessage.Where": "管理人室の机 · 第二夜",
  "IGJournal,EvictionWarning.Title": "退去通知",
- "IGJournal,EvictionWarning.Excerpt": "403号室。契約違反（設備の無断操作）。今週中に退去願います。明日07:00 屋上の雨漏り工事。",
+ "IGJournal,EvictionWarning.Excerpt": "403号室。契約違反（設備の無断操作）。今週中に退去願います。",
  "IGJournal,EvictionWarning.Where": "4階の廊下 · 四日目の昼",
  "IGJournal,NoisePosts.Title": "上の階の騒音の投稿",
  "IGJournal,NoisePosts.Excerpt": "6/30 明け方4時になると決まって、上で何かをずるずる引きずるんです。",

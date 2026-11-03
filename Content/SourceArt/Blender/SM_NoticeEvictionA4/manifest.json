@@ -1,0 +1,30 @@
+{
+  "name": "SM_NoticeEvictionA4",
+  "mesh_class": "prop",
+  "fbx": "SM_NoticeEvictionA4.fbx",
+  "textures": {
+    "D": "SM_NoticeEvictionA4_D.png",
+    "N": "SM_NoticeEvictionA4_N.png",
+    "ORM": "SM_NoticeEvictionA4_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 36,
+  "bounds_m": {
+    "min": [
+      -0.105,
+      -0.0001,
+      -0.1485
+    ],
+    "max": [
+      0.105,
+      0.0001,
+      0.1485
+    ]
+  },
+  "origin": "center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "A4 21×29.7cm, 종이 0.15mm. 앞 -Y, 원점 중앙. 관리인이 붙인 「퇴거 요구서」. 앞면만 인쇄, 위쪽 테이프 2개, 충돌 없음(겨누기는 증거 액터가 메시 경계로 세운다)."
+}
