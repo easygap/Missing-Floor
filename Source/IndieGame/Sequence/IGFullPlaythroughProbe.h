@@ -86,6 +86,10 @@ private:
 	/** 정해 둔 점(발 높이)을 차례로 밟는다. 계단처럼 격자 한 장으로 못 찾는 길이다. */
 	void Follow(const TArray<FVector>& Points, float Tolerance, const FString& Name);
 	TFunction<void()> MakeFollow(TArray<FVector> Points, float Tolerance, FString Name, int32 Attempt);
+	/** Follow와 같되 막히면 첫 점까지 물러나 Clear가 될 때까지 기다렸다 다시 간다. */
+	void FollowPast(const TArray<FVector>& Points, float Tolerance, const FString& Name, TFunction<bool()> Clear);
+	TFunction<void()> MakeFollowPast(TArray<FVector> Points, float Tolerance, FString Name, TFunction<bool()> Clear,
+		int32 Attempt);
 	/** 계단탑으로 FromFloor 출입구에서 ToFloor 출입구까지 오르거나 내려간다. */
 	void TakeStairs(int32 FromFloor, int32 ToFloor);
 	/**
@@ -121,8 +125,13 @@ private:
 	void PressKey(const FString& Name, const FKey& Key, float Seconds);
 	/** 앉아 있으면 C를 눌러 일어선다. 책상 밑 같은 데서 나오면 앉은 채다. */
 	void StandUp(const FString& Name);
-	/** 닫힌 문 앞(Stand, 발 높이)에 서서 걸쇠를 겨누고 E로 연다. 열려 있으면 넘어간다. */
-	void OpenDoor(const FString& Name, const FString& DoorName, const FVector& Stand);
+	/** 서 있으면 C를 눌러 쪼그린다. 발소리를 줄이고 지나갈 자리에서 쓴다. */
+	void Crouch(const FString& Name);
+	/** 문 앞(Stand, 발 높이)에 서서 걸쇠를 겨누고 E로 열거나(bOpen) 닫는다. 이미 그렇게 돼 있으면 넘어간다. */
+	void SetDoor(const FString& Name, const FString& DoorName, const FVector& Stand, bool bOpen);
+	TFunction<void()> MakeSetDoor(FString Name, FString DoorName, FVector Stand, bool bOpen, int32 Attempt);
+	/** 그 자리에 몸을 세우면 걸리는 것(처음 셋)의 이름과 바운드. 설 자리가 없을 때 적는다. */
+	FString DescribeBodyBlock(const FVector2D& At, float FloorZ, float ExtraRadius) const;
 	bool HasStoryState(const TCHAR* Tag) const;
 
 	void BuildArrival();
@@ -131,6 +140,12 @@ private:
 	void BuildNightTwo();
 	void BuildDayTwo();
 	void BuildNightThree();
+	void BuildDayThree();
+	void BuildNightFour();
+	/** 벽에서 다음에 손댈 자리를 쓰고, 열릴 때까지 다음 차례를 끼워 넣는다. */
+	TFunction<void()> MakeWallStep(int32 Round);
+	/** 지금 판의 단계(새 게임이면 입주 저녁, 이어 하기면 불러온 자리)부터 끝까지 짓는다. */
+	void BuildStages();
 
 	void PrepareQuery();
 	bool ProbeFloor(const FVector2D& At, float AroundZ, float& OutFloor) const;
@@ -161,6 +176,8 @@ private:
 	int32 Retries = 0;
 	int32 ShotIndex = 0;
 	bool bStarted = false;
+	/** 에필로그가 끝났다(OnCompleted). */
+	bool bEpilogueDone = false;
 	bool bFinished = false;
 	float TotalSeconds = 0.0f;
 	float LimitSeconds = 1800.0f;

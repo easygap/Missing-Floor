@@ -275,6 +275,15 @@ namespace IGMissingFloorNarrative
 	}
 }
 
+void UIGMissingFloorNarrativeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	// 메뉴의 새 게임을 거치지 않고 바로 시작한 판(-IGSkipFrontend 검사·촬영)도 새 게임 상태로 세운다. 기본값
+	// 그대로면 스키마 0으로 저장되고, 그 저장을 이어 하면 RestoreSnapshot이 확장 전 판으로 읽어 알아낸 것과
+	// 302호 짐 기록을 비운다.
+	ResetNarrative();
+}
+
 FGameplayTag UIGMissingFloorNarrativeSubsystem::GetTruthTag(
 	const EIGMissingFloorTruth Truth)
 {

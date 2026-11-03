@@ -6,7 +6,10 @@ param(
 	[ValidateSet('ko', 'en', 'ja', 'zh-Hans')][string]$Culture = 'ko',
 	# 게임 안에서 흐르는 시간의 상한(분). 넘으면 그 자리에서 멈추고 어디까지 갔는지 적는다.
 	[ValidateRange(5, 600)][int]$GameMinutes = 40,
-	[ValidateRange(120, 36000)][int]$TimeoutSeconds = 3600
+	[ValidateRange(120, 36000)][int]$TimeoutSeconds = 3600,
+	# 앞선 실행 폴더(Saved/Validation/FullPlaythrough-…)를 주면 그 자동 저장에서 이어 한다(메뉴의 이어 하기).
+	# 뒤쪽 낮과 밤을 고칠 때 처음부터 다시 걷지 않으려고 쓴다. 다 고친 뒤에는 새 게임으로 한 번 끝까지 돌린다.
+	[string]$ResumeFrom = ''
 )
 
 # 새 게임을 처음부터 실제 키·마우스 입력으로만 해 본다(-IGFullPlaythrough). 순간 이동이나 상호작용 직접
@@ -27,6 +30,17 @@ $logPath = Join-Path $projectRoot "Saved/Logs/FullPlaythrough-$tag.log"
 $probeRoot = Join-Path $projectRoot ('Saved/Validation/FullPlaythrough-' + $tag + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
 $probeUser = Join-Path $probeRoot 'User'
 Add-IGArtifactDirectory -Scope $igArtifactScope -Directory $probeRoot -Variant ('FullPlaythrough-' + $tag)
+$resumeArguments = @()
+if ($ResumeFrom) {
+	$sourceSaves = Join-Path $ResumeFrom 'User/Saved/SaveGames'
+	if (-not (Test-Path -LiteralPath $sourceSaves -PathType Container)) { throw "이어 할 자동 저장이 없습니다: $sourceSaves" }
+	$targetSaves = Join-Path $probeUser 'Saved/SaveGames'
+	New-Item -ItemType Directory -Force -Path $targetSaves | Out-Null
+	foreach ($save in Get-ChildItem -LiteralPath $sourceSaves -Filter '*.sav' -File) {
+		Copy-Item -LiteralPath $save.FullName -Destination (Join-Path $targetSaves $save.Name)
+	}
+	$resumeArguments = @('-IGFullPlaythroughResume')
+}
 $difficultyArgument = if ($Difficulty -eq 'listen') { '-IGNightDifficulty=3' } else { '-IGNightDifficulty=1' }
 $arguments = @(
 	('"{0}"' -f $projectPath), '-game', '-unattended', '-nosplash', '-NoLoadingScreen', '-RenderOffscreen',
@@ -35,7 +49,7 @@ $arguments = @(
 	'-IGSkipFrontend', $difficultyArgument, "-IGCulture=$Culture", "-Culture=$Culture",
 	'-UseFixedTimeStep', '-FPS=30',
 	('"-UserDir={0}"' -f $probeUser), ('"-abslog={0}"' -f $logPath)
-)
+) + $resumeArguments
 $process = Start-Process -FilePath $editor -ArgumentList $arguments -WindowStyle Hidden -PassThru
 # Windows PowerShell 5.1은 핸들을 먼저 잡아 두지 않으면 ExitCode를 비워 둔다.
 $null = $process.Handle

@@ -137,6 +137,19 @@ namespace IGListener
 	constexpr float RepeatSoundHoldRadius = 150.0f;
 	/** 듣기만 하는 밤에 그녀에게 닿은 뒤 그녀의 소리를 흘려듣는 시간. 비켜 지나갈 틈이다. */
 	constexpr double ReachIgnoreSeconds = 20.0;
+
+	/**
+	 * 4층 복도 서쪽 끝(복도 북쪽 벽 앞면 Y -235 너머)에서 옥상으로 오르는 계단. 그는 이 계단에 오르지 않는다. 아래쪽
+	 * 디딤판은 높이 차가 작아 위층 소리로 치지 않았는데, 그 소리를 보러 기어 들어간 몸이 첫 디딤판에 걸려 길을 못 짜고
+	 * 그 자리에서 두드리고 듣기만 되풀이했다. 몸은 디딤판에 묻히고, 계단으로 내려오던 그녀는 그 곁을 지나갈 수 없었다.
+	 */
+	static bool IsOnRoofStair(const FVector& Location)
+	{
+		return Location.X >= -335.0f && Location.X <= -220.0f
+			&& Location.Y >= -234.0f && Location.Y <= 225.0f
+			&& Location.Z >= AIGPrologueWorldScene::GetStoreyFloorZ(3) - 10.0f
+			&& Location.Z <= AIGPrologueWorldScene::RoofZ + 250.0f;
+	}
 	/** 안쪽 소리에 한 번 더 두드리기까지. */
 	constexpr float DoorReknockDelaySeconds = 0.5f;
 	/**
@@ -1221,7 +1234,11 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 			{
 				BeginCapture(Player);
 			}
-			else if (Distance <= CaptureRadius && bReachable && !Tuning.bCaptureEnabled && bPursuing)
+			// 듣기만 하는 밤에는 잡을 자리와 같은 조건에서 물러난다. 쫓던 중이 아니어도 그렇다. 옥상 계단 밑에서
+			// 위의 소리를 듣던 그는 바로 위 디딤판에 선 유담과 닿아 있으면서도 듣기와 순찰만 되풀이해, 둘 다 계단을
+			// 비키지 못했다.
+			else if (Distance <= CaptureRadius && bReachable && !Tuning.bCaptureEnabled
+				&& (!bTouchCaptureSuppressed || bPursuing))
 			{
 				LeaveAfterReach();
 			}
@@ -1276,6 +1293,13 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 		return;
 	}
 	if (!CanHear(Event))
+	{
+		return;
+	}
+	// 듣기만 하는 밤의 연출 자리(첫째 밤 3.5층 참 첫 목격)에서는 벽에 귀를 댄 자세를 지킨다. 잡지 않는 그가 소리를 보러
+	// 기어 나오면 좁은 참 가운데에서 길을 짜지 못하고 두드리고 듣기만 되풀이해, 내려오던 유담이 참을 지나갈 수 없었다.
+	// 표준 난이도에서는 그대로 듣고 쫓는다.
+	if (bTouchCaptureSuppressed && !Tuning.bCaptureEnabled)
 	{
 		return;
 	}
@@ -1353,9 +1377,10 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 	// 1~4층은 이제 계단탑으로 이어져 있다. 그 사이의 소리에는 계단을 타고 간다
 	// (MoveTowardGoal). 이 갈래는 옥상과 5층의 소리만이다.
 	const bool bUnreachableAbove =
-		Event.Location.Z - GetActorLocation().Z > FloorHeightThreshold
-		&& (!BuildingNav.IsBuilt()
-			|| FIGBuildingNav::FloorOfFeet(Event.Location.Z - 60.0f) >= 4);
+		(Event.Location.Z - GetActorLocation().Z > FloorHeightThreshold
+			&& (!BuildingNav.IsBuilt()
+				|| FIGBuildingNav::FloorOfFeet(Event.Location.Z - 60.0f) >= 4))
+		|| (bHasStairFoot && IGListener::IsOnRoofStair(Event.Location));
 	if (bUnreachableAbove)
 	{
 		const FVector Below = bHasStairFoot ? StairFoot : Event.Location;
@@ -2165,7 +2190,36 @@ void AIGListenerEntity::LeaveAfterReach()
 	bReactingToSound = false;
 	PlayerTrail.Reset();
 	AdvancePatrolIndex();
+	// 물러나는 것이니 그녀 반대쪽에서 그녀와 가장 먼 순찰 자리로 간다. 다음 자리를 그대로 고르면 바로 곁의 자리가
+	// 뽑혀, 3.5층 참에서 한 걸음 옮겨 두드리고 듣기만 되풀이하며 계단을 계속 막았다(첫째 밤).
+	if (const APawn* Her = CachedPlayer.Get(); Her && PatrolPoints.Num() > 1)
+	{
+		const FVector Here = GetActorLocation();
+		const FVector Away = Here - Her->GetActorLocation();
+		int32 Farthest = INDEX_NONE;
+		double FarthestDistance = 0.0;
+		for (int32 Index = 0; Index < PatrolPoints.Num(); ++Index)
+		{
+			if (FVector::DotProduct(PatrolPoints[Index] - Here, Away) <= 0.0)
+			{
+				continue;
+			}
+			const double Distance = FVector::DistSquared(PatrolPoints[Index], Her->GetActorLocation());
+			if (Distance > FarthestDistance)
+			{
+				FarthestDistance = Distance;
+				Farthest = Index;
+			}
+		}
+		if (Farthest != INDEX_NONE)
+		{
+			PatrolIndex = Farthest;
+		}
+	}
 	EnterState(EIGListenerState::Patrolling);
+	const FVector* Next = CurrentPatrolTarget();
+	UE_LOG(LogIndieGame, Display, TEXT("LISTENER_REACH_LEAVE at=%s next=%s"), *GetActorLocation().ToCompactString(),
+		Next ? *Next->ToCompactString() : TEXT("none"));
 }
 
 void AIGListenerEntity::ReturnAfterCapture(const float GraceSeconds)

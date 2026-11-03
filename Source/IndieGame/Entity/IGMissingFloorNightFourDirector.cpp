@@ -65,9 +65,10 @@ namespace IGNightFour
 	constexpr float FailureListingDelaySeconds = 2.2f;
 	constexpr float FailureRetryDelaySeconds = 3.2f;
 
-	// Posted beside the existing fourth-floor lift notice, not on top of the
-	// 403 shipping labels. Its back face shares the established paper plane.
-	const FVector EvictionNoticeLocation(640.0f, -232.0f, 1042.0f);
+	// 4층 엘리베이터 옆 복도 북쪽 벽. 벽 앞면이 Y -235라 두께 1 cm 종이의 가운데를 -235.6에 둔다(뒷면이
+	// 벽에서 1 mm). 예전 자리 -232는 벽 속이라 보이지도 않고 겨눌 수도 없어서 「엘리베이터 옆 안내문 읽기」를
+	// 끝낼 수 없었다.
+	const FVector EvictionNoticeLocation(640.0f, -235.6f, 1042.0f);
 	/** 요구서가 붙은 낮. 경찰 문자 뒤에 한 번 붙고 저장에 남는다. */
 	const FName EvictionPostedBeat(TEXT("Day.EvictionPosted"));
 	/**

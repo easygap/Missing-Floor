@@ -25,6 +25,8 @@ class INDIEGAME_API UIGMissingFloorNarrativeSubsystem : public UGameInstanceSubs
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 	/** The registered tag for a truth, or an invalid tag if unregistered. */
 	UFUNCTION(BlueprintPure, Category = "Narrative|MissingFloor")
 	static FGameplayTag GetTruthTag(EIGMissingFloorTruth Truth);

@@ -354,8 +354,10 @@ void AIGListenerGreyboxDirector::BeginPlay()
 	// 저장 검사는 새 프로세스에서 실제 불러오기와 맵 이동을 거친다.
 	// 입주 장면을 먼저 만들면 초기 자동 저장이 검사할 파일을 덮을 수 있다.
 	// -IGHintResume은 302호 힌트 검사가 남긴 밤 저장을 이어 한다(Run-LeftoverProbe.ps1 -Variant hints).
+	// -IGFullPlaythroughResume은 완주 검사가 앞서 남긴 자동 저장에서 이어 한다(메뉴의 이어 하기와 같다).
 	if ((FParse::Param(FCommandLine::Get(), TEXT("IGArrivalSaveRead"))
 			|| FParse::Param(FCommandLine::Get(), TEXT("IGHintResume"))
+			|| FParse::Param(FCommandLine::Get(), TEXT("IGFullPlaythroughResume"))
 			|| !EndingProbeChoice.IsEmpty())
 		&& !GetWorld()->URL.HasOption(TEXT("IGResumeSave")))
 	{
@@ -1786,6 +1788,12 @@ bool AIGListenerGreyboxDirector::SetupStage()
 			}
 			else
 			{
+				// 불러온 낮. 건물은 입주 저녁 모습으로 지어지고 아침은 새벽을 지날 때만 선다. 낮 저장을 이어
+				// 하면 방이 저녁처럼 어두워 공포가 올라 심장 소리까지 났다. 새벽과 같은 길로 아침을 세운다.
+				if (AIGPrologueWorldScene* Building = WorldScene.Get())
+				{
+					Building->SetTheHourSealed(false);
+				}
 				HandleHourActiveChanged(false);
 				if (APlayerController* Controller = World->GetFirstPlayerController())
 				{
