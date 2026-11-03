@@ -9,8 +9,10 @@
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Entity/IGJeongwooFigure.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGManagerPatrol.h"
+#include "Entity/IGSiteCheckVisit.h"
 #include "Entity/IGStairNeighbor.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -206,18 +208,32 @@ bool AIGStairSensorLights::IsMoverActive(const AActor* Actor)
 	{
 		return Patrol->IsOnDuty();
 	}
+	if (const AIGSiteCheckVisit* Visit = Cast<AIGSiteCheckVisit>(Actor))
+	{
+		return Visit->IsOut();
+	}
 	return true;
 }
 
-FVector AIGStairSensorLights::GetFeet(const AActor* Actor)
+FVector AIGStairSensorLights::GetFeet(const AActor* Actor, const int32 Part)
 {
-	// 플레이어와 위층 사람은 캡슐 가운데가 몸 위치다. 관리인은 루트가 발이다.
+	// 현장 확인은 한 배우에 두 사람이 있다.
+	if (const AIGSiteCheckVisit* Visit = Cast<AIGSiteCheckVisit>(Actor))
+	{
+		return Part == 0 ? Visit->GetOfficerFeet() : Visit->GetManagerFeet();
+	}
+	// 플레이어와 위층 사람은 캡슐 가운데가 몸 위치다. 관리인과 정우는 루트가 발이다.
 	const FVector Location = Actor->GetActorLocation();
 	if (const UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(Actor->GetRootComponent()))
 	{
 		return Location - FVector(0.0f, 0.0f, Capsule->GetScaledCapsuleHalfHeight());
 	}
 	return Location;
+}
+
+bool AIGStairSensorLights::IsFidgeting(const AActor* Actor)
+{
+	return Actor && (Actor->IsA<AIGStairNeighbor>() || Actor->IsA<AIGJeongwooFigure>() || Actor->IsA<AIGSiteCheckVisit>());
 }
 
 void AIGStairSensorLights::RefreshMovers()
@@ -246,13 +262,18 @@ void AIGStairSensorLights::RefreshMovers()
 	{
 		Wanted.Add(*It);
 	}
+	// 첫째 낮에 상자를 안고 오르는 정우.
+	for (TActorIterator<AIGJeongwooFigure> It(World); It; ++It)
+	{
+		Wanted.Add(*It);
+	}
 	// 이미 보던 몸은 마지막 발자리를 그대로 둔다. 새로 들어온 몸만 처음부터 본다.
 	TArray<FMover> Next;
-	for (AActor* Actor : Wanted)
+	const auto Track = [this, &Next](AActor* Actor, const int32 Part)
 	{
-		const FMover* Known = Movers.FindByPredicate([Actor](const FMover& Mover)
+		const FMover* Known = Movers.FindByPredicate([Actor, Part](const FMover& Mover)
 		{
-			return Mover.Actor.Get() == Actor;
+			return Mover.Actor.Get() == Actor && Mover.Part == Part;
 		});
 		if (Known)
 		{
@@ -262,8 +283,19 @@ void AIGStairSensorLights::RefreshMovers()
 		{
 			FMover Fresh;
 			Fresh.Actor = Actor;
+			Fresh.Part = Part;
 			Next.Add(Fresh);
 		}
+	};
+	for (AActor* Actor : Wanted)
+	{
+		Track(Actor, 0);
+	}
+	// 셋째 아침 옥상으로 오르는 경찰관과 관리인은 한 배우에 둘이다.
+	for (TActorIterator<AIGSiteCheckVisit> It(World); It; ++It)
+	{
+		Track(*It, 0);
+		Track(*It, 1);
 	}
 	Movers = MoveTemp(Next);
 }
@@ -286,6 +318,17 @@ void AIGStairSensorLights::Update()
 	}
 
 	const bool bPowered = IsPowered();
+	// 사람과 마주 서서 이야기하거나 같이 기다리는 플레이어도 감지기가 본다. 셋째 낮 계단에서 303호는
+	// 감지기가 안 보는 반 층 참 곁에 서고 유담은 4층 참 감지 범위에 서서, 이야기 도중 등이 꺼졌다.
+	TArray<FVector, TInlineAllocator<4>> People;
+	for (const FMover& Mover : Movers)
+	{
+		if (IsFidgeting(Mover.Actor.Get()) && IsMoverActive(Mover.Actor.Get()))
+		{
+			People.Add(GetFeet(Mover.Actor.Get(), Mover.Part));
+		}
+	}
+	const APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	for (FMover& Mover : Movers)
 	{
 		const AActor* Actor = Mover.Actor.Get();
@@ -294,13 +337,21 @@ void AIGStairSensorLights::Update()
 			Mover.bHasLast = false;
 			continue;
 		}
-		const FVector Feet = GetFeet(Actor);
+		const FVector Feet = GetFeet(Actor, Mover.Part);
+		bool bFidgeting = IsFidgeting(Actor);
+		if (!bFidgeting && Actor == PlayerPawn)
+		{
+			for (const FVector& Person : People)
+			{
+				bFidgeting |= FVector::DistSquared(Person, Feet) < FMath::Square(TalkRadius);
+			}
+		}
 		// 순간이동(잡힌 뒤 옮기기, 밤의 시작)은 움직임이 아니다. 한 번에 2 m 넘게 뛴 걸음은 버린다.
 		const float Travel = Mover.bHasLast ? FVector::Dist(Feet, Mover.LastFeet) : 0.0f;
 		const bool bMoved = Mover.bHasLast
 			&& DeltaSeconds > KINDA_SMALL_NUMBER
 			&& Travel < 200.0f
-			&& Travel / DeltaSeconds > MotionSpeed;
+			&& (Travel / DeltaSeconds > MotionSpeed || bFidgeting);
 		Mover.LastFeet = Feet;
 		Mover.bHasLast = true;
 		if (!bMoved || !bPowered)

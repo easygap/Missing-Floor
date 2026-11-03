@@ -1,6 +1,7 @@
 ﻿#include "Sequence/IGNeighbor303Probe.h"
 
 #include "Components/CapsuleComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Core/IGPrologueWorldScene.h"
 #include "Engine/GameInstance.h"
@@ -129,7 +130,25 @@ void AIGNeighbor303Probe::Shoot(const TCHAR* Name)
 	IFileManager::Get().MakeDirectory(*Directory, true);
 	const FString Path = FPaths::Combine(Directory, FString::Printf(TEXT("%s.png"), Name));
 	FScreenshotRequest::RequestScreenshot(Path, false, false);
-	UE_LOG(LogIndieGame, Display, TEXT("NEIGHBOR303_SHOT %s"), *Path);
+	// 사진이 검게 나오면 화면을 덮은 페이드 때문인지 빛이 없어서인지 남겨 둔다.
+	const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	const APlayerCameraManager* Camera = PC ? PC->PlayerCameraManager.Get() : nullptr;
+	UE_LOG(LogIndieGame, Display, TEXT("NEIGHBOR303_SHOT %s fade=%.3f camera=%s"), *Path, Camera ? Camera->FadeAmount : -1.0f,
+		Camera ? *Camera->GetCameraLocation().ToCompactString() : TEXT("none"));
+	if (Camera)
+	{
+		// 가까운 등이 켜져 있었는지도 남긴다(센서등은 세기만 바꾸고, 다른 층 등은 조명 구역이 숨긴다).
+		for (TObjectIterator<UPointLightComponent> It; It; ++It)
+		{
+			const UPointLightComponent* Light = *It;
+			if (Light->GetWorld() == GetWorld() && FVector::Dist(Light->GetComponentLocation(), Camera->GetCameraLocation()) < 600.0f)
+			{
+				UE_LOG(LogIndieGame, Display, TEXT("NEIGHBOR303_LIGHT %s owner=%s at=%s intensity=%.0f visible=%d"), *Light->GetName(),
+					Light->GetOwner() ? *Light->GetOwner()->GetName() : TEXT("none"), *Light->GetComponentLocation().ToCompactString(),
+					Light->Intensity, Light->IsVisible() ? 1 : 0);
+			}
+		}
+	}
 }
 
 bool AIGNeighbor303Probe::SaidLine(const FText& Line) const

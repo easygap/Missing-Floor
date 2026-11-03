@@ -22,7 +22,8 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FIGStairSensorSwitched, int32 /*LampIndex*/
  * 1~4층 참에 하나씩 있다. 감지기는 그 참과, 참에 붙은 두 계단의 절반쯤까지를 본다.
  * 반 층 참은 보지 않는다. 계단탑에서 가장 어두운 자리가 거기다. 움직이는 몸이 범위에
  * 들면 딸깍 켜지고, 마지막 움직임 뒤 HoldSeconds가 지나면 딸깍 꺼진다. 감지기는 소리가
- * 아니라 몸을 본다. 위층 사람이 기어 지나가도, 관리인이나 303호가 걸어 지나가도 켜진다.
+ * 아니라 몸을 본다. 위층 사람이 기어 지나가도, 관리인·303호·정우·현장 확인 두 사람이 걸어
+ * 지나가도 켜진다. 사람끼리 서서 이야기하는 동안에는 꺼지지 않는다.
  *
  * 넷째 밤에 관리인이 건물 차단기를 내렸으면 켜지지 않는다. 1층 계량기함의 복도등 차단기와는
  * 회로가 따로라 복도등을 내려도 그대로 켜진다.
@@ -78,6 +79,8 @@ public:
 	static constexpr float DetectRadius = 260.0f;
 	static constexpr float DetectBelow = 120.0f;
 	static constexpr float DetectAbove = 110.0f;
+	/** 다른 사람과 이만큼 가까이 서 있는 플레이어는 이야기하며 같이 움직이는 것으로 본다. */
+	static constexpr float TalkRadius = 250.0f;
 	/**
 	 * 켜진 등의 세기와 갓의 발광. 밤 노출은 손전등에 맞춰 잠겨 있다. 그 노출에서 참
 	 * 하나가 또렷하게 밝아야 불이 들어오는 순간이 사건이 된다. 복도 등(1020)보다 밝은
@@ -95,11 +98,18 @@ private:
 	bool IsPowered() const;
 	void SetLampOn(int32 Index, bool bOn, bool bSilent);
 	static bool IsMoverActive(const AActor* Actor);
-	static FVector GetFeet(const AActor* Actor);
+	/** Part는 한 배우 안의 몇째 사람인가(현장 확인은 경찰관 0, 관리인 1). */
+	static FVector GetFeet(const AActor* Actor, int32 Part);
+	/**
+	 * 서서 이야기하거나 기다리는 동안에도 손짓과 몸을 조금씩 움직이는 사람인가. 감지기가 계속 본다.
+	 * 위층 사람과 관리인은 움직일 때만 본다. 멈춰 서서 듣는 몸 위로는 등이 꺼진다.
+	 */
+	static bool IsFidgeting(const AActor* Actor);
 
 	struct FMover
 	{
 		TWeakObjectPtr<AActor> Actor;
+		int32 Part = 0;
 		FVector LastFeet = FVector::ZeroVector;
 		bool bHasLast = false;
 	};
