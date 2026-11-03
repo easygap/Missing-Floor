@@ -57,6 +57,8 @@ private:
 	void Shoot(const TCHAR* Name);
 	/** 정우가 판을 받치는 자리: 판·상자·손발 뼈를 판 좌표로 남기고 둘레 벽까지 잰다. */
 	void LogBraceGeometry();
+	/** 정우의 두 손과 아래팔 뼈를 월드와 몸 기준 좌표로 남긴다(서는 자리를 손 닿을 곳에 맞출 때). */
+	void LogJeongwooHands(const TCHAR* Tag);
 	/**
 	 * 판과 상자, 정우의 몸이 서로 뚫지 않는지 본다. bBracing이면 두 손바닥이 판 방 쪽 면에 닿고 몸과
 	 * 발은 그 앞 바닥에 있어야 한다. 판은 상자 위 모서리에 얹혀 있고 판과 상자는 동벽을 넘지 않는다.

@@ -8,6 +8,7 @@ class AActor;
 class USceneComponent;
 class USkeletalMeshComponent;
 class UWorld;
+struct FCollisionQueryParams;
 
 /** rig_walker 뼈대의 다리·팔 IK 요청. 발목은 월드 자리다. 애니메이션을 갱신하기 직전에 메시 좌표로 옮긴다. */
 struct FIGWalkerIKRequest
@@ -26,6 +27,17 @@ struct FIGWalkerIKRequest
 
 	static constexpr float ArmFreeReach = 1000.0f;
 };
+
+namespace IGWalkerArms
+{
+	/**
+	 * 걷는 사람의 양옆 빈 데를 재 ArmLimit(팔 바깥면이 몸 가운데에서 나갈 수 있는 거리)을 맞춘다. Center는 발밑 가운데
+	 * (계단에서 몸을 낮췄으면 그만큼 뺀 자리)다. 몸 앞뒤 −8·8·24·40 cm, 높이 85·105·125 cm에서 양옆 55 cm까지
+	 * Visibility로 긋고 벽에서 2 cm 띄운다. 좁아질 때는 바로 모으고 넓어지면 천천히 편다. ArmFreeReach면 바로 잰 값이 된다.
+	 */
+	INDIEGAME_API void UpdateRoom(const UWorld& World, const FVector& Center, float Yaw, const FCollisionQueryParams& Params,
+		float DeltaSeconds, float (&InOutLimit)[2]);
+}
 
 /**
  * 애니메이션 하나를 돌리는 재생기에 다리·팔 IK를 얹었다. 넓적다리와 종아리를 돌려 발목을 요청한 자리에 두고,
@@ -167,14 +179,22 @@ public:
 	bool Attach(USkeletalMeshComponent& Body, AActor& Owner);
 	/** 몸을 숨기거나 순간 이동시켰다. 발을 버리고 애니메이션 다리로 돌아간다. */
 	void Reset();
-	/** 몸을 옮긴 뒤 틱마다 부른다. Ahead는 앞으로 지날 길 점, bGait는 걷는 애니메이션을 트는 중인가. */
-	void Tick(const USceneComponent& Feet, TConstArrayView<FVector> Ahead, bool bGait, float DeltaSeconds);
+	/**
+	 * 몸을 옮긴 뒤 틱마다 부른다. Ahead는 앞으로 지날 길 점, bGait는 걷는 애니메이션을 트는 중인가. bTuckArms면 양옆이
+	 * 좁을 때 늘어뜨린 팔을 몸 쪽으로 모은다(관리인과 같다). 빈손으로 걷거나 돌 때만 켠다. 손을 뻗어 짚거나 상자를
+	 * 안은 자세에서 모으면 손이 짚은 데서 떨어진다.
+	 */
+	void Tick(const USceneComponent& Feet, TConstArrayView<FVector> Ahead, bool bGait, float DeltaSeconds, bool bTuckArms = false);
 	/** 계단 걸음이 다리를 쥐고 있다. 다 풀릴 때까지는 멈춰 서도 틱을 끄지 않는다. */
 	bool IsActive() const { return Stairs.IsActive(); }
 
 private:
+	/** 몸 앞뒤 몇 군데에서 양옆 빈 데를 재 팔 바깥면이 나갈 수 있는 거리를 정한다. */
+	void UpdateArmRoom(const UWorld& World, const USceneComponent& Feet, float DeltaSeconds);
+
 	TWeakObjectPtr<USkeletalMeshComponent> Mesh;
 	FIGStairFeet Stairs;
+	float ArmLimit[2] = {FIGWalkerIKRequest::ArmFreeReach, FIGWalkerIKRequest::ArmFreeReach};
 	/** 붙일 때 몸 메시가 발밑 컴포넌트에서 놓인 자리. 계단에서는 여기서 몸을 낮춘다. */
 	FVector RestLocation = FVector::ZeroVector;
 	bool bAttached = false;

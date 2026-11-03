@@ -75,18 +75,33 @@ namespace IGLeftoverStorage
 	 */
 	const FVector JeongwooBreathSpot(73.8f, 50.5f, StorageZ);
 	constexpr float JeongwooBreathYaw = -30.0f;
-	const FVector JeongwooOutSpot(-5.0f, 0.0f, StorageZ);
 	/**
-	 * 셋째 자세의 판을 상자 바로 위에서 받치는 자리. A_Jeongwoo_Brace는 두 손을 발보다 60.5 cm 앞,
-	 * 136.7 cm 높이에 둔다. 판이 방 쪽으로 10도 기울어 그 높이의 면은 밑동보다 25 cm 방 쪽이고,
-	 * 손바닥이 면에 닿게 손 뼈를 면에서 3.5 cm 뗐다. 두 손은 판 길이 58..92 cm에 온다.
+	 * 판 뒤에서 걸어 나와 서는 방 가운데 자리. 밀려난 판은 위로 갈수록 방 쪽으로 기울어 팔 높이의 서쪽 끝이
+	 * (16, 6) 언저리다. 예전 자리 (-5, 0)에서는 서서 돌아서는 팔이 그 끝을 30 cm 지나갔다.
 	 */
-	const FVector JeongwooBraceSpot(64.5f, -80.3f, StorageZ);
+	const FVector JeongwooOutSpot(-32.0f, -12.0f, StorageZ);
+	/**
+	 * 셋째 자세의 판을 상자 위에서 받치는 자리. A_Jeongwoo_Brace는 두 손 뼈(손목)를 발보다 60 cm 앞,
+	 * 136 cm 높이에 둔다. 판이 방 쪽으로 10도 기울어 그 높이의 면은 밑동보다 25 cm 방 쪽이다. 쥔 장갑은
+	 * 손목보다 10 cm 앞으로 나와서 손 뼈를 면에서 10 cm 떼야 장갑 앞이 면에 닿는다(예전 4 cm에서는 두 손이
+	 * 판 속 6 cm). 두 손은 판 가운데에서 서쪽 10 cm..동쪽 24 cm에 온다. 마대를 아직 안 열었으면 동쪽에 마대가
+	 * 있어서(서쪽 면 X 81), 디딘 왼발은 16 cm, 걸어 들어오며 내딛는 왼발도 3 cm 넘게 떨어지게 판을 따라 서쪽에 선다.
+	 */
+	const FVector JeongwooBraceSpot(45.36f, -80.27f, StorageZ);
 	/**
 	 * 문을 잡고 기다리는 자리. 302호 문간(X -75..15) 바로 앞에 서면 그녀가 방을 못 나와서, 복도의 서쪽
-	 * 문설주 옆에 서서 문틀을 잡는다. 문간 가운데와 74 cm 떨어져 둘의 캡슐(26 + 30)이 닿지 않는다.
+	 * 문설주 바깥에 서서 문틀 모서리(-75, -238.5)를 오른손으로 잡는다. A_Jeongwoo_HoldDoor는 오른손을 몸
+	 * 오른쪽 42 cm, 앞 34 cm에 두니 복도를 따라 동쪽(문간 쪽)을 보고 선다. 예전 자리 (-104, -262)는 복도
+	 * 북벽에서 23 cm라 문틀 쪽으로 돌아서면 팔이 벽을 뚫었다. 문간 가운데와 80 cm 떨어져 둘의 캡슐(26 + 30)이
+	 * 닿지 않는다.
 	 */
-	const FVector JeongwooDoorSpot(-104.0f, -262.0f, StorageZ);
+	const FVector JeongwooDoorSpot(-110.0f, -285.0f, StorageZ);
+	constexpr float JeongwooDoorYaw = 0.0f;
+	/** 302호 문간 바로 바깥과, 복도에서 문설주 모서리를 45 cm 넘게 비켜 도는 자리. */
+	const FVector JeongwooDoorwayOut(-30.0f, -255.0f, StorageZ);
+	const FVector JeongwooCorridorBend(-55.0f, -282.0f, StorageZ);
+	/** 방 안에서 문간을 오가는 줄. 문간 가운데(X -30)로 걸으면 오른발이 조립대 상자(서쪽 면 X -4)를 스쳤다. */
+	constexpr float JeongwooDoorLaneX = -35.0f;
 	/** 판을 받친 채 기다리는 시간. 그사이 상자를 당기지 않으면 판을 놓고 문으로 간다. */
 	constexpr double BraceWaitSeconds = 40.0;
 	/** 문을 잡고 기다리는 시간. 그 뒤로는 먼저 내려간다(그녀는 302호를 더 볼 수 있다). */
@@ -1012,7 +1027,8 @@ void AIGMissingFloorLeftoverDirector::FreeJeongwoo()
 	// 숨을 고르고(JeongwooCatchBreath), 다 고르면 폰을 집으며 일어나 걸어 나온다.
 	bJeongwooUp = false;
 	Jeongwoo->Appear(JeongwooTrapSpot, JeongwooTrapYaw, AIGJeongwooFigure::EPose::Hold);
-	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooCatchBreath, 0.7f, false);
+	// 판이 다 돌아간 뒤(1.2초)에 물러선다. 그 전에 걸으면 돌아가는 판 속으로 발을 디뎠다.
+	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooCatchBreath, 1.25f, false);
 	GetWorldTimerManager().SetTimer(SceneTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		if (StorageStage != EStorage::Freed)
@@ -1069,7 +1085,8 @@ void AIGMissingFloorLeftoverDirector::JeongwooCatchBreath()
 	// 쪼그려 앉아 숨을 고른다. 인사는 이 자세로 한다. 걷고 돌아서는 데 1초쯤 걸린다.
 	Jeongwoo->WalkRoute({JeongwooTrapSpot, JeongwooBreathSpot}, false, AIGJeongwooFigure::EPose::Crouch, 60.0f,
 		JeongwooBreathYaw);
-	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::WalkJeongwooOut, 3.4f, false);
+	// 풀려나고 4.1초 뒤에 일어난다. 판이 다 돌기를 기다린 만큼 숨 고르는 시간을 줄여 일어나는 때는 그대로다.
+	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, this, &AIGMissingFloorLeftoverDirector::WalkJeongwooOut, 2.85f, false);
 }
 
 void AIGMissingFloorLeftoverDirector::WalkJeongwooOut()
@@ -1081,8 +1098,12 @@ void AIGMissingFloorLeftoverDirector::WalkJeongwooOut()
 	// 일어나며 손 앞의 폰을 집는다(RefreshStorage가 폰과 불을 거둔다).
 	bJeongwooUp = true;
 	RefreshStorage();
-	// 바닥 틀 끝(61, 52)과 밀려난 판 서쪽 끝(24, 29) 사이를 지난다. 둘 다 20 cm 넘게 비킨다.
-	Jeongwoo->WalkRoute({JeongwooBreathSpot, FVector(70.0f, 46.0f, StorageZ), FVector(35.0f, 47.0f, StorageZ), FVector(5.0f, 50.0f, StorageZ), JeongwooOutSpot},
+	// 바닥 틀 끝(61, 52)과 밀려난 판 밑동 사이는 33 cm라 두 발이 다 비켜 지날 수 없다. 발은 몸 옆 23 cm,
+	// 앞뒤 31 cm까지 나가니 높이 4 cm 바닥 틀은 밟고 판 밑동과는 그만큼 둔다. 서쪽으로 곧게 나와 판 서쪽 끝까지는
+	// 북벽 쪽으로 조금씩만 오른다. 북서로 꺾어 오르면 앞으로 내딛은 왼발이 북벽 밑 턱을 찼고, 판 끝을 스치듯 돌던
+	// 예전 길은 팔이 판을 30 cm 지나갔다.
+	Jeongwoo->WalkRoute({JeongwooBreathSpot, FVector(60.0f, 50.5f, StorageZ), FVector(40.0f, 52.0f, StorageZ),
+		FVector(24.0f, 55.0f, StorageZ), FVector(8.0f, 55.0f, StorageZ), FVector(-18.0f, 36.0f, StorageZ), JeongwooOutSpot},
 		false, AIGJeongwooFigure::EPose::Idle, 80.0f);
 }
 
@@ -1104,11 +1125,37 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 		{
 			SayIn(IGLeftoverDialogue::Brace, JeongwooName(), NSLOCTEXT("IGMissingFloor", "LeftoverBraceAgain", "상자요? 잠깐만요, 판 잡을게요."));
 			bBraceAgainSpoken = true;
-			// 복도의 문설주 옆에서 돌아온다. 문간 가운데로 들어와야 벽 모서리를 안 뚫는다.
-			Route.Append({FVector(-30.0f, -252.0f, StorageZ), FVector(-30.0f, -200.0f, StorageZ)});
+			// 복도에서 기다리고 있었으면 문간 가운데로 들어온다. 그래야 문설주와 벽 모서리를 안 뚫는다.
+			// 아직 문으로 가던 길이면 그 자리에서 돌아선다(예전에는 복도까지 나갔다 들어왔다).
+			const FVector Feet = Jeongwoo->GetFeet();
+			if (Feet.Y < -238.0f)
+			{
+				if (Feet.X < JeongwooCorridorBend.X)
+				{
+					Route.Add(JeongwooCorridorBend);
+				}
+				Route.Append({JeongwooDoorwayOut, FVector(JeongwooDoorLaneX, -200.0f, StorageZ)});
+			}
+		}
+		else
+		{
+			// 판 뒤에서 걸어 나오던 중이면 판 서쪽 끝을 마저 돌아 방 가운데로 나온다.
+			if (Jeongwoo->GetFeet().Y > 20.0f)
+			{
+				Route.Append({FVector(-18.0f, 36.0f, StorageZ), JeongwooOutSpot});
+			}
+			// 상자를 당기는 그녀는 상자 서쪽 (25, -41) 언저리에 선다. 방 가운데에서 받치는 자리로 곧장 가면 22 cm
+			// 곁을 지나 몸이 그녀를 뚫어서, 남서쪽으로 크게 돌아 60 cm 밖을 지난다.
+			Route.Add(FVector(-40.0f, -105.0f, StorageZ));
 		}
 		StorageStage = EStorage::Bracing;
 		StorageStageAt = GetWorld()->GetTimeSeconds();
+		// 문간 쪽에서 오면 조립대 상자(X -4..72, Y -210..-160) 북쪽으로 돈다. 받치는 자리로 곧장 가로지르면
+		// 발이 상자에 묻혔다.
+		if (Route.Last().Y < -140.0f)
+		{
+			Route.Add(FVector(JeongwooDoorLaneX, -140.0f, StorageZ));
+		}
 		// 마지막 15 cm는 판을 보고 걸어 들어온다(도착하면 판 쪽 70도로 선다).
 		Route.Append({JeongwooBraceSpot - FVector(5.1f, 14.1f, 0.0f), JeongwooBraceSpot});
 		Jeongwoo->WalkRoute(Route, false, AIGJeongwooFigure::EPose::Brace, 90.0f);
@@ -1143,7 +1190,15 @@ void AIGMissingFloorLeftoverDirector::PullDohaBox()
 	ThinkAboutItem(NSLOCTEXT("IGMissingFloor", "LeftoverPouchThought", "오빠 공구 주머니야. 집에 가져가자."), 3.2f);
 	StorageStage = EStorage::Freed;
 	bBraceHeld = false;
-	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), JeongwooOutSpot}, false, AIGJeongwooFigure::EPose::Idle, 90.0f);
+	// 상자가 다 미끄러져 나온 뒤(0.55초)에 판을 놓고 물러난다. 바로 걸으면 나오는 상자 쪽으로 디딘 발이
+	// 상자에 묻혔다.
+	GetWorldTimerManager().SetTimer(JeongwooWalkTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		if (Jeongwoo && StorageStage == EStorage::Freed && !Jeongwoo->IsWalking())
+		{
+			Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), JeongwooOutSpot}, false, AIGJeongwooFigure::EPose::Idle, 90.0f);
+		}
+	}), 0.6f, false);
 	GetWorldTimerManager().SetTimer(SceneTimer, this, &AIGMissingFloorLeftoverDirector::JeongwooLeave, 3.0f, false);
 	RefreshStorage();
 }
@@ -1172,8 +1227,11 @@ void AIGMissingFloorLeftoverDirector::JeongwooLeave()
 	SayIn(IGLeftoverDialogue::DoorWait, JeongwooName(), bBoxLeft
 		? NSLOCTEXT("IGMissingFloor", "LeftoverLeaveBoxLine", "문 잡고 있을게요. 상자 뺄 거면 말해요, 판 잡아 줄게요.")
 		: NSLOCTEXT("IGMissingFloor", "LeftoverLeaveLine", "문 잡고 있을게요. 더 볼 거 있으면 보고 나와요."), true);
-	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), FVector(-30.0f, -120.0f, StorageZ), FVector(-30.0f, -222.0f, StorageZ),
-		FVector(-30.0f, -252.0f, StorageZ), JeongwooDoorSpot}, false, AIGJeongwooFigure::EPose::HoldDoor, 100.0f);
+	// 문간 가운데로 나가 복도 남쪽으로 비켜 돈 다음, 문간 쪽으로 돌아서서 문설주를 잡는다. 문간을 나서자마자
+	// 문설주 옆으로 꺾으면 오른팔이 문설주와 복도 북벽을 뚫었다.
+	Jeongwoo->WalkRoute({Jeongwoo->GetFeet(), FVector(JeongwooDoorLaneX, -120.0f, StorageZ), FVector(JeongwooDoorLaneX, -222.0f, StorageZ),
+		JeongwooDoorwayOut, JeongwooCorridorBend, JeongwooDoorSpot}, false, AIGJeongwooFigure::EPose::HoldDoor, 100.0f,
+		JeongwooDoorYaw);
 	RefreshStorage();
 }
 

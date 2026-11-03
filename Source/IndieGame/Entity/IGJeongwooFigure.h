@@ -19,7 +19,7 @@ class UStaticMeshComponent;
  * 걷고, 상자를 안고 걷고, 쪼그려 앉고, 판을 받치고, 판 뒤에서 판을 짚고, 문을 잡는다. 어디로 가고 무엇을 할지는
  * 짐 줄기 감독(AIGMissingFloorLeftoverDirector)이 정한다. 이 액터는 정해 준 길을 걷고
  * 다 걸었으면 알린다. 길은 점을 이은 것이고, 높이가 30 cm 넘게 바뀌는 구간은 계단이다.
- * 몸은 플레이어만 막는다. 틱은 걷는 동안에만 켠다.
+ * 몸은 플레이어만 막는다. 틱은 걷는 동안에만 켠다(관통을 재는 검사에서는 보이는 동안 늘 켠다).
  */
 UCLASS(NotBlueprintable, Transient)
 class INDIEGAME_API AIGJeongwooFigure : public AActor
@@ -94,6 +94,11 @@ private:
 	/** 다 걷고(돌아서고) 선다. */
 	void FinishArrival();
 	/**
+	 * 안은 상자는 발보다 65 cm 앞까지 나온다. 길이 꺾이는 점에서는 몸이 들어오던 쪽을 본 채 돌아서므로, 그 앞이
+	 * 막혀 있으면 막힌 만큼 점을 들어오던 쪽으로 물린다(계단참 벽에 상자가 19 cm 묻혔다).
+	 */
+	void ClearCornersForBoxes(TArray<FVector>& Points) const;
+	/**
 	 * 몸막이를 지금 상태에 맞춘다. 걷는 동안은 끈다(밀고 지나가면 그녀가 떠밀려 판 옆에 끼었다).
 	 * 멈춘 자리에 그녀가 겹쳐 서 있으면 켜는 순간 그 안에 갇히므로 비킬 때까지 미룬다.
 	 */
@@ -124,6 +129,12 @@ private:
 	/** 다 걸은 자리에서 TurnToYaw로 돌아서는 중. */
 	bool bTurning = false;
 	TOptional<float> TurnToYaw;
+	/**
+	 * 첫 구간이 보는 쪽에서 크게 꺾여, 걷기 전에 제자리에서 DepartYaw로 돌아서는 중. 걸으면서 돌면 첫걸음이 옆으로
+	 * 나가 곁의 판을 디뎠다.
+	 */
+	bool bDeparting = false;
+	float DepartYaw = 0.0f;
 	bool bCarryWalk = false;
 	bool bShown = false;
 	bool bBodyLoaded = false;

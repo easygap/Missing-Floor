@@ -1818,12 +1818,15 @@ void AIGMissingFloorLeftoverDirector::BeginDayOneBoxes()
 		DayOneStage = EDayOne::Done;
 		return;
 	}
-	// 2층 참에서 3층 참까지 상자 둘을 안고 오른다. 3층 방화문 바로 앞에 선다.
-	const FVector DoorFront = AIGPrologueWorldScene::GetStairDoorwayFeet(2) + FVector(-55.0f, 0.0f, 0.0f);
+	// 2층 참에서 3층 참까지 상자 둘을 안고 오른다. 3층 방화문 앞에 서서 문 쪽(동쪽)으로 돌아선다. 닫힌 문짝은
+	// X -320이고 안은 상자는 발보다 65 cm 앞까지 나와서, 문짝에서 75 cm 떨어져 선다(예전 35 cm에서는 상자가
+	// 닫힌 문을 25 cm 뚫었다).
+	const FVector DoorFront = AIGPrologueWorldScene::GetStairDoorwayFeet(2) + FVector(-90.0f, 10.0f, 0.0f);
 	Climb.Last() = DoorFront;
 	Jeongwoo->SetCarriedBoxes(2);
-	Jeongwoo->Appear(Climb[0], 90.0f, AIGJeongwooFigure::EPose::CarryIdle);
-	Jeongwoo->WalkRoute(Climb, true, AIGJeongwooFigure::EPose::CarryIdle, 70.0f);
+	// 처음부터 걸어갈 쪽을 보고 선다. 예전처럼 북쪽을 보고 나타나면 안은 상자가 복도 목 기둥에 묻혔다.
+	Jeongwoo->Appear(Climb[0], (Climb[1] - Climb[0]).GetSafeNormal2D().Rotation().Yaw, AIGJeongwooFigure::EPose::CarryIdle);
+	Jeongwoo->WalkRoute(Climb, true, AIGJeongwooFigure::EPose::CarryIdle, 70.0f, 0.0f);
 	UE_LOG(LogTemp, Display, TEXT("LEFTOVER_DAY1 boxes begin"));
 }
 
@@ -1895,9 +1898,8 @@ void AIGMissingFloorLeftoverDirector::HandleJeongwooArrived()
 		RefreshStorage();
 		return;
 	case EStorage::Leaving:
-		// 복도에서 서쪽 문설주를 잡는다. 문간은 비어 있다.
+		// 복도에서 서쪽 문설주를 잡는다. 문간 쪽으로는 다 걸은 자리에서 이미 돌아섰다(JeongwooLeave). 문간은 비어 있다.
 		Jeongwoo->SetPose(AIGJeongwooFigure::EPose::HoldDoor);
-		Jeongwoo->FaceTowards(FVector(-72.0f, -236.0f, Jeongwoo->GetFeet().Z));
 		return;
 	case EStorage::Gone:
 		Jeongwoo->Vanish();
@@ -1938,15 +1940,18 @@ void AIGMissingFloorLeftoverDirector::HandleDayTarget(AIGLeftoverTarget* Target)
 		DayOneStage = EDayOne::Walking;
 		DayOneStageAt = GetWorld()->GetTimeSeconds();
 		const float ThirdZ = AIGPrologueWorldScene::GetStoreyFloorZ(2);
+		// 302호 현관문은 안으로 젖혀 서벽 쪽에 붙여 두었다(문짝 X -82.5, Y -215..-125). 짐 더미가 생길 남서
+		// 구석은 그 문짝 뒤라, 문간에서 곧장 가면 문짝을 뚫었다. 문짝 끝으로 돌아 들어가는 길도 장롱과 서벽 사이가
+		// 좁아 발보다 65 cm 앞까지 나오는 상자가 어딘가에 묻힌다. 방 가운데에서 구석 쪽을 보고 내려놓는다.
 		TArray<FVector> Route = {
 			Jeongwoo->GetFeet(),
 			AIGPrologueWorldScene::GetStairDoorwayFeet(2) + FVector(40.0f, 0.0f, 0.0f),
 			FVector(-30.0f, -300.0f, ThirdZ),
 			FVector(-30.0f, -222.0f, ThirdZ),
-			FVector(-60.0f, -150.0f, ThirdZ),
-			FVector(-110.0f, -170.0f, ThirdZ),
+			FVector(-30.0f, -130.0f, ThirdZ),
+			FVector(-50.0f, -70.0f, ThirdZ),
 		};
-		Jeongwoo->WalkRoute(Route, true, AIGJeongwooFigure::EPose::CarryIdle, 90.0f);
+		Jeongwoo->WalkRoute(Route, true, AIGJeongwooFigure::EPose::CarryIdle, 90.0f, 180.0f);
 	}
 }
 

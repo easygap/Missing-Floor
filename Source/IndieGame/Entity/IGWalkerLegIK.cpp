@@ -9,6 +9,8 @@
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "Entity/IGClipAudit.h"
 #include "IndieGame.h"
 
@@ -32,6 +34,9 @@ namespace IGWalkerLegIK
 	constexpr float WalkerHandLength = 8.5f;
 	/** 팔을 이보다 더 모으면 소매가 옆구리 속으로 많이 들어간다. */
 	constexpr float MaxArmTuckDegrees = 14.0f;
+	/** 양옆 빈 데를 재는 거리와, 팔 바깥면을 벽에서 띄울 틈(IGWalkerArms::UpdateRoom). */
+	constexpr float ArmRoomReach = 55.0f;
+	constexpr float ArmWallGap = 2.0f;
 }
 
 namespace IGStairFeet
@@ -874,6 +879,7 @@ bool FIGWalkerStairBody::Attach(USkeletalMeshComponent& Body, AActor& Owner)
 void FIGWalkerStairBody::Reset()
 {
 	Stairs.Reset();
+	ArmLimit[0] = ArmLimit[1] = FIGWalkerIKRequest::ArmFreeReach;
 	USkeletalMeshComponent* Body = Mesh.Get();
 	if (!Body)
 	{
@@ -886,8 +892,8 @@ void FIGWalkerStairBody::Reset()
 	}
 }
 
-void FIGWalkerStairBody::Tick(
-	const USceneComponent& Feet, const TConstArrayView<FVector> Ahead, const bool bGait, const float DeltaSeconds)
+void FIGWalkerStairBody::Tick(const USceneComponent& Feet, const TConstArrayView<FVector> Ahead, const bool bGait,
+	const float DeltaSeconds, const bool bTuckArms)
 {
 	USkeletalMeshComponent* Body = Mesh.Get();
 	UIGWalkerAnimInstance* Anim = Body ? Cast<UIGWalkerAnimInstance>(Body->GetAnimInstance()) : nullptr;
@@ -900,7 +906,18 @@ void FIGWalkerStairBody::Tick(
 	const float Length = Anim->GetLength();
 	Stairs.Update(*World, *Body, FTransform(FRotator(0.0f, Feet.GetComponentRotation().Yaw, 0.0f), Feet.GetComponentLocation()),
 		DeltaSeconds, bGait && Length > 0.0f ? Anim->GetCurrentTime() / Length : 0.0f);
-	Anim->SetIK(Stairs.GetRequest());
+	if (bTuckArms)
+	{
+		UpdateArmRoom(*World, Feet, DeltaSeconds);
+	}
+	else
+	{
+		ArmLimit[0] = ArmLimit[1] = FIGWalkerIKRequest::ArmFreeReach;
+	}
+	FIGWalkerIKRequest Request = Stairs.GetRequest();
+	Request.ArmLimit[0] = ArmLimit[0];
+	Request.ArmLimit[1] = ArmLimit[1];
+	Anim->SetIK(Request);
 	Body->SetRelativeLocation(RestLocation - FVector(0.0f, 0.0f, Stairs.GetBodyDrop()));
 	if (Stairs.IsActive() && bGait && Length > 0.0f)
 	{
@@ -908,4 +925,46 @@ void FIGWalkerStairBody::Tick(
 		Anim->SetPlayRate(0.0f);
 		Anim->SetPosition(Stairs.GetGaitPhase() * Length, false);
 	}
+}
+
+void IGWalkerArms::UpdateRoom(const UWorld& World, const FVector& Center, const float Yaw, const FCollisionQueryParams& Params,
+	const float DeltaSeconds, float (&InOutLimit)[2])
+{
+	const FRotator Facing(0.0f, Yaw, 0.0f);
+	const FVector Forward = Facing.Vector();
+	const FVector Right = FRotationMatrix(Facing).GetScaledAxis(EAxis::Y);
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		const FVector Out = Right * (Side == 0 ? -1.0f : 1.0f) * IGWalkerLegIK::ArmRoomReach;
+		float Room = IGWalkerLegIK::ArmRoomReach;
+		for (const float Ahead : {-8.0f, 8.0f, 24.0f, 40.0f})
+		{
+			for (const float Height : {85.0f, 105.0f, 125.0f})
+			{
+				const FVector From = Center + Forward * Ahead + FVector(0.0f, 0.0f, Height);
+				FHitResult Hit;
+				if (World.LineTraceSingleByChannel(Hit, From, From + Out, ECC_Visibility, Params) && !Hit.bStartPenetrating)
+				{
+					Room = FMath::Min(Room, Hit.Distance);
+				}
+			}
+		}
+		// 좁아질 때는 바로 모으고, 넓어지면 천천히 편다.
+		const float Goal = Room - IGWalkerLegIK::ArmWallGap;
+		InOutLimit[Side] = InOutLimit[Side] >= FIGWalkerIKRequest::ArmFreeReach
+			? Goal
+			: FMath::FInterpTo(InOutLimit[Side], Goal, DeltaSeconds, Goal < InOutLimit[Side] ? 25.0f : 6.0f);
+	}
+}
+
+void FIGWalkerStairBody::UpdateArmRoom(const UWorld& World, const USceneComponent& Feet, const float DeltaSeconds)
+{
+	// 302호 판 서쪽 끝과 북벽 사이를 빠져나오던 정우의 소매가 북벽에 8 cm 들어갔다.
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGWalkerArmRoom), false, Feet.GetOwner());
+	if (const APlayerController* Controller = World.GetFirstPlayerController())
+	{
+		Params.AddIgnoredActor(Controller->GetPawn());
+	}
+	IGWalkerArms::UpdateRoom(World, Feet.GetComponentLocation() - FVector(0.0f, 0.0f, Stairs.GetBodyDrop()),
+		Feet.GetComponentRotation().Yaw, Params, DeltaSeconds, ArmLimit);
 }

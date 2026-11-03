@@ -2,7 +2,9 @@
 
 #include "Components/MeshComponent.h"
 #include "Components/SkinnedMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/SkinnedAsset.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "IndieGame.h"
@@ -221,7 +223,8 @@ void FIGClipAudit::Note(const FString& Key, const float Depth, const FString& Ph
 	}
 }
 
-void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, const AActor* Ignored, const FString& Phase)
+void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, const AActor* Ignored, const FString& Phase,
+	const TConstArrayView<const UStaticMeshComponent*> Held)
 {
 	if (!bOn || !Mesh || !Mesh->IsRegistered() || !Mesh->IsVisible() || !Mesh->GetSkinnedAsset())
 	{
@@ -334,6 +337,45 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 				FrameDepth = Depth;
 				FrameCause = IGClipAudit::HitName(Hit);
 				FrameKey = Key;
+			}
+		}
+	}
+
+	// 든 물건. 몸 배우의 컴포넌트라 Params가 이미 빼 둔다. Core에서 경계 상자의 꼭짓점·모서리·면 가운데 26점까지
+	// 긋는다. 물건 가운데에서 그으면 가운데가 닫힌 문짝 속일 때 선이 다 문짝 속에서 시작해 하나도 못 잡았다.
+	for (const UStaticMeshComponent* Item : Held)
+	{
+		if (!Item || !Item->IsVisible() || !Item->GetStaticMesh())
+		{
+			continue;
+		}
+		const FBox Local = Item->GetStaticMesh()->GetBoundingBox();
+		const FTransform& ItemToWorld = Item->GetComponentTransform();
+		for (int32 Corner = 0; Corner < 27; ++Corner)
+		{
+			const FVector Sign(static_cast<float>(Corner % 3 - 1), static_cast<float>(Corner / 3 % 3 - 1),
+				static_cast<float>(Corner / 9 - 1));
+			if (Sign.IsZero())
+			{
+				continue;
+			}
+			const FVector Point = ItemToWorld.TransformPosition(Local.GetCenter() + Local.GetExtent() * Sign);
+			FHitResult Hit;
+			if (!IGClipAudit::TraceVisible(*World, Core, Point, Params, Hit) || Hit.bStartPenetrating || Hit.Distance < 0.5f)
+			{
+				continue;
+			}
+			const float Depth = FVector::Distance(Hit.ImpactPoint, Point);
+			if (Depth >= IGClipAudit::VisibleDepth)
+			{
+				const FString Key = FString::Printf(TEXT("held/%s/%s"), *Item->GetName(), *IGClipAudit::HitName(Hit));
+				Note(Key, Depth, Phase, Core, Point, Hit.ImpactPoint, FrameKeys);
+				if (Depth > FrameDepth)
+				{
+					FrameDepth = Depth;
+					FrameCause = IGClipAudit::HitName(Hit);
+					FrameKey = Key;
+				}
 			}
 		}
 	}

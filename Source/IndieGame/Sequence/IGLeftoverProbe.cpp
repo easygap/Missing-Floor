@@ -15,6 +15,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Entity/IGClipAudit.h"
 #include "Entity/IGJeongwooFigure.h"
 #include "Entity/IGLiningEntity.h"
 #include "Entity/IGListenerEntity.h"
@@ -331,6 +332,24 @@ void AIGLeftoverProbe::LogBraceGeometry()
 	}
 }
 
+void AIGLeftoverProbe::LogJeongwooHands(const TCHAR* Tag)
+{
+	AIGMissingFloorLeftoverDirector* Director = Leftover.Get();
+	const AIGJeongwooFigure* Jeongwoo = Director ? Director->GetJeongwoo() : nullptr;
+	if (!Jeongwoo || !Jeongwoo->GetBody())
+	{
+		return;
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_HANDS %s feet=%s yaw=%.1f pose=%d"), Tag,
+		*Jeongwoo->GetActorLocation().ToCompactString(), Jeongwoo->GetActorRotation().Yaw, static_cast<int32>(Jeongwoo->GetPose()));
+	for (const TCHAR* Bone : {TEXT("hand_l"), TEXT("hand_r"), TEXT("lowerarm_l"), TEXT("lowerarm_r"), TEXT("upperarm_r")})
+	{
+		const FVector World = Jeongwoo->GetBody()->GetSocketLocation(FName(Bone));
+		UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_HANDS %s bone %s world=%s actor=%s"), Tag, Bone, *World.ToCompactString(),
+			*Jeongwoo->GetActorTransform().InverseTransformPosition(World).ToCompactString());
+	}
+}
+
 void AIGLeftoverProbe::CheckStorageContact(const bool bBracing, const TCHAR* Prefix)
 {
 	AIGMissingFloorLeftoverDirector* Director = Leftover.Get();
@@ -350,6 +369,26 @@ void AIGLeftoverProbe::CheckStorageContact(const bool bBracing, const TCHAR* Pre
 	const float CornerFace = BoardLocal.Max.Y;
 	const auto OnBoard = [&BoardTransform](const FVector& World) { return BoardTransform.InverseTransformPosition(World); };
 	const auto Bone = [Jeongwoo](const TCHAR* BoneName) { return Jeongwoo->GetBody()->GetSocketLocation(FName(BoneName)); };
+	// 손 살이 판 면에서 가장 깊이 들어간 곳(양수면 면 앞, 음수면 판 속). 관통 측정은 정점을 고르게 400개만
+	// 골라 손끝을 놓치니 손 뼈에 붙은 정점을 다 옮겨 본다. 정점을 못 읽는 빌드에서는 재지 않는다.
+	FIGSkinSamples AllSkin;
+	TArray<FVector> SkinAt;
+	AllSkin.Prepare(*Jeongwoo->GetBody(), MAX_int32);
+	AllSkin.Evaluate(*Jeongwoo->GetBody(), SkinAt);
+	const auto HandSkinGap = [&](const TCHAR* Hand, const bool bRoomFace)
+	{
+		const int32 HandBone = Jeongwoo->GetBody()->GetBoneIndex(FName(Hand));
+		float Nearest = TNumericLimits<float>::Max();
+		for (int32 Index = 0; Index < SkinAt.Num(); ++Index)
+		{
+			if (AllSkin.Samples[Index].Bone == HandBone)
+			{
+				const float Y = OnBoard(SkinAt[Index]).Y;
+				Nearest = FMath::Min(Nearest, bRoomFace ? RoomFace - Y : Y - CornerFace);
+			}
+		}
+		return Nearest;
+	};
 
 	// 판은 상자 위 모서리(상자 +Y 면 위 변)에 얹혀 있다. 들뜨지도 파고들지도 않는다.
 	const FTransform BoxTransform = Box->GetComponentTransform();
@@ -377,9 +416,13 @@ void AIGLeftoverProbe::CheckStorageContact(const bool bBracing, const TCHAR* Pre
 			Nearest = FMath::Min(Nearest, OnBoard(Bone(Part)).Y - CornerFace);
 		}
 		const float Hands = FMath::Min(OnBoard(Bone(TEXT("hand_l"))).Y, OnBoard(Bone(TEXT("hand_r"))).Y) - CornerFace;
-		UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_CONTACT %s jeongwoo_behind_board=%.1f hands=%.1f"), Prefix, Nearest, Hands);
+		const float SkinLeft = HandSkinGap(TEXT("hand_l"), false);
+		const float SkinRight = HandSkinGap(TEXT("hand_r"), false);
+		UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_CONTACT %s jeongwoo_behind_board=%.1f hands=%.1f skin_l=%.1f skin_r=%.1f"),
+			Prefix, Nearest, Hands, SkinLeft, SkinRight);
 		Check(Nearest > 5.0f, *Name(TEXT("jeongwoo_behind_board")));
 		Check(Hands > 1.0f && Hands < 12.0f, *Name(TEXT("jeongwoo_hands_on_board")));
+		Check(SkinLeft > -2.0f && SkinRight > -2.0f, *Name(TEXT("hands_skin_outside_board")));
 		CheckPhoneTorchClear(Prefix);
 		return;
 	}
@@ -390,10 +433,17 @@ void AIGLeftoverProbe::CheckStorageContact(const bool bBracing, const TCHAR* Pre
 		const FVector Local = OnBoard(Bone(Hand));
 		const float Gap = RoomFace - Local.Y;
 		UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_CONTACT %s %s face_gap=%.1f along=%.1f height=%.1f"), Prefix, Hand, Gap, Local.X, Local.Z);
-		bHands &= Gap > 1.0f && Gap < 8.0f && Local.X > BoardLocal.Min.X + 3.0f && Local.X < BoardLocal.Max.X - 3.0f
+		// 쥔 장갑이 손목보다 10 cm 앞으로 나와서 손 뼈는 면에서 10 cm 남짓 떨어진다.
+		bHands &= Gap > 6.0f && Gap < 14.0f && Local.X > BoardLocal.Min.X + 3.0f && Local.X < BoardLocal.Max.X - 3.0f
 			&& Local.Z > 20.0f && Local.Z < BoardLocal.Max.Z - 5.0f;
 	}
 	Check(bHands, *Name(TEXT("hands_on_board")));
+	// 장갑 앞이 면에 닿되 판 속으로 들지 않는다.
+	const float SkinLeft = HandSkinGap(TEXT("hand_l"), true);
+	const float SkinRight = HandSkinGap(TEXT("hand_r"), true);
+	UE_LOG(LogIndieGame, Display, TEXT("LEFTOVER_CONTACT %s hand_skin_gap l=%.1f r=%.1f"), Prefix, SkinLeft, SkinRight);
+	Check(SkinLeft > -2.0f && SkinRight > -2.0f, *Name(TEXT("hands_skin_outside_board")));
+	Check(SkinLeft < 3.0f && SkinRight < 3.0f, *Name(TEXT("hands_reach_board")));
 	// 몸은 판 앞에 선다. 팔꿈치까지는 면에 가깝고 몸통·머리·발은 멀다.
 	bool bBody = true;
 	for (const TCHAR* Part : {TEXT("pelvis"), TEXT("spine_03"), TEXT("head"), TEXT("foot_l"), TEXT("foot_r"), TEXT("lowerarm_l"), TEXT("lowerarm_r")})
@@ -1593,7 +1643,8 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			Check(!bCaptureRunning, TEXT("n3_brace_seen_without_capture"));
 			LogBraceGeometry();
 			CheckStorageContact(true, TEXT("n3_brace"));
-			Stand(FVector(-20.0f, -115.0f, 600.0f), FVector(75.0f, -20.0f, 690.0f));
+			// 받치는 자리가 판 쪽 손 닿는 곳으로 서쪽·뒤로 물러나 카메라도 그만큼 물렸다.
+			Stand(FVector(-31.0f, -126.0f, 600.0f), FVector(75.0f, -20.0f, 690.0f));
 			Shoot(TEXT("n3_jeongwoo_braces"));
 			Step = 1;
 			StepSeconds = 0.0f;
@@ -1710,7 +1761,9 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			StepSeconds += GetWorld()->GetDeltaSeconds();
 			if (StepSeconds >= 0.2f)
 			{
-				Stand(FVector(-30.0f, -300.0f, 600.0f), FVector(-100.0f, -262.0f, 700.0f));
+				// 문을 잡은 자세가 한 번 그려진 뒤에 손 자리를 남긴다(도착한 프레임에는 아직 걷던 팔이다).
+				LogJeongwooHands(TEXT("door"));
+				Stand(FVector(-30.0f, -300.0f, 600.0f), FVector(-108.0f, -283.0f, 700.0f));
 				Next(37);
 			}
 			return;
@@ -1718,7 +1771,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 		if (Director->GetStorageStage() == FName(TEXT("Leaving")) && Director->GetJeongwoo() && !Director->GetJeongwoo()->IsWalking())
 		{
 			// 방 안 동쪽에서 문간 너머로, 문설주를 잡고 선 정우를 본다. 문간은 비어 있어야 한다.
-			Stand(FVector(40.0f, -170.0f, 600.0f), FVector(-100.0f, -262.0f, 700.0f));
+			Stand(FVector(40.0f, -170.0f, 600.0f), FVector(-108.0f, -283.0f, 700.0f));
 			{
 				const AIGJeongwooFigure* Figure = Director->GetJeongwoo();
 				const FVector Feet = Figure ? Figure->GetActorLocation() : FVector::ZeroVector;
@@ -3912,6 +3965,8 @@ void AIGLeftoverProbe::BuildStorageInputRoute()
 	Wait(3.0f);
 	// 판 밑 상자를 정우와 같이 뺀다.
 	Walk(FVector(25.6f, -40.8f, 690.0f), 14.0f, TEXT("input_walk_to_box"), TEXT("box"));
+	// 정우가 숨을 다 고르고 일어나야 받쳐 달라고 할 수 있다. 그 전에는 당기기 표적이 꺼져 있다.
+	Until([this]() { return CanUse(Target(TEXT("Storage.DohaPull"))); }, 8.0f, TEXT("input_box_pull_ready"));
 	AimAt(Target(TEXT("Storage.DohaPull")), FVector::ZeroVector, TEXT("input_aim_box"));
 	Press(Target(TEXT("Storage.DohaPull")), 1.9f, TEXT("input_ask_brace"));
 	Until([WeakDirector]() { return WeakDirector.IsValid() && WeakDirector->GetStorageStage() == FName(TEXT("Bracing"))

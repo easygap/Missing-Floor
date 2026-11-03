@@ -67,9 +67,6 @@ namespace IGManagerPatrol
 	constexpr float TorchOuterCone = 25.0f;
 	const FVector TorchOffset(40.0f, 19.0f, 96.0f);
 
-	/** 양옆 빈 데를 재는 거리와, 팔 바깥면을 벽에서 띄울 틈. */
-	constexpr float ArmRoomReach = 55.0f;
-	constexpr float ArmWallGap = 2.0f;
 	/** 이보다 크게 돌 때는 손이 쓸고 지나갈 자리가 빈 쪽으로 돈다. */
 	constexpr float WideTurnDegrees = 90.0f;
 	/** 도는 쪽을 고를 때 손을 그어 보는 높이와 두 손 자리(몸 기준, 손끝 너머 8 cm까지). */
@@ -1345,9 +1342,6 @@ void AIGManagerPatrol::UpdateArmRoom(const float DeltaSeconds)
 {
 	// 양옆 빈 데를 잰다. 팔 바깥면은 걸을 때 몸 가운데서 38 cm까지 나와, 문짝을 연 안쪽 방 문간(66 cm)에서는 양팔이
 	// 문설주와 문짝에 들어갔다. 손전등 든 오른손이 몸 앞 40 cm라 그 앞까지 본다.
-	const FRotator Facing(0.0f, GetActorRotation().Yaw, 0.0f);
-	const FVector Forward = Facing.Vector();
-	const FVector Right = FRotationMatrix(Facing).GetScaledAxis(EAxis::Y);
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGManagerArmRoom), false, this);
 	if (const AActor* Watcher = Player.Get())
 	{
@@ -1357,29 +1351,8 @@ void AIGManagerPatrol::UpdateArmRoom(const float DeltaSeconds)
 	{
 		Params.AddIgnoredActor(Cart);
 	}
-	const FVector Center = GetFeet() - FVector(0.0f, 0.0f, StairFeet.GetBodyDrop());
-	for (int32 Side = 0; Side < 2; ++Side)
-	{
-		const FVector Out = Right * (Side == 0 ? -1.0f : 1.0f) * IGManagerPatrol::ArmRoomReach;
-		float Room = IGManagerPatrol::ArmRoomReach;
-		for (const float Ahead : {-8.0f, 8.0f, 24.0f, 40.0f})
-		{
-			for (const float Height : {85.0f, 105.0f, 125.0f})
-			{
-				const FVector From = Center + Forward * Ahead + FVector(0.0f, 0.0f, Height);
-				FHitResult Hit;
-				if (GetWorld()->LineTraceSingleByChannel(Hit, From, From + Out, ECC_Visibility, Params) && !Hit.bStartPenetrating)
-				{
-					Room = FMath::Min(Room, Hit.Distance);
-				}
-			}
-		}
-		// 좁아질 때는 바로 모으고, 넓어지면 천천히 편다.
-		const float Goal = Room - IGManagerPatrol::ArmWallGap;
-		ArmLimit[Side] = ArmLimit[Side] >= FIGWalkerIKRequest::ArmFreeReach
-			? Goal
-			: FMath::FInterpTo(ArmLimit[Side], Goal, DeltaSeconds, Goal < ArmLimit[Side] ? 25.0f : 6.0f);
-	}
+	IGWalkerArms::UpdateRoom(*GetWorld(), GetFeet() - FVector(0.0f, 0.0f, StairFeet.GetBodyDrop()), GetActorRotation().Yaw,
+		Params, DeltaSeconds, ArmLimit);
 }
 
 void AIGManagerPatrol::TickState(const float DeltaSeconds)

@@ -754,7 +754,8 @@ $reviewedTickingFiles = @(
 	'IGLiningEntity.cpp',
 	# 벽 점검구. 문짝이 도는 동안과 열린 틈으로 먼지가 빨려 드는 동안에만 켠다.
 	'IGAccessHatch.cpp',
-	# 정우. 걷거나 상자를 나르거나 몸짓이 바뀌는 동안에만 켜고, 멈추면 끈다.
+	# 정우. 걷거나 상자를 나르거나 몸짓이 바뀌는 동안에만 켜고, 멈추면 끈다. 관통을 재는 검사에서는 보이는
+	# 동안 늘 켜서 서 있는 자세도 잰다.
 	'IGJeongwooFigure.cpp',
 	# -IGLiningProbe에서만 생성한다. 덧댄 것의 동작을 한 번씩 돌려 보고 종료한다.
 	'IGLiningProbe.cpp',

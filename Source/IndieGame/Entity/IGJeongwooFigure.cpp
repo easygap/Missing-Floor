@@ -26,6 +26,32 @@ namespace IGJeongwoo
 	/** 안은 상자(SM_StorageBox 50x38x34, 원점 바닥)의 자리. 배 앞에 대고 두 손으로 옆을 쥔다. */
 	const FVector BoxHold(40.0f, 0.0f, 95.0f);
 	constexpr float BoxStack = 34.2f;
+
+	/** 자세마다 A_Jeongwoo_<이름> 애니메이션. 관통 측정에 적는 선 자세 이름으로도 쓴다. */
+	struct FPoseAnim
+	{
+		AIGJeongwooFigure::EPose Pose;
+		const TCHAR* Name;
+	};
+	const FPoseAnim PoseAnims[] = {
+		{AIGJeongwooFigure::EPose::Idle, TEXT("Idle")}, {AIGJeongwooFigure::EPose::Walk, TEXT("Walk")},
+		{AIGJeongwooFigure::EPose::Carry, TEXT("Carry")}, {AIGJeongwooFigure::EPose::CarryIdle, TEXT("CarryIdle")},
+		{AIGJeongwooFigure::EPose::Crouch, TEXT("Crouch")}, {AIGJeongwooFigure::EPose::Brace, TEXT("Brace")},
+		{AIGJeongwooFigure::EPose::HoldDoor, TEXT("HoldDoor")}, {AIGJeongwooFigure::EPose::LookBack, TEXT("LookBack")},
+		{AIGJeongwooFigure::EPose::Hold, TEXT("Hold")},
+	};
+
+	const TCHAR* PoseName(const AIGJeongwooFigure::EPose Pose)
+	{
+		for (const FPoseAnim& Entry : PoseAnims)
+		{
+			if (Entry.Pose == Pose)
+			{
+				return Entry.Name;
+			}
+		}
+		return TEXT("Pose");
+	}
 }
 
 AIGJeongwooFigure::AIGJeongwooFigure()
@@ -76,12 +102,7 @@ bool AIGJeongwooFigure::LoadBody()
 			nullptr, *FString::Printf(TEXT("/Game/Meshes/A_Jeongwoo_%s.A_Jeongwoo_%s"), Name, Name),
 			nullptr, LOAD_NoWarn);
 	};
-	const struct { EPose Pose; const TCHAR* Name; } Table[] = {
-		{EPose::Idle, TEXT("Idle")}, {EPose::Walk, TEXT("Walk")}, {EPose::Carry, TEXT("Carry")},
-		{EPose::CarryIdle, TEXT("CarryIdle")}, {EPose::Crouch, TEXT("Crouch")}, {EPose::Brace, TEXT("Brace")},
-		{EPose::HoldDoor, TEXT("HoldDoor")}, {EPose::LookBack, TEXT("LookBack")}, {EPose::Hold, TEXT("Hold")},
-	};
-	for (const auto& Entry : Table)
+	for (const IGJeongwoo::FPoseAnim& Entry : IGJeongwoo::PoseAnims)
 	{
 		if (UAnimSequence* Anim = Load(Entry.Name))
 		{
@@ -133,6 +154,7 @@ void AIGJeongwooFigure::Appear(const FVector& Feet, const float Yaw, const EPose
 	}
 	bWalking = false;
 	bTurning = false;
+	bDeparting = false;
 	TurnToYaw.Reset();
 	Route = FIGWalkerRoute();
 	StairBody.Reset();
@@ -142,7 +164,8 @@ void AIGJeongwooFigure::Appear(const FVector& Feet, const float Yaw, const EPose
 	bShown = true;
 	SetCarriedBoxes(CarriedBoxes);
 	SetPose(Pose);
-	SetActorTickEnabled(false);
+	// 관통을 재는 검사에서는 서 있는 자세도 잰다.
+	SetActorTickEnabled(ClipAudit.IsOn());
 	RefreshBlocker();
 }
 
@@ -150,6 +173,7 @@ void AIGJeongwooFigure::Vanish()
 {
 	bWalking = false;
 	bTurning = false;
+	bDeparting = false;
 	TurnToYaw.Reset();
 	bShown = false;
 	SetActorTickEnabled(false);
@@ -212,6 +236,7 @@ void AIGJeongwooFigure::WalkRoute(const TArray<FVector>& Points, const bool bCar
 	const TOptional<float> ArriveYaw)
 {
 	bTurning = false;
+	bDeparting = false;
 	TurnToYaw = ArriveYaw;
 	if (!bShown || Points.Num() < 2)
 	{
@@ -229,7 +254,19 @@ void AIGJeongwooFigure::WalkRoute(const TArray<FVector>& Points, const bool bCar
 		return;
 	}
 	Route.StairRise = IGWalker::StairSegmentRise;
-	Route.Set(Points);
+	TArray<FVector> Path = Points;
+	if (bCarry && CarriedBoxes > 0)
+	{
+		ClearCornersForBoxes(Path);
+	}
+	Route.Set(Path);
+	// 첫 구간이 보는 쪽에서 60도 넘게 꺾이면 제자리에서 돌아선 뒤 걷는다.
+	const FVector First = (Path[1] - Path[0]).GetSafeNormal2D();
+	if (!First.IsNearlyZero())
+	{
+		DepartYaw = First.Rotation().Yaw;
+		bDeparting = FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, DepartYaw)) > 60.0f;
+	}
 	Travelled = 0.0f;
 	WalkSpeed = Speed;
 	bCarryWalk = bCarry;
@@ -238,6 +275,45 @@ void AIGJeongwooFigure::WalkRoute(const TArray<FVector>& Points, const bool bCar
 	StepPhase = 0.0f;
 	RefreshBlocker();
 	SetActorTickEnabled(true);
+}
+
+void AIGJeongwooFigure::ClearCornersForBoxes(TArray<FVector>& Points) const
+{
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	// 상자 앞면(BoxHold.X + 상자 반 길이 25)에서 3 cm 더 본다.
+	const float Reach = IGJeongwoo::BoxHold.X + 28.0f;
+	const FCollisionQueryParams Params(SCENE_QUERY_STAT(JeongwooBoxCorner), false, this);
+	for (int32 Index = 1; Index + 1 < Points.Num(); ++Index)
+	{
+		const FVector In = (Points[Index] - Points[Index - 1]).GetSafeNormal2D();
+		const FVector Out = (Points[Index + 1] - Points[Index]).GetSafeNormal2D();
+		// 30도 넘게 꺾이는 점만 본다. 거기서 몸이 들어오던 쪽을 본 채 돌기 시작한다.
+		if (In.IsNearlyZero() || FVector::DotProduct(In, Out) > 0.87f)
+		{
+			continue;
+		}
+		const FVector Side(-In.Y, In.X, 0.0f);
+		float Free = Reach;
+		for (int32 Sample = 0; Sample < 6; ++Sample)
+		{
+			// 상자 양옆과 가운데, 아래 상자와 위 상자 높이.
+			const float Lateral = 19.0f * static_cast<float>(Sample % 3 - 1);
+			const float Height = IGJeongwoo::BoxHold.Z + 17.0f + IGJeongwoo::BoxStack * static_cast<float>(Sample / 3);
+			const FVector From = Points[Index] + Side * Lateral + FVector(0.0f, 0.0f, Height);
+			FHitResult Hit;
+			if (World->LineTraceSingleByChannel(Hit, From, From + In * Reach, ECC_Visibility, Params))
+			{
+				Free = FMath::Min(Free, Hit.Distance);
+			}
+		}
+		// 들어오던 구간의 절반까지만 물린다. 계단참 점이 계단 위로 넘어가면 높이가 안 맞는다.
+		const float Back = FMath::Min(Reach - Free, 0.5f * FVector::Dist2D(Points[Index - 1], Points[Index]));
+		Points[Index] -= In * Back;
+	}
 }
 
 void AIGJeongwooFigure::SetPose(const EPose Pose)
@@ -301,8 +377,18 @@ void AIGJeongwooFigure::Tick(const float DeltaSeconds)
 	if (ClipAudit.IsOn() && bShown)
 	{
 		const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		TArray<const UStaticMeshComponent*, TInlineAllocator<2>> Held;
+		for (const UStaticMeshComponent* Box : Boxes)
+		{
+			if (Box && Box->IsVisible())
+			{
+				Held.Add(Box);
+			}
+		}
 		ClipAudit.Measure(Body, GetActorLocation() + FVector(0.0f, 0.0f, 100.0f), PC ? PC->GetPawn() : nullptr,
-			bWalking ? (bCarryWalk ? TEXT("Carry") : TEXT("Walk")) : (bTurning ? TEXT("Turn") : TEXT("Stand")));
+			bWalking ? FString(bCarryWalk ? TEXT("Carry") : TEXT("Walk"))
+				: (bTurning ? FString(TEXT("Turn")) : FString::Printf(TEXT("Stand.%s"), IGJeongwoo::PoseName(CurrentPose))),
+			Held);
 	}
 	TickWalk(DeltaSeconds);
 	if (bShown)
@@ -312,8 +398,10 @@ void AIGJeongwooFigure::Tick(const float DeltaSeconds)
 		{
 			Route.Ahead(Travelled, 3, Ahead);
 		}
-		StairBody.Tick(*FeetRoot, Ahead,
-			ActiveAnim && (ActiveAnim == AnimFor(EPose::Walk) || ActiveAnim == AnimFor(EPose::Carry)), DeltaSeconds);
+		// 빈손으로 걷거나 돌 때만 좁은 데서 팔을 모은다.
+		const bool bWalkAnim = ActiveAnim && ActiveAnim == AnimFor(EPose::Walk);
+		StairBody.Tick(*FeetRoot, Ahead, bWalkAnim || (ActiveAnim && ActiveAnim == AnimFor(EPose::Carry)), DeltaSeconds,
+			bWalkAnim);
 	}
 }
 
@@ -321,11 +409,11 @@ void AIGJeongwooFigure::TickWalk(const float DeltaSeconds)
 {
 	if (bTurning)
 	{
-		// 다 걸은 자리에서 돌아선다. 발을 옮기며 돌도록 걷기를 느리게 튼다.
+		// 다 걸은 자리에서 돌아선다. 발을 옮기며 돌도록 걷기를 느리게 튼다(상자를 안았으면 안은 채로).
 		const float TargetYaw = TurnToYaw.Get(GetActorRotation().Yaw);
 		const float Yaw = IGWalker::TurnYaw(GetActorRotation().Yaw, TargetYaw, DeltaSeconds, 6.0f);
 		SetActorRotation(FRotator(0.0f, Yaw, 0.0f));
-		PlayPose(EPose::Walk, 0.5f);
+		PlayPose(bCarryWalk ? EPose::Carry : EPose::Walk, 0.5f);
 		if (FMath::Abs(FMath::FindDeltaAngleDegrees(Yaw, TargetYaw)) < 2.0f)
 		{
 			SetActorRotation(FRotator(0.0f, TargetYaw, 0.0f));
@@ -344,10 +432,20 @@ void AIGJeongwooFigure::TickWalk(const float DeltaSeconds)
 			}
 		}
 		// 계단 걸음이 다리를 다 풀 때까지는 틱을 끄지 않는다. 낮춘 몸 그대로 멈춰 서게 된다.
-		if (!StairBody.IsActive())
+		if (!StairBody.IsActive() && !ClipAudit.IsOn())
 		{
 			SetActorTickEnabled(false);
 		}
+		return;
+	}
+	if (bDeparting)
+	{
+		// 걷기 전에 첫 구간 쪽으로 다 돌아선다. 선 자세로 돈다. 걸음 주기로 돌면 뒷발이 몸 뒤로 크게 나가 302호
+		// 숨 고르는 자리 뒤 북벽을 찼고, 덜 돌고 걸으면 늦게 따라오는 몸이 발을 판 쪽으로 내디뎠다.
+		const float Yaw = IGWalker::TurnYaw(GetActorRotation().Yaw, DepartYaw, DeltaSeconds, 6.0f);
+		SetActorRotation(FRotator(0.0f, Yaw, 0.0f));
+		PlayPose(bCarryWalk ? EPose::CarryIdle : EPose::Idle, 1.0f);
+		bDeparting = FMath::Abs(FMath::FindDeltaAngleDegrees(Yaw, DepartYaw)) >= 10.0f;
 		return;
 	}
 	FVector Direction = FVector::ForwardVector;
@@ -387,7 +485,7 @@ void AIGJeongwooFigure::FinishArrival()
 	bWalking = false;
 	bTurning = false;
 	TurnToYaw.Reset();
-	SetActorTickEnabled(false);
+	SetActorTickEnabled(ClipAudit.IsOn());
 	SetPose(ArrivePose);
 	RefreshBlocker();
 	OnArrived.Broadcast();

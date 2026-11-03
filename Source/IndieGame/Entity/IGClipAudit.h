@@ -5,6 +5,7 @@
 class AActor;
 class USkinnedAsset;
 class USkinnedMeshComponent;
+class UStaticMeshComponent;
 
 namespace IGClipAudit
 {
@@ -53,8 +54,12 @@ struct FIGClipAudit
 	/** 검사 실행일 때만 켠다. 이름은 로그에 찍힌다. */
 	void Start(const TCHAR* InWho);
 	bool IsOn() const { return bOn; }
-	/** Ignored는 몸에 닿아도 관통으로 치지 않을 배우(붙잡힌 플레이어 따위)다. Phase는 기록에 같이 남는다. */
-	void Measure(USkinnedMeshComponent* Mesh, const FVector& Core, const AActor* Ignored, const FString& Phase);
+	/**
+	 * Ignored는 몸에 닿아도 관통으로 치지 않을 배우(붙잡힌 플레이어 따위)다. Phase는 기록에 같이 남는다. Held는 몸에
+	 * 붙여 든 물건(안은 상자 따위)이다. Core에서 그 물건의 꼭짓점·모서리·면 가운데까지 긋는다.
+	 */
+	void Measure(USkinnedMeshComponent* Mesh, const FVector& Core, const AActor* Ignored, const FString& Phase,
+		TConstArrayView<const UStaticMeshComponent*> Held = {});
 	void Report() const;
 
 private:
