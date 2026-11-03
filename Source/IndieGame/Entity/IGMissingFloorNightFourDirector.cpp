@@ -69,6 +69,9 @@ namespace IGNightFour
 	// -235.06에 둔다(뒷면이 벽에서 0.5 mm). 예전 자리 -232는 벽 속이라 보이지도 않고 겨눌 수도 없어서
 	// 「엘리베이터 옆 안내문 읽기」를 끝낼 수 없었다.
 	const FVector EvictionNoticeLocation(640.0f, -235.06f, 1042.0f);
+	// 관리실이 같이 붙인 옥상 보수 안내는 같은 벽의 엘리베이터 쪽(X 662.5..683.5)이다. 요구서 서쪽은
+	// 설비 벽장(X 549..611)이 차지하고, 4층 호출 버튼은 엘리베이터 남쪽(Y -390)에 있다.
+	const FVector RoofRepairNoticeLocation(673.0f, -235.06f, 1042.0f);
 	/** 요구서가 붙은 낮. 경찰 문자 뒤에 한 번 붙고 저장에 남는다. */
 	const FName EvictionPostedBeat(TEXT("Day.EvictionPosted"));
 	/**
@@ -477,6 +480,26 @@ bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 	EvictionNotice->GetPresentationMesh()->SetAffectDistanceFieldLighting(false);
 	EvictionNotice->OnExamined.AddUObject(
 		this, &AIGMissingFloorNightFourDirector::HandleEvictionNotice);
+	// 관리실이 같이 붙인 「옥상 누수 긴급 보수」. 사진 문자의 「내일 오전 7시」는 이 종이를 보고 하는
+	// 말이다. 읽는 것은 없고 요구서와 같이 나타나고 숨는다. 요구서 액터에 붙이지 않는 것은 완주 검사가
+	// 액터 경계 가운데를 겨누기 때문이다. 붙이면 두 종이 사이의 빈 벽을 겨눈다.
+	if (UStaticMesh* RoofRepairMesh = LoadObject<UStaticMesh>(
+		nullptr, TEXT("/Game/Meshes/SM_NoticeRoofRepairA4.SM_NoticeRoofRepairA4")))
+	{
+		RoofRepairNotice = NewObject<UStaticMeshComponent>(this, TEXT("RoofRepairNotice"));
+		RoofRepairNotice->SetStaticMesh(RoofRepairMesh);
+		RoofRepairNotice->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		RoofRepairNotice->SetGenerateOverlapEvents(false);
+		RoofRepairNotice->SetCanEverAffectNavigation(false);
+		RoofRepairNotice->SetMobility(EComponentMobility::Static);
+		RoofRepairNotice->SetCastShadow(false);
+		RoofRepairNotice->bAffectDistanceFieldLighting = false;
+		RoofRepairNotice->SetHiddenInGame(true);
+		RoofRepairNotice->SetWorldTransform(
+			FTransform(FRotator::ZeroRotator, IGNightFour::RoofRepairNoticeLocation));
+		AddInstanceComponent(RoofRepairNotice);
+		RoofRepairNotice->RegisterComponentWithWorld(World);
+	}
 
 	CleaningDrain->Configure(
 		LargeValveMesh ? LargeValveMesh : CylinderMesh,
@@ -4241,6 +4264,10 @@ void AIGMissingFloorNightFourDirector::RefreshPresentation()
 		&& Narrative->HasTruth(EIGMissingFloorTruth::WaitingForAnAnswer)
 		&& Narrative->HasBeatPlayed(IGNightFour::EvictionPostedBeat);
 	EvictionNotice->SetActorHiddenInGame(!bShowEviction);
+	if (RoofRepairNotice)
+	{
+		RoofRepairNotice->SetHiddenInGame(!bShowEviction);
+	}
 	EvictionNotice->SetInteractionEnabled(
 		bShowEviction
 		&& !Narrative->HasSource(

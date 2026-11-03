@@ -1,0 +1,30 @@
+{
+  "name": "SM_NoticeRoofRepairA4",
+  "mesh_class": "prop",
+  "fbx": "SM_NoticeRoofRepairA4.fbx",
+  "textures": {
+    "D": "SM_NoticeRoofRepairA4_D.png",
+    "N": "SM_NoticeRoofRepairA4_N.png",
+    "ORM": "SM_NoticeRoofRepairA4_ORM.png"
+  },
+  "slots": [
+    "Baked"
+  ],
+  "triangles": 36,
+  "bounds_m": {
+    "min": [
+      -0.105,
+      -0.0001,
+      -0.1485
+    ],
+    "max": [
+      0.105,
+      0.0001,
+      0.1485
+    ]
+  },
+  "origin": "center",
+  "emissive_strength": 0.0,
+  "blender": "5.2.0 LTS",
+  "notes": "A4 21×29.7cm, 종이 0.15mm. 앞 -Y, 원점 중앙. 관리실 공지 「옥상 누수 긴급 보수」. 앞면만 인쇄, 위쪽 테이프 2개, 충돌 없음(읽기 없이 붙어만 있다)."
+}

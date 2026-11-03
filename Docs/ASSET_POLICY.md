@@ -38,6 +38,7 @@
 | `/Game/Meshes/SM_StairSensorLight` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크, 발광은 돔에만) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/StairSensorLight{Off,Lit}_20261007.png`, `Scripts/blender/build_stair_sensor_light.py` | 계단탑 층 참의 원형 LED 센서등. 씬이 MID의 EmissiveStrength로 켜고 끈다 |
 | `/Game/Meshes/SM_NoticeLightsOutA4` | 프로젝트 제작 (gpt-image 인쇄면 → Blender A4 판·테이프 베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/NoticeLightsOut_20261007.png`, `Scripts/blender/build_notice_prints.py` | 1층 엘리베이터 옆 관리실 공지 「복도 소등 안내」. 인쇄 글자와 읽기 문구가 같다 |
 | `/Game/Meshes/SM_NoticeEvictionA4` | 프로젝트 제작 (gpt-image 인쇄면 → Blender A4 판·테이프 베이크) | 프로젝트 소유 | 2026-11-03 | 원본 | `Content/SourceArt/AI/NoticeEviction_20261103.png`, `Scripts/blender/build_notice_prints.py` | 셋째 낮 4층 엘리베이터 옆에 관리인이 붙이는 「퇴거 요구서」. 인쇄된 기한을 읽은 뒤 속말이 되받는다 |
+| `/Game/Meshes/SM_NoticeRoofRepairA4` | 프로젝트 제작 (gpt-image 인쇄면 → Blender A4 판·테이프 베이크) | 프로젝트 소유 | 2026-11-03 | 원본 | `Content/SourceArt/AI/NoticeRoofRepair_20261103.png`, `Scripts/blender/build_notice_prints.py` | 요구서의 엘리베이터 쪽 옆에 같이 붙는 관리실 공지 「옥상 누수 긴급 보수」. 사진 문자가 말하는 내일 오전 7시가 적혀 있다 |
 | `/Game/Meshes/SM_StairFireDoorLeaf, SM_FireDoorCloserArm, SM_FireDoorCloserRod, SM_FireDoorPrints, SM_FireDoorWedge, SM_ExitSignLamp` | 프로젝트 제작 (gpt-image 시안·인쇄면 → Blender 절차 모델링·베이크, 고임목 윗면은 시안 사진을 펴서 씀) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/FireDoor{Concept,Sticker,Wedge}_20261007.png`, `ExitSignFace_20261007.png`, `Scripts/rectify_concept_faces.py`, `Scripts/blender/build_stair_fire_door.py` | 2·3·4층 계단 목의 방화문, 도어클로저 팔 두 마디, 양면 스티커, 고임목, 피난구 유도등 |
 | `/Game/Meshes/SM_DoorPrints202, SM_Doorbells202, SM_DoorPrints303, SM_DawnDeliveryBag` | 프로젝트 제작 (gpt-image 인쇄면·시안 → Blender 판·초인종·가방 베이크, 가방 앞·옆면은 시안 사진을 펴서 씀) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/{Door202Note,Doorbells202,Door303Sign,DawnDeliveryBag}_20261007.png`, `Scripts/rectify_concept_faces.py`, `Scripts/blender/build_neighbor_doors.py` | 202호 쪽지와 무선 초인종 셋, 303호 안내문, 그 시간 303호 문 옆의 새벽배송 보냉 가방. 쪽지·안내문 글자와 읽기 문구가 같다 |
 | `/Game/Meshes/SM_Bathroom{Toilet,Basin,MirrorCabinet,Shower,DoorLeaf,DoorFrame,TowelRail,CornerShelf,VentGrille}`, `SM_FloorDrain` | 프로젝트 제작 (gpt-image 시안 → Blender 절차 모델링·베이크) | 프로젝트 소유 | 2026-10-07 | 원본 | `Content/SourceArt/AI/Bathroom{Concept,Toilet,Basin,MirrorCabinet,Shower,Door}_20261007.png`, `Scripts/blender/build_bathroom.py` | 403호 욕실의 비품과 문. 문짝 욕실 쪽 로제트에 누름 잠금 단추가 있다 |
@@ -777,19 +778,24 @@ OpenAI 이미지 생성으로 생성하고 각 항목의 생성 방식과 날짜
   `collision_reference`), 발 상자 반치수 33 × 30 × 5.5 cm
 - 권리/참조: 시안은 프로젝트에서 뽑았고 자재에 글자·상표가 없다. 얼굴·눈·입이 없다
 
-## 2026-11-03 퇴거 요구서
+## 2026-11-03 퇴거 요구서와 옥상 보수 안내
 
 - 도구/모드: OpenAI 이미지 생성(gpt-image)
 - 보존 원본과 SHA-256:
   - `Content/SourceArt/AI/NoticeEviction_20261103.png`
     `E643418B3970068CC6B7839878F89BC337DE2D609719BF92137AA5724EAC0C7F`
+  - `Content/SourceArt/AI/NoticeRoofRepair_20261103.png`
+    `1957BD71F6F000A8F7CEC054B1A3D46A8C7225A8C89CCB707FEFC750DB2692FD`
 - 파생: 가운데 정렬과 공문식 왼쪽 정렬 두 장을 뽑아 가운데 정렬을 골랐다. 원본 바탕이 순백(255)이라
   `Scripts/blender/build_notice_prints.py`가 재질에서 막 뽑은 복사용지 밝기(242, 241, 237)를 곱한 뒤
-  소등 안내와 같은 A4 판과 위쪽 테이프 두 장으로 1024에 굽는다
+  소등 안내와 같은 A4 판과 위쪽 테이프 두 장으로 1024에 굽는다. 보수 안내도 가운데 정렬과 날짜를 크게
+  앞세운 배치 두 장을 뽑아 날짜 쪽을 골랐고, 같은 밝기를 곱해 같은 판으로 굽는다
 - 런타임: 셋째 낮 4층 엘리베이터 옆 복도 벽에 붙는다. 그림자와 디스턴스 필드를 끄고, 겨누기는 증거
-  액터가 메시 경계로 세운 상자가 받는다
+  액터가 메시 경계로 세운 상자가 받는다. 보수 안내는 그 엘리베이터 쪽 옆에 감독의 컴포넌트로 붙어
+  요구서와 같이 나타나고 숨으며, 충돌과 읽기가 없다
 - 권리/참조: 글자는 게임 속 관리인이 쓴 가상의 문장(설정집 §8 3-9의 사유와 기한)이고, 받은 뒤 한 자씩
-  확인했다. 날짜 2025. 7. 28.은 계약서 잔금일(7월 25일)에 입주해 센 셋째 낮이다
+  확인했다. 날짜 2025. 7. 28.은 계약서 잔금일(7월 25일)에 입주해 센 셋째 낮이다. 보수 안내의 7월 29일(화)
+  오전 7시는 그다음 날이고, 글자는 관리실이 쓴 가상의 공지다
 
 ## 생성 시안에 참고한 외부 자료
 

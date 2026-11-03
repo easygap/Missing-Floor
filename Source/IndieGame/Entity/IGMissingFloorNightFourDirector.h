@@ -329,6 +329,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<AIGMissingFloorEvidence> EvictionNotice;
 
+	/** 요구서의 엘리베이터 쪽 옆에 같이 붙는 옥상 보수 안내. 읽는 것 없이 요구서와 같이 나타나고 숨는다. */
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> RoofRepairNotice;
+
 	UPROPERTY(Transient)
 	TObjectPtr<AIGMissingFloorEvidence> CleaningDrain;
 

@@ -1884,6 +1884,18 @@
         14.85
       ]
     },
+    "SM_NoticeRoofRepairA4": {
+      "origin": [
+        0.0,
+        -0.003,
+        0.0
+      ],
+      "extent": [
+        10.5,
+        0.0105,
+        14.85
+      ]
+    },
     "SM_OpenShowcase": {
       "origin": [
         0.0,
