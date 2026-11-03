@@ -130,6 +130,13 @@ namespace IGListener
 	constexpr float HomeDoorKnockOffset = 7.0f;
 	/** 문 앞을 떠난 뒤 닫힌 집 안의 소리를 흘려듣는 시간. */
 	constexpr double HomeDoorIgnoreSeconds = 25.0;
+	/**
+	 * 듣기만 하는 밤, 제자리에서 듣는 중에 이 안에서 거듭 나는 소리는 듣기를 처음부터 다시 걸지 않는다.
+	 * 곁에 선 그녀의 심장 소리가 이 거리 안에서 난다.
+	 */
+	constexpr float RepeatSoundHoldRadius = 150.0f;
+	/** 듣기만 하는 밤에 그녀에게 닿은 뒤 그녀의 소리를 흘려듣는 시간. 비켜 지나갈 틈이다. */
+	constexpr double ReachIgnoreSeconds = 20.0;
 	/** 안쪽 소리에 한 번 더 두드리기까지. */
 	constexpr float DoorReknockDelaySeconds = 0.5f;
 	/**
@@ -1194,10 +1201,10 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 				}
 				return;
 			}
-			// 듣기만 하는 밤: he reaches the sound and holds there, and that is
-			// where it ends. Touching costs nothing, so the night can never be
-			// taken away — the story, the puzzles and all three endings stay
-			// exactly the same (§20.4).
+			// 듣기만 하는 밤: he reaches the sound, and that is where it ends.
+			// Touching costs nothing, so the night can never be taken away —
+			// the story, the puzzles and all three endings stay exactly the
+			// same (§20.4). 닿은 뒤에는 물러난다(LeaveAfterReach).
 			// 두 팔 길이 안. 덮치는 동작이 먼저 오고 그 끝에 포옹이 온다.
 			if (State == EIGListenerState::Chasing)
 			{
@@ -1213,6 +1220,10 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 				&& !AIGLiningEntity::IsAnyBusy(GetWorld()))
 			{
 				BeginCapture(Player);
+			}
+			else if (Distance <= CaptureRadius && bReachable && !Tuning.bCaptureEnabled && bPursuing)
+			{
+				LeaveAfterReach();
 			}
 		}
 	}
@@ -1254,8 +1265,9 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 		}
 	}
 	const AIGSwingDoor* Door = HomeDoor.Get();
+	// 듣기만 하는 밤에는 열린 문도 닫힌 문과 같이 친다. 잡지 않는 그는 문간에서 듣고 떠난다(ShouldGoToHomeDoor).
 	const bool bHomeSound = Door
-		&& !Door->IsOpen()
+		&& (!Door->IsOpen() || !Tuning.bCaptureEnabled)
 		&& IsHomeSoundAt(Event.Location, Event.Instigator.Get());
 	// 문 앞에서 두드리고 기다렸다가 떠났다. 닫힌 집 안의 소리에 곧장 되돌아오면
 	// 「떠난다」가 없어진다.
@@ -1392,6 +1404,17 @@ void AIGListenerEntity::HandleNoise(const FIGNoiseEvent& Event)
 	{
 		// A sound that answers twice is a someone.
 		EnterState(EIGListenerState::Chasing);
+		return;
+	}
+	// 듣기만 하는 밤에는 두 번째 소리가 추격이 되지 않는다. 그래도 추격처럼, 이미 보러 가는 중이면 들은 자리만
+	// 고치고 걸음은 끊지 않는다. 곁에서 듣는 중이면 듣기를 처음부터 다시 걸지 않는다. 0.4초마다 나는 그녀의 심장
+	// 소리에 조사를 거듭 새로 걸자 돌아서던 몸이 복도 한가운데 굳어 서서 길을 막았다(첫째 밤 4층 복도).
+	if (bSecondSound
+		&& (State == EIGListenerState::Investigating
+			|| (State == EIGListenerState::Holding
+				&& FVector::Dist2D(GetActorLocation(), LastHeardLocation) <= IGListener::RepeatSoundHoldRadius)))
+	{
+		bReactingToSound = true;
 		return;
 	}
 
@@ -2134,6 +2157,17 @@ bool AIGListenerEntity::IsInCaptureGrace() const
 	return World && World->GetTimeSeconds() < PerceptionGraceUntil;
 }
 
+void AIGListenerEntity::LeaveAfterReach()
+{
+	// 잡힌 뒤처럼 그녀가 내는 소리만 흘려듣는다. 건물과 연출의 소리는 그대로 듣는다.
+	const UWorld* World = GetWorld();
+	PerceptionGraceUntil = World ? World->GetTimeSeconds() + IGListener::ReachIgnoreSeconds : -1000.0;
+	bReactingToSound = false;
+	PlayerTrail.Reset();
+	AdvancePatrolIndex();
+	EnterState(EIGListenerState::Patrolling);
+}
+
 void AIGListenerEntity::ReturnAfterCapture(const float GraceSeconds)
 {
 	TeleportTo(SpawnLocation, GetActorRotation(), false, true);
@@ -2295,7 +2329,9 @@ bool AIGListenerEntity::ShouldGoToHomeDoor() const
 {
 	const AIGSwingDoor* Door = HomeDoor.Get();
 	const UWorld* World = GetWorld();
-	if (!Door || !World || Door->IsOpen() || !bReactingToSound)
+	// 열린 문이면 들어가 쫓는다. 듣기만 하는 밤은 예외다. 잡을 수 없는 그가 집 안의 심장 소리를 따라 문간에 걸려
+	// 서 있으면 집을 나갈 길만 막았다(첫째 밤, 문을 열어 둔 채 잔 뒤). 닫힌 문 앞처럼 서서 듣고 떠난다.
+	if (!Door || !World || (Door->IsOpen() && Tuning.bCaptureEnabled) || !bReactingToSound)
 	{
 		return false;
 	}
@@ -2343,14 +2379,14 @@ void AIGListenerEntity::ArriveAtHomeDoor()
 	bDoorReknocked = false;
 	bKnockingUp = false;
 	bCadenceEarsUp = false;
-	if (CanKnockHomeDoor())
+	if (CanKnockHomeDoor() && !(HomeDoor.IsValid() && HomeDoor->IsOpen()))
 	{
 		// 세 번 두드리고, 문 앞에서 듣는다(§4.5).
 		EnterState(EIGListenerState::Banging);
 	}
 	else
 	{
-		// 밤1과 밤2 대본 전. 문 앞에 서서 소리 없이 듣기만 한다.
+		// 밤1과 밤2 대본 전, 그리고 열려 있는 문(듣기만 하는 밤). 문 앞에 서서 소리 없이 듣기만 한다.
 		EnterState(EIGListenerState::Holding);
 	}
 }

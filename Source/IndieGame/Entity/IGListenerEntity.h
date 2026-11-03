@@ -429,6 +429,11 @@ private:
 	bool CanKnockHomeDoor() const;
 	void ArriveAtHomeDoor();
 	void LeaveHomeDoor();
+	/**
+	 * 듣기만 하는 밤, 잡았을 자리에 닿았다. 아무 일도 없이 그녀의 소리를 한동안 흘려듣고 가던 길로 간다.
+	 * 닿은 자리에 머물면 그녀의 심장 소리가 그를 붙들어, 좁은 복도에서 밤의 길을 막았다.
+	 */
+	void LeaveAfterReach();
 	void PlayHomeDoorKnock(bool bSingle);
 	/**
 	 * §3.1 닫힌 방화문·욕실 문 앞의 3연. 403호 문처럼 그 문짝을 치고, 소리는 문에서 난다.

@@ -19,7 +19,7 @@ public:
 	{
 		/** 그 자리까지 걷는다(Value: 허용 거리). */
 		Walk,
-		/** 그 점을 겨눈다. */
+		/** 그 점을 겨눈다(Value: 허용 각도. 0이면 1.2도). */
 		Aim,
 		/** 키를 Value초 누른다. Expect가 있으면 누르기 전 조준이 그 액터를 잡고 있어야 한다. */
 		Press,
@@ -43,7 +43,8 @@ public:
 	/** 길을 비우고 다시 시작한다. Check는 단계마다 통과·실패를 받는다. */
 	void Reset(AIGPlayerCharacter* InPlayer, TFunction<void(bool, const FString&)> InCheck);
 	void Walk(const FVector& Point, float Tolerance, const FString& Name);
-	void Aim(const FVector& Point, const FString& Name);
+	/** 작은 물건은 ToleranceDegrees를 좁혀 몸통 한가운데를 겨눈다. */
+	void Aim(const FVector& Point, const FString& Name, float ToleranceDegrees = 0.0f);
 	void Press(float Seconds, const FString& Name, AActor* Expect = nullptr, const FKey& Key = EKeys::E);
 	void Wait(float Seconds, const FString& Name);
 	void Until(TFunction<bool()> Done, float TimeoutSeconds, const FString& Name);

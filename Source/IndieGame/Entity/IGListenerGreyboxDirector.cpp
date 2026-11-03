@@ -21,6 +21,7 @@
 #include "Sequence/IGGuestDoorsProbe.h"
 #include "Sequence/IGFireDoorProbe.h"
 #include "Sequence/IGStairSensorProbe.h"
+#include "Sequence/IGFullPlaythroughProbe.h"
 
 #include "AssetCompilingManager.h"
 #include "Containers/Ticker.h"
@@ -667,6 +668,16 @@ void AIGListenerGreyboxDirector::TrySetupStage()
 			if (AIGStairSensorProbe* SensorProbe = GetWorld()->SpawnActor<AIGStairSensorProbe>())
 			{
 				SensorProbe->Configure(WorldScene.Get(), Player.Get(), NightThreats, NightPhase, Entity);
+			}
+			return;
+		}
+		// 새 게임을 처음부터 실제 입력으로만 해 보는 검사. 입주 장면은 위에서 그대로 섰고, 검사는 그 위에서
+		// 키와 마우스만 넣는다.
+		if (FParse::Param(FCommandLine::Get(), TEXT("IGFullPlaythrough")))
+		{
+			if (AIGFullPlaythroughProbe* Playthrough = GetWorld()->SpawnActor<AIGFullPlaythroughProbe>())
+			{
+				Playthrough->Configure(Player.Get(), this);
 			}
 			return;
 		}

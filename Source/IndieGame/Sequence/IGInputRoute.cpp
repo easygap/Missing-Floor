@@ -32,11 +32,12 @@ void FIGInputRoute::Walk(const FVector& Point, const float Tolerance, const FStr
 	Steps.Add(MoveTemp(Step));
 }
 
-void FIGInputRoute::Aim(const FVector& Point, const FString& Name)
+void FIGInputRoute::Aim(const FVector& Point, const FString& Name, const float ToleranceDegrees)
 {
 	FStep Step;
 	Step.Kind = EStep::Aim;
 	Step.Point = Point;
+	Step.Value = ToleranceDegrees;
 	Step.Name = Name;
 	Steps.Add(MoveTemp(Step));
 }
@@ -175,7 +176,8 @@ bool FIGInputRoute::StepAim(const FStep& Step)
 	const FRotator Now = CameraRotation();
 	const float YawErr = FMath::FindDeltaAngleDegrees(Now.Yaw, Want.Yaw);
 	const float PitchErr = FMath::FindDeltaAngleDegrees(Now.Pitch, Want.Pitch);
-	if (FMath::Abs(YawErr) < 1.2f && FMath::Abs(PitchErr) < 1.2f)
+	const float Tolerance = Step.Value > 0.0f ? Step.Value : 1.2f;
+	if (FMath::Abs(YawErr) < Tolerance && FMath::Abs(PitchErr) < Tolerance)
 	{
 		return true;
 	}

@@ -771,7 +771,9 @@ $reviewedTickingFiles = @(
 	# -IGAimReachProbe에서만 생성한다. 밤과 낮을 열 때마다 상호작용 물체의 조준 자리를 재고 종료한다.
 	'IGAimReachProbe.cpp',
 	# -IGPlacementProbe에서만 생성한다. 낮과 밤1~4의 첫 상태에서 소품 배치를 재고, 걸린 물건을 찍은 뒤 종료한다.
-	'IGPlacementProbe.cpp'
+	'IGPlacementProbe.cpp',
+	# -IGFullPlaythrough에서만 생성한다. 새 게임을 실제 입력으로 해 나가다 끝나거나 막히면 종료한다.
+	'IGFullPlaythroughProbe.cpp'
 )
 $unreviewedTickingActors = @($tickingActors | Where-Object {
 	$reviewedTickingFiles -notcontains [System.IO.Path]::GetFileName($_.Path)
