@@ -772,19 +772,8 @@ void AIGNightPhaseDirector::RequestMissingFloorAutosave(const bool bAtNight)
 	{
 		return;
 	}
-	// 결말 A나 B를 고른 뒤의 새벽은 저장하지 않는다. 에필로그가 끝나면 게임도
-	// 끝났다. 그 아침을 저장하면 이어하기가 할 일 없는 낮으로 들어가고, 거기서
-	// 자면 넷째 밤이 되풀이됐다. 가장 새 저장은 선택 직전(벽 앞)으로 남아서
-	// 이어하기로 다른 결말을 고를 수 있다.
-	if (const UIGMissingFloorNarrativeSubsystem* Narrative =
-		GameInstance->GetSubsystem<UIGMissingFloorNarrativeSubsystem>())
-	{
-		const FName Ending = Narrative->GetEndingChoice();
-		if (Ending == FName(TEXT("Ending.A")) || Ending == FName(TEXT("Ending.B")))
-		{
-			return;
-		}
-	}
+	// 결말 A나 B를 고른 뒤의 새벽은 저장 서브시스템이 받지 않는다. 그 아침을 저장하면
+	// 이어 하기가 할 일 없는 낮으로 들어가고, 거기서 자면 넷째 밤이 되풀이됐다.
 	SaveSubsystem->RequestAutosave(
 		FGameplayTag::RequestGameplayTag(FName(TEXT("Chapter.MissingFloor")), false),
 		World->GetOutermost()->GetFName(),

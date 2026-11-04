@@ -4015,7 +4015,6 @@ void AIGListenerGreyboxDirector::PlayArrivalBaselineEvent()
 			{
 				return;
 			}
-			GetWorldTimerManager().ClearTimer(ArrivalBaselineStepTimer);
 			IGAudio::SpawnOneShotAt(
 				this,
 				IGAudio::SampleOr(TEXT("Door_Steel_Close"), [this]() -> USoundBase*
@@ -4028,6 +4027,9 @@ void AIGListenerGreyboxDirector::PlayArrivalBaselineEvent()
 				200.0f,
 				1700.0f,
 				EIGAudioBus::World);
+			// 이 람다는 그 타이머가 들고 있어서, 타이머를 지우면 잡아 둔 this도 같이 사라진다. 그래서 맨 끝에 지운다.
+			// 지운 뒤에 철문 소리를 내던 때는 해제된 자리를 읽어 입주 저녁에 가끔 게임이 죽었다.
+			GetWorldTimerManager().ClearTimer(ArrivalBaselineStepTimer);
 		};
 		AdvanceStairs();
 		AIGHorrorHUD::PushBackgroundAudioCaptionAt(

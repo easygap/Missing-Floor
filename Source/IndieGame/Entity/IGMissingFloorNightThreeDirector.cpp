@@ -1405,6 +1405,7 @@ void AIGMissingFloorNightThreeDirector::SetHourActive(const bool bHourActive)
 	// 오면 세운다. 불러온 되풀이 밤3에서는 수첩을 다시 펼치기 전까지 벽을 켜
 	// 줄 곳이 여기뿐이다.
 	RefreshAnswerTargetAvailability();
+	RefreshWallReadingAvailability();
 	RefreshJournalAvailability(bHourActive);
 	RefreshDistantSeoVisibility();
 	// 대답을 듣고도 05:30을 넘긴 밤3은 다음 저녁에 다시 온다. T9는 이미 있어서
@@ -1426,6 +1427,28 @@ AIGMissingFloorEvidence* AIGMissingFloorNightThreeDirector::GetWallListen(
 	const int32 BayIndex) const
 {
 	return WallListens.IsValidIndex(BayIndex) ? WallListens[BayIndex] : nullptr;
+}
+
+void AIGMissingFloorNightThreeDirector::RefreshWallReadingAvailability()
+{
+	// 넷째 밤에 벽이 열리면 칸을 읽을 벽이 없다. 공동 칸의 표적은 뚫린 자리 한가운데 남아 오빠를 보는 동안
+	// 「귀 대기」를 띄웠고, 누르면 셋째 밤의 벽 듣기 반응이 다시 돌았다. 읽기는 끝났으니 세 칸을 같이 거둔다.
+	const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+	const bool bWallStands = !Narrative || !Narrative->IsNightFourWallOpened();
+	for (AIGMissingFloorEvidence* Target : WallListens)
+	{
+		if (Target)
+		{
+			Target->SetInteractionEnabled(bWallStands);
+		}
+	}
+	for (AIGMissingFloorEvidence* Target : WallKnocks)
+	{
+		if (Target)
+		{
+			Target->SetInteractionEnabled(bWallStands);
+		}
+	}
 }
 
 bool AIGMissingFloorNightThreeDirector::GetCavityWallObservationPoint(

@@ -99,6 +99,10 @@ public:
 	static FVector GetWallBreakLocation();
 	/** 401호 안. 황순금이 벽 너머로 대답하는 자리이고, 막간의 7월 29일도 여기서 온다. */
 	static FVector GetUnit401ReplyLocation();
+	/** 벽 안을 훑는 세 단계(두개골·몸·발)에서 눈길이 닿아야 하는 자리. 완주 검사가 실제로 본다. */
+	static FVector GetRevealTarget(int32 Stage);
+	/** 엔딩 B의 기다림에서 노크가 닿는 벽. 이 곁 180 cm 안에서 친 노크만 대답을 받는다. */
+	static FVector GetVigilKnockLocation();
 	AIGMissingFloorEvidence* GetEndingATarget() const { return EndingATarget; }
 	AIGMissingFloorEvidence* GetEndingBTarget() const { return EndingBTarget; }
 
@@ -163,6 +167,7 @@ public:
 	bool RegisterVigilKnock();
 	/** 저장·이어하기 검사는 기다림을 생략하지 않고 현재 상태만 읽는다. */
 	bool IsEndingBVigilActive() const { return bEndingBVigilActive; }
+	int32 GetVigilReplyCount() const { return VigilReplyCount; }
 
 	FIGNightFourResolvedSignature OnResolved;
 

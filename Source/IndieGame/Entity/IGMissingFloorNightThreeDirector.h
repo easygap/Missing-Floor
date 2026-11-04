@@ -214,6 +214,8 @@ protected:
 public:
 	/** 계단 열쇠가 없으면 관리실 상판에 열쇠 꾸러미를 둔다. 관리인이 거둬 간 뒤에도 부른다. */
 	void RefreshKeyringAvailability();
+	/** 넷째 밤에 벽이 열리면 세 칸을 듣고 두드리던 표적을 거둔다. 벽이 열리는 순간 넷째 밤 감독이 부른다. */
+	void RefreshWallReadingAvailability();
 
 private:
 	void HandleKeyringTaken(AIGMissingFloorEvidence* Evidence);

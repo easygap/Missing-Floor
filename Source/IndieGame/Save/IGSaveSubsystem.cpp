@@ -673,6 +673,21 @@ bool UIGSaveSubsystem::RequestAutosave(
 		// a load, including synchronous tag callbacks during snapshot restore.
 		return false;
 	}
+	// 결말 A나 B를 고른 뒤에는 어떤 자동 저장도 쓰지 않는다. 에필로그가 끝나면 게임도 끝났다.
+	// 그 뒤를 저장하면 이어 하기가 할 일 없는 넷째 밤이나 낮으로 들어간다(에필로그를 열며
+	// 밤 일을 적는 저장이 그랬다). 가장 새 저장은 선택 직전(벽 앞)으로 남아서 이어 하기로
+	// 다른 결말을 고를 수 있다. C는 넷째 밤을 다시 하게 하므로 계속 저장한다.
+	if (const UIGMissingFloorNarrativeSubsystem* MissingFloorState = GetGameInstance()
+		? GetGameInstance()->GetSubsystem<UIGMissingFloorNarrativeSubsystem>() : nullptr)
+	{
+		const FName Ending = MissingFloorState->GetEndingChoice();
+		if (Ending == FName(TEXT("Ending.A")) || Ending == FName(TEXT("Ending.B")))
+		{
+			UE_LOG(LogIndieGame, Display, TEXT("AUTOSAVE_SKIPPED ending=%s checkpoint=%s"),
+				*Ending.ToString(), *CheckpointTag.ToString());
+			return false;
+		}
+	}
 
 	if (bSaveInProgress || QueuedAutosave)
 	{

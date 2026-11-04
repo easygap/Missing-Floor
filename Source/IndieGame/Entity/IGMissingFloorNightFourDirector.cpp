@@ -330,6 +330,16 @@ FVector AIGMissingFloorNightFourDirector::GetUnit401ReplyLocation()
 	return IGNightFour::Unit401ReplyLocation;
 }
 
+FVector AIGMissingFloorNightFourDirector::GetRevealTarget(const int32 Stage)
+{
+	return IGNightFour::RevealTarget(Stage);
+}
+
+FVector AIGMissingFloorNightFourDirector::GetVigilKnockLocation()
+{
+	return IGNightFour::VigilKnockLocation;
+}
+
 bool AIGMissingFloorNightFourDirector::Configure(AIGPrologueWorldScene* InScene)
 {
 	UWorld* World = GetWorld();
@@ -3251,6 +3261,12 @@ void AIGMissingFloorNightFourDirector::OpenWallAfterFinalStrike()
 	if (AIGMissingFloorLeftoverDirector* LeftoverDirector = GetLeftover())
 	{
 		LeftoverDirector->HideAnnexLining();
+	}
+	// 셋째 밤에 칸마다 듣고 두드리던 벽도 이제 없다. 뚫린 자리에 「귀 대기」가 남지 않게 거둔다.
+	for (TActorIterator<AIGMissingFloorNightThreeDirector> It(GetWorld()); It; ++It)
+	{
+		It->RefreshWallReadingAvailability();
+		break;
 	}
 	BeginCavityReveal();
 	GetWorldTimerManager().SetTimer(

@@ -13,6 +13,7 @@
 #include "Entity/IGListenerGreyboxDirector.h"
 #include "Entity/IGMissingFloorEpilogueDirector.h"
 #include "Entity/IGMissingFloorEvidence.h"
+#include "Entity/IGMissingFloorFifthDawnDirector.h"
 #include "Entity/IGMissingFloorNightFourDirector.h"
 #include "Entity/IGMissingFloorNightThreeDirector.h"
 #include "Entity/IGMissingFloorNightTwoBeatDirector.h"
@@ -120,6 +121,11 @@ void AIGFullPlaythroughProbe::Configure(AIGPlayerCharacter* InPlayer, AIGListene
 	if (FParse::Value(FCommandLine::Get(), TEXT("IGFullPlaythroughMinutes="), Minutes) && Minutes > 0.0f)
 	{
 		LimitSeconds = Minutes * 60.0f;
+	}
+	FString Ending;
+	if (FParse::Value(FCommandLine::Get(), TEXT("IGFullPlaythroughEnding="), Ending) && Ending.Equals(TEXT("B"), ESearchCase::IgnoreCase))
+	{
+		EndingChoice = TEXT("B");
 	}
 	WallStartSeconds = FPlatformTime::Seconds();
 }
@@ -725,7 +731,13 @@ TFunction<void()> AIGFullPlaythroughProbe::MakeUse(FString Name, TFunction<AActo
 		TArray<FVector> Path;
 		if (Stand.IsSet())
 		{
-			Path.Add(Stand.GetValue());
+			// 정해 준 자리라도 가는 길은 찾는다. 곧게 걸으면 403호 현관에서 문틀에 걸렸다(셋째 낮 요구서 앞).
+			FString Why;
+			if (!PlanPath(Stand.GetValue(), Path, Why))
+			{
+				Path.Reset();
+				Path.Add(Stand.GetValue());
+			}
 		}
 		else
 		{
@@ -1863,6 +1875,15 @@ void AIGFullPlaythroughProbe::BuildNightThree()
 		Algo::Reverse(Down);
 		Follow(Down, 22.0f, TEXT("night3_roof_stair_down"));
 	}
+	// 5층 철문 소리 같은 큰 소리에 위층 사람이 자리를 떠나면 계단 쪽으로 왔다가, 닿고 물러나 남쪽 벽 제자리로
+	// 돌아간다. 돌아가는 길에 대답하면 복도 가운데서 기다려 북쪽 틈이 25 cm만 남았고, 제자리에 돌아간 뒤에는 대답을
+	// 안 받은 채라 몸이 길을 막았다(11-03). 사람이 하듯 제자리에 돌아가 벽에 귀를 댈 때까지 계단 밑에서 기다렸다 대답한다.
+	WaitUntil([WeakThis, FourthZ]()
+	{
+		const AIGListenerEntity* Entity = WeakThis.IsValid() ? WeakThis->FindFirst<AIGListenerEntity>() : nullptr;
+		return !Entity || Entity->IsDormant() || FMath::Abs(Entity->GetActorLocation().Z - FourthZ) > 150.0f
+			|| FVector::Dist2D(Entity->GetActorLocation(), FVector(-95.0f, -332.0f, FourthZ)) < 60.0f;
+	}, 90.0f, TEXT("night3_figure_settled"));
 	// 귀환길(3-7). 복도의 그(남쪽 벽에 엎드려 서쪽을 본다)를 계단 밑에서 보자마자 방금 배운 박자로 대답해
 	// 세우고, 북쪽 벽을 따라 옆을 지나 403호로 간다. 세워지지 않으면 옥상 계단 반 층 참으로 물러나 기다린다.
 	AddLeg(TEXT("knock:night3_return_answer"), [this, FourthZ]()
@@ -1945,12 +1966,13 @@ void AIGFullPlaythroughProbe::BuildDayThree()
 	GoTo(HomeEntry, 30.0f, TEXT("day3_home"));
 	WaitUntil(Beat(TEXT("Day.EvictionPosted")), 180.0f, TEXT("day3_eviction_posted"));
 	Listen(TEXT("day3_eviction_sound"), 20.0f);
+	// 사람은 종이 앞에 서서 읽는다. 걸어온 쪽에서 가장 가까운 자리를 고르면 1.8 m 비스듬히 읽어서 인쇄면을 못 본다.
 	UseNamed(TEXT("day3_eviction_notice"), TEXT("MissingFloorEvictionNotice"), FVector::ZeroVector, [WeakThis]()
 	{
 		const UIGMissingFloorNarrativeSubsystem* Narrative = WeakThis.IsValid() ? WeakThis->GetNarrative() : nullptr;
 		return Narrative && Narrative->HasSource(EIGMissingFloorTruth::StillCoveringIt, EIGMissingFloorSource::EvictionWarning);
-	}, 5.0f);
-	// 읽은 자리에서 한 장 찍는다. 벽에 붙은 종이가 보이는지 본다.
+	}, 5.0f, FVector(640.0f, -300.0f, FourthZ));
+	// 읽은 자리에서 한 장 찍는다. 벽에 붙은 종이와 인쇄면이 보이는지 본다.
 	Stage(TEXT("day3_notice_read"));
 	Listen(TEXT("day3_eviction_read"), 30.0f);
 	WaitUntil(Beat(TEXT("Day.EvictionDeadline")), 180.0f, TEXT("day3_deadline_text"));
@@ -1999,10 +2021,31 @@ void AIGFullPlaythroughProbe::BuildNightFour()
 	Algo::Reverse(RoofIn);
 	TArray<FVector> RoofStairDown = IGFullPlaythrough::RoofStairUp();
 	Algo::Reverse(RoofStairDown);
+	// 옥상 문에서 5층 철문 앞까지.
+	const TArray<FVector> RoofToAnnex = {FVector(-277.5f, 208.5f, RoofZ), FVector(-277.5f, 245.0f, RoofZ),
+		FVector(-255.0f, 262.0f, RoofZ), FVector(-180.0f, 262.0f, RoofZ), FVector(-150.0f, 240.0f, RoofZ),
+		FVector(130.0f, 220.0f, RoofZ)};
+
+	// 선택 직전 저장(벽 앞)에서 이어 하면 403호 침대에서 깬다. 벽은 열려 있고 대치도 끝났다. 5층으로 올라가
+	// 결말만 고른다. 이어 하기로 다른 결말을 보러 오는 사람이 걷는 길이다.
+	if (const UIGMissingFloorNarrativeSubsystem* Narrative = GetNarrative();
+		Narrative && Narrative->IsNightFourWallOpened() && Narrative->GetEndingChoice().IsNone())
+	{
+		Stage(TEXT("night4_resumed_choice"));
+		WaitSeconds(6.0f, TEXT("night4_resumed_opening"));
+		GoTo(FVector(-262.0f, -292.0f, FourthZ), 25.0f, TEXT("resume_roof_stair_foot"), HomeEntry);
+		Follow(IGFullPlaythrough::RoofStairUp(), 22.0f, TEXT("resume_roof_stair_up"));
+		SetDoor(TEXT("resume_roof_gate"), TEXT("MissingFloorStairGate"), FVector(-277.5f, 110.0f, FourthZ + 242.0f), true);
+		Follow(RoofToAnnex, 22.0f, TEXT("resume_roof_passage"));
+		SetDoor(TEXT("resume_annex_gate"), TEXT("MissingFloorAnnexGate"), FVector(130.0f, 390.0f, RoofZ), true);
+		Follow({FVector(130.0f, 520.0f, RoofZ)}, 25.0f, TEXT("resume_annex_inside"));
+		BuildEnding();
+		return;
+	}
 
 	// 넷째 밤. 물탱크 청소 회로를 옥상 청소 배수, 부구 우회, 1층 관리실 이송 펌프 차례로 돌려 물소리를 깐다.
-	// 5층에 들어가 철문을 닫고 빗장을 건 뒤, 벽을 게임이 내놓는 차례대로 뜯는다. 벽이 열리면 막간과 대치를
-	// 지나 결말을 고른다(A). 에필로그가 끝나면 마친다.
+	// 5층에 들어가 철문을 닫고 빗장을 건 뒤, 벽을 게임이 내놓는 차례대로 뜯는다. 벽이 열리면 안을 보고 막간과
+	// 대치를 지나 결말을 고른다. 에필로그가 끝나고 타이틀이 뜨면 마친다.
 	Stage(TEXT("night4_awake"));
 	WaitSeconds(6.0f, TEXT("night4_opening"));
 	Listen(TEXT("night4_opening"), 30.0f);
@@ -2057,9 +2100,7 @@ void AIGFullPlaythroughProbe::BuildNightFour()
 	GoTo(FVector(-262.0f, -292.0f, FourthZ), 25.0f, TEXT("night4_back_to_roof_stair"), HomeEntry);
 	Follow(IGFullPlaythrough::RoofStairUp(), 22.0f, TEXT("night4_roof_stair_up_again"));
 	SetDoor(TEXT("night4_roof_gate_again"), TEXT("MissingFloorStairGate"), FVector(-277.5f, 110.0f, FourthZ + 242.0f), true);
-	Follow({FVector(-277.5f, 208.5f, RoofZ), FVector(-277.5f, 245.0f, RoofZ), FVector(-255.0f, 262.0f, RoofZ),
-		FVector(-180.0f, 262.0f, RoofZ), FVector(-150.0f, 240.0f, RoofZ), FVector(130.0f, 220.0f, RoofZ)}, 22.0f,
-		TEXT("night4_roof_passage"));
+	Follow(RoofToAnnex, 22.0f, TEXT("night4_roof_passage"));
 	SetDoor(TEXT("night4_annex_gate"), TEXT("MissingFloorAnnexGate"), FVector(130.0f, 390.0f, RoofZ), true);
 	Follow({FVector(130.0f, 520.0f, RoofZ)}, 25.0f, TEXT("night4_annex_inside"));
 	// 안에서 철문을 닫고 빗장을 건다. 망치질 사이에 문밖에서 부르는 소리가 와도 문이 안 열린다. 문짝은 안으로
@@ -2084,19 +2125,146 @@ void AIGFullPlaythroughProbe::BuildNightFour()
 		const UIGMissingFloorNarrativeSubsystem* Narrative = WeakThis.IsValid() ? WeakThis->GetNarrative() : nullptr;
 		return Narrative && Narrative->IsNightFourWallOpened();
 	}, 30.0f, TEXT("night4_wall_open"));
-	Stage(TEXT("night4_reveal"));
-	WaitUntil(Beat(TEXT("Night4.FinalConfrontation")), 480.0f, TEXT("night4_confrontation"));
+	BuildReveal();
+	WaitUntil(Beat(TEXT("Night4.FinalConfrontation")), 240.0f, TEXT("night4_confrontation"));
 	Listen(TEXT("night4_after_confrontation"), 20.0f);
+	BuildEnding();
+}
 
-	Stage(TEXT("ending_choice"));
-	UseNamed(TEXT("ending_a"), TEXT("MissingFloorEndingATarget"), FVector::ZeroVector, [WeakThis]()
+void AIGFullPlaythroughProbe::BuildReveal()
+{
+	TWeakObjectPtr<AIGFullPlaythroughProbe> WeakThis(this);
+	const auto Four = [WeakThis]() -> const AIGMissingFloorNightFourDirector*
+	{
+		return WeakThis.IsValid() ? WeakThis->FindFirst<AIGMissingFloorNightFourDirector>() : nullptr;
+	};
+	const auto Interlude = [WeakThis]()
+	{
+		const AIGMissingFloorFifthDawnDirector* Dawn = WeakThis.IsValid() ? WeakThis->FindFirst<AIGMissingFloorFifthDawnDirector>() : nullptr;
+		return Dawn && Dawn->IsActive();
+	};
+
+	// 벽이 열리면 손전등이 두개골, 몸, 발 차례로 훑는다. 사람이 하듯 그 자리를 차례로 본다. 예전 검사는 서 있기만
+	// 해서 단계마다 5.5초 폴백으로 넘어갔고, 그동안 천장만 찍혔다.
+	const TCHAR* const Parts[] = {TEXT("skull"), TEXT("body"), TEXT("feet")};
+	for (int32 Part = 0; Part < UE_ARRAY_COUNT(Parts); ++Part)
+	{
+		const FString Name = FString::Printf(TEXT("night4_reveal_%s"), Parts[Part]);
+		AddLeg(TEXT("look:") + Name, [this, Four, Part, Name]()
+		{
+			const AIGMissingFloorNightFourDirector* Director4 = Four();
+			if (!Director4 || !Director4->IsFinalRevealPlaying() || Director4->GetFinalRevealStage() != Part)
+			{
+				UE_LOG(LogIndieGame, Display, TEXT("PLAYTHROUGH_NOTE %s passed_before_look stage=%d t=%.1f"), *Name,
+					Director4 ? Director4->GetFinalRevealStage() : INDEX_NONE, GetWorld()->GetTimeSeconds());
+				return;
+			}
+			Route.Aim(AIGMissingFloorNightFourDirector::GetRevealTarget(Part), TEXT("aim:") + Name);
+			Route.Wait(0.6f, TEXT("wait:") + Name);
+		});
+		Stage(Name);
+		WaitUntil([Four, Part]()
+		{
+			const AIGMissingFloorNightFourDirector* Director4 = Four();
+			return !Director4 || !Director4->IsFinalRevealPlaying() || Director4->GetFinalRevealStage() > Part;
+		}, 8.0f, Name + TEXT("_seen"));
+	}
+
+	// 오빠를 본 직후 눈이 감기고 「다섯 번째 새벽」이 2분 40초 돈다. 화면은 검고 소리와 자막만 남는다. 24초에
+	// 머리 위 배관이 덜컹거리고, 58초에 벽 안에서 둘·쉬고·하나가 온다. 그 박자에 한 번 대답해 본다. 막간을
+	// 이미 본 판이면 눈을 감지 않고 바로 목한수가 온다.
+	WaitUntil([WeakThis, Interlude]()
 	{
 		const UIGMissingFloorNarrativeSubsystem* Narrative = WeakThis.IsValid() ? WeakThis->GetNarrative() : nullptr;
-		return Narrative && Narrative->GetEndingChoice() == FName(TEXT("Ending.A"));
-	}, 8.0f);
+		return !Narrative || Interlude() || Narrative->WasFifthDawnInterludeCompleted()
+			|| Narrative->HasBeatPlayed(FName(TEXT("Night4.FinalConfrontation")));
+	}, 12.0f, TEXT("night4_interlude"));
+	const auto WaitInInterlude = [this, Interlude](const float Seconds, const FString& Name)
+	{
+		AddLeg(TEXT("wait:") + Name, [this, Interlude, Seconds, Name]()
+		{
+			if (Interlude())
+			{
+				Route.Wait(Seconds, TEXT("wait:") + Name);
+			}
+		});
+	};
+	WaitInInterlude(25.0f, TEXT("night4_interlude_pipe"));
+	Stage(TEXT("night4_interlude"));
+	WaitInInterlude(33.5f, TEXT("night4_interlude_call"));
+	Stage(TEXT("night4_interlude_call"));
+	KnockAnswer(TEXT("night4_interlude_answer"));
+}
+
+void AIGFullPlaythroughProbe::KnockAnswer(const FString& Name)
+{
+	AddLeg(TEXT("knock:") + Name, [this, Name]()
+	{
+		Route.Press(0.08f, TEXT("key:") + Name + TEXT("_tap1"), nullptr, EKeys::Q);
+		Route.Wait(0.32f, TEXT("wait:") + Name + TEXT("_gap1"));
+		Route.Press(0.08f, TEXT("key:") + Name + TEXT("_tap2"), nullptr, EKeys::Q);
+		Route.Wait(0.72f, TEXT("wait:") + Name + TEXT("_gap2"));
+		Route.Press(0.08f, TEXT("key:") + Name + TEXT("_tap3"), nullptr, EKeys::Q);
+	});
+}
+
+void AIGFullPlaythroughProbe::BuildEnding()
+{
+	TWeakObjectPtr<AIGFullPlaythroughProbe> WeakThis(this);
+	const bool bEndingB = EndingChoice == TEXT("B");
+	const FName Expected(bEndingB ? TEXT("Ending.B") : TEXT("Ending.A"));
+	Stage(TEXT("ending_choice"));
+	UseNamed(bEndingB ? TEXT("ending_b") : TEXT("ending_a"),
+		bEndingB ? TEXT("MissingFloorEndingBTarget") : TEXT("MissingFloorEndingATarget"), FVector::ZeroVector,
+		[WeakThis, Expected]()
+		{
+			const UIGMissingFloorNarrativeSubsystem* Narrative = WeakThis.IsValid() ? WeakThis->GetNarrative() : nullptr;
+			return Narrative && Narrative->GetEndingChoice() == Expected;
+		}, 8.0f);
+	if (bEndingB)
+	{
+		// 녹음을 끄고 곁에 앉는다. 곁의 벽에 대고 오빠의 박자(둘, 쉬고, 하나)로 대답하면 복도 끝에서 두 번
+		// 돌아온다. 두 번째 대답 뒤에 05:30의 잠금 소리와 112 연결음이 오고 에필로그가 열린다.
+		GoTo(FVector(150.0f, 735.0f, AIGPrologueWorldScene::RoofZ), 25.0f, TEXT("ending_b_beside"));
+		Crouch(TEXT("ending_b_sit"));
+		// 앉아서 오빠 쪽을 본다. 고른 자리에서 그대로 앉으면 북쪽 석고보드 더미만 보였다.
+		AddLeg(TEXT("look:ending_b_beside"), [this]()
+		{
+			Route.Aim(AIGMissingFloorNightFourDirector::GetRevealTarget(1), TEXT("aim:ending_b_beside"));
+		});
+		Stage(TEXT("ending_b_vigil"));
+		for (int32 Reply = 1; Reply <= 2; ++Reply)
+		{
+			const FString Name = FString::Printf(TEXT("ending_b_answer%d"), Reply);
+			AddLeg(TEXT("reach:") + Name, [this, Name]()
+			{
+				const AIGPlayerCharacter* Character = Player.Get();
+				const float Reach = Character
+					? FVector::Dist(Character->GetActorLocation(), AIGMissingFloorNightFourDirector::GetVigilKnockLocation())
+					: -1.0f;
+				UE_LOG(LogIndieGame, Display, TEXT("PLAYTHROUGH_VIGIL %s reach=%.0f"), *Name, Reach);
+			});
+			KnockAnswer(Name);
+			WaitUntil([WeakThis, Reply]()
+			{
+				const AIGMissingFloorNightFourDirector* Four = WeakThis.IsValid() ? WeakThis->FindFirst<AIGMissingFloorNightFourDirector>() : nullptr;
+				return Four && Four->GetVigilReplyCount() >= Reply;
+			}, 8.0f, Name + TEXT("_reply"));
+			Listen(Name, 6.0f);
+		}
+		Stage(TEXT("ending_b_answered"));
+		WaitUntil([WeakThis]()
+		{
+			const AIGMissingFloorNightFourDirector* Four = WeakThis.IsValid() ? WeakThis->FindFirst<AIGMissingFloorNightFourDirector>() : nullptr;
+			return Four && !Four->IsEndingBVigilActive();
+		}, 30.0f, TEXT("ending_b_dawn"));
+	}
 	Stage(TEXT("ending"));
 	WaitUntil([WeakThis]() { return WeakThis.IsValid() && WeakThis->bEpilogueDone; }, 600.0f, TEXT("epilogue_done"));
 	Stage(TEXT("ending_done"));
+	// 에필로그가 끝나면 타이틀이 뜬다. 메뉴가 다 그려진 화면을 남긴다.
+	WaitSeconds(2.5f, TEXT("title_settle"));
+	Stage(TEXT("ending_title"));
 }
 
 TFunction<void()> AIGFullPlaythroughProbe::MakeWallStep(const int32 Round)

@@ -9,7 +9,11 @@ param(
 	[ValidateRange(120, 36000)][int]$TimeoutSeconds = 3600,
 	# 앞선 실행 폴더(Saved/Validation/FullPlaythrough-…)를 주면 그 자동 저장에서 이어 한다(메뉴의 이어 하기).
 	# 뒤쪽 낮과 밤을 고칠 때 처음부터 다시 걷지 않으려고 쓴다. 다 고친 뒤에는 새 게임으로 한 번 끝까지 돌린다.
-	[string]$ResumeFrom = ''
+	[string]$ResumeFrom = '',
+	# 이어 할 슬롯 하나만 가져온다(예: AutoSave_0). 비우면 둘 다 가져오고, 게임은 더 새 쪽을 연다.
+	[ValidatePattern('^(|AutoSave_[0-9])$')][string]$ResumeSlot = '',
+	# 넷째 밤 대치 뒤에 고를 결말. B는 곁의 벽에 대고 대답하고 새벽을 기다린다.
+	[ValidateSet('A', 'B')][string]$Ending = 'A'
 )
 
 # 새 게임을 처음부터 실제 키·마우스 입력으로만 해 본다(-IGFullPlaythrough). 순간 이동이나 상호작용 직접
@@ -36,9 +40,13 @@ if ($ResumeFrom) {
 	if (-not (Test-Path -LiteralPath $sourceSaves -PathType Container)) { throw "이어 할 자동 저장이 없습니다: $sourceSaves" }
 	$targetSaves = Join-Path $probeUser 'Saved/SaveGames'
 	New-Item -ItemType Directory -Force -Path $targetSaves | Out-Null
-	foreach ($save in Get-ChildItem -LiteralPath $sourceSaves -Filter '*.sav' -File) {
+	$filter = if ($ResumeSlot) { $ResumeSlot + '.sav' } else { '*.sav' }
+	$copied = 0
+	foreach ($save in Get-ChildItem -LiteralPath $sourceSaves -Filter $filter -File) {
 		Copy-Item -LiteralPath $save.FullName -Destination (Join-Path $targetSaves $save.Name)
+		$copied++
 	}
+	if ($copied -eq 0) { throw "이어 할 자동 저장이 없습니다: $sourceSaves ($filter)" }
 	$resumeArguments = @('-IGFullPlaythroughResume')
 }
 $difficultyArgument = if ($Difficulty -eq 'listen') { '-IGNightDifficulty=3' } else { '-IGNightDifficulty=1' }
@@ -46,7 +54,7 @@ $arguments = @(
 	('"{0}"' -f $projectPath), '-game', '-unattended', '-nosplash', '-NoLoadingScreen', '-RenderOffscreen',
 	'-d3d12', '-Windowed', '-ResX=1280', '-ResY=720', '-ForceRes', '-nosound',
 	'-IGListenerGreybox', '-IGMissingFloor', '-IGFullPlaythrough', "-IGFullPlaythroughMinutes=$GameMinutes",
-	'-IGSkipFrontend', $difficultyArgument, "-IGCulture=$Culture", "-Culture=$Culture",
+	'-IGSkipFrontend', $difficultyArgument, "-IGCulture=$Culture", "-Culture=$Culture", "-IGFullPlaythroughEnding=$Ending",
 	'-UseFixedTimeStep', '-FPS=30',
 	('"-UserDir={0}"' -f $probeUser), ('"-abslog={0}"' -f $logPath)
 ) + $resumeArguments
@@ -57,7 +65,7 @@ if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
 	& taskkill.exe /PID $process.Id /T /F | Out-Null
 	throw "완주 검사 시간 초과: $logPath"
 }
-Select-String -LiteralPath $logPath -Pattern 'PLAYTHROUGH_(STAGE|CHECK|RETRY|BLOCKED|PATH .* none|STAND .* none|NOTE)|PLAYTHROUGH (PASS|FAIL)|INPUT_(STUCK|FOCUS|BLOCK)' |
+Select-String -LiteralPath $logPath -Pattern 'PLAYTHROUGH_(STAGE|CHECK|RETRY|BLOCKED|PATH .* none|STAND .* none|NOTE|VIGIL)|PLAYTHROUGH (PASS|FAIL)|INPUT_(STUCK|FOCUS|BLOCK)|AUTOSAVE_SKIPPED' |
 	ForEach-Object { Write-Host ($_.Line -replace '^\[[^\]]*\]\[[^\]]*\]LogIndieGame: Display: ', '') }
 Write-Host "PLAYTHROUGH_SHOTS $(Join-Path $probeUser 'Saved/FullPlaythrough')"
 if ($process.ExitCode -ne 0 -or -not (Select-String -LiteralPath $logPath -Pattern 'PLAYTHROUGH PASS')) {

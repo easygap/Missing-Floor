@@ -142,6 +142,12 @@ private:
 	void BuildNightThree();
 	void BuildDayThree();
 	void BuildNightFour();
+	/** 벽 안을 훑는 세 단계를 실제로 보고, 막간 「다섯 번째 새벽」을 지나 대치까지 간다. */
+	void BuildReveal();
+	/** 대치 뒤 결말을 고르고(-IGFullPlaythroughEnding=A|B) 에필로그와 타이틀까지 본다. */
+	void BuildEnding();
+	/** 엔딩 B의 기다림에서 벽에 대고 둘, 쉬고, 하나를 친다. */
+	void KnockAnswer(const FString& Name);
 	/** 벽에서 다음에 손댈 자리를 쓰고, 열릴 때까지 다음 차례를 끼워 넣는다. */
 	TFunction<void()> MakeWallStep(int32 Round);
 	/** 지금 판의 단계(새 게임이면 입주 저녁, 이어 하기면 불러온 자리)부터 끝까지 짓는다. */
@@ -178,6 +184,8 @@ private:
 	bool bStarted = false;
 	/** 에필로그가 끝났다(OnCompleted). */
 	bool bEpilogueDone = false;
+	/** 고를 결말. -IGFullPlaythroughEnding=B면 B, 아니면 A. */
+	FString EndingChoice = TEXT("A");
 	bool bFinished = false;
 	float TotalSeconds = 0.0f;
 	float LimitSeconds = 1800.0f;
