@@ -1551,6 +1551,10 @@ bool AIGListenerGreyboxDirector::SetupStage()
 		// 밤4 손님은 5층 철문으로도 온다.
 		NightThreats->SetAnnexDoor(NightThree ? NightThree->GetAnnexGate() : nullptr);
 	}
+	if (NightFour)
+	{
+		NightFour->SetAnnexGate(NightThree ? NightThree->GetAnnexGate() : nullptr);
+	}
 
 	// 밤3에 계단을 도는 관리인. 진행을 잠그지 않으므로 실패해도 스테이지는 유효하다.
 	FActorSpawnParameters ManagerParameters;

@@ -14,6 +14,7 @@
 #include "Engine/World.h"
 #include "IndieGame.h"
 #include "Interaction/IGReadableNote.h"
+#include "Interaction/IGSwingDoor.h"
 #include "EngineUtils.h"
 #include "Entity/IGListenerEntity.h"
 #include "Entity/IGMissingFloorEvidence.h"
@@ -1730,6 +1731,11 @@ void AIGMissingFloorNightFourDirector::PlayDistantReply()
 		KnockLocation);
 }
 
+void AIGMissingFloorNightFourDirector::SetAnnexGate(AIGSwingDoor* InGate)
+{
+	AnnexGate = InGate;
+}
+
 void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 {
 	// 새벽이 이 밤을 가져갔으면 그는 오지 않는다. 대치는 다음 밤에 다시 선다.
@@ -1745,6 +1751,24 @@ void AIGMissingFloorNightFourDirector::PresentMokHansoo()
 			AudioDirector->SetAuthoredSilence(false);
 			AudioDirector->SetThreatState(EIGAudioThreatState::Finale);
 		}
+	}
+	// 그는 철문으로 들어온다. 유담이 닫고 빗장을 걸어 두었으면 건물주가 빗장째 밀어 연다. 닫힌 문을 그대로 두면 빗장 걸린
+	// 방 안에 그가 서 있고, 뒤따르는 위층 사람이 문짝을 지나갔다.
+	if (AIGSwingDoor* Gate = AnnexGate.Get(); Gate && !Gate->IsOpen())
+	{
+		Gate->SetLatched(false, false);
+		Gate->ForceOpenState(true);
+		IGAudio::SpawnOneShotAt(
+			this,
+			IGAudio::SampleOr(
+				TEXT("Door_Steel_Close"),
+				[this]() -> USoundBase* { return UIGToneSequenceSoundWave::CreateDoorThud(this); }),
+			Gate->GetLatchSoundLocation(),
+			0.8f,
+			0.85f,
+			200.0f,
+			1600.0f,
+			EIGAudioBus::World);
 	}
 	for (UStaticMeshComponent* Visual : MokVisuals)
 	{

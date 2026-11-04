@@ -37,6 +37,8 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	bool Configure(AIGPrologueWorldScene* InScene);
+	/** 5층 철문. 목한수가 이 문으로 들어온다. */
+	void SetAnnexGate(class AIGSwingDoor* InGate);
 	void SetHourActive(bool bHourActive);
 	bool ValidateFixtures() const;
 	/** 검사용. 지금 저장 상태로 대치에서 유담이 할 말을 고른다. */
@@ -323,6 +325,9 @@ private:
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AIGListenerEntity> Listener;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<class AIGSwingDoor> AnnexGate;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AIGMissingFloorFifthDawnDirector> FifthDawn;

@@ -326,8 +326,11 @@ namespace IGListener
 	// -- 웅크려 돌아서기 ----------------------------------------------------------
 	/** 이보다 많이 틀어야 하는데 기는 몸 그대로 돌면 벽을 지나는 자리에서는 웅크려 돈다. */
 	constexpr float GatherTurnDegrees = 40.0f;
-	/** 웅크린 몸이 원점에서 닿는 거리. crawler_turn_gather.py가 정점으로 잰 값이 58.6 cm다. */
-	constexpr float GatherBodyRadius = 57.0f;
+	/**
+	 * 웅크린 몸이 원점에서 닿는 거리. crawler_turn_gather.py가 정점으로 잰 값은 머리끝이 58.6 cm이고 옆은 50 cm 안쪽이다.
+	 * 1층 연결통로(폭 120 cm)에서 가운데 몇 cm 안이면 돌 수 있게 조금 줄여 본다.
+	 */
+	constexpr float GatherBodyRadius = 55.0f;
 	constexpr float GatherBodyArmHalfWidth = 15.0f;
 	constexpr float GatherTurnDegreesPerSecond = 170.0f;
 	/** 웅크린 채 머물 때의 재생 배율. 손발이 아주 느리게 자리를 고친다. */
@@ -1134,7 +1137,7 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 				if (const AActor* Door = BlockingDoor.Get())
 				{
 					const FVector ToDoor = Door->GetComponentsBoundingBox().GetCenter() - GetActorLocation();
-					SearchFacings[SearchSpotIndex] = FVector(ToDoor.X, ToDoor.Y, 0.0f).GetSafeNormal();
+					SearchFacings[SearchSpotIndex] = FitFacing(FVector(ToDoor.X, ToDoor.Y, 0.0f).GetSafeNormal());
 				}
 			}
 			else
@@ -2116,7 +2119,8 @@ void AIGListenerEntity::BeginFinalePass(
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(true);
-	TeleportTo(StartLocation, GetActorRotation(), false, true);
+	// 철문 바깥 좁은 통로에서 나타난다. 처음부터 가는 쪽을 보고 선다. 어느 쪽을 보던 몸 그대로 세우면 문틀 곁에서 돌아서느라 팔이 벽을 지났다.
+	TeleportTo(StartLocation, FRotator(0.0f, (RoutePoints[0] - StartLocation).Rotation().Yaw, 0.0f), false, true);
 	bTurnaround = false;
 	FinaleRoutePoints = RoutePoints;
 	FinaleRouteIndex = 0;
@@ -2592,6 +2596,8 @@ bool AIGListenerEntity::CrawlTowards(
 	const FVector Direction = ToTarget / Distance;
 	if (PushOpenHomeDoorAside(Target, Direction, Distance))
 	{
+		// 문이 닫히길 기다리는 동안에도 가는 쪽으로 몸을 바로 한다. 비스듬히 선 채 발이 벽에 들어가 있었다.
+		FaceDirection(Direction, DeltaSeconds);
 		LastMoveSpeed = 0.0f;
 		return false;
 	}
@@ -2619,6 +2625,17 @@ bool AIGListenerEntity::CrawlTowards(
 			return false;
 		}
 	}
+	// 목표가 벽 바로 앞이면 손끝이 벽에 닿는 거리에서 닿은 것으로 친다. 캡슐(반지름 34 cm)이 벽에 닿을 때까지
+	// 기면 앞으로 뻗은 손과 머리가 벽 속으로 50 cm 넘게 들어간다. 길 위의 점과 수색할 자리만 이렇게 간다. 벽 쪽으로 돌기 전에
+	// 먼저 본다. 벽 너머에서 난 소리를 보러 복도에서 벽을 향해 돌아서면 머리와 등이 벽을 지났다.
+	if (bStopShortOfWalls && Distance <= IGListener::FrontReach + 40.0f
+		&& (IsBodyBlockedAlong(Direction, IGListener::FrontReach, 0.0f, 12.0f, false)
+			|| IsBodyBlockedAlong(Direction, IGListener::FrontReach, 0.0f, 45.0f, false)))
+	{
+		LastMoveSpeed = 0.0f;
+		StuckSeconds = 0.0f;
+		return true;
+	}
 	const FVector Step =
 		Direction * FMath::Min(Speed * (bInStairCore ? TurnSpeedScale(Direction) : 1.0f) * DeltaSeconds, Distance);
 	FaceDirection(Direction, DeltaSeconds, bInStairCore ? IGListener::StairTurnDegreesPerSecond : 160.0f);
@@ -2638,16 +2655,6 @@ bool AIGListenerEntity::CrawlTowards(
 			return true;
 		}
 		return false;
-	}
-	// 목표가 벽 바로 앞이면 손끝이 벽에 닿는 거리에서 닿은 것으로 친다. 캡슐(반지름 34 cm)이 벽에 닿을 때까지
-	// 기면 앞으로 뻗은 손과 머리가 벽 속으로 50 cm 넘게 들어간다. 길 위의 점과 수색할 자리만 이렇게 간다.
-	if (bStopShortOfWalls && Distance <= IGListener::FrontReach + 40.0f
-		&& (IsBodyBlockedAlong(Direction, IGListener::FrontReach, 0.0f, 12.0f, false)
-			|| IsBodyBlockedAlong(Direction, IGListener::FrontReach, 0.0f, 45.0f, false)))
-	{
-		LastMoveSpeed = 0.0f;
-		StuckSeconds = 0.0f;
-		return true;
 	}
 	// 앞에 닫힌 문(관리실 문, 계단실 방화문, 욕실 문)이 있으면 손이 닿는 거리에서 멈춘다. 캡슐이 문짝에 닿을
 	// 때까지 기면 앞으로 뻗은 머리와 팔이 문짝 속으로 들어갔다. 403호 문 앞은 따로 선다(HomeDoorStandOffset).

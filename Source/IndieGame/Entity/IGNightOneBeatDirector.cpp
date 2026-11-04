@@ -51,8 +51,12 @@ namespace IGNightOne
 	 * 높이는 참 윗면에 그의 몸 반높이를 더한 것이다.
 	 */
 	const FVector SightingStagePoint(-518.0f, 46.0f, 808.0f);
-	/** 그녀가 지나간 뒤 웅크린 채 옮겨 몸을 펴는 자리. 참 동서 폭(220 cm) 가운데라 동쪽을 보고 펴도 벽에 닿지 않는다. */
-	const FVector SightingLeaveSpot(-470.0f, 46.0f, 808.0f);
+	/**
+	 * 그녀가 지나간 뒤 웅크린 채 옮겨 몸을 펴는 자리. 4층으로 돌아가는 동쪽 계단 끝 단 30 cm 앞에서 남쪽을 본다.
+	 * 계단참 길(HalfLandingUp)의 마지막 자세와 같아서 펴면 그대로 계단을 오른다.
+	 */
+	const FVector SightingLeaveSpot(-407.5f, -5.0f, 808.0f);
+	constexpr float SightingLeaveYaw = -90.0f;
 	const FVector SightingShufflePoint(-496.0f, 52.0f, 808.0f);
 	/**
 	 * 그를 지나 내려갔다고 보는 선. 반 층 참에서 서쪽 계단으로 두 단쯤 내려선
@@ -626,7 +630,7 @@ void AIGNightOneBeatDirector::RestoreSightingEntity()
 	if (AIGListenerEntity* Listener = Entity.Get())
 	{
 		Listener->SetTouchCaptureSuppressed(false);
-		Listener->ReleaseGatherHoldTo(IGNightOne::SightingLeaveSpot, 0.0f);
+		Listener->ReleaseGatherHoldTo(IGNightOne::SightingLeaveSpot, IGNightOne::SightingLeaveYaw);
 		Listener->SetPatrolPoints(CorridorPatrolPoints);
 		// 공격 티어는 건드리지 않는다. 카메오는 연출이지 실패가 아니다. 순찰
 		// 처음으로 되감지도 않는다 — 밤 한가운데 먼지 흔적과 발자국이 지워지면
