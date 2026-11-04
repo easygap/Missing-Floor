@@ -13,7 +13,9 @@ param(
 	# 이어 할 슬롯 하나만 가져온다(예: AutoSave_0). 비우면 둘 다 가져오고, 게임은 더 새 쪽을 연다.
 	[ValidatePattern('^(|AutoSave_[0-9])$')][string]$ResumeSlot = '',
 	# 넷째 밤 대치 뒤에 고를 결말. B는 곁의 벽에 대고 대답하고 새벽을 기다린다.
-	[ValidateSet('A', 'B')][string]$Ending = 'A'
+	[ValidateSet('A', 'B')][string]$Ending = 'A',
+	# 실행하는 동안 위층 사람과 관리인, 이웃의 몸이 벽·문·소품을 얼마나 지나는지 잰다(CLIP_AUDIT, -IGClipAudit).
+	[switch]$ClipAudit
 )
 
 # 새 게임을 처음부터 실제 키·마우스 입력으로만 해 본다(-IGFullPlaythrough). 순간 이동이나 상호작용 직접
@@ -58,6 +60,7 @@ $arguments = @(
 	'-UseFixedTimeStep', '-FPS=30',
 	('"-UserDir={0}"' -f $probeUser), ('"-abslog={0}"' -f $logPath)
 ) + $resumeArguments
+if ($ClipAudit) { $arguments += '-IGClipAudit' }
 $process = Start-Process -FilePath $editor -ArgumentList $arguments -WindowStyle Hidden -PassThru
 # Windows PowerShell 5.1은 핸들을 먼저 잡아 두지 않으면 ExitCode를 비워 둔다.
 $null = $process.Handle

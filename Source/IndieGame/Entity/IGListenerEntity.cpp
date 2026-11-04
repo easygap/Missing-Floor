@@ -104,6 +104,15 @@ namespace IGListener
 
 	/** 문 앞에 서는 자리. 밤2 대본의 인물 자리와 같은 47 cm다. */
 	constexpr float HomeDoorStandOffset = 47.0f;
+	/** 열어 둔 집 문을 밀어 닫는다. 몸 앞 이만큼을 내다보고, 그 길이 문짝에서 이 폭 안으로 지나면 민다. */
+	constexpr float HomeDoorPushAhead = 130.0f;
+	constexpr float HomeDoorPushWidth = 45.0f;
+	/** 문과 같은 층인지 보는 높이 차. */
+	constexpr float HomeDoorPushHeight = 150.0f;
+	/** 플레이어가 문간에서 이 거리 안이면 밀지 않는다. */
+	constexpr float HomeDoorPushPlayerClear = 170.0f;
+	/** 밀어 닫는 소리. 자기가 낸 소리에 다시 끌려오지 않게 작다. */
+	constexpr float HomeDoorPushLoudness = 0.05f;
 	/**
 	 * 403호에서 나갈 때 먼저 서는 현관 안쪽 자리(문면에서 안으로). 현관 단 북쪽 끝이 문면에서 50 cm 안이고, 캡슐은
 	 * 단 모서리에서 20 cm 안으로 다가가면 단에 걸린다.
@@ -313,6 +322,43 @@ namespace IGListener
 	const FVector TurnBodyWideHalf(62.0f, 44.0f, 0.0f);
 	constexpr float TurnBodyBottom = 8.0f;
 	constexpr float TurnBodyTop = 70.0f;
+
+	// -- 웅크려 돌아서기 ----------------------------------------------------------
+	/** 이보다 많이 틀어야 하는데 기는 몸 그대로 돌면 벽을 지나는 자리에서는 웅크려 돈다. */
+	constexpr float GatherTurnDegrees = 40.0f;
+	/** 웅크린 몸이 원점에서 닿는 거리. crawler_turn_gather.py가 정점으로 잰 값이 58.6 cm다. */
+	constexpr float GatherBodyRadius = 57.0f;
+	constexpr float GatherBodyArmHalfWidth = 15.0f;
+	constexpr float GatherTurnDegreesPerSecond = 170.0f;
+	/** 웅크린 채 머물 때의 재생 배율. 손발이 아주 느리게 자리를 고친다. */
+	constexpr float GatherHoldRate = 0.12f;
+
+	// -- 멈춘 몸 고쳐 앉기 ----------------------------------------------------------
+	/** 닿지 않는 자리를 찾는 범위. 8 cm마다 네 바퀴. */
+	constexpr int32 RestFitRings = 4;
+	constexpr float RestFitRingStep = 8.0f;
+	/** 옮기는 빠르기. 듣는 자세 그대로 몸을 조금 고쳐 앉는 정도다. */
+	constexpr float RestFitSpeed = 35.0f;
+	constexpr float RestFitDegreesPerSecond = 45.0f;
+	/** 돌 자리를 찾는 범위. 복도 가운데에서 몇 cm만 벗어나도 벽에 닿아서 5 cm마다 본다. */
+	constexpr int32 GatherTurnRings = 6;
+	constexpr float GatherTurnRingStep = 5.0f;
+
+	// -- 403호 문 옆 벽 자세 -------------------------------------------------------
+	/** 밤2 대본의 자리와 같다. 주먹이 경첩에서 10 cm 문짝 쪽에 닿고, 몸 원점에서 주먹까지 89 cm다. */
+	constexpr float HomeDoorStanceFistFromHinge = 10.0f;
+	constexpr float HomeDoorStanceFistForward = 89.0f;
+	/** 문짝은 복도 쪽 벽면에서 10 cm 안에 있다. */
+	constexpr float HomeDoorWallFaceOffset = 10.0f;
+	/** 문이 열려 있으면 문짝(경첩 언저리를 지난다)에서 손끝이 떨어지도록 이만큼 물러난다. */
+	constexpr float HomeDoorStanceOpenDoorBack = 30.0f;
+	/** 동쪽을 보고 붙어야 해서 서쪽을 보고 온 몸이 돌아설 자리. 벽 자세 자리 서쪽 복도 가운데다. 웅크려 돌려면 목표까지 60 cm는 있어야 한다. */
+	constexpr float HomeDoorStanceTurnBack = 100.0f;
+	constexpr float HomeDoorStanceTurnY = -310.0f;
+	/** 벽 자세 자리에서 쓰는 몸 폭. 복도를 지나갈 수 있게 어깨 폭만 막는다. */
+	constexpr float HomeDoorStanceBodyRadius = 26.0f;
+	/** 벽 자세로 붙어 있을 때 문이 열리다 그의 머리에 걸리는 각도. 밤2 대본과 같다. */
+	constexpr float HomeDoorStanceBlockedYaw = -27.0f;
 }
 
 AIGListenerEntity::AIGListenerEntity()
@@ -448,13 +494,22 @@ void AIGListenerEntity::Tick(const float DeltaSeconds)
 	// 움직이기 전에 잰다. 지난 프레임에 그린 자세와 자리 그대로다.
 	if (ClipAudit.IsOn() && !bDormant && !IsHidden())
 	{
+		// 도는 중인지도 나눠 본다. 복도 폭보다 긴 몸은 돌 때 벽을 지난다.
+		const float AuditYaw = GetActorRotation().Yaw;
+		const bool bAuditTurning = DeltaSeconds > 0.0f
+			&& FMath::Abs(FMath::FindDeltaAngleDegrees(ClipAuditLastYaw, AuditYaw)) / DeltaSeconds > 20.0f;
+		ClipAuditLastYaw = AuditYaw;
 		ClipAudit.Measure(ListenerSkeletal.Get(), Body ? Body->GetComponentLocation() : GetActorLocation(), CachedPlayer.Get(),
 			StaticEnum<EIGListenerState>()->GetNameStringByValue(static_cast<int64>(State))
-				+ (FIGBuildingNav::IsInStairCore(GetFeetLocation()) ? TEXT(".stair") : TEXT("")));
+				+ (FIGBuildingNav::IsInStairCore(GetFeetLocation()) ? TEXT(".stair") : TEXT(""))
+				+ (bAuditTurning ? TEXT(".turn") : TEXT("")));
 	}
 	StateSeconds += DeltaSeconds;
 	const FVector BeforeState = GetActorLocation();
-	TickState(DeltaSeconds);
+	if (!StepGatherRelease(DeltaSeconds))
+	{
+		TickState(DeltaSeconds);
+	}
 	// 보는 쪽 반대로 옮겨졌으면 기는 동작을 거꾸로 튼다. 돌 자리로 물러나거나 층 참에서 되돌아서며 뒤로 갈 때 앞으로 기는
 	// 동작 그대로 미끄러졌다.
 	const FVector Moved = GetActorLocation() - BeforeState;
@@ -470,6 +525,7 @@ void AIGListenerEntity::Tick(const float DeltaSeconds)
 			ListenerSkeletal->PrestreamTextures(5.f, false);
 		}
 	}
+	PushHomeDoorOffBody();
 	UpdatePresentationLayer();
 	UpdateStairPitch(DeltaSeconds);
 	UpdatePresentationPose(LastMoveSpeed, DeltaSeconds);
@@ -501,6 +557,19 @@ void AIGListenerEntity::EnterState(const EIGListenerState NewState)
 	}
 	// 돌아서던 것은 새 상태의 목표로 다시 고른다.
 	bTurnaround = false;
+	// 멈춘 자리를 고쳐 잡는 것은 그 자리에 있는 동안만이다. 듣기·두드리기·제자리 듣기가 이어지면 다시 찾지 않는다.
+	if (NewState != EIGListenerState::Banging && NewState != EIGListenerState::Listening
+		&& NewState != EIGListenerState::Holding)
+	{
+		bRestFitActive = false;
+		bRestFitChecked = false;
+	}
+	// 문 옆 벽 자세는 문 앞에서 듣고 두드리는 동안만 산다.
+	if (NewState != EIGListenerState::Banging && NewState != EIGListenerState::Listening
+		&& NewState != EIGListenerState::Holding && NewState != EIGListenerState::Investigating)
+	{
+		ReleaseHomeDoorStance();
+	}
 
 	// 소리 없이 가는 걸음은 가는 길과 엎드린 자리에서만 산다. 아래 음악 매핑이
 	// 이 값을 읽으므로 상태를 바꾸기 전에 내린다.
@@ -799,9 +868,10 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 	}
 
 	case EIGListenerState::Banging:
-		if (!AttentionDirection.IsNearlyZero())
+		SettleBodyOffWalls(DeltaSeconds);
+		if (const FVector Facing = GetListeningFacing(); !Facing.IsNearlyZero())
 		{
-			FaceDirection(GetListeningFacing(), DeltaSeconds);
+			FaceDirection(Facing, DeltaSeconds);
 		}
 		// 손이 문면에 닿는 거리에 서기 전에는 치지 않는다. 시계를 붙잡아 두어야 문소리와 손이 닿는 순간이 맞는다.
 		if (!SettleAtClosedDoor(DeltaSeconds))
@@ -823,9 +893,10 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		break;
 
 	case EIGListenerState::Listening:
-		if (!AttentionDirection.IsNearlyZero())
+		SettleBodyOffWalls(DeltaSeconds);
+		if (const FVector Facing = GetListeningFacing(); !Facing.IsNearlyZero())
 		{
-			FaceDirection(GetListeningFacing(), DeltaSeconds);
+			FaceDirection(Facing, DeltaSeconds);
 		}
 		SettleAtClosedDoor(DeltaSeconds);
 		if (DoorReknockCountdown > 0.0f)
@@ -883,18 +954,9 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		FVector Outward = FVector::ZeroVector;
 		if (ShouldGoToHomeDoor() && GetHomeDoorFrame(DoorCenter, Outward))
 		{
-			const FVector DoorFront =
-				DoorCenter + Outward * IGListener::HomeDoorStandOffset;
-			const bool bArrived =
-				CrawlTowards(DoorFront, InvestigateSpeed, DeltaSeconds);
-			if (bBlockedByHomeDoor
-				|| (bArrived && FVector::Dist2D(GetActorLocation(), DoorFront) <= 120.0f))
+			if (MoveToHomeDoor(InvestigateSpeed, DeltaSeconds))
 			{
 				ArriveAtHomeDoor();
-			}
-			else if (bArrived)
-			{
-				EnterState(EIGListenerState::Holding);
 			}
 			break;
 		}
@@ -926,9 +988,10 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 
 	case EIGListenerState::Holding:
 	{
-		if (!AttentionDirection.IsNearlyZero())
+		SettleBodyOffWalls(DeltaSeconds);
+		if (const FVector Facing = GetListeningFacing(); !Facing.IsNearlyZero())
 		{
-			FaceDirection(GetListeningFacing(), DeltaSeconds);
+			FaceDirection(Facing, DeltaSeconds);
 		}
 		SettleAtClosedDoor(DeltaSeconds);
 		// §20.2 「INVESTIGATE 도착 청취」. 표는 밤마다 6·6·5·5초라고 적어 두었는데
@@ -974,11 +1037,7 @@ void AIGListenerEntity::TickState(const float DeltaSeconds)
 		FVector Outward = FVector::ZeroVector;
 		if (ShouldGoToHomeDoor() && GetHomeDoorFrame(DoorCenter, Outward))
 		{
-			const FVector DoorFront =
-				DoorCenter + Outward * IGListener::HomeDoorStandOffset;
-			const bool bArrived = CrawlTowards(DoorFront, ChaseSpeed, DeltaSeconds);
-			if (bBlockedByHomeDoor
-				|| (bArrived && FVector::Dist2D(GetActorLocation(), DoorFront) <= 120.0f))
+			if (MoveToHomeDoor(ChaseSpeed, DeltaSeconds))
 			{
 				ArriveAtHomeDoor();
 				break;
@@ -2426,8 +2485,15 @@ void AIGListenerEntity::ArriveAtHomeDoor()
 		EnterState(EIGListenerState::Holding);
 		return;
 	}
-	// 문을 향해 돌아선다. 걸어온 방향 그대로 두드리면 옆벽을 치는 그림이 된다.
-	AttentionDirection = -Outward;
+	// 문을 향해 돌아선다. 걸어온 방향 그대로 두드리면 옆벽을 치는 그림이 된다. 벽 자세면 벽과 나란히 둔 채 머리 앞 문짝을 친다.
+	AttentionDirection = bHomeDoorStance ? FRotator(0.0f, WallListenYaw, 0.0f).Vector() : -Outward;
+	if (bHomeDoorStance)
+	{
+		if (AIGSwingDoor* Door = HomeDoor.Get())
+		{
+			Door->SetBlockedOpenYaw(IGListener::HomeDoorStanceBlockedYaw);
+		}
+	}
 	bAtHomeDoor = true;
 	bAtClosedDoor = false;
 	bDoorReknocked = false;
@@ -2524,22 +2590,27 @@ bool AIGListenerEntity::CrawlTowards(
 	}
 
 	const FVector Direction = ToTarget / Distance;
+	if (PushOpenHomeDoorAside(Target, Direction, Distance))
+	{
+		LastMoveSpeed = 0.0f;
+		return false;
+	}
 	// 계단탑 안은 좁아서, 몸이 덜 돈 채 옆으로 미끄러지면 머리나 발이 벽에 박힌다. 계단에서처럼 빨리 돌고, 많이
 	// 틀어져 있으면 돌 때까지 걸음을 늦춘다.
 	const bool bInStairCore = FIGBuildingNav::IsInStairCore(GetFeetLocation());
-	// 계단탑 밖에서 크게 돌아서야 하면 돌 자리를 찾아 제자리로 돈다. 찾지 못한 자리(폭 140 cm 복도 따위)에서는 예전처럼
-	// 기며 돈다. 다시 찾는 것은 잠시 뒤다.
+	// 계단탑 밖에서 크게 돌아서야 하면 돌 자리를 찾아 제자리로 돈다. 그런 자리가 없으면(폭 140 cm 복도 따위) 웅크려 돈다.
+	// 그럴 자리도 못 찾으면 예전처럼 기며 돈다. 다시 찾는 것은 잠시 뒤다.
 	if (bInStairCore || AIGPrologueWorldScene::IsOnStairFlight(GetActorLocation()))
 	{
 		bTurnaround = false;
 	}
 	else
 	{
-		if (!bTurnaround && Distance > 60.0f
-			&& FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, Direction.Rotation().Yaw))
-				> IGListener::TurnaroundDegrees
+		const float TurnNeeded = FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, Direction.Rotation().Yaw));
+		if (!bTurnaround && Distance > 60.0f && TurnNeeded > IGListener::GatherTurnDegrees
 			&& GetWorld() && GetWorld()->GetTimeSeconds() >= TurnaroundRetryAfter
-			&& !PlanTurnaround(Target))
+			&& !(TurnNeeded > IGListener::TurnaroundDegrees && PlanTurnaround(Target))
+			&& !(!IsTurnSweepClear(GetFeetLocation(), GetActorRotation().Yaw, Direction.Rotation().Yaw) && PlanGatherTurn(Target)))
 		{
 			TurnaroundRetryAfter = GetWorld()->GetTimeSeconds() + IGListener::TurnaroundRetrySeconds;
 		}
@@ -3431,6 +3502,226 @@ bool AIGListenerEntity::SpliceLandingUTurn()
 	return true;
 }
 
+bool AIGListenerEntity::PushOpenHomeDoorAside(const FVector& Target, const FVector& Direction, const float Distance)
+{
+	AIGSwingDoor* Door = HomeDoor.Get();
+	if (!Door || Door->IsFullyClosed() || !Door->GetDoorPivot())
+	{
+		return false;
+	}
+	const FVector Here = GetActorLocation();
+	const FVector Pivot = Door->GetDoorPivot()->GetComponentLocation();
+	if (FMath::Abs(Here.Z - Pivot.Z) > IGListener::HomeDoorPushHeight || IsInsideHome(Here) || IsInsideHome(Target))
+	{
+		return false;
+	}
+	// 집 문은 바깥으로 95도 열려 문짝이 폭 140 cm 복도로 106 cm 나온다. 열린 문은 사람 충돌이 없어서 그대로 기면 몸이
+	// 문짝을 지나갔고, 순찰 자리가 문짝 곁이라 문짝 속에 서서 듣기도 했다. 앞으로 뻗은 손이 닿기 전에 밀어 닫는다.
+	const FVector HereFlat(Here.X, Here.Y, 0.0f);
+	const FVector PivotFlat(Pivot.X, Pivot.Y, 0.0f);
+	const FVector Leaf = Door->GetDoorPivot()->GetRightVector().GetSafeNormal2D() * AIGPrologueWorldScene::WideDoorLeafWidth;
+	FVector OnPath;
+	FVector OnLeaf;
+	// 멈출 자리 앞으로 손끝이 더 나가니 그만큼 더 본다.
+	FMath::SegmentDistToSegment(HereFlat,
+		HereFlat + Direction * FMath::Min(Distance + IGListener::FrontReach, IGListener::HomeDoorPushAhead),
+		PivotFlat, PivotFlat + Leaf, OnPath, OnLeaf);
+	if (FVector::DistSquared(OnPath, OnLeaf) > FMath::Square(IGListener::HomeDoorPushWidth))
+	{
+		return false;
+	}
+	// 문간에 선 사람 앞에서 문을 닫아 버리면 플레이어가 한 일처럼 보이지 않는다. 그때는 예전처럼 지나간다.
+	if (IsPlayerAtHomeDoorway())
+	{
+		return false;
+	}
+	if (!Door->IsSwinging())
+	{
+		UE_LOG(LogIndieGame, Display, TEXT("LISTENER_PUSH_DOOR at=%s target=%s"), *Here.ToCompactString(), *Target.ToCompactString());
+		Door->BeginScriptedSwingWithLoudness(false, IGListener::HomeDoorPushLoudness, 1.0f);
+	}
+	return true;
+}
+
+bool AIGListenerEntity::IsPlayerAtHomeDoorway() const
+{
+	const AIGSwingDoor* Door = HomeDoor.Get();
+	const APawn* Her = CachedPlayer.Get();
+	if (!Door || !Her)
+	{
+		return false;
+	}
+	const FVector Doorway = Door->GetActorLocation()
+		+ Door->GetActorRightVector().GetSafeNormal2D() * (AIGPrologueWorldScene::WideDoorLeafWidth * 0.5f);
+	return FVector::DistSquared2D(Her->GetActorLocation(), Doorway) < FMath::Square(IGListener::HomeDoorPushPlayerClear)
+		&& FMath::Abs(Her->GetActorLocation().Z - Doorway.Z) < IGListener::HomeDoorPushHeight;
+}
+
+void AIGListenerEntity::PushHomeDoorOffBody()
+{
+	AIGSwingDoor* Door = HomeDoor.Get();
+	if (!Door || bDormant || IsHidden() || Door->IsFullyClosed() || Door->IsSwinging() || !Door->GetDoorPivot()
+		|| State == EIGListenerState::Chasing || State == EIGListenerState::CaptureHold || State == EIGListenerState::FinaleLured)
+	{
+		return;
+	}
+	const FVector Here = GetActorLocation();
+	const FVector Pivot = Door->GetDoorPivot()->GetComponentLocation();
+	// 집 안 소리를 듣고 열린 문으로 들어가는 길이면 문을 닫지 않는다.
+	if (FMath::Abs(Here.Z - Pivot.Z) > IGListener::HomeDoorPushHeight || IsInsideHome(Here)
+		|| (bReactingToSound && IsInsideHome(LastHeardLocation) && Tuning.bCaptureEnabled))
+	{
+		return;
+	}
+	const FVector Forward = FRotator(0.0f, GetActorRotation().Yaw, 0.0f).Vector();
+	const FVector HereFlat(Here.X, Here.Y, 0.0f);
+	const FVector PivotFlat(Pivot.X, Pivot.Y, 0.0f);
+	const FVector Leaf = Door->GetDoorPivot()->GetRightVector().GetSafeNormal2D() * AIGPrologueWorldScene::WideDoorLeafWidth;
+	FVector OnBody;
+	FVector OnLeaf;
+	FMath::SegmentDistToSegment(HereFlat + Forward * IGListener::FrontReach, HereFlat - Forward * IGListener::RearReach,
+		PivotFlat, PivotFlat + Leaf, OnBody, OnLeaf);
+	if (FVector::DistSquared(OnBody, OnLeaf) > FMath::Square(IGListener::HomeDoorPushWidth) || IsPlayerAtHomeDoorway())
+	{
+		return;
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("LISTENER_PUSH_DOOR body at=%s state=%d"), *Here.ToCompactString(), static_cast<int32>(State));
+	Door->BeginScriptedSwingWithLoudness(false, IGListener::HomeDoorPushLoudness, 1.0f);
+}
+
+FVector AIGListenerEntity::GetHomeDoorStance() const
+{
+	FVector DoorCenter = FVector::ZeroVector;
+	FVector Outward = FVector::ZeroVector;
+	const AIGSwingDoor* Door = HomeDoor.Get();
+	if (!Door || !GetHomeDoorFrame(DoorCenter, Outward))
+	{
+		return GetActorLocation();
+	}
+	// 경첩에서 복도를 따라 서쪽으로 재고, 벽면에서 복도 쪽으로 몸 원점 거리만큼 띄운다. 벽이 몸 오른쪽에 온다.
+	const FVector Hinge = Door->GetActorLocation();
+	const float Back = IGListener::HomeDoorStanceFistForward - IGListener::HomeDoorStanceFistFromHinge
+		+ (Door->IsFullyClosed() ? 0.0f : IGListener::HomeDoorStanceOpenDoorBack);
+	return FVector(Hinge.X - Back,
+		Hinge.Y + Outward.Y * (IGListener::HomeDoorWallFaceOffset + WallListenStandOff),
+		GetActorLocation().Z);
+}
+
+bool AIGListenerEntity::MoveToHomeDoor(const float Speed, const float DeltaSeconds)
+{
+	if (!bHomeDoorStance && !bWallListenForBeat && HasWallPoseAnims())
+	{
+		SetWallListenForBeat(true, GetHomeDoorStance(), 0.0f);
+		SetBodyRadiusForBeat(IGListener::HomeDoorStanceBodyRadius);
+		bHomeDoorStance = true;
+		bHomeDoorTurnSpotReached = false;
+	}
+	if (bHomeDoorStance)
+	{
+		return MoveToHomeDoorStance(Speed, DeltaSeconds);
+	}
+	FVector DoorCenter = FVector::ZeroVector;
+	FVector Outward = FVector::ZeroVector;
+	if (!GetHomeDoorFrame(DoorCenter, Outward))
+	{
+		return true;
+	}
+	const FVector DoorFront = DoorCenter + Outward * IGListener::HomeDoorStandOffset;
+	const bool bArrived = CrawlTowards(DoorFront, Speed, DeltaSeconds);
+	return bBlockedByHomeDoor || bArrived;
+}
+
+bool AIGListenerEntity::MoveToHomeDoorStance(const float Speed, const float DeltaSeconds)
+{
+	const FVector Here = GetActorLocation();
+	const FVector Stance(WallListenAnchor.X, WallListenAnchor.Y, Here.Z);
+	const bool bFacingEast = FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, WallListenYaw)) < 90.0f;
+	const FVector TurnSpot(Stance.X - IGListener::HomeDoorStanceTurnBack, IGListener::HomeDoorStanceTurnY, Here.Z);
+	// 서쪽을 보고 오는 몸은 자리를 지나가서 돌아선다. 벽에 붙는 자리에서는 웅크려도 돌 틈이 없다. 한 번 닿았으면 돌 때까지
+	// 그 자리로 되돌아가지 않는다. 안 그러면 닿았다 벗어났다 하며 복도에 서서 떨었다.
+	if (!bFacingEast && !bHomeDoorTurnSpotReached && Here.X > TurnSpot.X)
+	{
+		if (FVector::DistSquared2D(Here, TurnSpot) > FMath::Square(25.0f))
+		{
+			CrawlTowards(TurnSpot, Speed, DeltaSeconds);
+			return false;
+		}
+		bHomeDoorTurnSpotReached = true;
+	}
+	if (!bFacingEast || FVector::DistSquared2D(Here, Stance) > FMath::Square(IGListener::FrontReach + 40.0f))
+	{
+		if (!CrawlTowards(Stance, Speed, DeltaSeconds))
+		{
+			return false;
+		}
+		// 가다 걸렸다. 문까지 닿지 못했으니 그 자리에서 듣는다.
+		if (FVector::DistSquared2D(GetActorLocation(), Stance) > FMath::Square(IGListener::WallListenAnchorRadius))
+		{
+			ReleaseHomeDoorStance();
+			EnterState(EIGListenerState::Holding);
+			return false;
+		}
+		return true;
+	}
+	return MoveOntoWallAnchor(Speed, DeltaSeconds);
+}
+
+void AIGListenerEntity::ReleaseHomeDoorStance()
+{
+	if (!bHomeDoorStance)
+	{
+		return;
+	}
+	bHomeDoorStance = false;
+	SetWallListenForBeat(false);
+	SetBodyRadiusForBeat(0.0f);
+	if (AIGSwingDoor* Door = HomeDoor.Get())
+	{
+		Door->SetBlockedOpenYaw(0.0f);
+	}
+}
+
+bool AIGListenerEntity::MoveOntoWallAnchor(const float Speed, const float DeltaSeconds)
+{
+	const FVector Anchor(WallListenAnchor.X, WallListenAnchor.Y, GetActorLocation().Z);
+	// 벽 자세가 되는 거리 밖에서는 보통 걸음으로 기어 간다.
+	if (FVector::DistSquared2D(GetActorLocation(), Anchor) > FMath::Square(IGListener::WallListenAnchorRadius)
+		&& !CrawlTowards(Anchor, Speed, DeltaSeconds))
+	{
+		return bBlockedByClosedDoor;
+	}
+	// 그 안에서는 벽 자세로 남은 거리를 미끄러진다. 곁으로 지나갈 틈은 자리에서 10 cm만 어긋나도 모자란다.
+	const FVector Before = GetActorLocation();
+	FVector ToAnchor = Anchor - Before;
+	ToAnchor.Z = 0.0f;
+	const float Distance = ToAnchor.Size();
+	if (Distance <= 2.0f)
+	{
+		LastMoveSpeed = 0.0f;
+		StuckSeconds = 0.0f;
+		return true;
+	}
+	const float Step = FMath::Min(Speed * DeltaSeconds, Distance);
+	AddActorWorldOffset(ToAnchor / Distance * Step, true);
+	const float Moved = FVector::Dist2D(Before, GetActorLocation());
+	LastMoveSpeed = DeltaSeconds > 0.0f ? Moved / DeltaSeconds : 0.0f;
+	// 그 자리에 사람이 서 있으면 밀지 않고 거기서 듣는다. 다음 순찰에 다시 간다.
+	if (Moved < Step * 0.15f)
+	{
+		StuckSeconds += DeltaSeconds;
+		if (StuckSeconds >= 1.5f)
+		{
+			StuckSeconds = 0.0f;
+			return true;
+		}
+	}
+	else
+	{
+		StuckSeconds = 0.0f;
+	}
+	return false;
+}
+
 bool AIGListenerEntity::MoveTowardGoal(
 	const FVector& Goal,
 	const float Speed,
@@ -3445,6 +3736,18 @@ bool AIGListenerEntity::MoveTowardGoal(
 	const FVector GoalFeet = ResolveFloorBelow(World, Goal, this, CachedPlayer.Get());
 	// 계단참에서 도는 중이면 그 길을 끝까지 돈다. 가운데에서 길을 다시 짜면 자세 없이 꺾여 손이 벽에 묻힌다.
 	const bool bTurning = NavPath.IsValidIndex(NavPathIndex) && NavPathPose[NavPathIndex];
+	// 벽 듣기 자리는 벽에서 일부러 띄워 둔 곳이다(WallListenStandOff). 손끝이 벽에 닿았다고 앞에서 서면 벽 자세도 못 틀고
+	// 복도 가운데 남는다. 셋째 밤 귀환길에서 소리를 보러 나갔다 돌아온 몸이 자리를 34 cm 남기고 서서, 곁으로 지나갈 틈이
+	// 42 cm뿐이었다. 집으로 가는 길은 그 복도 하나라 플레이어가 지나갈 수 없었다.
+	if (!bTurning
+		&& bWallListenForBeat
+		&& FVector::DistSquared2D(Goal, WallListenAnchor) < 1.0f
+		&& FVector::DistSquared2D(GetActorLocation(), WallListenAnchor) <= FMath::Square(IGListener::FrontReach + 40.0f)
+		&& CanCrawlStraightTo(GoalFeet))
+	{
+		ClearNavPath();
+		return MoveOntoWallAnchor(Speed, DeltaSeconds);
+	}
 	// 도는 길에 막 들어서려는 참이면 쫓는 소리를 한 번 더 본다. 길을 짠 뒤 소리가 옮겨 갔으면 다른 쪽으로 돌아야
 	// 한다. 그대로 돌면 출입구까지 나갔다가 거기서 되돌아서느라 제자리에서 반 바퀴 돌았다.
 	const bool bEnteringTurn = bTurning && (NavPathIndex == 0 || !NavPathPose[NavPathIndex - 1])
@@ -3699,6 +4002,24 @@ FVector AIGListenerEntity::SideClearanceShift(const FVector& Direction, const fl
 
 bool AIGListenerEntity::IsBodyClearAt(const FVector& Feet, const float Yaw) const
 {
+	const FQuat Rotation = FRotator(0.0f, Yaw, 0.0f).Quaternion();
+	const float HalfHeight = (IGListener::TurnBodyTop - IGListener::TurnBodyBottom) * 0.5f;
+	const FVector Lift(0.0f, 0.0f, IGListener::TurnBodyBottom + HalfHeight);
+	const FVector Boxes[2][2] = {
+		{IGListener::TurnBodyLongCenter, IGListener::TurnBodyLongHalf},
+		{IGListener::TurnBodyWideCenter, IGListener::TurnBodyWideHalf}};
+	for (const FVector(&Box)[2] : Boxes)
+	{
+		if (!IsBodyBoxClear(Feet + Lift + Rotation.RotateVector(Box[0]), Rotation, FVector(Box[1].X, Box[1].Y, HalfHeight)))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool AIGListenerEntity::IsBodyBoxClear(const FVector& Center, const FQuat& Rotation, const FVector& HalfExtent) const
+{
 	const UWorld* World = GetWorld();
 	if (!World)
 	{
@@ -3713,31 +4034,57 @@ bool AIGListenerEntity::IsBodyClearAt(const FVector& Feet, const float Yaw) cons
 	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
 	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
 	Objects.AddObjectTypesToQuery(ECC_PhysicsBody);
-	const FQuat Rotation = FRotator(0.0f, Yaw, 0.0f).Quaternion();
-	const float HalfHeight = (IGListener::TurnBodyTop - IGListener::TurnBodyBottom) * 0.5f;
-	const FVector Lift(0.0f, 0.0f, IGListener::TurnBodyBottom + HalfHeight);
-	const FVector Boxes[2][2] = {
-		{IGListener::TurnBodyLongCenter, IGListener::TurnBodyLongHalf},
-		{IGListener::TurnBodyWideCenter, IGListener::TurnBodyWideHalf}};
-	for (const FVector(&Box)[2] : Boxes)
+	TArray<FOverlapResult> Overlaps;
+	World->OverlapMultiByObjectType(Overlaps, Center, Rotation, Objects, FCollisionShape::MakeBox(HalfExtent), Params);
+	for (const FOverlapResult& Overlap : Overlaps)
 	{
-		TArray<FOverlapResult> Overlaps;
-		World->OverlapMultiByObjectType(Overlaps, Feet + Lift + Rotation.RotateVector(Box[0]), Rotation, Objects,
-			FCollisionShape::MakeBox(FVector(Box[1].X, Box[1].Y, HalfHeight)), Params);
-		for (const FOverlapResult& Overlap : Overlaps)
+		// 관통을 재는 쪽(IGClipAudit)처럼 보이는 메시만 친다. 숨은 막, 트리거, 충돌만 있는 상자는 몸이 지나가도
+		// 보이지 않는다.
+		const UPrimitiveComponent* Component = Overlap.GetComponent();
+		const AActor* Actor = Overlap.GetActor();
+		if (Cast<UMeshComponent>(Component) && Component->IsVisible() && !Component->bHiddenInGame
+			&& !(Actor && Actor->IsHidden()))
 		{
-			// 관통을 재는 쪽(IGClipAudit)처럼 보이는 메시만 친다. 숨은 막, 트리거, 충돌만 있는 상자는 몸이 지나가도
-			// 보이지 않는다.
-			const UPrimitiveComponent* Component = Overlap.GetComponent();
-			const AActor* Actor = Overlap.GetActor();
-			if (Cast<UMeshComponent>(Component) && Component->IsVisible() && !Component->bHiddenInGame
-				&& !(Actor && Actor->IsHidden()))
-			{
-				return false;
-			}
+			LastBodyBlocker = Component;
+			return false;
 		}
 	}
 	return true;
+}
+
+bool AIGListenerEntity::IsGatheredBodyClearAt(const FVector& Feet) const
+{
+	const float HalfHeight = (IGListener::TurnBodyTop - IGListener::TurnBodyBottom) * 0.5f;
+	const FVector Center = Feet + FVector(0.0f, 0.0f, IGListener::TurnBodyBottom + HalfHeight);
+	// 원을 좁은 상자 여섯으로 덮는다. 넓은 상자를 돌려 겹치면 모서리가 반지름의 1.4배까지 나가 복도에서는 늘 벽에 닿는다.
+	for (const float Yaw : {0.0f, 30.0f, 60.0f, 90.0f, 120.0f, 150.0f})
+	{
+		if (!IsBodyBoxClear(Center, FRotator(0.0f, Yaw, 0.0f).Quaternion(),
+				FVector(IGListener::GatherBodyRadius, IGListener::GatherBodyArmHalfWidth, HalfHeight)))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool AIGListenerEntity::IsTurnSweepClear(const FVector& Feet, const float FromYaw, const float ToYaw) const
+{
+	const float Turn = FMath::FindDeltaAngleDegrees(FromYaw, ToYaw);
+	const int32 Steps = FMath::Max(1, FMath::CeilToInt(FMath::Abs(Turn) / 15.0f));
+	for (int32 Step = 1; Step <= Steps; ++Step)
+	{
+		if (!IsBodyClearAt(Feet, FromYaw + Turn * Step / Steps))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool AIGListenerEntity::IsInGatherPose() const
+{
+	return ActiveBodyAnim == EIGListenerBodyAnim::TurnGatherIn || ActiveBodyAnim == EIGListenerBodyAnim::TurnGather;
 }
 
 bool AIGListenerEntity::PlanTurnaround(const FVector& Target)
@@ -3811,6 +4158,7 @@ bool AIGListenerEntity::PlanTurnaround(const FVector& Target)
 		if (bFound)
 		{
 			bTurnaround = true;
+			bGatherTurn = false;
 			TurnaroundTurned = 0.0f;
 			TurnaroundSeconds = 0.0f;
 			UE_LOG(LogIndieGame, Verbose, TEXT("LISTENER_TURNAROUND from=%s yaw=%.0f pivot=%s sweep=%.0f"),
@@ -3821,8 +4169,168 @@ bool AIGListenerEntity::PlanTurnaround(const FVector& Target)
 	return false;
 }
 
+bool AIGListenerEntity::PlanGatherTurn(const FVector& Target)
+{
+	if (!TurnGatherInAnim || !TurnGatherAnim || !TurnGatherOutAnim)
+	{
+		return false;
+	}
+	const FVector Feet = GetFeetLocation();
+	const FVector Lift = GetActorLocation() - Feet;
+	const float FromYaw = GetActorRotation().Yaw;
+	static const float YawOffsets[] = {0.0f, 10.0f, -10.0f, 20.0f, -20.0f, 30.0f, -30.0f, 45.0f, -45.0f};
+	for (int32 Ring = 0; Ring <= IGListener::GatherTurnRings; ++Ring)
+	{
+		const int32 Directions = Ring == 0 ? 1 : 12;
+		for (int32 Direction = 0; Direction < Directions; ++Direction)
+		{
+			const FVector Pivot =
+				Feet + FRotator(0.0f, Direction * 30.0f, 0.0f).Vector() * (Ring * IGListener::GatherTurnRingStep);
+			const FVector ToTarget(Target.X - Pivot.X, Target.Y - Pivot.Y, 0.0f);
+			if (ToTarget.SizeSquared() < FMath::Square(40.0f) || FIGBuildingNav::IsInStairCore(Pivot)
+				|| !IsGatheredBodyClearAt(Pivot) || !HasFloorBeneath(Pivot + Lift)
+				|| (Ring > 0 && !IsBodyClearAt(Pivot, FromYaw)))
+			{
+				continue;
+			}
+			// 다 돌고 펴면 몸이 그 방향으로 늘어난다. 벽에 닿으면 조금 틀어 편다. 그 뒤는 기면서 마저 돈다.
+			const float ToYaw = ToTarget.Rotation().Yaw;
+			for (const float Offset : YawOffsets)
+			{
+				if (!IsBodyClearAt(Pivot, ToYaw + Offset))
+				{
+					continue;
+				}
+				bTurnaround = true;
+				bGatherTurn = true;
+				GatherTurnPhase = -1;
+				GatherTurnYaw = ToYaw + Offset;
+				TurnaroundPivot = Pivot;
+				TurnaroundSeconds = 0.0f;
+				UE_LOG(LogIndieGame, Display, TEXT("LISTENER_GATHER_TURN from=%s yaw=%.0f pivot=%s to=%.0f want=%.0f"),
+					*Feet.ToCompactString(), FromYaw, *Pivot.ToCompactString(), GatherTurnYaw, ToYaw);
+				return true;
+			}
+		}
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("LISTENER_GATHER_NONE from=%s yaw=%.0f target=%s blocker=%s"), *Feet.ToCompactString(), FromYaw,
+		*Target.ToCompactString(), LastBodyBlocker.IsValid() ? *LastBodyBlocker->GetReadableName() : TEXT("none"));
+	return false;
+}
+
+void AIGListenerEntity::ReleaseGatherHoldTo(const FVector& Spot, const float Yaw)
+{
+	if (!bGatherHoldForBeat || bDormant || !IsInGatherPose())
+	{
+		bGatherHoldForBeat = false;
+		return;
+	}
+	bGatherRelease = true;
+	GatherReleaseSpot = Spot;
+	GatherTurnYaw = Yaw;
+	GatherReleaseSeconds = 0.0f;
+}
+
+bool AIGListenerEntity::StepGatherRelease(const float DeltaSeconds)
+{
+	if (!bGatherRelease)
+	{
+		return false;
+	}
+	GatherReleaseSeconds += DeltaSeconds;
+	const FVector Here = GetActorLocation();
+	const FVector ToSpot(GatherReleaseSpot.X - Here.X, GatherReleaseSpot.Y - Here.Y, 0.0f);
+	const float Yaw = GetActorRotation().Yaw;
+	const float Delta = FMath::FindDeltaAngleDegrees(Yaw, GatherTurnYaw);
+	const float Turn = IGListener::GatherTurnDegreesPerSecond * DeltaSeconds;
+	SetActorRotation(FRotator(0.0f, Yaw + FMath::Clamp(Delta, -Turn, Turn), 0.0f));
+	if (ToSpot.SizeSquared() > 1.0f)
+	{
+		AddActorWorldOffset(ToSpot.GetClampedToMaxSize(IGListener::TurnaroundShuffleSpeed * DeltaSeconds), true);
+	}
+	PlayBodyAnim(EIGListenerBodyAnim::TurnGather, true, 1.0f);
+	LastMoveSpeed = IGListener::TurnaroundCrawlSpeed;
+	// 그 자리에 사람이 서 있으면 밀지 않는다. 잠깐 뒤 거기서 편다.
+	if ((FMath::Abs(Delta) <= Turn && ToSpot.SizeSquared() <= 1.0f) || GatherReleaseSeconds > IGListener::TurnaroundGiveUpSeconds)
+	{
+		bGatherRelease = false;
+		bGatherHoldForBeat = false;
+	}
+	return true;
+}
+
+bool AIGListenerEntity::StepGatherTurn(const float DeltaSeconds)
+{
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	TurnaroundSeconds += DeltaSeconds;
+	StuckSeconds = 0.0f;
+	if (GatherTurnPhase < 0)
+	{
+		const FVector Feet = GetFeetLocation();
+		const FVector ToPivot(TurnaroundPivot.X - Feet.X, TurnaroundPivot.Y - Feet.Y, 0.0f);
+		if (ToPivot.SizeSquared() > 1.0f)
+		{
+			// 방향은 그대로 두고 돌 자리로 옮긴다. 캡슐이 걸려 덜 옮겨졌으면 그 자리에서는 돌지 않는다.
+			const FVector Step = ToPivot.GetClampedToMaxSize(IGListener::TurnaroundShuffleSpeed * DeltaSeconds);
+			const FVector Before = GetActorLocation();
+			AddActorWorldOffset(Step, true);
+			const float Moved = FVector::Dist2D(Before, GetActorLocation());
+			LastMoveSpeed = DeltaSeconds > 0.0f ? Moved / DeltaSeconds : 0.0f;
+			if (Moved < Step.Size() * 0.5f || TurnaroundSeconds > IGListener::TurnaroundGiveUpSeconds)
+			{
+				bTurnaround = false;
+				TurnaroundRetryAfter = Now + IGListener::TurnaroundRetrySeconds;
+				return false;
+			}
+			return true;
+		}
+		GatherTurnPhase = 0;
+		GatherTurnPhaseUntil = Now + TurnGatherInAnim->GetPlayLength();
+		PlayBodyAnim(EIGListenerBodyAnim::TurnGatherIn, false, 1.0f);
+	}
+	if (GatherTurnPhase == 0)
+	{
+		LastMoveSpeed = 0.0f;
+		if (Now < GatherTurnPhaseUntil)
+		{
+			return true;
+		}
+		GatherTurnPhase = 1;
+		PlayBodyAnim(EIGListenerBodyAnim::TurnGather, true, 1.0f);
+	}
+	if (GatherTurnPhase == 1)
+	{
+		LastMoveSpeed = IGListener::TurnaroundCrawlSpeed;
+		const float Yaw = GetActorRotation().Yaw;
+		const float Delta = FMath::FindDeltaAngleDegrees(Yaw, GatherTurnYaw);
+		const float Turn = IGListener::GatherTurnDegreesPerSecond * DeltaSeconds;
+		SetActorRotation(FRotator(0.0f, Yaw + FMath::Clamp(Delta, -Turn, Turn), 0.0f));
+		if (FMath::Abs(Delta) > Turn)
+		{
+			return true;
+		}
+		GatherTurnPhase = 2;
+		GatherTurnPhaseUntil = Now + TurnGatherOutAnim->GetPlayLength();
+		// 다 펴기 전에는 기지 않는다(HoldForWallRise).
+		WallRiseUntilSeconds = GatherTurnPhaseUntil;
+		PlayBodyAnim(EIGListenerBodyAnim::TurnGatherOut, false, 1.0f);
+	}
+	LastMoveSpeed = 0.0f;
+	if (Now < GatherTurnPhaseUntil)
+	{
+		return true;
+	}
+	bTurnaround = false;
+	return false;
+}
+
 bool AIGListenerEntity::StepTurnaround(const FVector& Target, const float DeltaSeconds)
 {
+	if (bGatherTurn)
+	{
+		return StepGatherTurn(DeltaSeconds);
+	}
 	TurnaroundSeconds += DeltaSeconds;
 	const FVector Feet = GetFeetLocation();
 	const UWorld* World = GetWorld();
@@ -3914,10 +4422,14 @@ FVector AIGListenerEntity::FitFacing(const FVector& Desired) const
 	static const float Offsets[] = {0.0f, 15.0f, -15.0f, 30.0f, -30.0f, 45.0f, -45.0f, 60.0f, -60.0f, 75.0f, -75.0f,
 		90.0f, -90.0f, 120.0f, -120.0f, 150.0f, -150.0f, 180.0f};
 	const float WantedYaw = Wanted.Rotation().Yaw;
+	// 지금 방향으로 이미 벽을 지나고 있으면 돌아가는 사이는 따지지 않는다. 그대로 있는 것보다 낫다. 비스듬히 와서 선 몸이
+	// 다리를 벽에 묻은 채 듣고 있었다.
+	const bool bBlockedNow = !IsBodyClearAt(Feet, CurrentYaw);
 	for (const float Offset : Offsets)
 	{
 		const FVector Facing = FRotator(0.0f, WantedYaw + Offset, 0.0f).Vector();
-		if (CountBlocked(Facing) == 0 && TurnIsClear(WantedYaw + Offset))
+		if (CountBlocked(Facing) == 0
+			&& (bBlockedNow ? IsBodyClearAt(Feet, WantedYaw + Offset) : TurnIsClear(WantedYaw + Offset)))
 		{
 			return Facing;
 		}
@@ -3925,16 +4437,83 @@ FVector AIGListenerEntity::FitFacing(const FVector& Desired) const
 	return FRotator(0.0f, CurrentYaw, 0.0f).Vector();
 }
 
+void AIGListenerEntity::SettleBodyOffWalls(const float DeltaSeconds)
+{
+	if (bAtClosedDoor || bAtHomeDoor || bHomeDoorStance || IsInWallPose() || bGatherHoldForBeat || IsInGatherPose() || bBeatHold)
+	{
+		return;
+	}
+	const FVector Here = GetActorLocation();
+	if (!bRestFitChecked)
+	{
+		bRestFitChecked = true;
+		const FVector Feet = GetFeetLocation();
+		const float Yaw = GetActorRotation().Yaw;
+		if (FIGBuildingNav::IsInStairCore(Feet) || AIGPrologueWorldScene::IsOnStairFlight(Here) || IsBodyClearAt(Feet, Yaw))
+		{
+			return;
+		}
+		// 가까운 바퀴부터, 한 자리에서는 덜 도는 방향부터 본다.
+		const FVector Lift = Here - Feet;
+		static const float YawOffsets[] = {0.0f, 15.0f, -15.0f, 30.0f, -30.0f, 45.0f, -45.0f, 60.0f, -60.0f};
+		for (int32 Ring = 0; Ring <= IGListener::RestFitRings && !bRestFitActive; ++Ring)
+		{
+			const int32 Directions = Ring == 0 ? 1 : 12;
+			for (int32 Direction = 0; Direction < Directions && !bRestFitActive; ++Direction)
+			{
+				const FVector Spot = Feet + FRotator(0.0f, Direction * 30.0f, 0.0f).Vector() * (Ring * IGListener::RestFitRingStep);
+				for (const float Offset : YawOffsets)
+				{
+					if (IsBodyClearAt(Spot, Yaw + Offset) && HasFloorBeneath(Spot + Lift))
+					{
+						bRestFitActive = true;
+						RestFitSpot = Spot + Lift;
+						RestFitYaw = Yaw + Offset;
+						break;
+					}
+				}
+			}
+		}
+	}
+	if (!bRestFitActive)
+	{
+		return;
+	}
+	const FVector ToSpot(RestFitSpot.X - Here.X, RestFitSpot.Y - Here.Y, 0.0f);
+	if (ToSpot.SizeSquared() > 1.0f)
+	{
+		AddActorWorldOffset(ToSpot.GetClampedToMaxSize(IGListener::RestFitSpeed * DeltaSeconds), true);
+	}
+	const float Yaw = GetActorRotation().Yaw;
+	const float Delta = FMath::FindDeltaAngleDegrees(Yaw, RestFitYaw);
+	const float Turn = IGListener::RestFitDegreesPerSecond * DeltaSeconds;
+	SetActorRotation(FRotator(0.0f, Yaw + FMath::Clamp(Delta, -Turn, Turn), 0.0f));
+	if (ToSpot.SizeSquared() <= 1.0f && FMath::Abs(Delta) <= Turn)
+	{
+		bRestFitActive = false;
+		// 다 옮겼으면 지금 방향 그대로 쉰다. 소리 쪽으로 다시 돌아 벽에 닿지 않게 고른 방향을 기억해 둔다.
+		FittedAttentionFor = !AttentionDirection.IsNearlyZero() ? AttentionDirection.GetSafeNormal2D() : FRotator(0.0f, RestFitYaw, 0.0f).Vector();
+		FittedAttentionAt = GetActorLocation();
+		FittedAttention = FRotator(0.0f, RestFitYaw, 0.0f).Vector();
+	}
+}
+
 FVector AIGListenerEntity::GetListeningFacing()
 {
 	// 닫힌 문과 403호 문 앞에서는 문을 본다. 서는 자리는 문마다 따로 맞춘다.
-	if (bAtClosedDoor || bAtHomeDoor || AttentionDirection.IsNearlyZero())
+	if (bAtClosedDoor || bAtHomeDoor || IsInWallPose() || bGatherHoldForBeat)
 	{
 		return AttentionDirection;
 	}
-	const FVector Attention = AttentionDirection.GetSafeNormal2D();
-	if (FVector::DotProduct(FittedAttentionFor, Attention) < 0.996f
-		|| FVector::DistSquared2D(FittedAttentionAt, GetActorLocation()) > FMath::Square(10.0f))
+	if (bRestFitActive)
+	{
+		return FRotator(0.0f, RestFitYaw, 0.0f).Vector();
+	}
+	// 들을 쪽이 없으면 온 방향 그대로 쉰다. 그 방향으로 벽에 닿아 있으면 닿지 않는 쪽으로 튼다.
+	const bool bMovedSince = FVector::DistSquared2D(FittedAttentionAt, GetActorLocation()) > FMath::Square(10.0f);
+	const FVector Attention = !AttentionDirection.IsNearlyZero() ? AttentionDirection.GetSafeNormal2D()
+		: (bMovedSince ? FVector(GetActorForwardVector().X, GetActorForwardVector().Y, 0.0f).GetSafeNormal() : FittedAttentionFor);
+	if (FVector::DotProduct(FittedAttentionFor, Attention) < 0.996f || bMovedSince)
 	{
 		FittedAttentionFor = Attention;
 		FittedAttentionAt = GetActorLocation();
@@ -4385,6 +4964,10 @@ bool AIGListenerEntity::BuildSkeletalBody()
 	ListenWallAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_ListenWall.A_ListenerCrawler_ListenWall"));
 	ListenWallOutAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_ListenWallOut.A_ListenerCrawler_ListenWallOut"));
 	BangWallAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_BangWall.A_ListenerCrawler_BangWall"));
+	// 웅크려 돌아서는 동작. 없으면 예전처럼 기며 돈다.
+	TurnGatherInAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_TurnGatherIn.A_ListenerCrawler_TurnGatherIn"));
+	TurnGatherAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_TurnGather.A_ListenerCrawler_TurnGather"));
+	TurnGatherOutAnim = LoadAnim(TEXT("/Game/Meshes/A_ListenerCrawler_TurnGatherOut.A_ListenerCrawler_TurnGatherOut"));
 	if (!CrawlAnim || !ListenAnim)
 	{
 		// 기는 동작 없는 뼈대는 서 있는 조각이다. 정적 셸이 낫다.
@@ -4462,6 +5045,9 @@ void AIGListenerEntity::PlayBodyAnim(
 	case EIGListenerBodyAnim::ListenWall: Sequence = ListenWallAnim; break;
 	case EIGListenerBodyAnim::ListenWallOut: Sequence = ListenWallOutAnim; break;
 	case EIGListenerBodyAnim::BangWall: Sequence = BangWallAnim ? BangWallAnim.Get() : BangAnim.Get(); break;
+	case EIGListenerBodyAnim::TurnGatherIn: Sequence = TurnGatherInAnim; break;
+	case EIGListenerBodyAnim::TurnGather: Sequence = TurnGatherAnim; break;
+	case EIGListenerBodyAnim::TurnGatherOut: Sequence = TurnGatherOutAnim; break;
 	default: break;
 	}
 	if (!Sequence)
@@ -4488,8 +5074,27 @@ bool AIGListenerEntity::IsInWallPose() const
 		|| ActiveBodyAnim == EIGListenerBodyAnim::BangWall;
 }
 
+void AIGListenerEntity::SetGatherHoldForBeat(const bool bEnable)
+{
+	bGatherHoldForBeat = bEnable && TurnGatherAnim != nullptr;
+	if (bGatherHoldForBeat)
+	{
+		PlayBodyAnim(EIGListenerBodyAnim::TurnGather, true, IGListener::GatherHoldRate);
+	}
+}
+
 void AIGListenerEntity::SetWallListenForBeat(const bool bEnable, const FVector& Anchor, const float Yaw)
 {
+	// 문 옆 벽 자세 중에 대본이 자리를 잡으면 그 자리를 대본에 넘긴다. 나중에 문 옆 자세를 풀며 대본 자리까지 풀지 않는다.
+	if (bHomeDoorStance)
+	{
+		bHomeDoorStance = false;
+		SetBodyRadiusForBeat(0.0f);
+		if (AIGSwingDoor* Door = HomeDoor.Get())
+		{
+			Door->SetBlockedOpenYaw(0.0f);
+		}
+	}
 	bWallListenForBeat = bEnable;
 	if (bEnable)
 	{
@@ -4519,6 +5124,12 @@ bool AIGListenerEntity::HoldForWallRise()
 		PlayBodyAnim(EIGListenerBodyAnim::ListenWallOut, false, 1.0f);
 		WallRiseUntilSeconds = Now + ListenWallOutAnim->GetPlayLength();
 		WallReenterAfterSeconds = WallRiseUntilSeconds + IGListener::WallReenterDelaySeconds;
+	}
+	// 돌던 중에 다른 일이 생겼다. 웅크린 몸을 먼저 편다.
+	if (IsInGatherPose() && !(bTurnaround && bGatherTurn) && TurnGatherOutAnim)
+	{
+		PlayBodyAnim(EIGListenerBodyAnim::TurnGatherOut, false, 1.0f);
+		WallRiseUntilSeconds = Now + TurnGatherOutAnim->GetPlayLength();
 	}
 	return Now < WallRiseUntilSeconds;
 }
@@ -4566,8 +5177,33 @@ void AIGListenerEntity::UpdateSkeletalPose(
 	}
 	const double PoseNow = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 	// 벽에서 떨어지는 동안은 그 동작을 끝까지 튼다. 몸도 그동안 기지 않는다(HoldForWallRise).
-	if (ActiveBodyAnim == EIGListenerBodyAnim::ListenWallOut && PoseNow < WallRiseUntilSeconds)
+	if ((ActiveBodyAnim == EIGListenerBodyAnim::ListenWallOut || ActiveBodyAnim == EIGListenerBodyAnim::TurnGatherOut)
+		&& PoseNow < WallRiseUntilSeconds)
 	{
+		return;
+	}
+	if (bGatherRelease)
+	{
+		return;
+	}
+	// 웅크려 돌아서는 동안은 StepGatherTurn이 동작을 고른다. 달려드는 순간에만 놓는다.
+	if (bTurnaround && bGatherTurn && GatherTurnPhase >= 0)
+	{
+		if (!(State == EIGListenerState::Chasing && bLungeArmed))
+		{
+			return;
+		}
+		bTurnaround = false;
+	}
+	else if (bGatherHoldForBeat && SpeedAlpha <= 0.03f && State != EIGListenerState::Chasing
+		&& State != EIGListenerState::CaptureHold)
+	{
+		PlayBodyAnim(EIGListenerBodyAnim::TurnGather, true, IGListener::GatherHoldRate);
+		return;
+	}
+	else if (IsInGatherPose() && State != EIGListenerState::CaptureHold && !(State == EIGListenerState::Chasing && bLungeArmed))
+	{
+		HoldForWallRise();
 		return;
 	}
 	const bool bAtWall = bWallListenForBeat

@@ -2749,7 +2749,7 @@ void AIGHorrorHUD::DrawNightClock()
 		FLinearColor RestColour = IGHorrorHUD::PaleGray;
 		RestColour.A *= Guidance.ObjectiveAlpha();
 		DrawCenteredText(
-			NSLOCTEXT("IGHUD", "NightRestAvailable", "403호 침대에서 아침까지 쉴 수 있다 · 쉬면 이 밤이 끝난다"),
+			NSLOCTEXT("IGHUD", "NightRestAvailable", "403호 침대에서 쉬기 · 쉬면 이 밤이 끝난다"),
 			42.0f,
 			RestColour,
 			EIGHudTextRole::Objective);
@@ -3523,7 +3523,7 @@ void AIGHorrorHUD::DrawContextTip(const float Alpha)
 		Action = EIGBindableAction::Journal;
 		break;
 	case EIGContextTip::Hint:
-		Line = NSLOCTEXT("IGHUD", "TipHint", "힌트\n막혔을 때 누르기");
+		Line = NSLOCTEXT("IGHUD", "TipHint", "힌트\n막혔을 때 누른다");
 		Action = EIGBindableAction::RequestHint;
 		break;
 	case EIGContextTip::HintAnswer:
@@ -4288,6 +4288,32 @@ void AIGHorrorHUD::PrepareDialoguePage(
 
 	if (!Remainder.IsEmpty())
 	{
+		// 쪽을 넘기는 자리는 문장 끝으로 당긴다. 「사람일 수도 / 있어요」처럼 문장 한가운데서 넘어가면 앞 쪽 끝에서 말이 끊긴다.
+		const FString Source = CurrentDialogue.Line.ToString().TrimStartAndEnd();
+		if (Source.EndsWith(Remainder, ESearchCase::CaseSensitive))
+		{
+			const int32 PageEnd = Source.Len() - Remainder.Len();
+			for (int32 Index = PageEnd - 2; Index >= PageEnd / 2; --Index)
+			{
+				const bool bAsciiEnd = FCString::Strchr(TEXT(".!?…"), Source[Index]) && FChar::IsWhitespace(Source[Index + 1]);
+				const bool bWideEnd = FCString::Strchr(TEXT("。！？"), Source[Index]) && !FCString::Strchr(TEXT("」』）”’"), Source[Index + 1]);
+				if (!bAsciiEnd && !bWideEnd)
+				{
+					continue;
+				}
+				TArray<FString> PulledLines;
+				FString PulledRemainder;
+				WrapHudText(Source.Left(Index + 1), GetFontForRole(EIGHudTextRole::Dialogue), TextScale, MaximumWidth, MaximumLines,
+					PulledLines, PulledRemainder);
+				if (PulledRemainder.IsEmpty() && !PulledLines.IsEmpty())
+				{
+					Lines = MoveTemp(PulledLines);
+					Remainder = Source.Mid(Index + 1).TrimStart();
+				}
+				break;
+			}
+		}
+
 		FIGDialogueMessage Continuation = CurrentDialogue;
 		Continuation.Line = FText::FromString(Remainder);
 		Continuation.MinimumDurationSeconds = 0.0f;
@@ -9029,7 +9055,7 @@ void AIGHorrorHUD::DrawSystemMenuPanel()
 	{
 		MessageSources = {
 			NSLOCTEXT("IGHUD", "Menu.ThisGameIsMadeToBeHeardOnHeadphones", "헤드폰을 쓰면 소리가 나는 방향을 구분하기 쉽습니다.").ToString(),
-			NSLOCTEXT("IGHUD", "Menu.PressAnyKeyToSkip", "아무 키를 누르면 건너뜁니다.").ToString()
+			NSLOCTEXT("IGHUD", "Menu.PressAnyKeyToSkip", "아무 키나 누르면 건너뜁니다.").ToString()
 		};
 		MessageColor = IGHorrorHUD::ThoughtBlue;
 	}

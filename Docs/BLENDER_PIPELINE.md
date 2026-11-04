@@ -256,7 +256,7 @@ pwsh -NoProfile -File Scripts\Import-BlenderAssets.ps1 -Only SM_MokHansooFigure
 | SK_Neighbor303 | 생성+리깅 | 셋째 낮 계단의 303호. `rig_walker.py --profile resident --height 160 --yaw 90 --cage 0.012 --tint-box=-1.0,-0.11,0.80,1.33,0,0.3,0.05`. 시안에 없던 가방 뒷면을 검게 했고, 등판에서 9 cm 넘게 뒤에 있는 정점(멘 가방)은 빈손 프로필에서 몸통 뼈만 따른다. Idle·Walk·LookBack |
 | SK_Eoduksini | 생성+리깅 | 어둑시니 몸. `rig_eoduksini.py`(키 200 cm, yaw 90, 허리 1.08 m). 뼈 넷(root·spine·arm_l·arm_r)만 있고 동작은 없다. 게임이 UPoseableMeshComponent로 허리를 숙이고 팔을 늘어뜨린다. 허리 위아래 10 cm 띠에서 root와 spine을 섞고, 팔은 어깨에서만 spine과 섞는다. 굽기 전에 점토색을 M_PlasticDark 밝기의 젖은 검정으로 낮춘다 |
 | SM_Note303First / Second / Third / Last | 절차 | 403호 현관문 바깥의 303호 쪽지 넷(`build_notes303.py`). 원점은 문짝 바깥면 가운데 바닥이고 인쇄는 `mirror_print_uv` |
-| SK_ListenerCrawler | 생성+리깅 | 위층 사람의 기는 몸. 위 「리깅된 인물」. Crawl·Listen·Bang·Lunge |
+| SK_ListenerCrawler | 생성+리깅 | 위층 사람의 기는 몸. 위 「리깅된 인물」. Crawl·Listen·Bang·Lunge, 벽 듣기 넷(crawler_wall_listen.py), 웅크려 돌기 셋(crawler_turn_gather.py) |
 | SM_ListenerEntityCrawl | 생성 | 위층 사람(정적 폴백). 해부 시트의 옆모습 칸에서 뽑았다(앞모습 3/4 칸은 네 발 짐승처럼 읽혔다). 폰의 앞이 +X라 머리가 +X에 와야 한다. 프로브에서 높은 끝이 이미 +X면 `--yaw 0`, 길이는 `--length 190`. 정점 AO, 석고 재질은 그대로 |
 | SM_AlleyCatRun | 생성 | 골목 고양이. 구운 털 색을 MI로 쓴다 |
 | SM_MokHansooFigure | 생성 | 밤4 목한수 통짜. 조각 셋과 카드를 대체 |

@@ -68,7 +68,11 @@ enum class EIGListenerBodyAnim : uint8
 	ListenWallIn,
 	ListenWall,
 	ListenWallOut,
-	BangWall
+	BangWall,
+	/** 좁은 곳에서 돌아서는 웅크린 자세(crawler_turn_gather.py). 웅크리기·돌기·펴기. */
+	TurnGatherIn,
+	TurnGather,
+	TurnGatherOut
 };
 
 /**
@@ -248,6 +252,10 @@ public:
 	 * bEnable이 false면 평소처럼 듣는다(붙어 있었으면 떨어지는 동작부터).
 	 */
 	void SetWallListenForBeat(bool bEnable, const FVector& Anchor = FVector::ZeroVector, float Yaw = 0.0f);
+	/** 연출 동안 멈춰 있을 때 웅크린 자세로 둔다. 기는 몸이 들어가지 않는 좁은 자리에 세울 때 쓴다. */
+	void SetGatherHoldForBeat(bool bEnable);
+	/** 웅크린 자세를 끝낸다. 그 자리에서 펴면 벽을 지나는 곳이면 웅크린 채 Spot으로 옮겨 Yaw로 돈 뒤에 편다. */
+	void ReleaseGatherHoldTo(const FVector& Spot, float Yaw);
 	bool IsInWallPose() const;
 
 	/** Returns the entity to its patrol start after a capture reset. */
@@ -455,6 +463,13 @@ private:
 	 * 디딤판 윗면을 따라 몸을 기울여 오르내린다. 닿으면 true.
 	 */
 	bool MoveTowardGoal(const FVector& Goal, float Speed, float DeltaSeconds);
+	/** 벽 듣기 자리(WallListenAnchor)까지 곧게 가서 그 자리에 정확히 선다. 닿으면 true. */
+	bool MoveOntoWallAnchor(float Speed, float DeltaSeconds);
+	/**
+	 * 가는 길을 열어 둔 403호 문짝이 막고 있으면 밀어 닫는다. 문이 도는 동안 true를 돌려주어 몸을 세운다. 집 안으로
+	 * 가는 길이거나 플레이어가 문간에 있으면 건드리지 않는다.
+	 */
+	bool PushOpenHomeDoorAside(const FVector& Target, const FVector& Direction, float Distance);
 	/** Goal까지 건물 길을 다시 짠다. 길이 없으면 false. */
 	bool PlanNavPath(const FVector& Goal);
 	/** 계단과 반 층 참 위의 한 걸음. 쓸지 않고 디딤판 위 점을 잇는 선을 따른다. */
@@ -498,13 +513,50 @@ private:
 	FVector SideClearanceShift(const FVector& Direction, float DeltaSeconds) const;
 	/** 기는 몸(손끝 앞 103 cm, 발끝 뒤 97 cm, 팔과 무릎 옆 41 cm)이 Feet 자리에 Yaw로 서면 보이는 벽·가구에 닿는가. */
 	bool IsBodyClearAt(const FVector& Feet, float Yaw) const;
+	/** Center에 Rotation으로 놓은 상자가 보이는 벽·가구에 닿지 않는가. */
+	bool IsBodyBoxClear(const FVector& Center, const FQuat& Rotation, const FVector& HalfExtent) const;
+	/** 웅크린 몸(원점에서 58 cm)이 Feet 자리에서 어느 쪽으로 돌아도 보이는 벽·가구에 닿지 않는가. */
+	bool IsGatheredBodyClearAt(const FVector& Feet) const;
+	/** Feet 자리에서 FromYaw부터 ToYaw까지 기는 몸 그대로 돌아도 닿지 않는가. */
+	bool IsTurnSweepClear(const FVector& Feet, float FromYaw, float ToYaw) const;
 	/**
 	 * Target 쪽으로 크게 돌아서야 할 때 제자리에서 돌 수 있는 자리와 도는 쪽을 고른다. 지금 방향 그대로 옮겨 갈 수
 	 * 있고, 거기서 Target을 볼 때까지 도는 사이 몸이 어디에도 닿지 않는 자리다. 못 찾으면 false.
 	 */
 	bool PlanTurnaround(const FVector& Target);
+	/**
+	 * 기는 몸 그대로는 돌 수 없는 자리(폭 140 cm 복도 따위)에서 웅크려 돌아설 자리와 방향을 고른다. 웅크린 몸이 어디로
+	 * 돌아도 닿지 않고, 다시 편 몸도 닿지 않는 자리다. 못 찾으면 false.
+	 */
+	bool PlanGatherTurn(const FVector& Target);
 	/** 크게 돌아서는 한 걸음. 돌 자리로 옮기고 거기서 돈다. 다 돌았거나 그만둘 때 false. */
 	bool StepTurnaround(const FVector& Target, float DeltaSeconds);
+	/** 웅크려 돌아서는 한 걸음. 돌 자리로 옮기고, 웅크리고, 돌고, 편다. 다 폈거나 그만둘 때 false. */
+	bool StepGatherTurn(float DeltaSeconds);
+	/** 웅크린 동작(펴는 동작 빼고)을 틀고 있다. */
+	bool IsInGatherPose() const;
+	/**
+	 * 403호 문 옆 벽에 붙는 자리. 밤2 대본과 같은 자리다. 190 cm 몸을 140 cm 복도에서 문 쪽으로 세우면 머리가 문짝을,
+	 * 발이 맞은편 벽을 지나서, 문 앞에서는 늘 벽 자세로 듣고 두드린다.
+	 */
+	FVector GetHomeDoorStance() const;
+	/** 벽 자세로 문 옆에 붙으러 가는 한 걸음. 동쪽을 보고 붙어야 해서 서쪽을 보고 있으면 자리를 지나가 돌아선다. 닿으면 true. */
+	bool MoveToHomeDoorStance(float Speed, float DeltaSeconds);
+	/** 문 옆 벽 자세를 푼다. 붙어 있던 몸은 떨어지는 동작부터 튼다. */
+	void ReleaseHomeDoorStance();
+	/** 문 옆으로 가는 한 걸음. 벽 자세를 쓸 수 있으면 벽에 붙으러 가고, 대본이 벽 자세를 쥐고 있으면 예전처럼 문 앞으로 간다. 닿으면 true. */
+	bool MoveToHomeDoor(float Speed, float DeltaSeconds);
+	/** 웅크린 채 옮겨 돌아서는 한 걸음(ReleaseGatherHoldTo). 그동안 상태는 멈춰 둔다. */
+	bool StepGatherRelease(float DeltaSeconds);
+	/** 열어 둔 403호 문짝이 지금 몸을 지나고 있으면 민다. 플레이어가 문간에 있거나 그를 쫓는 중이면 두지 않는다. */
+	void PushHomeDoorOffBody();
+	/** 플레이어가 403호 문간에 있다. 문을 함부로 닫지 않는다. */
+	bool IsPlayerAtHomeDoorway() const;
+	/**
+	 * 멈춰 듣는 몸이 벽이나 가구를 지나고 있으면 가까운 곳에서 닿지 않는 자리와 방향을 찾아 천천히 옮긴다. 복도 가운데에서
+	 * 벗어나 비스듬히 선 몸은 방향만 틀어서는 벽에서 나오지 못했다.
+	 */
+	void SettleBodyOffWalls(float DeltaSeconds);
 	/**
 	 * 2·3·4층 층 참에서 출입구와 갈림 자리 사이에 선 몸이 반대쪽으로 가야 하면, 미리 고른 되돌이 자세(LandingUTurn)를
 	 * 길 앞에 끼운다. 제자리에서 반 바퀴 돌면 출입구 문설주와 남벽을 쓸었다. 끼웠으면 true.
@@ -677,6 +729,15 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> BangWallAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> TurnGatherInAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> TurnGatherAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> TurnGatherOutAnim;
 
 	EIGListenerBodyAnim ActiveBodyAnim = EIGListenerBodyAnim::None;
 	/** SetWallListenForBeat가 켠 벽 듣기. 자리와 몸 방향. */
@@ -895,11 +956,34 @@ private:
 	float TurnaroundSeconds = 0.0f;
 	/** 돌 자리를 못 찾았으면 이때까지 다시 찾지 않는다. */
 	double TurnaroundRetryAfter = -1000.0;
+	/** 이번 돌아서기는 웅크려서 한다. 돌 자리로 옮기는 중(-1), 웅크리기(0), 돌기(1), 펴기(2). */
+	bool bGatherTurn = false;
+	int32 GatherTurnPhase = -1;
+	float GatherTurnYaw = 0.0f;
+	double GatherTurnPhaseUntil = 0.0;
+	/** 문 옆 벽 자세를 쓰는 중(GetHomeDoorStance). */
+	bool bHomeDoorStance = false;
+	/** SetGatherHoldForBeat가 켠 웅크린 자세. */
+	bool bGatherHoldForBeat = false;
+	/** ReleaseGatherHoldTo가 시킨 웅크린 채 옮기기. */
+	bool bGatherRelease = false;
+	FVector GatherReleaseSpot = FVector::ZeroVector;
+	float GatherReleaseSeconds = 0.0f;
+	/** SettleBodyOffWalls가 고른 자리와 방향. 멈춘 자리마다 한 번만 찾는다. */
+	bool bRestFitActive = false;
+	bool bRestFitChecked = false;
+	FVector RestFitSpot = FVector::ZeroVector;
+	float RestFitYaw = 0.0f;
+	/** 벽 자세 자리를 지나 돌아설 자리까지 왔다. 돌아설 때까지 그 자리로 되돌아가지 않는다. */
+	bool bHomeDoorTurnSpotReached = false;
+	/** 마지막으로 몸 둘레 상자를 막은 것. 돌 자리를 못 찾았을 때 로그에 적는다. */
+	mutable TWeakObjectPtr<const UPrimitiveComponent> LastBodyBlocker;
 	/** 이번 걸음이 계단 위였다. 몸을 경사대로 눕힌다. */
 	bool bOnStairLeg = false;
 	float StairPitchTarget = 0.0f;
 	/** 검사 실행에서 몸이 벽·문·계단을 지나는지 잰다(CLIP_AUDIT). */
 	FIGClipAudit ClipAudit;
+	float ClipAuditLastYaw = 0.0f;
 	float StairBodyPitch = 0.0f;
 	/** 디딤판 모서리 위로 몸을 띄운 높이. 캡슐은 디딤판 가운데를 잇는 선을 따라가 모서리보다 낮다. */
 	float StairBodyLift = 0.0f;

@@ -17,6 +17,7 @@
 #include "GameplayTagContainer.h"
 #include "GameFramework/PlayerController.h"
 #include "Interaction/IGReadableNote.h"
+#include "Interaction/IGSwingDoor.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Narrative/IGMissingFloorNarrativeSubsystem.h"
@@ -161,6 +162,12 @@ void AIGNightPhaseDirector::BeginTheHour(const int32 NightIndex)
 		// getting worse, and that is the point.
 		WorldScene->SetUnit403AgeStage(
 			NightIndex >= 4 ? 2 : (NightIndex >= 2 ? 1 : 0));
+		// 잠자리에 들며 현관문도 닫았다. 열어 둔 채 밤을 맞으면 그가 문 옆 벽에 붙는 둘째 밤 노크에서 문짝이 몸을 뚫고,
+		// 문구멍이 허공에 뜨고, 첫째 밤에는 침대에서 바로 잡힐 수 있었다.
+		if (AIGSwingDoor* HomeDoor = WorldScene->GetHomeDoor())
+		{
+			HomeDoor->ForceOpenState(false);
+		}
 	}
 	ApplySealedPresentation(true);
 

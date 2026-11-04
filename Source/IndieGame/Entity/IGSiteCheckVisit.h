@@ -119,6 +119,9 @@ private:
 		bool bWalking = false;
 		bool bShown = false;
 		double LastSeenAt = 0.0;
+		/** 그녀가 비켜 주기를 기다린 시간과, 지나가자고 말했는지. */
+		float YieldSeconds = 0.0f;
+		bool bAskedToPass = false;
 		/** 계단에서는 걷는 애니메이션의 다리 대신 한 단씩 디딘다. */
 		FIGWalkerStairBody Stairs;
 		/** 검사 실행에서 몸이 벽·문·계단을 지나는지 잰다(IGClipAudit). */

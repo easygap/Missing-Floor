@@ -2608,7 +2608,7 @@ void AIGLeftoverProbe::Tick(const float DeltaSeconds)
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverSackAllPieces", "덮개를 잘라 놓은 건가?"), TEXT("LeftoverSackAllPieces")},
 			{TEXT('T'), FText::GetEmpty(),
-				NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 고이는 나무 쐐기야."), TEXT("LeftoverWedgePicked")},
+				NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 받치는 나무 쐐기야."), TEXT("LeftoverWedgePicked")},
 			{TEXT('T'), FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "LeftoverWedgeSlip1", "장판에서 미끄러져 빠졌어."), TEXT("LeftoverWedgeSlip1")},
 			{TEXT('T'), FText::GetEmpty(),

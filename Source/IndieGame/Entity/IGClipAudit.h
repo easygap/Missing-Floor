@@ -91,6 +91,18 @@ private:
 	TMap<FString, FPart> Parts;
 	/** 5 cm 넘게 지난 프레임을 그 프레임에서 가장 깊이 지난 물체와 Phase로 나눠 센다. */
 	TMap<FString, int32> Causes;
+	/**
+	 * 면 뒤로 실제로 들어간 깊이(면에 수직으로 잰다). 위의 깊이는 선을 따라 재서, 벽을 따라 나란히 스치는 팔다리를
+	 * 1 cm 들어가도 수십 cm로 센다. 눈에 보이는 관통은 이쪽을 본다.
+	 */
+	int32 FramesBehind2 = 0;
+	int32 FramesBehind5 = 0;
+	float DeepestBehind = 0.0f;
+	FString DeepestBehindKey;
+	FVector DeepestBehindAt = FVector::ZeroVector;
+	TMap<FString, int32> BehindCauses;
+	/** 5 cm 넘게 들어간 프레임을 몸이 있던 자리(50 cm 칸)와 Phase로 나눠 센다. 어디서 고쳐야 하는지 본다. */
+	TMap<FString, FPart> BehindSpots;
 	/** -IGClipAuditTrace일 때 5도마다 몸 가운데에서 가장 먼 점(몸 기준 좌표). */
 	TArray<FVector> Footprint;
 };

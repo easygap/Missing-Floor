@@ -750,7 +750,7 @@ void AIGMissingFloorLeftoverDirector::HandleStorageTarget(AIGLeftoverTarget* Tar
 		State.WedgeSocket = NAME_None;
 		Take(StorageWedge);
 		// 줍는 그 순간의 반응이다. 바로 끼워 넣었으면 밀려서 늦게 뜨지 않는다.
-		ThinkIn(IGLeftoverDialogue::Wedge, NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 고이는 나무 쐐기야."), 2.4f);
+		ThinkIn(IGLeftoverDialogue::Wedge, NSLOCTEXT("IGMissingFloor", "LeftoverWedgePicked", "문 받치는 나무 쐐기야."), 2.4f);
 		RefreshStorage();
 		return;
 	}

@@ -2558,7 +2558,7 @@ void AIGMissingFloorNightThreeDirector::HandleNotebookRead(
 			NSLOCTEXT(
 				"IGMissingFloor",
 				"NotebookCriterionRecall",
-				"수첩대로라면 아까 소리가 길게 울린 그 벽이 속이 빈 거야."),
+				"수첩대로면 아까 길게 울린 그 벽이 속이 빈 거네."),
 			4.0f);
 	}
 	RefreshAnswerTargetAvailability();

@@ -1876,13 +1876,13 @@ void AIGFullPlaythroughProbe::BuildNightThree()
 		Follow(Down, 22.0f, TEXT("night3_roof_stair_down"));
 	}
 	// 5층 철문 소리 같은 큰 소리에 위층 사람이 자리를 떠나면 계단 쪽으로 왔다가, 닿고 물러나 남쪽 벽 제자리로
-	// 돌아간다. 돌아가는 길에 대답하면 복도 가운데서 기다려 북쪽 틈이 25 cm만 남았고, 제자리에 돌아간 뒤에는 대답을
-	// 안 받은 채라 몸이 길을 막았다(11-03). 사람이 하듯 제자리에 돌아가 벽에 귀를 댈 때까지 계단 밑에서 기다렸다 대답한다.
+	// 돌아간다. 돌아가는 길에 대답하면 복도 가운데서 기다려 북쪽 틈이 25 cm만 남는다. 사람이 하듯 제자리에 돌아가 벽에
+	// 귀를 댈 때까지 계단 밑에서 기다렸다 대답한다. 그 자리에 서야 곁으로 지나갈 틈(71 cm)이 난다.
 	WaitUntil([WeakThis, FourthZ]()
 	{
 		const AIGListenerEntity* Entity = WeakThis.IsValid() ? WeakThis->FindFirst<AIGListenerEntity>() : nullptr;
 		return !Entity || Entity->IsDormant() || FMath::Abs(Entity->GetActorLocation().Z - FourthZ) > 150.0f
-			|| FVector::Dist2D(Entity->GetActorLocation(), FVector(-95.0f, -332.0f, FourthZ)) < 60.0f;
+			|| FVector::Dist2D(Entity->GetActorLocation(), FVector(-95.0f, -332.0f, FourthZ)) < 15.0f;
 	}, 90.0f, TEXT("night3_figure_settled"));
 	// 귀환길(3-7). 복도의 그(남쪽 벽에 엎드려 서쪽을 본다)를 계단 밑에서 보자마자 방금 배운 박자로 대답해
 	// 세우고, 북쪽 벽을 따라 옆을 지나 403호로 간다. 세워지지 않으면 옥상 계단 반 층 참으로 물러나 기다린다.
@@ -1950,8 +1950,8 @@ void AIGFullPlaythroughProbe::BuildDayThree()
 		TEXT("day3_roof_passage"));
 	SetDoor(TEXT("day3_annex_gate"), TEXT("MissingFloorAnnexGate"), FVector(130.0f, 390.0f, RoofZ), true);
 	// 별관 안, 관리인(198, 540)과 경찰관(207, 696)이 서는 자리와 경찰관이 걸어오는 길을 비켜 그 뒤에 선다.
-	// 서쪽(X 60 밑)은 가구가 막는다.
-	Follow({FVector(130.0f, 520.0f, RoofZ), FVector(110.0f, 690.0f, RoofZ)}, 22.0f, TEXT("day3_annex_inside"));
+	// 서쪽(X 60 밑)은 가구가 막는다. (110, 690)에 멈추면 걸어오는 경찰관 길에서 62 cm쯤이라 그가 비켜 주길 기다렸다.
+	Follow({FVector(130.0f, 520.0f, RoofZ), FVector(95.0f, 700.0f, RoofZ)}, 22.0f, TEXT("day3_annex_inside"));
 	WaitUntil(Beat(TEXT("Night3.SiteCheck")), 240.0f, TEXT("day3_site_check"));
 	Listen(TEXT("day3_officer"), 40.0f);
 	Stage(TEXT("day3_home"));
@@ -2143,6 +2143,10 @@ void AIGFullPlaythroughProbe::BuildReveal()
 		const AIGMissingFloorFifthDawnDirector* Dawn = WeakThis.IsValid() ? WeakThis->FindFirst<AIGMissingFloorFifthDawnDirector>() : nullptr;
 		return Dawn && Dawn->IsActive();
 	};
+
+	// 마지막 일격은 걸어온 쪽에서 비스듬히 치게 된다. 벽이 열리면 사람은 정면으로 다가가서 본다. 1.5 m 옆에 그대로
+	// 서 있으면 벽 끝에 가려 몸이 반밖에 안 보였다.
+	GoTo(FVector(140.0f, 700.0f, AIGPrologueWorldScene::RoofZ), 25.0f, TEXT("night4_reveal_front"));
 
 	// 벽이 열리면 손전등이 두개골, 몸, 발 차례로 훑는다. 사람이 하듯 그 자리를 차례로 본다. 예전 검사는 서 있기만
 	// 해서 단계마다 5.5초 폴백으로 넘어갔고, 그동안 천장만 찍혔다.

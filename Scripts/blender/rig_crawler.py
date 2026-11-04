@@ -585,7 +585,8 @@ WALL_POSE = {
     # 순간에도 오른 허벅지(-0.424)가 벽을 넘지 않는 거리다. 벽 자세에서는 몸을 11 cm 벽
     # 쪽으로 붙여 오른 위팔과 옆머리가 벽에 닿는다. 복도 쪽 끝은 +0.27이라 몸 폭이 70 cm다.
     "wall_y": -0.43,
-    "pelvis_shift": (0.0, -0.11, -0.01),
+    # 골반을 조금 들어 준다. 엎드린 높이 그대로 벽 쪽으로 붙이면 오른 허벅지가 바닥 밑으로 9 cm 내려갔다.
+    "pelvis_shift": (0.0, -0.11, 0.035),
     # 엎드린 몸의 척추는 바닥 평면에서 옆으로 굽는다(로컬 rz). 굽힌 만큼 얼굴이 벽으로
     # 돌아가므로 머리는 반대로 돌리고(ry +25) 벽 쪽으로 기울여(rz +19) 귀를 댄다.
     "spine": {"spine_01": (0.0, 0.0, -3.0), "spine_02": (0.0, 0.0, -5.0), "spine_03": (0.0, 3.0, -7.0)},
@@ -593,8 +594,8 @@ WALL_POSE = {
     "head": (0.0, 25.0, 19.0),
     "hand_r": (0.80, -0.28, 0.05), "elbow_r": (0.55, -0.29, 0.06),
     "hand_l": (0.70, -0.06, 0.05), "elbow_l": (0.56, 0.09, 0.05),
-    "ankle_r": (-0.60, -0.20, 0.05), "knee_r": (-0.25, -0.25, 0.08),
-    "ankle_l": (-0.82, -0.08, 0.10), "knee_l": (-0.50, 0.04, 0.10),
+    "ankle_r": (-0.60, -0.20, 0.08), "knee_r": (-0.25, -0.25, 0.155),
+    "ankle_l": (-0.82, -0.08, 0.13), "knee_l": (-0.50, 0.04, 0.12),
 }
 
 
@@ -694,6 +695,85 @@ def author_bang_wall(arm, frames=63, pose=None):
     for fc in action_fcurves(action):
         for kp in fc.keyframe_points:
             kp.interpolation = "BEZIER"
+    return action
+
+
+# 좁은 복도에서 돌아서는 자세. 손끝에서 발끝까지 190 cm인 몸은 폭 140 cm 복도에서 그대로 돌면 다리와 머리가 벽을
+# 지난다. 무릎을 끌어당기고 손을 몸 앞으로 모아 웅크리면 몸 원점에서 58 cm 안에 들어간다. 값은 뼈대 좌표(m)다.
+GATHER_POSE = {
+    "pelvis": (-0.40, 0.05, 0.26),
+    # 골반·척추·목·머리 뼈 끝이 닿을 자리. 등을 둥글게 말고 고개를 숙인다.
+    "spine": {"pelvis": (-0.205, 0.05, 0.31), "spine_01": (0.015, 0.045, 0.39), "spine_02": (0.21, 0.04, 0.44),
+              "spine_03": (0.345, 0.03, 0.44), "neck": (0.41, 0.02, 0.39), "head": (0.46, 0.01, 0.225)},
+    "hand_l": (0.33, 0.21, 0.06), "elbow_l": (0.20, 0.42, 0.17),
+    "hand_r": (0.34, -0.15, 0.06), "elbow_r": (0.20, -0.36, 0.17),
+    "ankle_l": (-0.445, 0.15, 0.125), "knee_l": (-0.10, 0.42, 0.20),
+    "ankle_r": (-0.43, -0.14, 0.105), "knee_r": (-0.12, -0.40, 0.17),
+}
+
+
+def key_gather_pose(arm, frame, s, breath=0.0, steps=None, pose=None):
+    """s=0이면 바닥 자세, 1이면 웅크린 자세. 골반에서 머리까지 차례로 잡고, 그 어깨·엉덩이에서 팔다리를 푼다.
+
+    steps는 손발(hand_l, hand_r, ankle_l, ankle_r)마다 더할 (x, y, z) 이동이다. 돌면서 짚은 손발을 옮긴다.
+    """
+    p = pose or GATHER_POSE
+    bones = arm.data.bones
+    pelvis_at = bones["pelvis"].head_local.lerp(Vector(p["pelvis"]), s)
+    _shift_bone(arm, "pelvis", frame, pelvis_at - bones["pelvis"].head_local)
+    for name in ("pelvis", "spine_01", "spine_02", "spine_03", "neck", "head"):
+        bpy.context.view_layer.update()
+        head = arm.pose.bones[name].head.copy()
+        end = bones[name].tail_local.lerp(Vector(p["spine"][name]), s)
+        if breath and name == "spine_02":
+            end = end + Vector((0.0, 0.0, 0.006 * breath))
+        orient_bone(arm, name, head, end, frame)
+    steps = steps or {}
+    for side in ("l", "r"):
+        forearm = bones[f"lowerarm_{side}"]
+        # 옮기는 동안 손발을 바닥에서 든다. 두 자세를 그냥 이으면 사이에서 무릎과 발이 바닥 밑으로 지나간다.
+        lift = Vector((0.0, 0.0, 0.09 * math.sin(math.pi * min(1.0, s))))
+        target = forearm.tail_local.lerp(Vector(p[f"hand_{side}"]), s) + lift
+        target = target + Vector(steps.get(f"hand_{side}", (0.0, 0.0, 0.0)))
+        pole = forearm.head_local.lerp(Vector(p[f"elbow_{side}"]), s)
+        plant_limb(arm, f"upperarm_{side}", f"lowerarm_{side}", f"hand_{side}", target, pole, frame)
+        calf = bones[f"calf_{side}"]
+        target = calf.tail_local.lerp(Vector(p[f"ankle_{side}"]), s) + lift
+        target = target + Vector(steps.get(f"ankle_{side}", (0.0, 0.0, 0.0)))
+        pole = calf.head_local.lerp(Vector(p[f"knee_{side}"]), s) + lift
+        plant_limb(arm, f"thigh_{side}", f"calf_{side}", f"foot_{side}", target, pole, frame)
+
+
+def author_turn_gather_in(arm, frames=14, pose=None):
+    """기던 자세에서 무릎을 끌어당기고 손을 모은다. 0.47초. 게임에서는 이 동작이 끝난 뒤에 돈다."""
+    action = new_action(arm, "TurnGatherIn", frames)
+    for f in range(frames + 1):
+        key_gather_pose(arm, f, _smooth(f / frames), pose=pose)
+    return action
+
+
+def author_turn_gather(arm, frames=24, pose=None):
+    """웅크린 채 제자리에서 돈다. 0.8초 루프. 왼손·오른발과 오른손·왼발이 번갈아 들려 옆으로 짚는다."""
+    action = new_action(arm, "TurnGather", frames)
+    for f in range(0, frames + 1, 2):
+        t = f / frames
+        steps = {}
+        for limb, phase in (("hand_l", 0.0), ("ankle_r", 0.0), ("hand_r", 0.5), ("ankle_l", 0.5)):
+            swing = (t + phase) % 1.0
+            lift = math.sin(math.pi * min(1.0, swing / 0.45)) if swing < 0.45 else 0.0
+            # 돌아가는 쪽(위에서 보아 시계 방향)으로 들어 옮기고, 짚은 동안 천천히 되돌아온다.
+            slide = (swing / 0.45 - 0.5) if swing < 0.45 else (0.5 - (swing - 0.45) / 0.55)
+            steps[limb] = (0.0, 0.03 * slide, 0.035 * lift)
+        key_gather_pose(arm, f, 1.0, breath=math.sin(t * math.tau), steps=steps, pose=pose)
+    cyclic(arm, action)
+    return action
+
+
+def author_turn_gather_out(arm, frames=14, pose=None):
+    """웅크린 몸을 펴 기는 자세로 돌아간다. 0.47초. 다시 기는 것은 이 동작이 끝난 뒤다."""
+    action = new_action(arm, "TurnGatherOut", frames)
+    for f in range(frames + 1):
+        key_gather_pose(arm, f, 1.0 - _smooth(f / frames), pose=pose)
     return action
 
 
@@ -879,6 +959,9 @@ def main():
         "ListenWall": author_listen_wall(arm),
         "ListenWallOut": author_listen_wall_out(arm),
         "BangWall": author_bang_wall(arm),
+        "TurnGatherIn": author_turn_gather_in(arm),
+        "TurnGather": author_turn_gather(arm),
+        "TurnGatherOut": author_turn_gather_out(arm),
     }
 
     # 뼈 자리 확인 한 장, 기는 동작 네 프레임, 손전등 한 장.
@@ -917,7 +1000,7 @@ def main():
         data = json.load(handle)
     data["skeletal"] = True
     data["animations"] = {key: {"frames": int(a.frame_range[1]), "fps": FPS,
-                                "loop": key in ("Crawl", "Listen", "ListenWall")} for key, a in actions.items()}
+                                "loop": key in ("Crawl", "Listen", "ListenWall", "TurnGather")} for key, a in actions.items()}
     data["generated_from"] = os.path.relpath(os.path.abspath(args.glb), out_root).replace("\\", "/")
     with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(data, handle, indent=2, ensure_ascii=False)

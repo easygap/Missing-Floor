@@ -108,6 +108,10 @@ namespace IGManagerPatrol
 	/** 이 높이 위의 방화문이 4층 문이다. 그 문은 열지 않는다. */
 	constexpr float FourthFloorFireDoorZ = 800.0f;
 	constexpr float InvestigateDwellSeconds = 4.0f;
+	// 걸을 때 다리와 손이 몸 가운데서 나가는 만큼. 바닥과 문턱은 안 건드리게 발 위 6 cm부터 쓴다.
+	constexpr float BodySweepRadius = 30.0f;
+	constexpr float BodySweepHalfHeight = 80.0f;
+	constexpr float BodySweepClearFloor = 6.0f;
 	constexpr float SearchDwellSeconds = 6.0f;
 	/** 손이 닿는 거리. 발끼리 잰다. */
 	constexpr float CatchReach = 80.0f;
@@ -626,6 +630,10 @@ int32 AIGManagerPatrol::FindNearestNode(const FVector& Feet) const
 	float BestScore = TNumericLimits<float>::Max();
 	int32 BestSeen = INDEX_NONE;
 	float BestSeenScore = TNumericLimits<float>::Max();
+	// 보인다고 곧게 걸을 수 있는 것은 아니다. 책상 상판 밑으로 선이 빠져 건너편 점이 보여서, 그 점으로 걷다 책상을 뚫었다.
+	// 걸어갈 수 있는 점이 있으면 그중에서 고른다. 그런 점이 없으면(문간처럼 좁은 자리) 예전대로다.
+	int32 BestWalkable = INDEX_NONE;
+	float BestWalkableScore = TNumericLimits<float>::Max();
 	for (int32 Index = 0; Index < Nodes.Num(); ++Index)
 	{
 		if (!IsNodeUsable(Index))
@@ -640,14 +648,23 @@ int32 AIGManagerPatrol::FindNearestNode(const FVector& Feet) const
 			BestScore = Score;
 			Best = Index;
 		}
-		if (Score < BestSeenScore
-			&& HasClearLine(Feet + FVector(0.0f, 0.0f, 60.0f), Nodes[Index].Feet + FVector(0.0f, 0.0f, 60.0f)))
+		if (Score >= BestWalkableScore
+			|| !HasClearLine(Feet + FVector(0.0f, 0.0f, 60.0f), Nodes[Index].Feet + FVector(0.0f, 0.0f, 60.0f)))
+		{
+			continue;
+		}
+		if (Score < BestSeenScore)
 		{
 			BestSeenScore = Score;
 			BestSeen = Index;
 		}
+		if (GetWalkableDistance(Feet, Nodes[Index].Feet) >= FVector::Dist2D(Feet, Nodes[Index].Feet) - 1.0f)
+		{
+			BestWalkableScore = Score;
+			BestWalkable = Index;
+		}
 	}
-	return BestSeen != INDEX_NONE ? BestSeen : Best;
+	return BestWalkable != INDEX_NONE ? BestWalkable : (BestSeen != INDEX_NONE ? BestSeen : Best);
 }
 
 void AIGManagerPatrol::SetDestination(const int32 Node)
@@ -968,8 +985,21 @@ void AIGManagerPatrol::BeginInvestigation(const FVector& Where, const bool bAlar
 	if (!Path.IsEmpty() && FMath::Abs(Nodes[Path.Last()].Feet.Z - Target.Z) < 40.0f
 		&& HasClearLine(Nodes[Path.Last()].Feet + FVector(0.0f, 0.0f, 90.0f), Target + FVector(0.0f, 0.0f, 90.0f)))
 	{
-		FinalTarget = FVector(Target.X, Target.Y, Nodes[Path.Last()].Feet.Z);
-		bHasFinalTarget = true;
+		// 소리는 책상 위 장부나 종이에서도 난다. 그 자리까지 그대로 걸으면 책상을 뚫고 들어가 상판을 허벅지에 낀 채 섰다.
+		// 몸이 막히는 자리 앞까지만 간다.
+		const FVector NodeFeet = Nodes[Path.Last()].Feet;
+		const FVector TargetFeet(Target.X, Target.Y, NodeFeet.Z);
+		const float Walkable = GetWalkableDistance(NodeFeet, TargetFeet);
+		if (Walkable >= FVector::Dist2D(NodeFeet, TargetFeet) - 1.0f)
+		{
+			FinalTarget = TargetFeet;
+			bHasFinalTarget = true;
+		}
+		else if (Walkable > 20.0f)
+		{
+			FinalTarget = NodeFeet + (TargetFeet - NodeFeet).GetSafeNormal2D() * (Walkable - 5.0f);
+			bHasFinalTarget = true;
+		}
 	}
 	DwellRemaining = IGManagerPatrol::InvestigateDwellSeconds;
 	DwellElapsed = 0.0f;
@@ -1871,7 +1901,8 @@ void AIGManagerPatrol::TickChase(const float DeltaSeconds)
 		&& !AIGPrologueWorldScene::IsOnStairFlight(Target)
 		&& !AIGPrologueWorldScene::IsOnStairFlight(Feet);
 	if (bSameFloor && HasClearLine(Feet + FVector(0.0f, 0.0f, 60.0f), Target + FVector(0.0f, 0.0f, 60.0f))
-		&& HasClearLine(Feet + FVector(0.0f, 0.0f, 140.0f), Target + FVector(0.0f, 0.0f, 140.0f)))
+		&& HasClearLine(Feet + FVector(0.0f, 0.0f, 140.0f), Target + FVector(0.0f, 0.0f, 140.0f))
+		&& GetWalkableDistance(Feet, Target) >= FVector::Dist2D(Feet, Target) - 1.0f)
 	{
 		Path.Reset();
 		PathCursor = 0;
@@ -2843,6 +2874,34 @@ bool AIGManagerPatrol::HasClearLine(const FVector& From, const FVector& To) cons
 	}
 	FHitResult Hit;
 	return !World->LineTraceSingleByChannel(Hit, From, To, ECC_Visibility, Params);
+}
+
+float AIGManagerPatrol::GetWalkableDistance(const FVector& FromFeet, const FVector& ToFeet) const
+{
+	const UWorld* World = GetWorld();
+	const float Full = FVector::Dist2D(FromFeet, ToFeet);
+	if (!World || Full < 1.0f)
+	{
+		return Full;
+	}
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(IGManagerPatrolBody), false, this);
+	if (const AIGPlayerCharacter* Character = Player.Get())
+	{
+		Params.AddIgnoredActor(Character);
+	}
+	if (const AIGListenerEntity* Upstairs = Listener.Get())
+	{
+		Params.AddIgnoredActor(Upstairs);
+	}
+	const FVector Center(0.0f, 0.0f, IGManagerPatrol::BodySweepHalfHeight + IGManagerPatrol::BodySweepClearFloor);
+	FHitResult Hit;
+	if (!World->SweepSingleByChannel(Hit, FromFeet + Center, FVector(ToFeet.X, ToFeet.Y, FromFeet.Z) + Center,
+			FQuat::Identity, ECC_Visibility,
+			FCollisionShape::MakeCapsule(IGManagerPatrol::BodySweepRadius, IGManagerPatrol::BodySweepHalfHeight), Params))
+	{
+		return Full;
+	}
+	return Hit.bStartPenetrating ? 0.0f : Hit.Distance;
 }
 
 FVector AIGManagerPatrol::GetHideApproachFeet() const

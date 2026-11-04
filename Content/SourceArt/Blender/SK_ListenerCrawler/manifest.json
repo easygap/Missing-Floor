@@ -68,6 +68,21 @@
       "frames": 63,
       "fps": 30,
       "loop": false
+    },
+    "TurnGatherIn": {
+      "frames": 14,
+      "fps": 30,
+      "loop": false
+    },
+    "TurnGather": {
+      "frames": 24,
+      "fps": 30,
+      "loop": true
+    },
+    "TurnGatherOut": {
+      "frames": 14,
+      "fps": 30,
+      "loop": false
     }
   },
   "generated_from": "../Generated/ListenerPhotoCrawl/photo-20260914/raw/pbr_00001_.glb"

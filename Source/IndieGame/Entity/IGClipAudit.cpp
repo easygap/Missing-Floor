@@ -24,6 +24,7 @@ namespace IGClipAudit
 	// 보고에 줄줄이 적는 부위 수와 원인 수.
 	constexpr int32 ReportedParts = 12;
 	constexpr int32 ReportedCauses = 24;
+	constexpr int32 SnapshotFrames = 3600;
 
 	bool IsRequested()
 	{
@@ -260,6 +261,28 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 	float FrameDepth = 0.0f;
 	FString FrameCause;
 	FString FrameKey;
+	float FrameBehind = 0.0f;
+	FString FrameBehindCause;
+	FString FrameBehindKey;
+	const auto NoteBehind = [this, &FrameBehind, &FrameBehindCause, &FrameBehindKey, &Phase](
+		const FHitResult& Hit, const FVector& End, const float Depth, const FString& Key)
+	{
+		// 시작부터 물체 속이면 면을 알 수 없으니 선을 따라 잰 깊이를 그대로 쓴다.
+		const float Behind = Hit.bStartPenetrating ? Depth
+			: FMath::Min(Depth, FMath::Max(0.0f, static_cast<float>(FVector::DotProduct(Hit.ImpactPoint - End, Hit.ImpactNormal))));
+		if (Behind > FrameBehind)
+		{
+			FrameBehind = Behind;
+			FrameBehindCause = IGClipAudit::HitName(Hit);
+			FrameBehindKey = Key;
+		}
+		if (Behind > DeepestBehind)
+		{
+			DeepestBehind = Behind;
+			DeepestBehindKey = FString::Printf(TEXT("%s %s"), *Key, *Phase);
+			DeepestBehindAt = Hit.ImpactPoint;
+		}
+	};
 
 	// 뼈 마디. 손잡이 뼈는 바닥에 놓여 있어 그 자식은 Core에서 긋는다. 마디가 막히면 그 아래 뼈와 살은
 	// 통째로 묻힌 것으로 보고 따로 세지 않는다.
@@ -301,6 +324,7 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 			const FString Key = Handles[Bone] ? FString::Printf(TEXT("core/%s"), *IGClipAudit::HitName(Hit))
 				: FString::Printf(TEXT("bone/%s/%s"), *BoneNames[Bone], *IGClipAudit::HitName(Hit));
 			Note(Key, Depth, Phase, From, To, Hit.ImpactPoint, FrameKeys);
+			NoteBehind(Hit, bExit && !Exit.bStartPenetrating ? Exit.ImpactPoint : To, Depth, Key);
 			if (Depth > FrameDepth)
 			{
 				FrameDepth = Depth;
@@ -332,6 +356,7 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 		{
 			const FString Key = FString::Printf(TEXT("skin/%s/%s"), *BoneNames[SampleBone], *IGClipAudit::HitName(Hit));
 			Note(Key, Depth, Phase, From, SkinPoint, Hit.ImpactPoint, FrameKeys);
+			NoteBehind(Hit, SkinPoint, Depth, Key);
 			if (Depth > FrameDepth)
 			{
 				FrameDepth = Depth;
@@ -370,6 +395,7 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 			{
 				const FString Key = FString::Printf(TEXT("held/%s/%s"), *Item->GetName(), *IGClipAudit::HitName(Hit));
 				Note(Key, Depth, Phase, Core, Point, Hit.ImpactPoint, FrameKeys);
+				NoteBehind(Hit, Point, Depth, Key);
 				if (Depth > FrameDepth)
 				{
 					FrameDepth = Depth;
@@ -385,6 +411,26 @@ void FIGClipAudit::Measure(USkinnedMeshComponent* Mesh, const FVector& Core, con
 	if (FrameDepth >= 5.0f)
 	{
 		++Causes.FindOrAdd(FString::Printf(TEXT("%s %s"), *FrameCause, *Phase));
+	}
+	FramesBehind2 += FrameBehind >= 2.0f ? 1 : 0;
+	FramesBehind5 += FrameBehind >= 5.0f ? 1 : 0;
+	if (FrameBehind >= 5.0f)
+	{
+		++BehindCauses.FindOrAdd(FString::Printf(TEXT("%s %s"), *FrameBehindCause, *Phase));
+		FPart& Spot = BehindSpots.FindOrAdd(FString::Printf(TEXT("x=%d y=%d z=%d %s"), FMath::RoundToInt32(Core.X / 50.0) * 50,
+			FMath::RoundToInt32(Core.Y / 50.0) * 50, FMath::RoundToInt32(Core.Z / 50.0) * 50, *Phase));
+		++Spot.Frames;
+		if (FrameBehind > Spot.Deepest)
+		{
+			Spot.Deepest = FrameBehind;
+			Spot.Phase = FrameBehindKey;
+			Spot.At = Owner ? FVector(Owner->GetActorLocation().X, Owner->GetActorLocation().Y, Owner->GetActorRotation().Yaw) : FVector::ZeroVector;
+		}
+	}
+	// 메모리 보호로 실행이 꺼져도 그때까지의 수치가 남게 2분마다 적는다. 읽을 때는 사람마다 마지막 묶음을 본다.
+	if (Frames % IGClipAudit::SnapshotFrames == 0)
+	{
+		Report();
 	}
 	if (!IGClipAudit::IsTraceRequested() || !Owner)
 	{
@@ -452,6 +498,24 @@ void FIGClipAudit::Report() const
 	{
 		UE_LOG(LogIndieGame, Display, TEXT("CLIP_AUDIT_CAUSE who=%s cause=%s frames=%d"), *Who, *ByFrames[Index].Key,
 			ByFrames[Index].Value);
+	}
+	UE_LOG(LogIndieGame, Display, TEXT("CLIP_AUDIT_BEHIND who=%s frames=%d over2=%d over5=%d max=%.1f worst=%s at=%s"),
+		*Who, Frames, FramesBehind2, FramesBehind5, DeepestBehind, DeepestBehindKey.IsEmpty() ? TEXT("none") : *DeepestBehindKey,
+		*DeepestBehindAt.ToCompactString());
+	TArray<TPair<FString, int32>> BehindByFrames = BehindCauses.Array();
+	BehindByFrames.Sort([](const TPair<FString, int32>& A, const TPair<FString, int32>& B) { return A.Value > B.Value; });
+	for (int32 Index = 0; Index < FMath::Min(BehindByFrames.Num(), IGClipAudit::ReportedCauses); ++Index)
+	{
+		UE_LOG(LogIndieGame, Display, TEXT("CLIP_AUDIT_BEHIND_CAUSE who=%s cause=%s frames=%d"), *Who, *BehindByFrames[Index].Key,
+			BehindByFrames[Index].Value);
+	}
+	TArray<TPair<FString, FPart>> SpotsByFrames = BehindSpots.Array();
+	SpotsByFrames.Sort([](const TPair<FString, FPart>& A, const TPair<FString, FPart>& B) { return A.Value.Frames > B.Value.Frames; });
+	for (int32 Index = 0; Index < FMath::Min(SpotsByFrames.Num(), IGClipAudit::ReportedCauses * 3); ++Index)
+	{
+		const FPart& Spot = SpotsByFrames[Index].Value;
+		UE_LOG(LogIndieGame, Display, TEXT("CLIP_AUDIT_SPOT who=%s %s frames=%d max=%.1f part=%s at=%.0f,%.0f yaw=%.0f"), *Who,
+			*SpotsByFrames[Index].Key, Spot.Frames, Spot.Deepest, *Spot.Phase, Spot.At.X, Spot.At.Y, Spot.At.Z);
 	}
 	for (int32 Sector = 0; Sector < Footprint.Num(); ++Sector)
 	{

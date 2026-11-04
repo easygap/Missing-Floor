@@ -11939,20 +11939,22 @@ void AIGListenerGreyboxDirector::EnterCaptureStep(const int32 StepIndex)
 		{
 			Entity->TeleportTo(
 				AIGNightOneBeatDirector::GetSightingStagePoint(),
-				FRotator(0.0f, 180.0f, 0.0f),
+				FRotator(0.0f, 90.0f, 0.0f),
 				false,
 				true);
-			Entity->SetPatrolPoints({
-				AIGNightOneBeatDirector::GetSightingStagePoint(),
-				AIGNightOneBeatDirector::GetSightingShufflePoint(),
-			});
+			Entity->SetPatrolPoints({AIGNightOneBeatDirector::GetSightingStagePoint()});
+			Entity->SetGatherHoldForBeat(true);
 		}
-		// 4층 참 서쪽 난간에서 내려다본 3.5층 참. 그는 북쪽 벽에 귀를 댄 채
+		// 4층 참 서쪽 난간에서 내려다본 3.5층 참. 그는 북쪽 벽에 이마를 댄 채 웅크려
 		// 1.5 m 아래, 3 m 앞에 있다.
 		CaptureTeleportPlayer(FVector(-522.0f, -272.0f, 997.0f), 90.0f, -38.0f);
 		break;
 	case 3:
 		// The noise ripple, moments after a deliberate sound.
+		if (Entity)
+		{
+			Entity->SetGatherHoldForBeat(false);
+		}
 		CaptureTeleportPlayer(FVector(60.0f, -305.0f, 997.0f), 0.0f, -4.0f);
 		break;
 	case 4:
@@ -12927,7 +12929,7 @@ void AIGListenerGreyboxDirector::RefreshPhonePosts()
 	{
 		Pages.Add({Board,
 			NSLOCTEXT("IGMissingFloor", "PostSensorTitle", "무영로 빌라 사시는 분? 새벽에 계단 센서등이 혼자 켜졌다 꺼졌다 해요"),
-			{NSLOCTEXT("IGMissingFloor", "PostSensorBody", "아무도 없는데 3층 참 불만 그래요. 다른 빌라도 그런가요?"),
+			{NSLOCTEXT("IGMissingFloor", "PostSensorBody", "아무도 없는데 3층 계단참 등만 그래요. 다른 빌라도 그런가요?"),
 				FText::GetEmpty(),
 				NSLOCTEXT("IGMissingFloor", "PostSensorComment1", "ㄴ 빌라 센서등 원래 그래요 고장임"),
 				NSLOCTEXT("IGMissingFloor", "PostSensorComment2", "ㄴ 꺼졌을 때 계단 아래 쳐다보지 마세요. 진짜로"),

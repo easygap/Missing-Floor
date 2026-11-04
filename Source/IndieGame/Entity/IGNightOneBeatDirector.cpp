@@ -45,11 +45,14 @@ namespace IGNightOne
 	 * 그가 서는 자리. 4층과 3층 사이 반 층 참(Z 750)의 북서쪽 구석, 북쪽 벽에
 	 * 귀를 대고 내려오는 사람에게 등을 보인다. 4층에서 내려오는 동쪽 계단에서는
 	 * 두 계단 사이 벽에 가려 보이지 않다가, 참에 내려서서 서쪽으로 돌아야 보인다.
-	 * 계속 내려가려면 그 곁 1 m를 지나야 한다. 참은 깊이 140 cm라 몸이 닿지는
-	 * 않는다 — 그의 몸은 북쪽 벽에서 10 cm 떨어진 데까지, 지나가는 사람은 남쪽
-	 * 가장자리를 밟는다. 높이는 참 윗면에 그의 몸 반높이를 더한 것이다.
+	 * 계속 내려가려면 그 곁 1 m를 지나야 한다. 참은 깊이 140 cm라 기는 몸(190 cm)은
+	 * 벽을 보고 눕지 못한다. 그렇게 세웠더니 머리가 벽 속에 50 cm 묻혔다. 웅크리면 앞뒤
+	 * 58 cm라 이마가 벽(Y 105)에 닿고, 지나가는 사람은 남쪽 가장자리를 밟는다.
+	 * 높이는 참 윗면에 그의 몸 반높이를 더한 것이다.
 	 */
-	const FVector SightingStagePoint(-528.0f, 52.0f, 808.0f);
+	const FVector SightingStagePoint(-518.0f, 46.0f, 808.0f);
+	/** 그녀가 지나간 뒤 웅크린 채 옮겨 몸을 펴는 자리. 참 동서 폭(220 cm) 가운데라 동쪽을 보고 펴도 벽에 닿지 않는다. */
+	const FVector SightingLeaveSpot(-470.0f, 46.0f, 808.0f);
 	const FVector SightingShufflePoint(-496.0f, 52.0f, 808.0f);
 	/**
 	 * 그를 지나 내려갔다고 보는 선. 반 층 참에서 서쪽 계단으로 두 단쯤 내려선
@@ -406,9 +409,7 @@ void AIGNightOneBeatDirector::StageSighting()
 	// reveal must not fight it.
 	WorldScene->SuspendCorridorFlicker(true);
 
-	// 북쪽 벽을 보고 귀를 댄다 — 내려오는 사람에게 등을 보인다. 순찰 두 점은
-	// 같은 벽을 따라 참 위에서만 움직이게 하고, 참 가장자리 밖은 그의 기는
-	// 걸음이 넘지 못한다(CrawlTowards).
+	// 북쪽 벽을 보고 웅크려 이마를 댄다 — 내려오는 사람에게 등을 보인다. 그 자리를 지킨다.
 	// 지나가는 사람이 팔 길이 안을 스친다. 소리를 내지 않으면 그는 모른다는 것이
 	// 이 비트가 가르치는 규칙이라, 쫓기 전에는 닿기만으로 잡지 않게 한다.
 	Listener->TeleportTo(
@@ -417,10 +418,8 @@ void AIGNightOneBeatDirector::StageSighting()
 		false,
 		true);
 	Listener->SetTouchCaptureSuppressed(true);
-	Listener->SetPatrolPoints({
-		IGNightOne::SightingStagePoint,
-		IGNightOne::SightingShufflePoint,
-	});
+	Listener->SetPatrolPoints({IGNightOne::SightingStagePoint});
+	Listener->SetGatherHoldForBeat(true);
 
 	// 형체가 있기 전에 소리가 있어야 한다. 계단참에서 기는 걸음 둘, 그리고
 	// 계단 입구의 등이 죽는다 — 내려가면 통로 끝이 실루엣이 된다. 첫 목격이
@@ -627,6 +626,7 @@ void AIGNightOneBeatDirector::RestoreSightingEntity()
 	if (AIGListenerEntity* Listener = Entity.Get())
 	{
 		Listener->SetTouchCaptureSuppressed(false);
+		Listener->ReleaseGatherHoldTo(IGNightOne::SightingLeaveSpot, 0.0f);
 		Listener->SetPatrolPoints(CorridorPatrolPoints);
 		// 공격 티어는 건드리지 않는다. 카메오는 연출이지 실패가 아니다. 순찰
 		// 처음으로 되감지도 않는다 — 밤 한가운데 먼지 흔적과 발자국이 지워지면

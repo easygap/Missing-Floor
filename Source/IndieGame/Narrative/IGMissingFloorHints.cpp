@@ -75,7 +75,7 @@ namespace
 			return true;
 		case 2:
 			Out = Make(TEXT("Hint.Leftover.AssemblyMembrane"), {
-				NSLOCTEXT("IGHint", "AssemblyMembrane1", "얼룩 한쪽에 방수막이 덧대져 있어."),
+				NSLOCTEXT("IGHint", "AssemblyMembrane1", "얼룩 한쪽에 방수막을 덧대 놨네."),
 				NSLOCTEXT("IGHint", "AssemblyMembrane2", "방수막을 들춰 보자.") });
 			return true;
 		case 3:

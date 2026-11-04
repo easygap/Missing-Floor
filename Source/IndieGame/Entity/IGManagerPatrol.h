@@ -288,6 +288,11 @@ private:
 	bool IsPlayerCloseBehind() const;
 	bool IsPlayerTorchOnMe() const;
 	bool HasClearLine(const FVector& From, const FVector& To) const;
+	/**
+	 * 발 높이 From에서 To 쪽으로 몸 폭만큼 쓸어 보아 걸어갈 수 있는 거리. 막히지 않으면 전체 거리, 처음부터 막혀 있으면
+	 * 0이다. 몸에 충돌이 없어서 이 거리를 넘어 걸으면 그대로 물건을 지나간다. 선으로는 상판 위아래로 빠져 책상이 안 보인다.
+	 */
+	float GetWalkableDistance(const FVector& FromFeet, const FVector& ToFeet) const;
 	FVector GetFeet() const { return GetActorLocation(); }
 	FVector GetPlayerFeet() const;
 	/** 4층 복도(목 기둥 동쪽)는 그가 들어가지 않는 곳이다. */

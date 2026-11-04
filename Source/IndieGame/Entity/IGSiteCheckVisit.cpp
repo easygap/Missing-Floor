@@ -43,9 +43,11 @@ namespace IGSiteCheckVisit
 
 	/** 경찰관은 관리인 뒤로 이만큼 떨어져 따라간다. */
 	constexpr float FollowGap = 130.0f;
-	/** 길 앞 이 거리 안에 그녀가 서 있으면 비켜 줄 때까지 선다. */
+	/** 길 앞 이 거리 안에 그녀가 서 있으면 비켜 줄 때까지 선다. 두 몸의 반지름(25+30 cm)보다 조금 크다. */
 	constexpr float YieldLookAhead = 60.0f;
-	constexpr float YieldRadius = 62.0f;
+	constexpr float YieldRadius = 57.0f;
+	/** 이만큼 기다려도 안 비키면 지나가자고 한 번 말한다. */
+	constexpr float YieldAskSeconds = 2.5f;
 
 	/** 어깨가 넓은 어른 남자 둘이다. 303호보다 한 치 크다. */
 	constexpr float CapsuleRadius = 25.0f;
@@ -747,10 +749,24 @@ bool AIGSiteCheckVisit::Walk(FWalker& Walker, const float DeltaSeconds, const bo
 		Walker.bWalking = false;
 		return true;
 	}
-	if (bHold || IsPlayerInTheWay(Walker))
+	const bool bInTheWay = !bHold && IsPlayerInTheWay(Walker);
+	Walker.YieldSeconds = bInTheWay ? Walker.YieldSeconds + DeltaSeconds : 0.0f;
+	if (bHold || bInTheWay)
 	{
 		Walker.bWalking = false;
 		PlayBody(Walker, Walker.IdleAnim, 1.0f);
+		// 벽을 보여 주려고 그 앞에 서 있으면 경찰관이 서는 자리를 막게 된다. 말없이 서 있기만 하면 왜 멈췄는지 알 수 없어서
+		// 둘이 언제까지나 그 자리에 서 있었다.
+		if (Walker.YieldSeconds >= IGSiteCheckVisit::YieldAskSeconds && !Walker.bAskedToPass && IsDialogueLaneIdle())
+		{
+			Walker.bAskedToPass = true;
+			const bool bOfficer = &Walker == &Officer;
+			PushVisitLine(
+				bOfficer ? NSLOCTEXT("IGMissingFloor", "PoliceOfficerSpeaker", "경찰관") : NSLOCTEXT("IGMissingFloor", "MokHansooName", "목한수"),
+				bOfficer ? NSLOCTEXT("IGMissingFloor", "SiteCheckOfficerPass", "잠시만요. 좀 지나갈게요.")
+					: NSLOCTEXT("IGMissingFloor", "SiteCheckMokPass", "거기 좀 비켜 봐요."),
+				&Walker);
+		}
 		return false;
 	}
 	FVector Direction = FVector::ForwardVector;
